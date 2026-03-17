@@ -1,0 +1,1402 @@
+import "dotenv/config";
+import cors from "cors";
+import express from "express";
+
+const app = express();
+const port = Number(process.env.PORT || 8787);
+
+const API_VERSION = "v1.39.0";
+const API_ROOT = `https://api.tcgplayer.com/${API_VERSION}`;
+const TOKEN_ENDPOINT = "https://api.tcgplayer.com/token";
+const TCGDEX_SEARCH_ENDPOINT = "https://api.tcgdex.net/v2/en/cards";
+const TCGDEX_CARD_ENDPOINT = "https://api.tcgdex.net/v2/en/cards";
+const OPTCG_ENDPOINT_CANDIDATES = {
+  sets: [
+    "https://www.optcgapi.com/api/sets/filtered/",
+    "https://optcgapi.com/api/sets/filtered/",
+  ],
+  decks: [
+    "https://www.optcgapi.com/api/decks/filtered/",
+    "https://optcgapi.com/api/decks/filtered/",
+  ],
+  promos: [
+    "https://www.optcgapi.com/api/promos/filtered/",
+    "https://optcgapi.com/api/promos/filtered/",
+  ],
+};
+const POKEMON_ENDPOINT = "https://api.pokemontcg.io/v2/cards";
+const SCRYFALL_SEARCH_ENDPOINT = "https://api.scryfall.com/cards/search";
+const SCRYFALL_NAMED_ENDPOINT = "https://api.scryfall.com/cards/named";
+const BANK_OF_CANADA_ENDPOINT =
+  "https://www.bankofcanada.ca/valet/observations/FXUSDCAD/json?recent=5";
+const FUSION_TOPDECK_HUB_ID = "sTSJ3zWce0fWw8lip6hhHoXkGzk1";
+const FUSION_TOPDECK_ENDPOINT = `https://topdeck.gg/api/event-filter/${FUSION_TOPDECK_HUB_ID}`;
+const A_MUSE_EVENTS_ENDPOINT =
+  "https://amusengames.ca/collections/events/products.json?limit=250";
+const ARCTIC_EVENTS_PAGE = "https://www.arcticriftcards.ca/pages/events";
+const GALAXY_EVENTS_PAGE = "https://www.galaxy-comics.ca/index.php/calendar/";
+const SERVER_TIMEOUT_MS = 15000;
+const FX_TIMEOUT_MS = 2500;
+
+const CATEGORY_IDS = {
+  magic: 1,
+  pokemon: 3,
+};
+
+const SCRYFALL_HEADERS = {
+  Accept: "application/json; charset=utf-8",
+  "User-Agent": "TCGWPG/0.2 (local marketplace development)",
+};
+const ONE_PIECE_VARIANT_STOPWORDS = new Set([
+  "sp",
+  "alt",
+  "alternate",
+  "art",
+  "gold",
+  "foil",
+  "wanted",
+  "poster",
+  "manga",
+  "parallel",
+]);
+const MONTH_INDEX = {
+  jan: 0,
+  january: 0,
+  feb: 1,
+  february: 1,
+  mar: 2,
+  march: 2,
+  apr: 3,
+  april: 3,
+  may: 4,
+  jun: 5,
+  june: 5,
+  jul: 6,
+  july: 6,
+  aug: 7,
+  august: 7,
+  sep: 8,
+  sept: 8,
+  september: 8,
+  oct: 9,
+  october: 9,
+  nov: 10,
+  november: 10,
+  dec: 11,
+  december: 11,
+};
+const WEEKDAY_INDEX = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
+};
+
+let tokenCache = {
+  accessToken: null,
+  expiresAt: 0,
+};
+
+let exchangeRateCache = {
+  usdToCadRate: 1.38,
+  asOf: null,
+  fetchedAt: 0,
+  source: "Fallback",
+};
+
+const tcgdexCardCache = new Map();
+
+app.use(cors());
+app.use(express.json());
+
+function tcgplayerEnabled() {
+  return Boolean(
+    process.env.TCGPLAYER_PUBLIC_KEY && process.env.TCGPLAYER_PRIVATE_KEY,
+  );
+}
+
+function normalizeGameName(game) {
+  const rawValue = String(game || "").toLowerCase();
+
+  if (rawValue.includes("pokemon")) {
+    return "pokemon";
+  }
+
+  if (rawValue.includes("magic")) {
+    return "magic";
+  }
+
+  if (rawValue.includes("one piece")) {
+    return "one-piece";
+  }
+
+  return rawValue.replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+function getCategoryId(game) {
+  return CATEGORY_IDS[String(game || "").toLowerCase()];
+}
+
+function getExtendedValue(product, fieldName) {
+  const item = product.extendedData?.find(
+    (entry) => entry.name?.toLowerCase() === fieldName.toLowerCase(),
+  );
+  return item?.value ?? null;
+}
+
+function parseNumber(value) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function toCad(value, usdToCadRate) {
+  const numericValue = parseNumber(value);
+  return numericValue ? Number((numericValue * usdToCadRate).toFixed(2)) : null;
+}
+
+function pickPokemonPrice(card) {
+  const priceGroups = card.tcgplayer?.prices || {};
+  const priority = [
+    "holofoil",
+    "reverseHolofoil",
+    "normal",
+    "1stEditionHolofoil",
+    "1stEditionNormal",
+  ];
+
+  for (const key of priority) {
+    const price = priceGroups[key];
+    if (price?.market) {
+      return {
+        label: key,
+        usdValue: parseNumber(price.market),
+      };
+    }
+    if (price?.mid) {
+      return {
+        label: key,
+        usdValue: parseNumber(price.mid),
+      };
+    }
+  }
+
+  return {
+    label: "unknown",
+    usdValue: null,
+  };
+}
+
+function pickTcgdexPrice(card) {
+  const tcgplayerPricing = card.pricing?.tcgplayer;
+  if (!tcgplayerPricing || typeof tcgplayerPricing !== "object") {
+    return {
+      label: "unknown",
+      usdValue: null,
+    };
+  }
+
+  const priority = [
+    "holofoil",
+    "reverse-holofoil",
+    "normal",
+    "1st-edition-holofoil",
+    "1st-edition-normal",
+  ];
+
+  for (const key of priority) {
+    const price = tcgplayerPricing[key];
+    if (price?.marketPrice) {
+      return {
+        label: key,
+        usdValue: parseNumber(price.marketPrice),
+      };
+    }
+
+    if (price?.midPrice) {
+      return {
+        label: key,
+        usdValue: parseNumber(price.midPrice),
+      };
+    }
+  }
+
+  return {
+    label: "unknown",
+    usdValue: null,
+  };
+}
+
+function buildPokemonHeaders() {
+  const apiKey = process.env.VITE_POKEMONTCG_API_KEY || process.env.POKEMONTCG_API_KEY;
+  return apiKey ? { "X-Api-Key": apiKey } : {};
+}
+
+function uniqueBy(items, keySelector) {
+  const seen = new Set();
+  const results = [];
+
+  for (const item of items) {
+    const key = keySelector(item);
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    results.push(item);
+  }
+
+  return results;
+}
+
+function normalizeSearchText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function normalizeOnePieceCode(value) {
+  return String(value || "")
+    .toUpperCase()
+    .replace(/\s+/g, "")
+    .replace(/[^A-Z0-9_-]/g, "");
+}
+
+function looksLikeCardCode(value) {
+  return /[A-Z]{2,}\d{2}-\d+/i.test(String(value || ""));
+}
+
+function buildOnePieceQueryVariants(query) {
+  const trimmedQuery = String(query || "").trim();
+  const variants = [];
+  const seen = new Set();
+
+  function addVariant(params) {
+    const key = JSON.stringify(params);
+    if (seen.has(key)) {
+      return;
+    }
+
+    seen.add(key);
+    variants.push(params);
+  }
+
+  if (!trimmedQuery) {
+    return variants;
+  }
+
+  addVariant({ card_name: trimmedQuery });
+
+  if (looksLikeCardCode(trimmedQuery)) {
+    addVariant({ card_image_id: normalizeOnePieceCode(trimmedQuery) });
+  }
+
+  const strippedQuery = trimmedQuery
+    .split(/\s+/)
+    .filter((term) => !ONE_PIECE_VARIANT_STOPWORDS.has(term.toLowerCase()))
+    .join(" ")
+    .trim();
+
+  if (strippedQuery && strippedQuery.toLowerCase() !== trimmedQuery.toLowerCase()) {
+    addVariant({ card_name: strippedQuery });
+
+    if (looksLikeCardCode(strippedQuery)) {
+      addVariant({ card_image_id: normalizeOnePieceCode(strippedQuery) });
+    }
+  }
+
+  return variants;
+}
+
+function getOnePieceImageUrl(card) {
+  if (card.card_image) {
+    return card.card_image;
+  }
+
+  return card.card_set_id
+    ? `https://images.onepiece-cardgame.dev/cards/${card.card_set_id}.webp`
+    : "";
+}
+
+function rankOnePieceMatch(card, query) {
+  const normalizedQuery = normalizeSearchText(query);
+  const haystacks = [
+    normalizeSearchText(card.card_name),
+    normalizeSearchText(card.card_set_id),
+    normalizeSearchText(card.card_image_id),
+    normalizeSearchText(card.set_name),
+  ].filter(Boolean);
+  const normalizedName = haystacks[0] || "";
+
+  if (!normalizedQuery) {
+    return 0;
+  }
+
+  if (haystacks.some((value) => value === normalizedQuery)) {
+    return 100;
+  }
+
+  if (haystacks.some((value) => value.startsWith(normalizedQuery))) {
+    return 80;
+  }
+
+  if (haystacks.some((value) => value.includes(normalizedQuery))) {
+    return 60;
+  }
+
+  const queryTerms = normalizedQuery.split(/\s+/).filter(Boolean);
+  if (queryTerms.length && haystacks.some((value) => queryTerms.every((term) => value.includes(term)))) {
+    return 45;
+  }
+
+  return 20;
+}
+
+async function fetchWithTimeout(url, init = {}, timeoutMs = SERVER_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error(`Request timed out after ${timeoutMs}ms.`);
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function getBearerToken() {
+  const now = Date.now();
+
+  if (tokenCache.accessToken && tokenCache.expiresAt - 60_000 > now) {
+    return tokenCache.accessToken;
+  }
+
+  const form = new URLSearchParams({
+    grant_type: "client_credentials",
+    client_id: process.env.TCGPLAYER_PUBLIC_KEY,
+    client_secret: process.env.TCGPLAYER_PRIVATE_KEY,
+  });
+
+  const response = await fetchWithTimeout(TOKEN_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
+    body: form,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Unable to authenticate with TCGplayer: ${errorText}`);
+  }
+
+  const data = await response.json();
+  tokenCache = {
+    accessToken: data.access_token,
+    expiresAt: now + Number(data.expires_in || 0) * 1000,
+  };
+
+  return tokenCache.accessToken;
+}
+
+async function tcgFetch(pathname, options = {}) {
+  const bearerToken = await getBearerToken();
+  const response = await fetchWithTimeout(`${API_ROOT}${pathname}`, {
+    ...options,
+    headers: {
+      Accept: "application/json",
+      Authorization: `bearer ${bearerToken}`,
+      ...(options.headers || {}),
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `TCGplayer request failed (${response.status}): ${errorText}`,
+    );
+  }
+
+  return response.json();
+}
+
+async function searchTcgplayerCatalog(game, query, limit) {
+  const categoryId = getCategoryId(game);
+
+  if (!categoryId) {
+    throw new Error("Unsupported TCGplayer search category.");
+  }
+
+  const searchResponse = await tcgFetch(`/catalog/categories/${categoryId}/search`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      sort: "Relevance",
+      limit,
+      offset: 0,
+      filters: [
+        {
+          name: "ProductName",
+          values: [query],
+        },
+      ],
+    }),
+  });
+
+  const productIds = searchResponse.results?.slice(0, limit) || [];
+
+  if (!productIds.length) {
+    return [];
+  }
+
+  const [productsResponse, pricingResponse] = await Promise.all([
+    tcgFetch(`/catalog/products/${productIds.join(",")}?getExtendedFields=true`),
+    tcgFetch(`/pricing/product/${productIds.join(",")}`),
+  ]);
+
+  const pricingMap = new Map(
+    (pricingResponse.results || []).map((entry) => [entry.productId, entry]),
+  );
+
+  return (productsResponse.results || []).map((product) => {
+    const pricing = pricingMap.get(product.productId);
+    const usdPrice =
+      pricing?.marketPrice ?? pricing?.midPrice ?? pricing?.lowPrice ?? null;
+
+    return {
+      id: `tcgplayer-${product.productId}`,
+      provider: "tcgplayer",
+      providerLabel: "TCGplayer API",
+      title: product.name,
+      setName: product.groupName || getExtendedValue(product, "SetName"),
+      rarity:
+        product.rarityName ||
+        getExtendedValue(product, "Rarity") ||
+        "Unknown",
+      imageUrl: product.imageUrl,
+      url: product.url,
+      productId: product.productId,
+      printLabel: pricing?.subTypeName || getExtendedValue(product, "Printing"),
+      originalMarketPriceUsd: usdPrice,
+      originalMarketPriceCurrency: "USD",
+      description: [
+        product.groupName || getExtendedValue(product, "SetName"),
+        getExtendedValue(product, "Number"),
+        product.rarityName || getExtendedValue(product, "Rarity"),
+      ]
+        .filter(Boolean)
+        .join(" | "),
+    };
+  });
+}
+
+async function getUsdToCadRate() {
+  const now = Date.now();
+  if (exchangeRateCache.fetchedAt && now - exchangeRateCache.fetchedAt < 6 * 60 * 60 * 1000) {
+    return exchangeRateCache;
+  }
+
+  try {
+    const response = await fetchWithTimeout(
+      BANK_OF_CANADA_ENDPOINT,
+      {
+        headers: {
+          Accept: "application/json",
+        },
+      },
+      FX_TIMEOUT_MS,
+    );
+
+    if (!response.ok) {
+      throw new Error("Bank of Canada exchange rate request failed.");
+    }
+
+    const data = await response.json();
+    const latestObservation = [...(data.observations || [])]
+      .reverse()
+      .find((observation) => observation.FXUSDCAD?.v);
+    const usdToCadRate = parseNumber(latestObservation?.FXUSDCAD?.v);
+
+    if (!usdToCadRate) {
+      throw new Error("No USD to CAD rate was returned.");
+    }
+
+    exchangeRateCache = {
+      usdToCadRate,
+      asOf: latestObservation?.d || null,
+      fetchedAt: now,
+      source: "Bank of Canada",
+    };
+  } catch {
+    exchangeRateCache = {
+      ...exchangeRateCache,
+      fetchedAt: now,
+    };
+  }
+
+  return exchangeRateCache;
+}
+
+function buildPokemonQueries(query) {
+  const trimmedQuery = String(query || "").trim();
+  const terms = trimmedQuery.split(/\s+/).filter(Boolean);
+  const firstTerm = terms[0];
+
+  return uniqueBy(
+    [
+      trimmedQuery ? `name:"${trimmedQuery}"` : null,
+      terms.length ? terms.map((term) => `name:${term}`).join(" ") : null,
+      firstTerm ? `name:${firstTerm}*` : null,
+    ].filter(Boolean),
+    (item) => item,
+  );
+}
+
+async function fetchPokemonQuery(searchQuery, limit) {
+  const url = new URL(POKEMON_ENDPOINT);
+  url.searchParams.set("q", searchQuery);
+  url.searchParams.set("pageSize", String(limit));
+  url.searchParams.set("orderBy", "-set.releaseDate");
+  url.searchParams.set(
+    "select",
+    "id,name,number,rarity,images,set,tcgplayer",
+  );
+
+  const response = await fetchWithTimeout(url, {
+    headers: {
+      Accept: "application/json",
+      ...buildPokemonHeaders(),
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Pokemon TCG API search failed.");
+  }
+
+  const data = await response.json();
+  return data.data || [];
+}
+
+async function fetchTcgdexCard(cardId) {
+  if (tcgdexCardCache.has(cardId)) {
+    return tcgdexCardCache.get(cardId);
+  }
+
+  const response = await fetchWithTimeout(`${TCGDEX_CARD_ENDPOINT}/${cardId}`, {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("TCGdex card lookup failed.");
+  }
+
+  const data = await response.json();
+  tcgdexCardCache.set(cardId, data);
+  return data;
+}
+
+async function searchPokemonCardsViaTcgdex(query, limit, usdToCadRate) {
+  const url = new URL(TCGDEX_SEARCH_ENDPOINT);
+  url.searchParams.set("name", query);
+
+  const response = await fetchWithTimeout(url, {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("TCGdex search failed.");
+  }
+
+  const matches = await response.json();
+  const resultLimit = Math.min(limit, 12);
+  const detailedCards = (
+    await Promise.allSettled(
+      (matches || []).slice(0, resultLimit).map((card) => fetchTcgdexCard(card.id)),
+    )
+  )
+    .filter((result) => result.status === "fulfilled")
+    .map((result) => result.value);
+
+  if (!detailedCards.length) {
+    throw new Error("TCGdex returned no usable card details.");
+  }
+
+  return detailedCards.map((card) => {
+    const chosenPrice = pickTcgdexPrice(card);
+
+    return {
+      id: `tcgdex-${card.id}`,
+      provider: "tcgdex",
+      providerLabel: "TCGdex / TCGplayer",
+      title: card.name,
+      setName: card.set?.name || "Unknown set",
+      rarity: card.rarity || "Unknown rarity",
+      imageUrl: `${card.image}/high.webp`,
+      marketPrice: toCad(chosenPrice.usdValue, usdToCadRate),
+      marketPriceCurrency: "CAD",
+      originalMarketPriceUsd: chosenPrice.usdValue,
+      originalMarketPriceCurrency: "USD",
+      printLabel: chosenPrice.label,
+      description: [
+        card.set?.name,
+        card.rarity,
+        card.localId ? `#${card.localId}` : null,
+      ]
+        .filter(Boolean)
+        .join(" | "),
+    };
+  });
+}
+
+async function searchPokemonCards(query, limit, usdToCadRate) {
+  try {
+    return await searchPokemonCardsViaTcgdex(query, limit, usdToCadRate);
+  } catch {
+    // Keep the previous provider as a fallback if TCGdex is unavailable.
+  }
+
+  const cards = [];
+  const searchQueries = buildPokemonQueries(query);
+
+  for (const searchQuery of searchQueries) {
+    const results = await fetchPokemonQuery(searchQuery, limit);
+    cards.push(...results);
+
+    if (cards.length >= limit) {
+      break;
+    }
+  }
+
+  return uniqueBy(cards, (card) => card.id)
+    .slice(0, limit)
+    .map((card) => {
+      const chosenPrice = pickPokemonPrice(card);
+      return {
+        id: `pokemon-${card.id}`,
+        provider: "pokemon-tcg-api",
+        providerLabel: "Pokemon TCG API / TCGplayer",
+        title: card.name,
+        setName: card.set?.name || "Unknown set",
+        rarity: card.rarity || "Unknown rarity",
+        imageUrl: card.images?.large || card.images?.small || "",
+        marketPrice: toCad(chosenPrice.usdValue, usdToCadRate),
+        marketPriceCurrency: "CAD",
+        originalMarketPriceUsd: chosenPrice.usdValue,
+        originalMarketPriceCurrency: "USD",
+        printLabel: chosenPrice.label,
+        description: [
+          card.set?.name,
+          card.rarity,
+          card.number ? `#${card.number}` : null,
+        ]
+          .filter(Boolean)
+          .join(" | "),
+      };
+    });
+}
+
+async function resolveScryfallName(query) {
+  const url = new URL(SCRYFALL_NAMED_ENDPOINT);
+  url.searchParams.set("fuzzy", query);
+
+  const response = await fetchWithTimeout(url, {
+    headers: SCRYFALL_HEADERS,
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const data = await response.json();
+  return data?.name || null;
+}
+
+async function fetchScryfallSearch(searchQuery) {
+  const url = new URL(SCRYFALL_SEARCH_ENDPOINT);
+  url.searchParams.set("q", searchQuery);
+  url.searchParams.set("unique", "prints");
+  url.searchParams.set("order", "released");
+  url.searchParams.set("dir", "desc");
+
+  const response = await fetchWithTimeout(url, {
+    headers: SCRYFALL_HEADERS,
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  return response.json();
+}
+
+async function searchMagicCards(query, limit, usdToCadRate) {
+  const canonicalName = await resolveScryfallName(query);
+  const preferredQuery = canonicalName ? `!"${canonicalName}"` : query;
+
+  let data = await fetchScryfallSearch(preferredQuery);
+  if ((!data?.data || !data.data.length) && canonicalName) {
+    data = await fetchScryfallSearch(query);
+  }
+
+  return (data?.data || []).slice(0, limit).map((card) => {
+    const usdPrice =
+      parseNumber(card.prices?.usd) ||
+      parseNumber(card.prices?.usd_foil) ||
+      parseNumber(card.prices?.usd_etched);
+    const imageUrl =
+      card.image_uris?.normal ||
+      card.card_faces?.[0]?.image_uris?.normal ||
+      card.image_uris?.large ||
+      "";
+
+    return {
+      id: `scryfall-${card.id}`,
+      provider: "scryfall",
+      providerLabel: "Scryfall",
+      title: card.name,
+      setName: card.set_name || "Unknown set",
+      rarity: card.rarity
+        ? card.rarity[0].toUpperCase() + card.rarity.slice(1)
+        : "Unknown rarity",
+      imageUrl,
+      marketPrice: toCad(usdPrice, usdToCadRate),
+      marketPriceCurrency: "CAD",
+      originalMarketPriceUsd: usdPrice,
+      originalMarketPriceCurrency: "USD",
+      printLabel:
+        card.finishes?.includes("foil")
+          ? "foil"
+          : card.finishes?.[0] || card.set?.toUpperCase(),
+      description: [
+        card.set_name,
+        card.collector_number ? `#${card.collector_number}` : null,
+        card.type_line,
+      ]
+        .filter(Boolean)
+        .join(" | "),
+    };
+  });
+}
+
+async function searchOnePieceEndpoint(endpointCandidates, params) {
+  let lastError = null;
+
+  for (const endpoint of endpointCandidates) {
+    try {
+      const url = new URL(endpoint);
+      for (const [key, value] of Object.entries(params)) {
+        if (value) {
+          url.searchParams.set(key, value);
+        }
+      }
+
+      const response = await fetchWithTimeout(url, {
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("One Piece API search failed.");
+      }
+
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        return data;
+      }
+
+      if (data?.error) {
+        return [];
+      }
+
+      return [];
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error("One Piece API search failed.");
+}
+
+async function searchOnePieceCards(query, limit, usdToCadRate) {
+  const normalizedCode = normalizeOnePieceCode(query);
+  const queryVariants = buildOnePieceQueryVariants(query);
+  const endpoints = [
+    OPTCG_ENDPOINT_CANDIDATES.sets,
+    OPTCG_ENDPOINT_CANDIDATES.decks,
+    OPTCG_ENDPOINT_CANDIDATES.promos,
+  ];
+
+  const responses = await Promise.allSettled(
+    endpoints.flatMap((endpoint) =>
+      queryVariants.map((params) => searchOnePieceEndpoint(endpoint, params)),
+    ),
+  );
+
+  const cards = responses
+    .filter((result) => result.status === "fulfilled")
+    .flatMap((result) => result.value || []);
+
+  const uniqueCards = uniqueBy(
+    cards,
+    (card) => card.card_image_id || `${card.card_set_id}-${card.card_name}`,
+  );
+  const rankedCards = [...uniqueCards].sort((left, right) => {
+    const rightScore = rankOnePieceMatch(right, query);
+    const leftScore = rankOnePieceMatch(left, query);
+
+    if (rightScore !== leftScore) {
+      return rightScore - leftScore;
+    }
+
+    return (parseNumber(right.market_price) || 0) - (parseNumber(left.market_price) || 0);
+  });
+
+  if (!rankedCards.length) {
+    throw new Error("No One Piece results were returned.");
+  }
+
+  return rankedCards.slice(0, limit).map((card) => {
+    const usdPrice = parseNumber(card.market_price) || parseNumber(card.inventory_price);
+
+    return {
+      id: `one-piece-${card.card_image_id || card.card_set_id || card.card_name}`,
+      provider: "optcgapi",
+      providerLabel: "OPTCG API",
+      title: card.card_name || "Unknown card",
+      setName: card.set_name || "Unknown set",
+      rarity: card.rarity || "Unknown rarity",
+      imageUrl: getOnePieceImageUrl(card),
+      marketPrice: toCad(usdPrice, usdToCadRate),
+      marketPriceCurrency: "CAD",
+      originalMarketPriceUsd: usdPrice,
+      originalMarketPriceCurrency: "USD",
+      printLabel: card.card_image_id || card.card_set_id || card.card_type || "One Piece",
+      description: [
+        card.set_name,
+        card.card_set_id,
+        card.card_type,
+        card.card_color,
+      ]
+        .filter(Boolean)
+        .join(" | "),
+    };
+  });
+}
+
+function decodeHtml(value) {
+  return String(value || "")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+function stripHtml(value) {
+  return decodeHtml(String(value || "").replace(/<[^>]+>/g, " "))
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeEventGame(value) {
+  const rawValue = String(value || "");
+
+  if (
+    /(star wars unlimited|pathfinder|lorcana|yu[\s-]?gi[\s-]?oh|teenage mutant ninja turtles|\btmnt\b|riftbound|flesh and blood|digimon|dragon ball|union arena|final fantasy)/i.test(
+      rawValue,
+    )
+  ) {
+    return null;
+  }
+
+  if (/one\s*piece/i.test(rawValue)) {
+    return "One Piece";
+  }
+
+  if (/pok[eé]mon/i.test(rawValue)) {
+    return "Pokemon";
+  }
+
+  if (
+    /(magic(?::|\s+the gathering)?|friday night magic|\bfnm\b|\bcommander\b|\bmodern\b|\bpioneer\b|standard showdown)/i.test(
+      rawValue,
+    )
+  ) {
+    return "Magic";
+  }
+
+  return null;
+}
+
+function normalizeEventFee(value) {
+  if (value == null || value === "") {
+    return "TBD";
+  }
+
+  const numericValue = Number(value);
+  if (Number.isFinite(numericValue)) {
+    return numericValue === 0 ? "Free" : formatCurrencyValue(numericValue, "CAD");
+  }
+
+  return String(value).trim();
+}
+
+function formatCurrencyValue(value, currency = "CAD") {
+  return new Intl.NumberFormat("en-CA", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function buildEventId(prefix, value) {
+  return `${prefix}-${String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")}`;
+}
+
+function isUpcomingDate(date) {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 120);
+
+  return date >= start && date <= end;
+}
+
+function parseMonthDayDate(title, referenceDate = new Date()) {
+  const match = String(title || "").match(
+    /\b(?:mon(?:day)?|tue(?:sday)?|wed(?:nesday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)?\s*(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(\d{1,2})(?:,?\s*(\d{4}))?/i,
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const monthIndex = MONTH_INDEX[match[1].toLowerCase()];
+  const day = Number(match[2]);
+  const year = Number(match[3] || new Date(referenceDate).getFullYear());
+  const parsedDate = new Date(year, monthIndex, day);
+
+  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+}
+
+function parseTimeLabel(value) {
+  const match = String(value || "").match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i);
+  if (!match) {
+    return null;
+  }
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2] || 0);
+  const meridiem = match[3].toLowerCase();
+  const displayHour = ((hour + 11) % 12) + 1;
+  return `${displayHour}:${String(minute).padStart(2, "0")} ${meridiem.toUpperCase()}`;
+}
+
+function findTimeLabel(value, fallback = "TBD") {
+  const match = String(value || "").match(/@?\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm))/i);
+  return match ? parseTimeLabel(match[1]) : fallback;
+}
+
+function nextDatesForWeekday(weekdayName, count, timeLabel = "6:00 PM") {
+  const weekdayIndex = WEEKDAY_INDEX[String(weekdayName || "").toLowerCase()];
+  if (weekdayIndex == null) {
+    return [];
+  }
+
+  const results = [];
+  const current = new Date();
+  current.setHours(0, 0, 0, 0);
+  const offset = (weekdayIndex - current.getDay() + 7) % 7;
+  current.setDate(current.getDate() + offset);
+
+  for (let index = 0; index < count; index += 1) {
+    const eventDate = new Date(current);
+    eventDate.setDate(current.getDate() + index * 7);
+    results.push({
+      dateStr: eventDate.toISOString().slice(0, 10),
+      time: timeLabel,
+    });
+  }
+
+  return results;
+}
+
+function normalizeEventRecord(event) {
+  return {
+    sourceType: "live",
+    neighborhood: "",
+    note: "",
+    fee: "TBD",
+    ...event,
+  };
+}
+
+async function fetchFusionEvents() {
+  try {
+    const response = await fetchWithTimeout(FUSION_TOPDECK_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    });
+
+    if (!response.ok) {
+      throw new Error(`TopDeck request failed (${response.status}).`);
+    }
+
+    const payload = await response.json();
+    const currEvents = Array.isArray(payload.currEvents) ? payload.currEvents : [];
+    const events = currEvents
+      .map((item) => {
+        const title =
+          item.name ||
+          item.title ||
+          item.eventName ||
+          item.tournamentName ||
+          item.event?.name ||
+          "";
+        const startAt =
+          item.startAt ||
+          item.startDate ||
+          item.startDateTime ||
+          item.eventStartDate ||
+          item.date ||
+          item.event?.startAt ||
+          "";
+        const parsedDate = startAt ? new Date(startAt) : null;
+        const game = normalizeEventGame(
+          item.game || item.gameName || item.format || item.event?.game || title,
+        );
+
+        if (!title || !parsedDate || Number.isNaN(parsedDate.getTime()) || !game) {
+          return null;
+        }
+
+        return normalizeEventRecord({
+          id: buildEventId("fusion", item.id || item.shortCode || title),
+          title,
+          store: "Fusion Gaming",
+          source: "TopDeck",
+          sourceUrl: item.slug ? `https://topdeck.gg/event/${item.slug}` : "https://topdeck.gg",
+          dateStr: parsedDate.toISOString().slice(0, 10),
+          time: parsedDate.toLocaleTimeString("en-CA", {
+            hour: "numeric",
+            minute: "2-digit",
+          }),
+          game,
+          fee: normalizeEventFee(item.entryFee || item.buyin || item.price || item.cost),
+          neighborhood: "",
+        });
+      })
+      .filter(Boolean)
+      .filter((event) => isUpcomingDate(new Date(`${event.dateStr}T12:00:00`)));
+
+    return {
+      events,
+      status: {
+        id: "fusion",
+        label: "Fusion Gaming",
+        mode: events.length ? "Live pull" : "Live source / no current events",
+        note: events.length
+          ? `Pulled ${events.length} upcoming event(s) from TopDeck.`
+          : "TopDeck is wired in, but it did not return upcoming events right now.",
+        sourceUrl: `https://topdeck.gg/hubs/${FUSION_TOPDECK_HUB_ID}`,
+      },
+    };
+  } catch (error) {
+    return {
+      events: [],
+      status: {
+        id: "fusion",
+        label: "Fusion Gaming",
+        mode: "Source error",
+        note: error.message,
+        sourceUrl: `https://topdeck.gg/hubs/${FUSION_TOPDECK_HUB_ID}`,
+      },
+    };
+  }
+}
+
+async function fetchAMuseEvents() {
+  try {
+    const response = await fetchWithTimeout(A_MUSE_EVENTS_ENDPOINT, {
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Shopify events request failed (${response.status}).`);
+    }
+
+    const payload = await response.json();
+    const products = Array.isArray(payload.products) ? payload.products : [];
+    const events = products
+      .map((product) => {
+        const title = stripHtml(product.title);
+        const description = stripHtml(product.body_html);
+        const tags = Array.isArray(product.tags)
+          ? product.tags.join(" ")
+          : String(product.tags || "");
+        const game = normalizeEventGame(`${title} ${tags}`);
+        const parsedDate = parseMonthDayDate(title, product.published_at || product.created_at);
+
+        if (!game || !parsedDate || !isUpcomingDate(parsedDate)) {
+          return null;
+        }
+
+        return normalizeEventRecord({
+          id: buildEventId("amuse", product.id || product.handle || title),
+          title,
+          store: "A Muse N Games",
+          source: "Shopify Events",
+          sourceUrl: `https://amusengames.ca/products/${product.handle}`,
+          dateStr: parsedDate.toISOString().slice(0, 10),
+          time: findTimeLabel(title, "TBD"),
+          game,
+          fee: normalizeEventFee(product.variants?.[0]?.price),
+          neighborhood: "West End",
+          note: description,
+        });
+      })
+      .filter(Boolean);
+
+    return {
+      events,
+      status: {
+        id: "amuse",
+        label: "A Muse N Games",
+        mode: events.length ? "Live pull" : "Live source / no current events",
+        note: events.length
+          ? `Pulled ${events.length} upcoming Shopify event product(s).`
+          : "Shopify events endpoint is reachable, but it returned no upcoming Magic, Pokemon, or One Piece events inside the active window.",
+        sourceUrl: A_MUSE_EVENTS_ENDPOINT,
+      },
+    };
+  } catch (error) {
+    return {
+      events: [],
+      status: {
+        id: "amuse",
+        label: "A Muse N Games",
+        mode: "Source error",
+        note: error.message,
+        sourceUrl: A_MUSE_EVENTS_ENDPOINT,
+      },
+    };
+  }
+}
+
+async function fetchArcticEvents() {
+  try {
+    const response = await fetchWithTimeout(ARCTIC_EVENTS_PAGE, {
+      headers: {
+        Accept: "text/html",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Arctic events page failed (${response.status}).`);
+    }
+
+    const html = await response.text();
+    const descriptionMatch = html.match(/<meta name="description" content="([^"]+)"/i);
+    const description = decodeHtml(descriptionMatch?.[1] || "");
+    const events = [];
+
+    if (/pok[eé]mon/i.test(description) && /monday at 6 pm/i.test(description)) {
+      nextDatesForWeekday("monday", 8, "6:00 PM").forEach((date, index) => {
+        events.push(
+          normalizeEventRecord({
+            id: buildEventId("arctic-pokemon", `${date.dateStr}-${index}`),
+            title: "Pokemon Weekly League Night",
+            store: "Arctic Rift Cards",
+            source: "Public Events Page",
+            sourceUrl: ARCTIC_EVENTS_PAGE,
+            dateStr: date.dateStr,
+            time: date.time,
+            game: "Pokemon",
+            fee: "TBD",
+            neighborhood: "",
+            note: "Recurring weekly event generated from Arctic Rift's public event page schedule.",
+          }),
+        );
+      });
+    }
+
+    return {
+      events,
+      status: {
+        id: "arctic",
+        label: "Arctic Rift Cards",
+        mode: events.length ? "Recurring page scrape" : "Live source / no supported events",
+        note: events.length
+          ? "Generated upcoming recurring Pokemon nights from the public events page."
+          : "The public events page is reachable, but it does not currently expose upcoming Magic, Pokemon, or One Piece events beyond unsupported schedules.",
+        sourceUrl: ARCTIC_EVENTS_PAGE,
+      },
+    };
+  } catch (error) {
+    return {
+      events: [],
+      status: {
+        id: "arctic",
+        label: "Arctic Rift Cards",
+        mode: "Source error",
+        note: error.message,
+        sourceUrl: ARCTIC_EVENTS_PAGE,
+      },
+    };
+  }
+}
+
+async function fetchGalaxyStatus() {
+  try {
+    const response = await fetchWithTimeout(GALAXY_EVENTS_PAGE, {
+      headers: {
+        Accept: "text/html",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Galaxy calendar page failed (${response.status}).`);
+    }
+
+    return {
+      events: [],
+      status: {
+        id: "galaxy",
+        label: "Galaxy Comics",
+        mode: "Manual override",
+        note: "The public calendar page is reachable, but it does not expose a stable structured event feed. Admin overrides are used for this store.",
+        sourceUrl: GALAXY_EVENTS_PAGE,
+      },
+    };
+  } catch (error) {
+    return {
+      events: [],
+      status: {
+        id: "galaxy",
+        label: "Galaxy Comics",
+        mode: "Manual override",
+        note: `Fallback to admin-managed events. ${error.message}`,
+        sourceUrl: GALAXY_EVENTS_PAGE,
+      },
+    };
+  }
+}
+
+app.get("/api/health", (_req, res) => {
+  res.json({
+    ok: true,
+    supportedGames: ["magic", "pokemon", "one-piece"],
+  });
+});
+
+app.get("/api/live/exchange-rate", async (_req, res) => {
+  const exchangeRate = await getUsdToCadRate();
+
+  res.json({
+    usdToCadRate: exchangeRate.usdToCadRate,
+    asOf: exchangeRate.asOf,
+    source: exchangeRate.source,
+  });
+});
+
+app.get("/api/live/search", async (req, res) => {
+  const game = normalizeGameName(req.query.game);
+  const query = String(req.query.query || "").trim();
+  const limit = Math.min(Number(req.query.limit || 24), 24);
+
+  if (!query) {
+    return res.json({
+      providerLabel: "Live Search",
+      results: [],
+      note: "Enter a card name to search the live database.",
+    });
+  }
+
+  try {
+    const exchangeRate = await getUsdToCadRate();
+    let providerLabel = "Live Search";
+    let results = [];
+    let note = `Market values are shown in CAD using USD/CAD ${exchangeRate.usdToCadRate}.`;
+
+    if (game === "pokemon") {
+      providerLabel = "TCGdex / TCGplayer";
+      results = await searchPokemonCards(query, limit, exchangeRate.usdToCadRate);
+    } else if (game === "magic") {
+      providerLabel = "Scryfall";
+      results = await searchMagicCards(query, limit, exchangeRate.usdToCadRate);
+    } else if (game === "one-piece") {
+      providerLabel = "OPTCG API";
+      results = await searchOnePieceCards(query, limit, exchangeRate.usdToCadRate);
+    } else {
+      note = "Live search is currently implemented for Pokemon, Magic, and One Piece.";
+    }
+
+    return res.json({
+      providerLabel,
+      results,
+      note,
+      exchangeRate,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: error.message,
+    });
+  }
+});
+
+app.get("/api/events/local", async (_req, res) => {
+  const results = await Promise.all([
+    fetchFusionEvents(),
+    fetchAMuseEvents(),
+    fetchArcticEvents(),
+    fetchGalaxyStatus(),
+  ]);
+
+  const events = uniqueBy(
+    results.flatMap((result) => result.events || []),
+    (event) => `${event.store}-${event.title}-${event.dateStr}-${event.time}`,
+  ).sort((left, right) => {
+    const leftTime = new Date(`${left.dateStr}T12:00:00`).getTime();
+    const rightTime = new Date(`${right.dateStr}T12:00:00`).getTime();
+    return leftTime - rightTime;
+  });
+
+  res.json({
+    events,
+    sources: results.map((result) => result.status),
+    fetchedAt: new Date().toISOString(),
+  });
+});
+
+app.listen(port, () => {
+  console.log(`TCGWPG proxy listening on http://localhost:${port}`);
+});

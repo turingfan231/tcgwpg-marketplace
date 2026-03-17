@@ -1,0 +1,176 @@
+@import url("https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-gray-50 font-body text-ink antialiased;
+  min-height: 100vh;
+  background-image:
+    radial-gradient(circle at top left, rgba(255, 153, 0, 0.05), transparent 16%),
+    linear-gradient(180deg, #f7f4ee 0%, #f1ede6 100%);
+}
+
+a {
+  @apply transition-colors;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.page-shell {
+  @apply mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 xl:px-10;
+}
+
+.panel {
+  @apply rounded-[28px] border border-slate-200/80 bg-white shadow-soft;
+}
+
+.section-title {
+  @apply font-display text-3xl font-semibold tracking-[-0.03em] text-ink;
+}
+
+.section-kicker {
+  @apply text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-navy/65;
+}
+
+.surface-card {
+  @apply rounded-[28px] border border-slate-200/80 bg-white shadow-soft;
+}
+
+.surface-muted {
+  @apply rounded-[28px] border border-slate-200/80 bg-[#f8f5ee] shadow-soft;
+}
+
+.logo-mark {
+  position: relative;
+  width: 2.75rem;
+  height: 2.75rem;
+  transform: rotate(-9deg);
+  border-radius: 0.8rem;
+  background: #1a5b78;
+  box-shadow: 0 18px 30px -20px rgba(26, 91, 120, 0.7);
+}
+
+.logo-mark::before {
+  content: "";
+  position: absolute;
+  inset: -0.22rem;
+  border-radius: 0.95rem;
+  border: 3px solid #ff9900;
+  transform: translate(0.2rem, -0.15rem);
+}
+
+.logo-mark span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  transform: rotate(9deg);
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: white;
+}
+
+.card-stack {
+  position: relative;
+  min-height: 320px;
+}
+
+.card-stack-card {
+  position: absolute;
+  width: 220px;
+  height: 300px;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+  box-shadow: 0 28px 60px -28px rgba(7, 22, 31, 0.6);
+  backdrop-filter: blur(10px);
+}
+
+.card-stack-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent 35%),
+    radial-gradient(circle at top right, rgba(255, 153, 0, 0.3), transparent 26%);
+}
+
+.card-stack-card:nth-child(1) {
+  top: 10px;
+  left: 10px;
+  transform: rotate(-13deg);
+  background: linear-gradient(180deg, #0f3e52 0%, #184f67 100%);
+}
+
+.card-stack-card:nth-child(2) {
+  top: 24px;
+  left: 118px;
+  transform: rotate(5deg);
+  background: linear-gradient(180deg, #f8f1e4 0%, #e9d7b4 100%);
+}
+
+.card-stack-card:nth-child(3) {
+  top: 56px;
+  left: 56px;
+  transform: rotate(-2deg);
+  background: linear-gradient(180deg, #143343 0%, #0f2430 100%);
+}
+
+.card-stack-label {
+  @apply absolute left-5 top-5 rounded-full border border-white/25 bg-white/10 px-3 py-1 font-display text-xs font-semibold uppercase tracking-[0.25em] text-white/85;
+}
+
+.card-stack-art {
+  @apply absolute inset-x-5 bottom-5 top-16 rounded-[1.2rem] border border-white/15;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 35%),
+    radial-gradient(circle at 30% 25%, rgba(255, 153, 0, 0.55), transparent 22%),
+    radial-gradient(circle at 70% 58%, rgba(255, 255, 255, 0.18), transparent 28%);
+}
+
+.noise-overlay {
+  background-image:
+    linear-gradient(rgba(26, 91, 120, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26, 91, 120, 0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.market-glow {
+  background:
+    radial-gradient(circle at top left, rgba(255, 153, 0, 0.14), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(16, 60, 82, 0.18), transparent 30%);
+}
+
+.market-stripe {
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.26),
+    rgba(255, 255, 255, 0)
+  );
+}
+
+.header-chip-scroll {
+  scrollbar-width: none;
+}
+
+.header-chip-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+::selection {
+  background: rgba(255, 153, 0, 0.18);
+  color: #163445;
+}
