@@ -5,7 +5,7 @@ import {
   Search,
   Sparkles,
 } from "lucide-react";
-import { startTransition, useEffect, useMemo, useState } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { neighborhoods } from "../../data/mockData";
 import { useMarketplace } from "../../hooks/useMarketplace";
@@ -43,6 +43,13 @@ function FieldLabel({ children }) {
   return <span className="mb-2 block text-sm font-semibold text-steel">{children}</span>;
 }
 
+function normalizePostalInput(value) {
+  return String(value || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 3);
+}
+
 export default function CreateListingModal({ onClose }) {
   const navigate = useNavigate();
   const {
@@ -58,7 +65,7 @@ export default function CreateListingModal({ onClose }) {
   const [form, setForm] = useState(() => ({
     ...initialFormState,
     neighborhood: currentUser?.neighborhood || initialFormState.neighborhood,
-    postalCode: currentUser?.postalCode || "",
+    postalCode: normalizePostalInput(currentUser?.postalCode || ""),
   }));
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -72,6 +79,8 @@ export default function CreateListingModal({ onClose }) {
   const [submitError, setSubmitError] = useState("");
   const [conditionPreviewImages, setConditionPreviewImages] = useState([]);
   const [draftMessage, setDraftMessage] = useState("");
+  const searchRequestIdRef = useRef(0);
+  const hydratedDraftKeyRef = useRef("");
 
   const liveSearchSupported = useMemo(
     () => supportsLiveSearch(form.game),
@@ -98,6 +107,12 @@ export default function CreateListingModal({ onClose }) {
 
   useEffect(() => {
     if (!listingDraft) {
+      hydratedDraftKeyRef.current = "";
+      return;
+    }
+
+    const draftKey = `${listingDraft.id}:${listingDraft.updatedAt || ""}`;
+    if (hydratedDraftKeyRef.current === draftKey) {
       return;
     }
 
@@ -106,11 +121,16 @@ export default function CreateListingModal({ onClose }) {
       ...listingDraft,
       neighborhood:
         listingDraft.neighborhood || currentUser?.neighborhood || currentForm.neighborhood,
-      postalCode: listingDraft.postalCode || currentUser?.postalCode || "",
+      postalCode: normalizePostalInput(
+        listingDraft.postalCode || currentUser?.postalCode || "",
+      ),
     }));
     setConditionPreviewImages(listingDraft.conditionImages || []);
     setSearchQuery(listingDraft.searchQuery || "");
+    setSelectedPrintingId("");
+    setSearchResults([]);
     setDraftMessage("Draft restored.");
+    hydratedDraftKeyRef.current = draftKey;
   }, [currentUser?.neighborhood, currentUser?.postalCode, listingDraft]);
 
   useEffect(() => {
@@ -118,36 +138,54 @@ export default function CreateListingModal({ onClose }) {
       return;
     }
 
-    setForm((currentForm) => ({
-      ...currentForm,
+    hydratedDraftKeyRef.current = "preset";
+    setForm(() => ({
+      ...initialFormState,
       ...createListingPreset,
       id: "",
       name: "",
-      neighborhood: currentUser?.neighborhood || currentForm.neighborhood,
-      postalCode: currentUser?.postalCode || currentForm.postalCode,
+      neighborhood: currentUser?.neighborhood || initialFormState.neighborhood,
+      postalCode: normalizePostalInput(currentUser?.postalCode || ""),
     }));
+    setConditionPreviewImages([]);
+    setSearchQuery("");
+    setSearchResults([]);
+    setSelectedPrintingId("");
+    setDraftMessage("");
+    setSearchError("");
   }, [createListingPreset, currentUser?.neighborhood, currentUser?.postalCode]);
 
   function updateField(field, value) {
     setDraftMessage("");
     setForm((currentForm) => ({
       ...currentForm,
-      [field]: value,
+      [field]: field === "postalCode" ? normalizePostalInput(value) : value,
     }));
   }
 
   async function handleSearch(event) {
-    event.preventDefault();
+    event?.preventDefault?.();
+    const trimmedQuery = String(searchQuery || "").trim();
+    if (!trimmedQuery || !liveSearchSupported) {
+      return;
+    }
+
+    const requestId = searchRequestIdRef.current + 1;
+    searchRequestIdRef.current = requestId;
     setLoadingSearch(true);
     setSearchError("");
     setDraftMessage("");
-    recordSearchQuery(searchQuery, { game: form.game, source: "create-listing" });
+    recordSearchQuery(trimmedQuery, { game: form.game, source: "create-listing" });
 
     try {
       const result = await searchCardPrintings({
         game: form.game,
-        query: searchQuery,
+        query: trimmedQuery,
       });
+
+      if (searchRequestIdRef.current !== requestId) {
+        return;
+      }
 
       startTransition(() => {
         setSearchResults(result.results || []);
@@ -158,10 +196,15 @@ export default function CreateListingModal({ onClose }) {
         );
       });
     } catch (error) {
+      if (searchRequestIdRef.current !== requestId) {
+        return;
+      }
       setSearchError(error.message);
       setSearchResults([]);
     } finally {
-      setLoadingSearch(false);
+      if (searchRequestIdRef.current === requestId) {
+        setLoadingSearch(false);
+      }
     }
   }
 
@@ -503,11 +546,16 @@ export default function CreateListingModal({ onClose }) {
                   placeholder="Type a card name, code, or variant"
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      void handleSearch(event);
+                    }
+                  }}
                 />
               </div>
               <button
                 className="rounded-full bg-orange px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
-                disabled={!searchQuery.trim() || loadingSearch || !liveSearchSupported}
+                disabled={!searchQuery.trim() || !liveSearchSupported}
                 type="button"
                 onClick={handleSearch}
               >

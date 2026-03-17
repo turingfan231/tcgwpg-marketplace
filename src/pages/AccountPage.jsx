@@ -4,6 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { neighborhoods } from "../data/mockData";
 import { useMarketplace } from "../hooks/useMarketplace";
 
+function normalizePostalInput(value) {
+  return String(value || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 3);
+}
+
 export default function AccountPage() {
   const navigate = useNavigate();
   const {
@@ -17,7 +24,7 @@ export default function AccountPage() {
   const [profileForm, setProfileForm] = useState(() => ({
     username: currentUser?.username || "",
     neighborhood: currentUser?.neighborhood || neighborhoods[1],
-    postalCode: currentUser?.postalCode || "",
+    postalCode: normalizePostalInput(currentUser?.postalCode || ""),
     favoriteGames: currentUser?.favoriteGames || [],
     meetupPreferences: currentUser?.meetupPreferences || "",
     responseTime: currentUser?.responseTime || "~ 1 hour",
@@ -52,7 +59,7 @@ export default function AccountPage() {
     setProfileForm({
       username: currentUser?.username || "",
       neighborhood: currentUser?.neighborhood || neighborhoods[1],
-      postalCode: currentUser?.postalCode || "",
+      postalCode: normalizePostalInput(currentUser?.postalCode || ""),
       favoriteGames: currentUser?.favoriteGames || [],
       meetupPreferences: currentUser?.meetupPreferences || "",
       responseTime: currentUser?.responseTime || "~ 1 hour",
@@ -241,7 +248,7 @@ export default function AccountPage() {
                   onChange={(event) =>
                     setProfileForm((current) => ({
                       ...current,
-                      postalCode: event.target.value,
+                      postalCode: normalizePostalInput(event.target.value),
                     }))
                   }
                 />

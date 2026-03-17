@@ -113,7 +113,7 @@ export default function MessagesPage() {
                 <div>
                   <p className="font-display text-xl font-semibold tracking-[-0.03em] text-ink">
                     {thread.participantIds.length > 2
-                      ? `Support chat (${thread.participantIds.length} people)`
+                      ? thread.participantLabel || `Support chat (${thread.participantIds.length} people)`
                       : thread.otherParticipant?.publicName || "Conversation"}
                   </p>
                   <p className="mt-1 text-sm text-steel">
@@ -144,16 +144,21 @@ export default function MessagesPage() {
                   <p className="section-kicker">Conversation</p>
                   <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
                     {activeThread.participantIds.length > 2
-                      ? "Support / resolution chat"
+                      ? activeThread.participantLabel || "Support / resolution chat"
                       : activeThread.otherParticipant?.publicName || "Conversation"}
                   </h2>
                   <p className="mt-2 text-sm text-steel">
                     {activeThread.listing?.title || "General thread"}
                   </p>
+                  {activeThread.participantIds.length > 2 ? (
+                    <p className="mt-1 text-sm text-steel">
+                      Group chat with {activeThread.participantLabel}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {activeThread.otherParticipant ? (
+                  {activeThread.otherParticipant && activeThread.participantIds.length === 2 ? (
                     <Link
                       className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
                       to={`/seller/${activeThread.otherParticipant.id}`}

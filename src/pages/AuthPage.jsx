@@ -3,6 +3,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { neighborhoods } from "../data/mockData";
 import { useMarketplace } from "../hooks/useMarketplace";
 
+function normalizePostalInput(value) {
+  return String(value || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 3);
+}
+
 export default function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -265,7 +272,7 @@ export default function AuthPage() {
                   onChange={(event) =>
                     setSignupForm((current) => ({
                       ...current,
-                      postalCode: event.target.value,
+                      postalCode: normalizePostalInput(event.target.value),
                     }))
                   }
                 />

@@ -22,6 +22,7 @@ import { average, formatCurrency, slugify } from "../utils/formatters";
 
 const MarketplaceContext = createContext(null);
 const SEARCH_STORAGE_KEY = "tcgwpg.globalSearch";
+const TOAST_SEEN_STORAGE_PREFIX = "tcgwpg.seenToasts";
 const SUPPORTED_GAME_SLUGS = new Set(["magic", "pokemon", "one-piece"]);
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
 
@@ -39,6 +40,36 @@ function writeSearchStorage(value) {
   }
 
   window.localStorage.setItem(SEARCH_STORAGE_KEY, value);
+}
+
+function getToastSeenStorageKey(userId) {
+  return `${TOAST_SEEN_STORAGE_PREFIX}.${userId}`;
+}
+
+function readToastSeenStorage(userId) {
+  if (typeof window === "undefined" || !userId) {
+    return new Set();
+  }
+
+  try {
+    const stored = JSON.parse(
+      window.localStorage.getItem(getToastSeenStorageKey(userId)) || "[]",
+    );
+    return new Set(Array.isArray(stored) ? stored.filter(Boolean) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeToastSeenStorage(userId, ids) {
+  if (typeof window === "undefined" || !userId) {
+    return;
+  }
+
+  window.localStorage.setItem(
+    getToastSeenStorageKey(userId),
+    JSON.stringify([...ids].slice(-250)),
+  );
 }
 
 async function apiRequest(path, init = {}) {
@@ -624,9 +655,9 @@ export function MarketplaceProvider({ children }) {
   const isSuspended = currentUserRecord?.accountStatus === "suspended";
   const listingDraft = useMemo(
     () =>
-      listingDrafts.find((draft) => draft.id === activeDraftId) ||
-      listingDrafts[0] ||
-      null,
+      activeDraftId
+        ? listingDrafts.find((draft) => draft.id === activeDraftId) || null
+        : null,
     [activeDraftId, listingDrafts],
   );
   const currentUserDrafts = useMemo(
@@ -730,8 +761,11 @@ export function MarketplaceProvider({ children }) {
     return [...threads]
       .filter((thread) => thread.participantIds.includes(currentUserId))
       .map((thread) => {
-        const otherUserId = thread.participantIds.find((id) => id !== currentUserId);
-        const otherParticipant = sellerMap[otherUserId];
+        const otherParticipants = thread.participantIds
+          .filter((id) => id !== currentUserId)
+          .map((id) => sellerMap[id])
+          .filter(Boolean);
+        const otherParticipant = otherParticipants[0] || null;
         const listing = enrichedListings.find((item) => item.id === thread.listingId) || null;
         const lastMessage = thread.messages[thread.messages.length - 1] || null;
         const unreadCount = thread.messages.filter(
@@ -739,11 +773,17 @@ export function MarketplaceProvider({ children }) {
             message.senderId !== currentUserId &&
             !(message.readBy || []).includes(currentUserId),
         ).length;
+        const participantLabel =
+          otherParticipants
+            .map((participant) => participant.publicName || participant.name)
+            .join(", ") || "Conversation";
 
         return {
           ...thread,
           listing,
+          otherParticipants,
           otherParticipant,
+          participantLabel,
           lastMessage,
           unreadCount,
         };
@@ -1228,18 +1268,21 @@ export function MarketplaceProvider({ children }) {
       return;
     }
 
-    const notificationIds = new Set(
-      notificationsForCurrentUser.map((notification) => notification.id),
-    );
-
     if (!seededRealtimeStateRef.current) {
-      seenNotificationIdsRef.current = notificationIds;
+      seenNotificationIdsRef.current = readToastSeenStorage(currentUserId);
+      notificationsForCurrentUser.forEach((notification) => {
+        seenNotificationIdsRef.current.add(notification.id);
+      });
+      writeToastSeenStorage(currentUserId, seenNotificationIdsRef.current);
       seededRealtimeStateRef.current = true;
       return;
     }
 
+    let hasSeenUpdates = false;
     notificationsForCurrentUser.forEach((notification) => {
       if (!seenNotificationIdsRef.current.has(notification.id) && !notification.read) {
+        seenNotificationIdsRef.current.add(notification.id);
+        hasSeenUpdates = true;
         pushToast({
           title: notification.title,
           body: notification.body,
@@ -1263,7 +1306,9 @@ export function MarketplaceProvider({ children }) {
       }
     });
 
-    seenNotificationIdsRef.current = notificationIds;
+    if (hasSeenUpdates) {
+      writeToastSeenStorage(currentUserId, seenNotificationIdsRef.current);
+    }
   }, [currentUserId, notificationsForCurrentUser, pushToast]);
 
   async function pushNotification(notification) {
@@ -1337,6 +1382,9 @@ export function MarketplaceProvider({ children }) {
       return false;
     }
 
+    if (preset) {
+      setActiveDraftId(null);
+    }
     setCreateListingPreset(preset);
     setCreateListingOpen(true);
     return true;
