@@ -20,6 +20,9 @@ const SCRYFALL_SEARCH_ENDPOINT = "https://api.scryfall.com/cards/search";
 const SCRYFALL_NAMED_ENDPOINT = "https://api.scryfall.com/cards/named";
 const FALLBACK_USD_TO_CAD_RATE = 1.38;
 const CLIENT_TIMEOUT_MS = 15000;
+const DEPLOY_API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "")
+  .trim()
+  .replace(/\/$/, "");
 const ONE_PIECE_VARIANT_STOPWORDS = new Set([
   "sp",
   "alt",
@@ -34,6 +37,10 @@ const ONE_PIECE_VARIANT_STOPWORDS = new Set([
 ]);
 
 function buildLiveApiUrls(path) {
+  if (DEPLOY_API_BASE_URL) {
+    return [new URL(path, `${DEPLOY_API_BASE_URL}/`)];
+  }
+
   if (!import.meta.env.DEV) {
     return [new URL(path, window.location.origin)];
   }

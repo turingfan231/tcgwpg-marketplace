@@ -24,6 +24,7 @@ TCGWPG is a Vite + React + Tailwind marketplace for Winnipeg TCG players to buy,
    ```bash
    VITE_SUPABASE_URL=your_project_url
    VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
+   VITE_API_BASE_URL=http://localhost:8787
    ```
 
 3. In Supabase, run [`supabase/schema.sql`](C:/Users/deoca/Documents/Playground/supabase/schema.sql) in the SQL editor.
@@ -61,3 +62,37 @@ TCGWPG is a Vite + React + Tailwind marketplace for Winnipeg TCG players to buy,
 - `src/` frontend application
 - `server/index.js` local API for live card search and Winnipeg event aggregation
 - `supabase/schema.sql` database schema and RLS policies
+
+## Deploying The Demo
+
+Recommended stack:
+
+- Frontend: Vercel
+- API server: Render
+- Auth / database: Supabase
+
+### Frontend env vars on Vercel
+
+```bash
+VITE_SUPABASE_URL=your_project_url
+VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
+VITE_API_BASE_URL=https://your-render-service.onrender.com
+```
+
+### Backend env vars on Render
+
+```bash
+PORT=10000
+```
+
+Optional:
+
+```bash
+POKEMONTCG_API_KEY=your_key
+```
+
+### Notes
+
+- [`vercel.json`](C:/Users/deoca/Documents/Playground/vercel.json) is included for React Router SPA routing.
+- The frontend now supports `VITE_API_BASE_URL`, so production does not need same-origin `/api` rewrites.
+- In Supabase Auth, add your production Vercel URL to `Site URL` and redirect URLs.
