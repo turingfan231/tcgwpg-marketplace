@@ -15,9 +15,7 @@ html {
 body {
   @apply bg-gray-50 font-body text-ink antialiased;
   min-height: 100vh;
-  background-image:
-    radial-gradient(circle at top left, rgba(255, 153, 0, 0.05), transparent 16%),
-    linear-gradient(180deg, #f7f4ee 0%, #f1ede6 100%);
+  background: #f5f1ea;
 }
 
 a {

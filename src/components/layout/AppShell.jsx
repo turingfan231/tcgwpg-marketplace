@@ -15,7 +15,7 @@ export default function AppShell() {
   } = useMarketplace();
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(255,153,0,0.08),transparent_18%),linear-gradient(180deg,#fbf8f1_0%,#f1ede5_100%)]">
+    <div className="min-h-screen bg-[#f5f1ea]">
       <Header />
       {isSuspended ? (
         <div className="border-b border-rose-200 bg-rose-50">
@@ -38,17 +38,17 @@ export default function AppShell() {
         <Outlet />
       </main>
 
-      <footer className="border-t border-slate-200/80 bg-white/85 backdrop-blur-sm">
+      <footer className="border-t border-slate-200/80 bg-white">
         <div className="page-shell grid gap-8 py-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
           <div>
             <p className="section-kicker">Built for Winnipeg</p>
             <h2 className="mt-3 font-display text-4xl font-semibold tracking-[-0.04em] text-ink">
-              Local first, card-first, and made for same-day deals.
+              A cleaner place to move cards locally.
             </h2>
             <p className="mt-4 max-w-2xl text-base leading-8 text-steel">
-              TCGWPG is focused on the part other marketplaces miss: clear card photos,
-              live print search, real CAD context, and in-house messaging that keeps the
-              deal inside one clean flow.
+              TCGWPG focuses on the parts generic marketplaces usually miss: exact
+              printing search, CAD pricing context, local meetup details, and messaging
+              that stays attached to the card.
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
