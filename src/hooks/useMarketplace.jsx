@@ -2215,7 +2215,10 @@ export function MarketplaceProvider({ children }) {
   }
 
   async function markThreadRead(threadId, options = {}) {
-    const thread = options.thread || threads.find((item) => item.id === threadId);
+    const thread =
+      threads.find((item) => item.id === threadId) ||
+      options.thread ||
+      null;
     if (!thread || !currentUserId) {
       return { ok: false, error: "Conversation not found." };
     }
@@ -2260,25 +2263,37 @@ export function MarketplaceProvider({ children }) {
       return { ok: true };
     }
 
-    const readUpdates = unreadMessages.map((message) =>
-      supabase
-        .from("messages")
-        .update({
-          read_by: [...new Set([...(message.readBy || []), currentUserId])],
-        })
-        .eq("id", message.id),
-    );
-    const notificationUpdate = supabase
+    const readUpdates = await Promise.all(
+      unreadMessages.map(async (message) => {
+        const { error } = await supabase
+          .from("messages")
+          .update({
+            read_by: [...new Set([...(message.readBy || []), currentUserId])],
+          })
+          .eq("id", message.id);
+
+        if (error) {
+          throw error;
+        }
+      }),
+    ).catch((error) => ({ error }));
+
+    if (readUpdates?.error) {
+      console.error("markThreadRead message update failed:", readUpdates.error);
+      return { ok: false, error: readUpdates.error.message };
+    }
+
+    const { error: notificationError } = await supabase
       .from("notifications")
       .update({ read: true })
       .eq("user_id", currentUserId)
       .eq("type", "message")
       .eq("entity_id", threadId);
 
-    await Promise.all([
-      ...readUpdates,
-      notificationUpdate,
-    ]);
+    if (notificationError) {
+      console.error("markThreadRead notification update failed:", notificationError);
+      return { ok: false, error: notificationError.message };
+    }
 
     return { ok: true };
   }
