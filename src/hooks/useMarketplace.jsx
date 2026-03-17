@@ -456,6 +456,28 @@ function fromEventRow(row) {
   });
 }
 
+function mergeAuthedProfileMetadata(profileRow, authUser) {
+  if (!profileRow) {
+    return profileRow;
+  }
+
+  if (String(profileRow.id || "") !== String(authUser?.id || "")) {
+    return profileRow;
+  }
+
+  return {
+    ...profileRow,
+    username:
+      profileRow.username ||
+      normalizeUsername(authUser?.user_metadata?.username) ||
+      "",
+    postal_code:
+      profileRow.postal_code ||
+      normalizePostalCode(authUser?.user_metadata?.postal_code) ||
+      "",
+  };
+}
+
 function toListingPayload(payload, seller) {
   const price = Number(payload.price) || 0;
   const marketPrice = Number(payload.marketPrice) || null;
@@ -983,6 +1005,12 @@ export function MarketplaceProvider({ children }) {
       }
 
       try {
+        let authUser = null;
+        if (authedUserId) {
+          const authResult = await supabase.auth.getUser();
+          authUser = authResult.data?.user || null;
+        }
+
         const [profilesRes, listingsRes, reviewsRes, manualEventsRes] = await Promise.all([
           supabase.from("profiles").select("*"),
           supabase.from("listings").select("*"),
@@ -995,7 +1023,11 @@ export function MarketplaceProvider({ children }) {
         if (reviewsRes.error) throw reviewsRes.error;
         if (manualEventsRes.error) throw manualEventsRes.error;
 
-        setUsers((profilesRes.data || []).map(fromProfileRow));
+        const normalizedProfiles = (profilesRes.data || [])
+          .map((row) => mergeAuthedProfileMetadata(row, authUser))
+          .map(fromProfileRow);
+
+        setUsers(normalizedProfiles);
         setListings((listingsRes.data || []).map(fromListingRow).filter(isSupportedListing));
         setReviews((reviewsRes.data || []).map(fromReviewRow));
         setManualEvents((manualEventsRes.data || []).map(fromEventRow));
@@ -1433,6 +1465,18 @@ export function MarketplaceProvider({ children }) {
     );
     if (!access.ok) {
       return access;
+    }
+
+    const authUpdateResult = await supabase.auth.updateUser({
+      data: {
+        username,
+        neighborhood: payload.neighborhood,
+        postal_code: normalizePostalCode(payload.postalCode),
+      },
+    });
+
+    if (authUpdateResult.error) {
+      return { ok: false, error: authUpdateResult.error.message };
     }
 
     const profilePayload = {
