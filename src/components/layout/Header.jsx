@@ -41,6 +41,9 @@ export default function Header() {
   } = useMarketplace();
   const [searchValue, setSearchValue] = useState(globalSearch);
   const [menuOpen, setMenuOpen] = useState(false);
+  const safeWishlistCount = Array.isArray(wishlist) ? wishlist.length : 0;
+  const safeUnreadMessageCount = Number(unreadMessageCount) || 0;
+  const safeUnreadNotificationCount = Number(unreadNotificationCount) || 0;
 
   useEffect(() => {
     setSearchValue(globalSearch);
@@ -87,7 +90,7 @@ export default function Header() {
     }
   }
 
-  const menuNotificationCount = unreadNotificationCount + wishlist.length;
+  const menuNotificationCount = safeUnreadNotificationCount + safeWishlistCount;
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/94 backdrop-blur-xl">
@@ -137,9 +140,9 @@ export default function Header() {
             >
               <MessageCircle size={16} />
               Messages
-              {unreadMessageCount ? (
+              {safeUnreadMessageCount ? (
                 <span className="rounded-full bg-orange px-2 py-0.5 text-xs text-white">
-                  {unreadMessageCount}
+                  {safeUnreadMessageCount}
                 </span>
               ) : null}
             </Link>
@@ -204,12 +207,12 @@ export default function Header() {
                         },
                         {
                           to: "/wishlist",
-                          label: `Wishlist${wishlist.length ? ` (${wishlist.length})` : ""}`,
+                          label: `Wishlist${safeWishlistCount ? ` (${safeWishlistCount})` : ""}`,
                           icon: Heart,
                         },
                         {
                           to: "/notifications",
-                          label: `Alerts${unreadNotificationCount ? ` (${unreadNotificationCount})` : ""}`,
+                          label: `Alerts${safeUnreadNotificationCount ? ` (${safeUnreadNotificationCount})` : ""}`,
                           icon: Bell,
                         },
                         ...(isAdmin

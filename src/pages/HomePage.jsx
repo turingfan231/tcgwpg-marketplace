@@ -32,19 +32,25 @@ export default function HomePage() {
     setGlobalSearch,
   } = useMarketplace();
 
-  const featuredCategories = gameCatalog.filter((game) => game.slug !== "all");
+  const safeListings = Array.isArray(activeListings) ? activeListings.filter(Boolean) : [];
+  const safeHotListings = Array.isArray(hotListings) ? hotListings.filter(Boolean) : [];
+  const safeManualEvents = Array.isArray(manualEvents) ? manualEvents.filter(Boolean) : [];
+  const safeSellers = Array.isArray(sellers) ? sellers.filter(Boolean) : [];
+  const featuredCategories = (Array.isArray(gameCatalog) ? gameCatalog : []).filter(
+    (game) => game?.slug && game.slug !== "all",
+  );
   const categorySummaries = useMemo(
     () =>
       featuredCategories.map((game) => ({
         ...game,
-        count: activeListings.filter((listing) => listing.gameSlug === game.slug).length,
+        count: safeListings.filter((listing) => listing?.gameSlug === game.slug).length,
       })),
-    [activeListings, featuredCategories],
+    [featuredCategories, safeListings],
   );
 
-  const freshListings = hotListings.slice(0, 6);
-  const verifiedSellerCount = sellers.filter((seller) => seller.verified).length;
-  const topSellers = [...sellers]
+  const freshListings = safeHotListings.slice(0, 6);
+  const verifiedSellerCount = safeSellers.filter((seller) => seller?.verified).length;
+  const topSellers = [...safeSellers]
     .sort((left, right) => {
       const dealsDiff = Number(right.completedDeals || 0) - Number(left.completedDeals || 0);
       if (dealsDiff !== 0) {
@@ -54,7 +60,7 @@ export default function HomePage() {
     })
     .slice(0, 4);
   const upcomingEvents = sortByUpcomingDate(
-    manualEvents.filter((event) => event.published !== false),
+    safeManualEvents.filter((event) => event?.published !== false && event?.title),
   ).slice(0, 4);
 
   return (
@@ -112,7 +118,7 @@ export default function HomePage() {
             <div className="rounded-[24px] border border-slate-200 bg-[#faf7f1] p-5">
               <p className="text-sm text-steel">Live listings</p>
               <p className="mt-2 font-display text-4xl font-semibold tracking-[-0.04em] text-ink">
-                {formatNumber(activeListings.length)}
+                {formatNumber(safeListings.length)}
               </p>
             </div>
             <div className="rounded-[24px] border border-slate-200 bg-[#faf7f1] p-5">
