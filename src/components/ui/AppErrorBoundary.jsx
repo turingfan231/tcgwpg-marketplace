@@ -3,11 +3,14 @@ import React from "react";
 export default class AppErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, errorMessage: "" };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error) {
+    return {
+      hasError: true,
+      errorMessage: error?.message || "Unknown client-side error.",
+    };
   }
 
   componentDidCatch(error, errorInfo) {
@@ -31,6 +34,11 @@ export default class AppErrorBoundary extends React.Component {
               Refresh the page and try again. If this keeps happening, the latest live
               data shape is probably hitting a client-side rendering issue.
             </p>
+            {this.state.errorMessage ? (
+              <div className="mt-6 rounded-[20px] border border-slate-200 bg-[#faf7f1] px-4 py-4 text-sm text-steel">
+                {this.state.errorMessage}
+              </div>
+            ) : null}
             <button
               className="mt-8 rounded-full bg-navy px-6 py-3 text-sm font-semibold text-white"
               type="button"

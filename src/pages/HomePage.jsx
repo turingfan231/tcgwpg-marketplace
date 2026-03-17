@@ -7,10 +7,11 @@ import {
   Shield,
   Store,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import ListingCard from "../components/cards/ListingCard";
 import { useMarketplace } from "../hooks/useMarketplace";
+import { fetchLocalEvents } from "../services/cardDatabase";
 import { formatNumber } from "../utils/formatters";
 
 function sortByUpcomingDate(events) {
@@ -31,6 +32,7 @@ export default function HomePage() {
     sellers,
     setGlobalSearch,
   } = useMarketplace();
+  const [remoteEvents, setRemoteEvents] = useState([]);
 
   const safeListings = Array.isArray(activeListings) ? activeListings.filter(Boolean) : [];
   const safeHotListings = Array.isArray(hotListings) ? hotListings.filter(Boolean) : [];
@@ -59,9 +61,47 @@ export default function HomePage() {
       return Number(right.overallRating || 0) - Number(left.overallRating || 0);
     })
     .slice(0, 4);
-  const upcomingEvents = sortByUpcomingDate(
-    safeManualEvents.filter((event) => event?.published !== false && event?.title),
-  ).slice(0, 4);
+  const mergedEvents = useMemo(
+    () =>
+      sortByUpcomingDate(
+        [...remoteEvents, ...safeManualEvents]
+          .filter((event) => event?.published !== false && event?.title && event?.dateStr)
+          .filter(
+            (event, index, items) =>
+              items.findIndex(
+                (candidate) =>
+                  String(candidate.title || "") === String(event.title || "") &&
+                  String(candidate.dateStr || "") === String(event.dateStr || "") &&
+                  String(candidate.store || "") === String(event.store || ""),
+              ) === index,
+          ),
+      ),
+    [remoteEvents, safeManualEvents],
+  );
+  const upcomingEvents = mergedEvents.slice(0, 4);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadHomeEvents() {
+      try {
+        const data = await fetchLocalEvents();
+        if (!cancelled) {
+          setRemoteEvents(Array.isArray(data?.events) ? data.events.filter(Boolean) : []);
+        }
+      } catch {
+        if (!cancelled) {
+          setRemoteEvents([]);
+        }
+      }
+    }
+
+    loadHomeEvents();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="space-y-12 lg:space-y-16">

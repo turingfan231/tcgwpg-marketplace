@@ -40,7 +40,11 @@ function writeSearchStorage(value) {
     return;
   }
 
-  window.localStorage.setItem(SEARCH_STORAGE_KEY, value);
+  try {
+    window.localStorage.setItem(SEARCH_STORAGE_KEY, value);
+  } catch {
+    // Ignore storage write failures in constrained/private browser contexts.
+  }
 }
 
 function getToastSeenStorageKey(userId) {
@@ -67,10 +71,14 @@ function writeToastSeenStorage(userId, ids) {
     return;
   }
 
-  window.localStorage.setItem(
-    getToastSeenStorageKey(userId),
-    JSON.stringify([...ids].slice(-250)),
-  );
+  try {
+    window.localStorage.setItem(
+      getToastSeenStorageKey(userId),
+      JSON.stringify([...ids].slice(-250)),
+    );
+  } catch {
+    // Ignore storage write failures in constrained/private browser contexts.
+  }
 }
 
 function readMarketplaceCache() {
@@ -86,12 +94,65 @@ function readMarketplaceCache() {
   }
 }
 
+function trimCacheArray(items, limit) {
+  return Array.isArray(items) ? items.filter(Boolean).slice(0, limit) : [];
+}
+
+function buildMarketplaceCacheSnapshot(snapshot) {
+  return {
+    users: trimCacheArray(snapshot.users, 120).map((user) => ({
+      id: user.id,
+      role: user.role,
+      name: user.name,
+      username: user.username,
+      email: user.email,
+      neighborhood: user.neighborhood,
+      postalCode: user.postalCode,
+      bio: user.bio,
+      badges: Array.isArray(user.badges) ? user.badges.slice(0, 8) : [],
+      verified: user.verified,
+      accountStatus: user.accountStatus,
+      bannerStyle: user.bannerStyle,
+      favoriteGames: Array.isArray(user.favoriteGames) ? user.favoriteGames.slice(0, 5) : [],
+      meetupPreferences: user.meetupPreferences,
+      responseTime: user.responseTime,
+      completedDeals: user.completedDeals,
+      publicName: user.publicName,
+      firstName: user.firstName,
+      initials: user.initials,
+    })),
+    listings: trimCacheArray(snapshot.listings, 160).map((listing) => ({
+      ...listing,
+      imageGallery: trimCacheArray(listing.imageGallery, 4),
+      conditionImages: trimCacheArray(listing.conditionImages, 4),
+      bundleItems: trimCacheArray(listing.bundleItems, 12),
+      priceHistory: trimCacheArray(listing.priceHistory, 8),
+      editHistory: trimCacheArray(listing.editHistory, 8),
+    })),
+    wishlist: trimCacheArray(snapshot.wishlist, 200),
+    reviews: trimCacheArray(snapshot.reviews, 120),
+    manualEvents: trimCacheArray(snapshot.manualEvents, 80),
+    listingDrafts: trimCacheArray(snapshot.listingDrafts, 8),
+    activeDraftId: snapshot.activeDraftId || null,
+  };
+}
+
 function writeMarketplaceCache(snapshot) {
   if (typeof window === "undefined") {
     return;
   }
 
-  window.localStorage.setItem(MARKETPLACE_CACHE_KEY, JSON.stringify(snapshot));
+  try {
+    const cachedSnapshot = buildMarketplaceCacheSnapshot(snapshot);
+    window.localStorage.setItem(MARKETPLACE_CACHE_KEY, JSON.stringify(cachedSnapshot));
+  } catch (error) {
+    if (error?.name === "QuotaExceededError") {
+      window.localStorage.removeItem(MARKETPLACE_CACHE_KEY);
+      return;
+    }
+
+    throw error;
+  }
 }
 
 async function apiRequest(path, init = {}) {
