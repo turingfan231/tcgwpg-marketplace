@@ -17,7 +17,8 @@ const bannerToneMap = {
 
 export default function SellerProfilePage() {
   const { sellerId } = useParams();
-  const { activeListings, reviewBadgeCatalog, reviews, sellerMap } = useMarketplace();
+  const { activeListings, currentUser, reviewBadgeCatalog, reviews, sellerMap } =
+    useMarketplace();
   const [isReviewModalOpen, setReviewModalOpen] = useState(false);
 
   const seller = sellerMap[sellerId];
@@ -29,6 +30,7 @@ export default function SellerProfilePage() {
     () => activeListings.filter((listing) => listing.sellerId === sellerId),
     [activeListings, sellerId],
   );
+  const isOwnProfile = String(currentUser?.id || "") === String(sellerId || "");
 
   if (!seller) {
     return (
@@ -76,13 +78,19 @@ export default function SellerProfilePage() {
               </div>
             </div>
 
-            <button
-              className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-ink"
-              type="button"
-              onClick={() => setReviewModalOpen(true)}
-            >
-              Leave review
-            </button>
+            {isOwnProfile ? (
+              <div className="rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white/78">
+                Reviews from other local buyers only
+              </div>
+            ) : (
+              <button
+                className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-ink"
+                type="button"
+                onClick={() => setReviewModalOpen(true)}
+              >
+                Leave review
+              </button>
+            )}
           </div>
         </div>
 
@@ -169,12 +177,19 @@ export default function SellerProfilePage() {
                 <RatingStars value={review.rating} />
               </div>
               <p className="mt-4 text-base text-steel">{review.comment}</p>
+              {review.imageUrl ? (
+                <img
+                  alt={`Review from ${review.author}`}
+                  className="mt-4 h-56 w-full rounded-[22px] border border-slate-200 object-cover"
+                  src={review.imageUrl}
+                />
+              ) : null}
             </article>
           ))}
         </div>
       </section>
 
-      {isReviewModalOpen ? (
+      {isReviewModalOpen && !isOwnProfile ? (
         <ReviewModal seller={seller} onClose={() => setReviewModalOpen(false)} />
       ) : null}
     </div>

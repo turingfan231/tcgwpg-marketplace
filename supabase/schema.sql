@@ -4,6 +4,7 @@ create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   role text not null default 'seller' check (role in ('seller', 'admin')),
   name text not null,
+  username text unique,
   email text not null unique,
   neighborhood text,
   postal_code text,
@@ -106,8 +107,13 @@ create table public.reviews (
   author_name text not null,
   rating integer not null check (rating between 1 and 5),
   comment text not null,
+  image_url text,
   created_at timestamptz not null default now()
 );
+
+alter table public.profiles add column if not exists username text;
+create unique index if not exists profiles_username_key on public.profiles (username);
+alter table public.reviews add column if not exists image_url text;
 
 create table public.reports (
   id uuid primary key default gen_random_uuid(),

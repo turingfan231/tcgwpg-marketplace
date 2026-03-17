@@ -376,11 +376,11 @@ export default function CreateListingModal({ onClose }) {
               </label>
 
               <label className="block md:col-span-2">
-                <FieldLabel>Postal code</FieldLabel>
+                <FieldLabel>Postal code area</FieldLabel>
                 <input
-                  maxLength={7}
+                  maxLength={3}
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3.5 outline-none transition focus:border-navy focus:bg-white"
-                  placeholder="Optional meetup postal code"
+                  placeholder="Optional FSA, like R2P"
                   value={form.postalCode}
                   onChange={(event) => updateField("postalCode", event.target.value)}
                 />

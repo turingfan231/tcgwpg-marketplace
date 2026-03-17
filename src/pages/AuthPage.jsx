@@ -16,6 +16,7 @@ export default function AuthPage() {
     password: "",
   });
   const [signupForm, setSignupForm] = useState({
+    username: "",
     name: "",
     email: "",
     password: "",
@@ -188,8 +189,26 @@ export default function AuthPage() {
             </form>
           ) : (
             <form className="mt-7 grid gap-5 sm:grid-cols-2" onSubmit={handleSignupSubmit}>
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-steel">Username</span>
+                <input
+                  required
+                  maxLength={24}
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  placeholder="localcardguy"
+                  value={signupForm.username}
+                  onChange={(event) =>
+                    setSignupForm((current) => ({
+                      ...current,
+                      username: event.target.value,
+                    }))
+                  }
+                />
+              </label>
               <label className="block sm:col-span-2">
-                <span className="mb-2 block text-sm font-semibold text-steel">Full name</span>
+                <span className="mb-2 block text-sm font-semibold text-steel">
+                  Actual name
+                </span>
                 <input
                   required
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
@@ -236,12 +255,12 @@ export default function AuthPage() {
               </label>
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-steel">
-                  Postal code
+                  Postal code area
                 </span>
                 <input
-                  maxLength={7}
+                  maxLength={3}
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  placeholder="R3X 0A1"
+                  placeholder="R2P"
                   value={signupForm.postalCode}
                   onChange={(event) =>
                     setSignupForm((current) => ({

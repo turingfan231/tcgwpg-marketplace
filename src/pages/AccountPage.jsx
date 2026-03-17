@@ -15,6 +15,7 @@ export default function AccountPage() {
     updateCurrentUserProfile,
   } = useMarketplace();
   const [profileForm, setProfileForm] = useState(() => ({
+    username: currentUser?.username || "",
     neighborhood: currentUser?.neighborhood || neighborhoods[1],
     postalCode: currentUser?.postalCode || "",
     favoriteGames: currentUser?.favoriteGames || [],
@@ -49,6 +50,7 @@ export default function AccountPage() {
 
   useEffect(() => {
     setProfileForm({
+      username: currentUser?.username || "",
       neighborhood: currentUser?.neighborhood || neighborhoods[1],
       postalCode: currentUser?.postalCode || "",
       favoriteGames: currentUser?.favoriteGames || [],
@@ -118,8 +120,8 @@ export default function AccountPage() {
           Manage your local account
         </h1>
         <p className="mt-4 max-w-4xl text-base leading-8 text-steel">
-          Name and email stay locked once the account is created. Neighborhood, postal
-          code, and password can be updated here.
+          Actual name and email stay locked once the account is created. Username,
+          neighborhood, meetup area, and password can be updated here.
         </p>
       </section>
 
@@ -152,6 +154,14 @@ export default function AccountPage() {
           </div>
 
           <div className="mt-6 grid gap-4">
+            <div className="rounded-[24px] border border-slate-200 bg-[#fbf8f1] px-5 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                Username
+              </p>
+              <p className="mt-2 text-lg font-semibold text-ink">
+                {currentUser?.username || currentUser?.publicName}
+              </p>
+            </div>
             <div className="rounded-[24px] border border-slate-200 bg-[#fbf8f1] px-5 py-4">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
                 Full name
@@ -187,6 +197,22 @@ export default function AccountPage() {
 
             <form className="mt-6 grid gap-5 sm:grid-cols-2" onSubmit={handleProfileSubmit}>
               <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-steel">Username</span>
+                <input
+                  required
+                  maxLength={24}
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  placeholder="localcardguy"
+                  value={profileForm.username}
+                  onChange={(event) =>
+                    setProfileForm((current) => ({
+                      ...current,
+                      username: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-steel">Neighborhood</span>
                 <select
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
@@ -204,11 +230,13 @@ export default function AccountPage() {
                 </select>
               </label>
               <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-steel">Postal code</span>
+                <span className="mb-2 block text-sm font-semibold text-steel">
+                  Postal code area
+                </span>
                 <input
-                  maxLength={7}
+                  maxLength={3}
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  placeholder="R3X 0A1"
+                  placeholder="R2P"
                   value={profileForm.postalCode}
                   onChange={(event) =>
                     setProfileForm((current) => ({
@@ -331,7 +359,7 @@ export default function AccountPage() {
                   className="rounded-full bg-navy px-6 py-3 text-sm font-semibold text-white"
                   type="submit"
                 >
-                  Save location settings
+                  Save profile settings
                 </button>
               </div>
             </form>

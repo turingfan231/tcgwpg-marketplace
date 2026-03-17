@@ -67,13 +67,30 @@ function normalizePostalCode(value) {
   const normalized = String(value || "")
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, "")
-    .slice(0, 6);
+    .slice(0, 3);
 
-  if (normalized.length <= 3) {
+  if (normalized.length < 3) {
     return normalized;
   }
 
-  return `${normalized.slice(0, 3)} ${normalized.slice(3)}`;
+  return `${normalized} XXX`;
+}
+
+function normalizeUsername(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-zA-Z0-9._-]/g, "")
+    .slice(0, 24);
+}
+
+function isMissingColumnError(error, columnName) {
+  const message = String(error?.message || "").toLowerCase();
+  return (
+    message.includes("column") &&
+    message.includes(String(columnName || "").toLowerCase()) &&
+    (message.includes("does not exist") || message.includes("schema cache"))
+  );
 }
 
 function buildInitials(name) {
@@ -213,6 +230,9 @@ function isSupportedListing(listing) {
 }
 
 function normalizeUserRecord(user) {
+  const username = normalizeUsername(user.username || "");
+  const publicName = username || user.publicName || getPublicName(user.name);
+
   return {
     role: "seller",
     badges: [],
@@ -226,8 +246,9 @@ function normalizeUserRecord(user) {
     ...user,
     email: normalizeEmail(user.email),
     postalCode: normalizePostalCode(user.postalCode),
+    username,
     firstName: getFirstName(user.name),
-    publicName: user.publicName || getPublicName(user.name),
+    publicName,
     initials: user.initials || buildInitials(user.name),
   };
 }
@@ -306,6 +327,7 @@ function fromProfileRow(row) {
     id: row.id,
     role: row.role,
     name: row.name,
+    username: row.username || "",
     email: row.email,
     neighborhood: row.neighborhood,
     postalCode: row.postal_code,
@@ -367,6 +389,7 @@ function fromReviewRow(row) {
     author: row.author_name,
     rating: row.rating,
     comment: row.comment,
+    imageUrl: row.image_url || "",
     createdAt: String(row.created_at || "").slice(0, 10),
   };
 }
@@ -873,34 +896,74 @@ export function MarketplaceProvider({ children }) {
     }
 
     if (existingProfile) {
+      const desiredUsername =
+        normalizeUsername(payload.username) ||
+        normalizeUsername(authUser.user_metadata?.username) ||
+        "";
+
+      if (!existingProfile.username && desiredUsername) {
+        const updateResult = await supabase
+          .from("profiles")
+          .update({ username: desiredUsername, updated_at: new Date().toISOString() })
+          .eq("id", authUser.id)
+          .select("*")
+          .single();
+
+        if (!updateResult.error) {
+          return fromProfileRow(updateResult.data);
+        }
+
+        if (!isMissingColumnError(updateResult.error, "username")) {
+          throw updateResult.error;
+        }
+      }
+
       return fromProfileRow(existingProfile);
     }
 
-    const { data: insertedProfile, error: insertError } = await supabase
+    const profilePayload = {
+      id: authUser.id,
+      role: "seller",
+      name:
+        payload.name ||
+        authUser.user_metadata?.name ||
+        authUser.email?.split("@")[0] ||
+        "TCGWPG User",
+      username:
+        normalizeUsername(payload.username) ||
+        normalizeUsername(authUser.user_metadata?.username) ||
+        normalizeUsername(authUser.email?.split("@")[0]) ||
+        "",
+      email: authUser.email,
+      neighborhood:
+        payload.neighborhood || authUser.user_metadata?.neighborhood || neighborhoods[1],
+      postal_code: normalizePostalCode(
+        payload.postalCode || authUser.user_metadata?.postal_code || "",
+      ),
+      bio: payload.bio || "New local seller on TCGWPG.",
+      banner_style: "neutral",
+      favorite_games: payload.favoriteGames || [],
+      meetup_preferences: payload.meetupPreferences || "Flexible local meetup.",
+      response_time: payload.responseTime || "~ 1 hour",
+      completed_deals: 0,
+    };
+
+    let insertResult = await supabase
       .from("profiles")
-      .insert({
-        id: authUser.id,
-        role: "seller",
-        name:
-          payload.name ||
-          authUser.user_metadata?.name ||
-          authUser.email?.split("@")[0] ||
-          "TCGWPG User",
-        email: authUser.email,
-        neighborhood:
-          payload.neighborhood || authUser.user_metadata?.neighborhood || neighborhoods[1],
-        postal_code: normalizePostalCode(
-          payload.postalCode || authUser.user_metadata?.postal_code || "",
-        ),
-        bio: payload.bio || "New local seller on TCGWPG.",
-        banner_style: "neutral",
-        favorite_games: payload.favoriteGames || [],
-        meetup_preferences: payload.meetupPreferences || "Flexible local meetup.",
-        response_time: payload.responseTime || "~ 1 hour",
-        completed_deals: 0,
-      })
+      .insert(profilePayload)
       .select("*")
       .single();
+
+    if (insertResult.error && isMissingColumnError(insertResult.error, "username")) {
+      const { username, ...legacyProfilePayload } = profilePayload;
+      insertResult = await supabase
+        .from("profiles")
+        .insert(legacyProfilePayload)
+        .select("*")
+        .single();
+    }
+
+    const { data: insertedProfile, error: insertError } = insertResult;
 
     if (insertError) {
       throw insertError;
@@ -1297,6 +1360,11 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: "Supabase is not configured." };
     }
 
+    const username = normalizeUsername(payload.username);
+    if (!username) {
+      return { ok: false, error: "A username is required." };
+    }
+
     setAuthReady(false);
 
     try {
@@ -1306,6 +1374,7 @@ export function MarketplaceProvider({ children }) {
         options: {
           data: {
             name: payload.name,
+            username,
             neighborhood: payload.neighborhood,
             postal_code: normalizePostalCode(payload.postalCode),
           },
@@ -1354,6 +1423,11 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: "You must be logged in." };
     }
 
+    const username = normalizeUsername(payload.username);
+    if (!username) {
+      return { ok: false, error: "A username is required." };
+    }
+
     const access = ensureAccountActive(
       "This account is suspended. Contact an admin or submit an appeal before changing seller settings.",
     );
@@ -1361,19 +1435,32 @@ export function MarketplaceProvider({ children }) {
       return access;
     }
 
-    const { error } = await supabase
+    const profilePayload = {
+      username,
+      neighborhood: payload.neighborhood,
+      postal_code: normalizePostalCode(payload.postalCode),
+      favorite_games: payload.favoriteGames || [],
+      meetup_preferences: payload.meetupPreferences || "",
+      response_time: payload.responseTime || "~ 1 hour",
+      banner_style: payload.bannerStyle || "neutral",
+      bio: payload.bio || "",
+      updated_at: new Date().toISOString(),
+    };
+
+    let updateResult = await supabase
       .from("profiles")
-      .update({
-        neighborhood: payload.neighborhood,
-        postal_code: normalizePostalCode(payload.postalCode),
-        favorite_games: payload.favoriteGames || [],
-        meetup_preferences: payload.meetupPreferences || "",
-        response_time: payload.responseTime || "~ 1 hour",
-        banner_style: payload.bannerStyle || "neutral",
-        bio: payload.bio || "",
-        updated_at: new Date().toISOString(),
-      })
+      .update(profilePayload)
       .eq("id", currentUserId);
+
+    if (updateResult.error && isMissingColumnError(updateResult.error, "username")) {
+      const { username, ...legacyProfilePayload } = profilePayload;
+      updateResult = await supabase
+        .from("profiles")
+        .update(legacyProfilePayload)
+        .eq("id", currentUserId);
+    }
+
+    const { error } = updateResult;
 
     if (error) {
       return { ok: false, error: error.message };
@@ -1777,31 +1864,50 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: "Review comment is required." };
     }
 
+    if (String(payload.sellerId || "") === String(currentUser.id || "")) {
+      return { ok: false, error: "You cannot leave a review on your own seller profile." };
+    }
+
     if (!isSupabaseConfigured) {
       const review = {
         id: `review-${Date.now()}`,
         sellerId: payload.sellerId,
         authorId: currentUser.id,
-        author: currentUser.publicName || currentUser.name,
+        author: currentUser.username || currentUser.publicName || currentUser.name,
         rating: Number(payload.rating) || 5,
         comment: String(payload.comment || "").trim(),
+        imageUrl: payload.imageUrl || "",
         createdAt: new Date().toISOString().slice(0, 10),
       };
       setReviews((current) => [review, ...current]);
       return { ok: true, review };
     }
 
-    const { data, error } = await supabase
+    const reviewPayload = {
+      seller_id: payload.sellerId,
+      author_id: currentUser.id,
+      author_name: currentUser.username || currentUser.publicName || currentUser.name,
+      rating: Number(payload.rating) || 5,
+      comment: String(payload.comment || "").trim(),
+      image_url: payload.imageUrl || null,
+    };
+
+    let insertResult = await supabase
       .from("reviews")
-      .insert({
-        seller_id: payload.sellerId,
-        author_id: currentUser.id,
-        author_name: currentUser.publicName || currentUser.name,
-        rating: Number(payload.rating) || 5,
-        comment: String(payload.comment || "").trim(),
-      })
+      .insert(reviewPayload)
       .select("*")
       .single();
+
+    if (insertResult.error && isMissingColumnError(insertResult.error, "image_url")) {
+      const { image_url, ...legacyReviewPayload } = reviewPayload;
+      insertResult = await supabase
+        .from("reviews")
+        .insert(legacyReviewPayload)
+        .select("*")
+        .single();
+    }
+
+    const { data, error } = insertResult;
 
     if (error) {
       return { ok: false, error: error.message };
@@ -1811,7 +1917,7 @@ export function MarketplaceProvider({ children }) {
       userId: payload.sellerId,
       type: "review-posted",
       title: "New seller review",
-      body: `${currentUser.publicName || currentUser.name} left you a ${Number(payload.rating) || 5}-star review.`,
+      body: `${currentUser.username || currentUser.publicName || currentUser.name} left you a ${Number(payload.rating) || 5}-star review.`,
       entityId: payload.sellerId,
     });
     await refreshMarketplaceData(currentUserId);
