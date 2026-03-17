@@ -1,15 +1,39 @@
-import { MapPin, ShieldCheck } from "lucide-react";
-import { Outlet } from "react-router-dom";
+import { AlertTriangle, MapPin, ShieldCheck } from "lucide-react";
+import { Link, Outlet } from "react-router-dom";
 import { useMarketplace } from "../../hooks/useMarketplace";
 import CreateListingModal from "../modals/CreateListingModal";
+import ToastStack from "../ui/ToastStack";
 import Header from "./Header";
 
 export default function AppShell() {
-  const { isCreateListingOpen, closeCreateListing } = useMarketplace();
+  const {
+    closeCreateListing,
+    dismissToast,
+    isCreateListingOpen,
+    isSuspended,
+    toastItems,
+  } = useMarketplace();
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(255,153,0,0.08),transparent_18%),linear-gradient(180deg,#fbf8f1_0%,#f1ede5_100%)]">
       <Header />
+      {isSuspended ? (
+        <div className="border-b border-rose-200 bg-rose-50">
+          <div className="page-shell flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
+            <div className="inline-flex items-center gap-2 font-semibold text-rose-800">
+              <AlertTriangle size={16} />
+              This account is suspended. Browsing is still available, but posting, messaging,
+              offers, and seller actions are disabled until review is complete.
+            </div>
+            <Link
+              className="rounded-full border border-rose-200 bg-white px-4 py-2 font-semibold text-rose-700"
+              to="/account"
+            >
+              Appeal or review status
+            </Link>
+          </div>
+        </div>
+      ) : null}
       <main className="page-shell py-8 pb-24 lg:py-10">
         <Outlet />
       </main>
@@ -55,6 +79,7 @@ export default function AppShell() {
       {isCreateListingOpen ? (
         <CreateListingModal onClose={closeCreateListing} />
       ) : null}
+      <ToastStack items={toastItems} onDismiss={dismissToast} />
     </div>
   );
 }

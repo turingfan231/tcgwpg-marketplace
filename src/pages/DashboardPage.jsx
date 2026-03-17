@@ -1,5 +1,6 @@
 import { BarChart3, Eye, FileText, RefreshCcw, Tag } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import CardArtwork from "../components/shared/CardArtwork";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { formatNumber } from "../utils/formatters";
@@ -15,14 +16,18 @@ function formatOfferTypeLabel(type) {
 export default function DashboardPage() {
   const {
     bumpListing,
+    clearListingDraft,
     currentUser,
+    currentUserDrafts,
     currentUserListings,
     editListing,
     formatCadPrice,
     listingDraft,
     markListingSold,
     offersForCurrentUser,
+    openCreateListing,
     respondToOffer,
+    selectListingDraft,
   } = useMarketplace();
   const [editingId, setEditingId] = useState("");
   const [editForm, setEditForm] = useState({
@@ -103,26 +108,88 @@ export default function DashboardPage() {
               Draft status
             </p>
             <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
-              {listingDraft ? "Saved" : "Empty"}
+              {currentUserDrafts.length ? currentUserDrafts.length : "Empty"}
             </p>
           </div>
         </div>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <Link
+            className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel"
+            to={`/seller/${currentUser.id}`}
+          >
+            View my seller page
+          </Link>
+          <button
+            className="rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
+            type="button"
+            onClick={() => openCreateListing({ type: "WTS" })}
+          >
+            New listing
+          </button>
+        </div>
       </section>
 
-      {listingDraft ? (
+      {currentUserDrafts.length ? (
         <section className="rounded-[32px] bg-white p-6 shadow-soft">
-          <p className="section-kicker">Draft</p>
+          <p className="section-kicker">Drafts</p>
           <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-            Pending listing draft
+            Saved listing drafts
           </h2>
-          <div className="mt-4 rounded-[24px] border border-slate-200 bg-[#fbf8f1] p-5">
-            <p className="font-semibold text-ink">{listingDraft.title || "Untitled draft"}</p>
-            <p className="mt-2 text-sm text-steel">
-              {listingDraft.game || "Game not set"} | {listingDraft.neighborhood || "Neighborhood not set"}
-            </p>
-            <p className="mt-3 text-sm leading-7 text-steel">
-              {listingDraft.description || "Draft has no description yet."}
-            </p>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            {currentUserDrafts.map((draft) => {
+              const isActive = listingDraft?.id === draft.id;
+              return (
+                <div
+                  key={draft.id}
+                  className={`rounded-[24px] border p-5 ${
+                    isActive ? "border-navy bg-navy/5" : "border-slate-200 bg-[#fbf8f1]"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-ink">{draft.title || draft.name || "Untitled draft"}</p>
+                      <p className="mt-2 text-sm text-steel">
+                        {draft.game || "Game not set"} | {draft.neighborhood || "Neighborhood not set"}
+                      </p>
+                    </div>
+                    {isActive ? (
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-navy">
+                        Active
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-3 text-sm leading-7 text-steel">
+                    {draft.description || "Draft has no description yet."}
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-steel"
+                      type="button"
+                      onClick={() => {
+                        selectListingDraft(draft.id);
+                        openCreateListing();
+                      }}
+                    >
+                      Open draft
+                    </button>
+                    <button
+                      className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
+                      type="button"
+                      onClick={() => selectListingDraft(draft.id)}
+                    >
+                      Set active
+                    </button>
+                    <button
+                      className="rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700"
+                      type="button"
+                      onClick={() => clearListingDraft(draft.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
       ) : null}
@@ -321,21 +388,19 @@ export default function DashboardPage() {
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-sm font-semibold text-steel">Quantity</span>
-                  <select
+                  <input
+                    min="1"
+                    step="1"
+                    type="number"
                     className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-navy"
                     value={editForm.quantity}
                     onChange={(event) =>
                       setEditForm((current) => ({
                         ...current,
-                        quantity: event.target.value,
+                        quantity: Math.max(1, Number(event.target.value) || 1),
                       }))
                     }
-                  >
-                    <option value={1}>1x</option>
-                    <option value={2}>2x</option>
-                    <option value={4}>4x</option>
-                    <option value={8}>8x</option>
-                  </select>
+                  />
                 </label>
                 <label className="block md:col-span-2">
                   <span className="mb-2 block text-sm font-semibold text-steel">Description</span>

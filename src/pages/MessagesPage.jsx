@@ -1,3 +1,4 @@
+import { BellRing, MessageSquarePlus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import EmptyState from "../components/ui/EmptyState";
@@ -12,12 +13,29 @@ function formatMessageTime(isoString) {
   });
 }
 
+function formatOfferTypeLabel(type) {
+  if (type === "cash-trade") {
+    return "Cash + Trade";
+  }
+
+  return type[0].toUpperCase() + type.slice(1);
+}
+
 export default function MessagesPage() {
   const navigate = useNavigate();
   const { threadId } = useParams();
-  const { currentUserId, formatCadPrice, sendMessage, threadsForCurrentUser } =
-    useMarketplace();
+  const {
+    currentUserId,
+    formatCadPrice,
+    getThreadById,
+    markThreadRead,
+    offersByListingId,
+    respondToOffer,
+    sendMessage,
+    threadsForCurrentUser,
+  } = useMarketplace();
   const [draft, setDraft] = useState("");
+  const [sendError, setSendError] = useState("");
 
   useEffect(() => {
     if (!threadId && threadsForCurrentUser[0]) {
@@ -26,26 +44,49 @@ export default function MessagesPage() {
   }, [navigate, threadId, threadsForCurrentUser]);
 
   const activeThread = useMemo(
-    () => threadsForCurrentUser.find((thread) => thread.id === threadId) || null,
-    [threadId, threadsForCurrentUser],
+    () => getThreadById(threadId) || null,
+    [getThreadById, threadId],
   );
+
+  useEffect(() => {
+    if (activeThread?.id) {
+      void markThreadRead(activeThread.id);
+    }
+  }, [activeThread?.id, markThreadRead]);
+
+  const threadOffers = useMemo(() => {
+    if (!activeThread?.listingId) {
+      return [];
+    }
+
+    return (offersByListingId[activeThread.listingId] || []).filter((offer) =>
+      activeThread.participantIds.includes(offer.buyerId) &&
+      activeThread.participantIds.includes(offer.sellerId),
+    );
+  }, [activeThread, offersByListingId]);
 
   if (!threadsForCurrentUser.length) {
     return (
       <EmptyState
         description="Start a conversation from any listing to keep negotiation, meetup planning, and follow-up in one place."
-        title="No Messages Yet"
+        title="No messages yet"
       />
     );
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     if (!activeThread) {
       return;
     }
 
-    sendMessage(activeThread.id, draft);
+    setSendError("");
+    const result = await sendMessage(activeThread.id, draft);
+    if (!result?.ok) {
+      setSendError(result?.error || "Message could not be sent.");
+      return;
+    }
+
     setDraft("");
   }
 
@@ -54,7 +95,7 @@ export default function MessagesPage() {
       <section className="overflow-hidden rounded-[32px] bg-white shadow-soft">
         <div className="border-b border-slate-200 px-5 py-4">
           <p className="section-kicker">Messages</p>
-          <h1 className="mt-2 font-display text-3xl font-bold uppercase tracking-[0.08em] text-ink">
+          <h1 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
             Inbox
           </h1>
         </div>
@@ -70,16 +111,16 @@ export default function MessagesPage() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-display text-xl font-bold uppercase tracking-[0.06em] text-ink">
-                    {thread.otherParticipant?.name || "Conversation"}
+                  <p className="font-display text-xl font-semibold tracking-[-0.03em] text-ink">
+                    {thread.participantIds.length > 2
+                      ? `Support chat (${thread.participantIds.length} people)`
+                      : thread.otherParticipant?.publicName || "Conversation"}
                   </p>
                   <p className="mt-1 text-sm text-steel">
                     {thread.listing?.title || "General thread"}
                   </p>
                 </div>
-                <span className="text-xs text-steel">
-                  {formatMessageTime(thread.updatedAt)}
-                </span>
+                <span className="text-xs text-steel">{formatMessageTime(thread.updatedAt)}</span>
               </div>
               {thread.unreadCount ? (
                 <span className="mt-2 inline-flex rounded-full bg-orange px-2 py-0.5 text-xs font-semibold text-white">
@@ -101,40 +142,131 @@ export default function MessagesPage() {
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="section-kicker">Conversation</p>
-                  <h2 className="mt-2 font-display text-3xl font-bold uppercase tracking-[0.08em] text-ink">
-                    {activeThread.otherParticipant?.name}
+                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                    {activeThread.participantIds.length > 2
+                      ? "Support / resolution chat"
+                      : activeThread.otherParticipant?.publicName || "Conversation"}
                   </h2>
                   <p className="mt-2 text-sm text-steel">
                     {activeThread.listing?.title || "General thread"}
                   </p>
                 </div>
-                {activeThread.listing ? (
-                  <Link
-                    className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
-                    to={`/listing/${activeThread.listing.id}`}
-                  >
-                    {formatCadPrice(
-                      activeThread.listing.price,
-                      activeThread.listing.priceCurrency,
-                    )}
-                  </Link>
-                ) : null}
+
+                <div className="flex flex-wrap gap-2">
+                  {activeThread.otherParticipant ? (
+                    <Link
+                      className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                      to={`/seller/${activeThread.otherParticipant.id}`}
+                    >
+                      View seller page
+                    </Link>
+                  ) : null}
+                  {activeThread.listing ? (
+                    <Link
+                      className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                      to={`/listing/${activeThread.listing.id}`}
+                    >
+                      {formatCadPrice(
+                        activeThread.listing.price,
+                        activeThread.listing.priceCurrency,
+                      )}
+                    </Link>
+                  ) : null}
+                </div>
               </div>
             </div>
+
+            {threadOffers.length ? (
+              <div className="border-b border-slate-200 bg-[#fbf8f1] px-6 py-5">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-steel">
+                  <BellRing size={14} />
+                  Offer activity
+                </div>
+                <div className="grid gap-3">
+                  {threadOffers.map((offer) => {
+                    const isSeller = offer.sellerId === currentUserId;
+                    return (
+                      <div
+                        key={offer.id}
+                        className="rounded-[22px] border border-slate-200 bg-white px-4 py-4"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-ink">
+                              {formatOfferTypeLabel(offer.offerType)}
+                              {offer.cashAmount
+                                ? ` | ${formatCadPrice(offer.cashAmount, "CAD")}`
+                                : ""}
+                            </p>
+                            {offer.tradeItems.length ? (
+                              <p className="mt-2 text-sm text-steel">
+                                Trade: {offer.tradeItems.join(", ")}
+                              </p>
+                            ) : null}
+                            {offer.note ? (
+                              <p className="mt-2 text-sm leading-7 text-steel">{offer.note}</p>
+                            ) : null}
+                          </div>
+                          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+                            {offer.status}
+                          </span>
+                        </div>
+                        {isSeller && offer.status === "pending" ? (
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            <button
+                              className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
+                              type="button"
+                              onClick={() => void respondToOffer(offer.id, "accept")}
+                            >
+                              Accept
+                            </button>
+                            <button
+                              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
+                              type="button"
+                              onClick={() => void respondToOffer(offer.id, "decline")}
+                            >
+                              Decline
+                            </button>
+                            <button
+                              className="rounded-full border border-navy bg-navy/5 px-4 py-2 text-sm font-semibold text-navy"
+                              type="button"
+                              onClick={() =>
+                                void respondToOffer(offer.id, "counter", {
+                                  cashAmount: Number(offer.cashAmount || 0) + 10,
+                                  note: "Counter from chat",
+                                })
+                              }
+                            >
+                              Counter
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
 
             <div className="flex max-h-[50vh] flex-col gap-3 overflow-y-auto px-6 py-5">
               {activeThread.messages.map((message) => {
                 const mine = message.senderId === currentUserId;
+                const isSystemSupportThread =
+                  activeThread.participantIds.length > 2 &&
+                  String(message.body || "").toLowerCase().startsWith("report ");
+
                 return (
                   <div
                     key={message.id}
-                    className={`max-w-[80%] rounded-[24px] px-4 py-3 ${
-                      mine
-                        ? "ml-auto bg-navy text-white"
-                        : "bg-slate-100 text-ink"
+                    className={`max-w-[85%] rounded-[24px] px-4 py-3 ${
+                      isSystemSupportThread
+                        ? "mx-auto w-full max-w-full border border-amber-200 bg-amber-50 text-amber-900"
+                        : mine
+                          ? "ml-auto bg-navy text-white"
+                          : "bg-slate-100 text-ink"
                     }`}
                   >
-                    <p className="text-sm">{message.body}</p>
+                    <p className="text-sm leading-7">{message.body}</p>
                     <p
                       className={`mt-2 text-xs ${
                         mine ? "text-white/70" : "text-slate-500"
@@ -147,10 +279,7 @@ export default function MessagesPage() {
               })}
             </div>
 
-            <form
-              className="border-t border-slate-200 px-6 py-5"
-              onSubmit={handleSubmit}
-            >
+            <form className="border-t border-slate-200 px-6 py-5" onSubmit={handleSubmit}>
               <div className="flex items-center gap-3">
                 <input
                   className="flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
@@ -159,12 +288,15 @@ export default function MessagesPage() {
                   onChange={(event) => setDraft(event.target.value)}
                 />
                 <button
-                  className="rounded-full bg-orange px-5 py-3 font-display text-sm font-bold uppercase tracking-[0.12em] text-white"
+                  className="rounded-full bg-orange px-5 py-3 text-sm font-semibold text-white"
                   type="submit"
                 >
                   Send
                 </button>
               </div>
+              {sendError ? (
+                <p className="mt-3 text-sm font-semibold text-rose-700">{sendError}</p>
+              ) : null}
             </form>
           </>
         ) : (

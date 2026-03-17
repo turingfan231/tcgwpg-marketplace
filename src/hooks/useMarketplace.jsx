@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -22,6 +23,7 @@ import { average, formatCurrency, slugify } from "../utils/formatters";
 const MarketplaceContext = createContext(null);
 const SEARCH_STORAGE_KEY = "tcgwpg.globalSearch";
 const SUPPORTED_GAME_SLUGS = new Set(["magic", "pokemon", "one-piece"]);
+const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
 
 function readSearchStorage() {
   if (typeof window === "undefined") {
@@ -37,6 +39,24 @@ function writeSearchStorage(value) {
   }
 
   window.localStorage.setItem(SEARCH_STORAGE_KEY, value);
+}
+
+async function apiRequest(path, init = {}) {
+  const url = `${API_BASE_URL}${path}`;
+  const response = await fetch(url || path, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init.headers || {}),
+    },
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error || "Request failed.");
+  }
+
+  return data;
 }
 
 function normalizeEmail(value) {
@@ -64,6 +84,74 @@ function buildInitials(name) {
     .map((part) => part[0])
     .join("")
     .toUpperCase();
+}
+
+function getFirstName(name) {
+  return String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)[0] || "Seller";
+}
+
+function getPublicName(name) {
+  return getFirstName(name);
+}
+
+function normalizeDraftCollection(value) {
+  if (Array.isArray(value)) {
+    return value.filter(Boolean);
+  }
+
+  if (value && Array.isArray(value.drafts)) {
+    return value.drafts.filter(Boolean);
+  }
+
+  if (value && typeof value === "object" && Object.keys(value).length) {
+    return [value];
+  }
+
+  return [];
+}
+
+function sameParticipantSet(left = [], right = []) {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  const leftSorted = [...left].sort();
+  const rightSorted = [...right].sort();
+  return leftSorted.every((value, index) => value === rightSorted[index]);
+}
+
+function buildOfferMessage({
+  buyerName,
+  offerType,
+  cashAmount,
+  tradeItems = [],
+  note = "",
+  status = "pending",
+}) {
+  const typeLabel =
+    offerType === "cash-trade"
+      ? "Cash + trade"
+      : offerType === "trade"
+        ? "Trade"
+        : "Cash";
+  const segments = [`Offer ${status}: ${typeLabel}`];
+
+  if (offerType !== "trade" && Number(cashAmount) > 0) {
+    segments.push(formatCurrency(cashAmount, "CAD"));
+  }
+
+  if (offerType !== "cash" && tradeItems.length) {
+    segments.push(`Trade: ${tradeItems.join(", ")}`);
+  }
+
+  if (note) {
+    segments.push(`Note: ${note}`);
+  }
+
+  return `${buyerName || "Buyer"} | ${segments.join(" | ")}`;
 }
 
 function sanitizeUser(user) {
@@ -138,6 +226,8 @@ function normalizeUserRecord(user) {
     ...user,
     email: normalizeEmail(user.email),
     postalCode: normalizePostalCode(user.postalCode),
+    firstName: getFirstName(user.name),
+    publicName: user.publicName || getPublicName(user.name),
     initials: user.initials || buildInitials(user.name),
   };
 }
@@ -190,6 +280,7 @@ function normalizeOfferRecord(offer) {
 function normalizeReportRecord(report) {
   return {
     status: "open",
+    resolutionThreadId: null,
     ...report,
   };
 }
@@ -305,6 +396,7 @@ function fromReportRow(row) {
     reason: row.reason,
     details: row.details,
     status: row.status,
+    resolutionThreadId: row.resolution_thread_id || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   });
@@ -423,7 +515,8 @@ function buildSeedState() {
     reports: [],
     notifications: [],
     manualEvents: seedManualEvents.map(normalizeManualEventRecord),
-    listingDraft: null,
+    listingDrafts: [],
+    activeDraftId: null,
     searchHistory: [],
   };
 }
@@ -456,16 +549,23 @@ export function MarketplaceProvider({ children }) {
   const [notifications, setNotifications] = useState(() =>
     isSupabaseConfigured ? [] : seedState.notifications,
   );
-  const [listingDraft, setListingDraft] = useState(() =>
-    isSupabaseConfigured ? null : seedState.listingDraft,
+  const [listingDrafts, setListingDrafts] = useState(() =>
+    isSupabaseConfigured ? [] : seedState.listingDrafts,
+  );
+  const [activeDraftId, setActiveDraftId] = useState(() =>
+    isSupabaseConfigured ? null : seedState.activeDraftId,
   );
   const [searchHistory, setSearchHistory] = useState(() =>
     isSupabaseConfigured ? [] : seedState.searchHistory,
   );
   const [globalSearch, setGlobalSearchState] = useState(() => readSearchStorage());
   const [isCreateListingOpen, setCreateListingOpen] = useState(false);
+  const [createListingPreset, setCreateListingPreset] = useState(null);
   const [authReady, setAuthReady] = useState(!isSupabaseConfigured);
   const [loading, setLoading] = useState(false);
+  const [toastItems, setToastItems] = useState([]);
+  const seenNotificationIdsRef = useRef(new Set());
+  const seededRealtimeStateRef = useRef(false);
 
   const currentUser = useMemo(
     () => sanitizeUser(users.find((user) => user.id === currentUserId)) || null,
@@ -475,6 +575,22 @@ export function MarketplaceProvider({ children }) {
   const currentUserRecord = useMemo(
     () => users.find((user) => user.id === currentUserId) || null,
     [currentUserId, users],
+  );
+  const isSuspended = currentUserRecord?.accountStatus === "suspended";
+  const listingDraft = useMemo(
+    () =>
+      listingDrafts.find((draft) => draft.id === activeDraftId) ||
+      listingDrafts[0] ||
+      null,
+    [activeDraftId, listingDrafts],
+  );
+  const currentUserDrafts = useMemo(
+    () =>
+      [...listingDrafts].sort(
+        (left, right) =>
+          new Date(right.updatedAt || 0).getTime() - new Date(left.updatedAt || 0).getTime(),
+      ),
+    [listingDrafts],
   );
 
   const reviewBadgeCatalog = sellerBadgeCatalog;
@@ -635,8 +751,17 @@ export function MarketplaceProvider({ children }) {
   }, [offers]);
 
   const openReports = useMemo(
-    () => reports.filter((report) => report.status === "open"),
-    [reports],
+    () =>
+      reports
+        .filter((report) => report.status === "open")
+        .map((report) => ({
+          ...report,
+          reporter: sellerMap[report.reporterId] || null,
+          reportedUser: sellerMap[report.sellerId] || null,
+          listing:
+            enrichedListings.find((listing) => listing.id === report.listingId) || null,
+        })),
+    [enrichedListings, reports, sellerMap],
   );
 
   const topSearches = useMemo(() => {
@@ -697,6 +822,41 @@ export function MarketplaceProvider({ children }) {
     };
   }, [listings, manualEvents.length, openReports.length, threads.length, topSearches, users]);
 
+  const pushToast = useCallback((toast) => {
+    const id = toast.id || `toast-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setToastItems((current) => [...current, { ...toast, id }].slice(-5));
+    window.setTimeout(() => {
+      setToastItems((current) => current.filter((item) => item.id !== id));
+    }, 4500);
+  }, []);
+
+  const dismissToast = useCallback((toastId) => {
+    setToastItems((current) => current.filter((item) => item.id !== toastId));
+  }, []);
+
+  const ensureAccountActive = useCallback(
+    (fallbackMessage) => {
+      if (currentUserRecord?.accountStatus === "suspended") {
+        const errorMessage =
+          fallbackMessage ||
+          "This account is suspended. Browsing is still available, but posting, messaging, offers, and moderation actions are disabled until the suspension is lifted.";
+        pushToast({
+          title: "Account suspended",
+          body: errorMessage,
+          href: "/account",
+          tone: "rose",
+        });
+        return {
+          ok: false,
+          error: errorMessage,
+        };
+      }
+
+      return { ok: true };
+    },
+    [currentUserRecord?.accountStatus, pushToast],
+  );
+
   const bootstrapProfile = useCallback(async (authUser, payload = {}) => {
     if (!isSupabaseConfigured || !authUser) {
       return null;
@@ -750,12 +910,14 @@ export function MarketplaceProvider({ children }) {
   }, []);
 
   const refreshMarketplaceData = useCallback(
-    async (authedUserId = currentUserId) => {
+    async (authedUserId = currentUserId, options = {}) => {
       if (!isSupabaseConfigured) {
         return;
       }
 
-      setLoading(true);
+      if (!options.silent) {
+        setLoading(true);
+      }
 
       try {
         const [profilesRes, listingsRes, reviewsRes, manualEventsRes] = await Promise.all([
@@ -781,7 +943,8 @@ export function MarketplaceProvider({ children }) {
           setOffers([]);
           setReports([]);
           setNotifications([]);
-          setListingDraft(null);
+          setListingDrafts([]);
+          setActiveDraftId(null);
           setSearchHistory([]);
           return;
         }
@@ -841,8 +1004,21 @@ export function MarketplaceProvider({ children }) {
           messageRows = messagesRes.data || [];
         }
 
+        const draftPayload = draftRes.data?.payload || null;
+        const nextDrafts = normalizeDraftCollection(draftPayload).map((draft, index) => ({
+          id: draft.id || `legacy-draft-${index + 1}`,
+          name: draft.name || draft.title || "Untitled draft",
+          updatedAt: draft.updatedAt || draftRes.data?.updated_at || new Date().toISOString(),
+          ...draft,
+        }));
+
         setWishlist((wishlistsRes.data || []).map((item) => item.listing_id));
-        setListingDraft(draftRes.data?.payload || null);
+        setListingDrafts(nextDrafts);
+        setActiveDraftId(
+          draftPayload?.activeDraftId ||
+            nextDrafts[0]?.id ||
+            null,
+        );
         setThreads(buildThreadMap(threadRows, messageRows));
         setOffers((offersRes.data || []).map(fromOfferRow));
         setReports((reportsRes.data || []).map(fromReportRow));
@@ -857,7 +1033,9 @@ export function MarketplaceProvider({ children }) {
           })),
         );
       } finally {
-        setLoading(false);
+        if (!options.silent) {
+          setLoading(false);
+        }
       }
     },
     [currentUserId],
@@ -936,6 +1114,63 @@ export function MarketplaceProvider({ children }) {
     };
   }, [bootstrapProfile, refreshMarketplaceData]);
 
+  useEffect(() => {
+    if (!isSupabaseConfigured || !currentUserId || !authReady) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      void refreshMarketplaceData(currentUserId, { silent: true });
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, [authReady, currentUserId, refreshMarketplaceData]);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      seenNotificationIdsRef.current = new Set();
+      seededRealtimeStateRef.current = false;
+      return;
+    }
+
+    const notificationIds = new Set(
+      notificationsForCurrentUser.map((notification) => notification.id),
+    );
+
+    if (!seededRealtimeStateRef.current) {
+      seenNotificationIdsRef.current = notificationIds;
+      seededRealtimeStateRef.current = true;
+      return;
+    }
+
+    notificationsForCurrentUser.forEach((notification) => {
+      if (!seenNotificationIdsRef.current.has(notification.id) && !notification.read) {
+        pushToast({
+          title: notification.title,
+          body: notification.body,
+          href:
+            notification.type === "message"
+              ? `/messages/${notification.entityId}`
+              : notification.type.startsWith("offer-")
+                ? "/dashboard"
+                : notification.type === "report-opened" || notification.type === "listing-flagged"
+                  ? "/admin"
+                  : notification.entityId
+                    ? `/listing/${notification.entityId}`
+                    : "/notifications",
+          tone:
+            notification.type === "message"
+              ? "navy"
+              : notification.type.includes("offer")
+                ? "orange"
+                : "slate",
+        });
+      }
+    });
+
+    seenNotificationIdsRef.current = notificationIds;
+  }, [currentUserId, notificationsForCurrentUser, pushToast]);
+
   async function pushNotification(notification) {
     if (!isSupabaseConfigured) {
       setNotifications((current) => [notification, ...current]);
@@ -997,16 +1232,23 @@ export function MarketplaceProvider({ children }) {
     }
   }
 
-  function openCreateListing() {
+  function openCreateListing(preset = null) {
     if (!currentUser) {
       return false;
     }
 
+    const access = ensureAccountActive();
+    if (!access.ok) {
+      return false;
+    }
+
+    setCreateListingPreset(preset);
     setCreateListingOpen(true);
     return true;
   }
 
   function closeCreateListing() {
+    setCreateListingPreset(null);
     setCreateListingOpen(false);
   }
 
@@ -1112,6 +1354,13 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: "You must be logged in." };
     }
 
+    const access = ensureAccountActive(
+      "This account is suspended. Contact an admin or submit an appeal before changing seller settings.",
+    );
+    if (!access.ok) {
+      return access;
+    }
+
     const { error } = await supabase
       .from("profiles")
       .update({
@@ -1172,16 +1421,67 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: "You must be logged in to save drafts." };
     }
 
+    const access = ensureAccountActive();
+    if (!access.ok) {
+      return access;
+    }
+
+    const now = new Date().toISOString();
+    const nextDraft = {
+      ...payload,
+      id: payload.id || `draft-${Date.now()}`,
+      name: payload.name || payload.title || `${payload.game || "Listing"} draft`,
+      updatedAt: now,
+    };
+    const nextDrafts = [
+      nextDraft,
+      ...listingDrafts.filter((draft) => draft.id !== nextDraft.id),
+    ].slice(0, 12);
+
     if (!isSupabaseConfigured) {
-      setListingDraft(payload);
+      setListingDrafts(nextDrafts);
+      setActiveDraftId(nextDraft.id);
+      return { ok: true, draft: nextDraft };
+    }
+
+    const { error } = await supabase.from("listing_drafts").upsert({
+      user_id: currentUserId,
+      payload: {
+        drafts: nextDrafts,
+        activeDraftId: nextDraft.id,
+      },
+      updated_at: now,
+    });
+
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+
+    setListingDrafts(nextDrafts);
+    setActiveDraftId(nextDraft.id);
+    return { ok: true, draft: nextDraft };
+  }
+
+  async function clearListingDraft(draftId = activeDraftId) {
+    if (!currentUserId) {
+      return { ok: false, error: "You must be logged in to clear drafts." };
+    }
+
+    const nextDrafts = listingDrafts.filter((draft) => draft.id !== draftId);
+    const nextActiveDraftId =
+      draftId === activeDraftId ? nextDrafts[0]?.id || null : activeDraftId;
+
+    if (!isSupabaseConfigured) {
+      setListingDrafts(nextDrafts);
+      setActiveDraftId(nextActiveDraftId);
       return { ok: true };
     }
 
     const { error } = await supabase.from("listing_drafts").upsert({
       user_id: currentUserId,
       payload: {
-        ...payload,
-        updatedAt: new Date().toISOString(),
+        drafts: nextDrafts,
+        activeDraftId: nextActiveDraftId,
       },
       updated_at: new Date().toISOString(),
     });
@@ -1190,36 +1490,23 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: error.message };
     }
 
-    setListingDraft(payload);
+    setListingDrafts(nextDrafts);
+    setActiveDraftId(nextActiveDraftId);
     return { ok: true };
   }
 
-  async function clearListingDraft() {
-    if (!currentUserId) {
-      return { ok: false, error: "You must be logged in to clear drafts." };
-    }
-
-    if (!isSupabaseConfigured) {
-      setListingDraft(null);
-      return { ok: true };
-    }
-
-    const { error } = await supabase
-      .from("listing_drafts")
-      .delete()
-      .eq("user_id", currentUserId);
-
-    if (error) {
-      return { ok: false, error: error.message };
-    }
-
-    setListingDraft(null);
-    return { ok: true };
+  function selectListingDraft(draftId) {
+    setActiveDraftId(draftId);
   }
 
   async function addListing(payload) {
     if (!currentUserRecord) {
       return { ok: false, error: "You must be logged in to post a listing." };
+    }
+
+    const access = ensureAccountActive();
+    if (!access.ok) {
+      return access;
     }
 
     if (!isSupabaseConfigured) {
@@ -1236,7 +1523,9 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: error.message };
     }
 
-    await clearListingDraft();
+    if (payload.id) {
+      await clearListingDraft(payload.id);
+    }
     await pushNotification(
       normalizeNotificationRecord({
         userId: currentUserRecord.id,
@@ -1253,6 +1542,11 @@ export function MarketplaceProvider({ children }) {
   async function editListing(listingId, payload) {
     if (!isSupabaseConfigured || !currentUserId) {
       return null;
+    }
+
+    const access = ensureAccountActive();
+    if (!access.ok) {
+      return access;
     }
 
     const listing = listings.find((item) => item.id === listingId);
@@ -1330,6 +1624,11 @@ export function MarketplaceProvider({ children }) {
   async function bumpListing(listingId) {
     const nextUpdatedAt = new Date().toISOString();
 
+    const access = ensureAccountActive();
+    if (!access.ok) {
+      return access;
+    }
+
     if (!isSupabaseConfigured || !currentUserId) {
       setListings((current) =>
         current.map((listing) =>
@@ -1360,6 +1659,11 @@ export function MarketplaceProvider({ children }) {
 
   async function markListingSold(listingId) {
     const nextUpdatedAt = new Date().toISOString();
+
+    const access = ensureAccountActive();
+    if (!access.ok) {
+      return access;
+    }
 
     if (!isSupabaseConfigured || !currentUserId) {
       setListings((current) =>
@@ -1411,6 +1715,13 @@ export function MarketplaceProvider({ children }) {
   }
 
   async function toggleWishlist(listingId) {
+    const access = ensureAccountActive(
+      "This account is suspended. You can browse listings, but wishlist changes are disabled.",
+    );
+    if (!access.ok) {
+      return access;
+    }
+
     const alreadyWishlisted = wishlist.includes(listingId);
 
     if (!isSupabaseConfigured || !currentUserId) {
@@ -1457,6 +1768,11 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: "You must be logged in to leave a review." };
     }
 
+    const access = ensureAccountActive();
+    if (!access.ok) {
+      return access;
+    }
+
     if (!String(payload.comment || "").trim()) {
       return { ok: false, error: "Review comment is required." };
     }
@@ -1466,7 +1782,7 @@ export function MarketplaceProvider({ children }) {
         id: `review-${Date.now()}`,
         sellerId: payload.sellerId,
         authorId: currentUser.id,
-        author: currentUser.name,
+        author: currentUser.publicName || currentUser.name,
         rating: Number(payload.rating) || 5,
         comment: String(payload.comment || "").trim(),
         createdAt: new Date().toISOString().slice(0, 10),
@@ -1480,7 +1796,7 @@ export function MarketplaceProvider({ children }) {
       .insert({
         seller_id: payload.sellerId,
         author_id: currentUser.id,
-        author_name: currentUser.name,
+        author_name: currentUser.publicName || currentUser.name,
         rating: Number(payload.rating) || 5,
         comment: String(payload.comment || "").trim(),
       })
@@ -1495,7 +1811,7 @@ export function MarketplaceProvider({ children }) {
       userId: payload.sellerId,
       type: "review-posted",
       title: "New seller review",
-      body: `${currentUser.name} left you a ${Number(payload.rating) || 5}-star review.`,
+      body: `${currentUser.publicName || currentUser.name} left you a ${Number(payload.rating) || 5}-star review.`,
       entityId: payload.sellerId,
     });
     await refreshMarketplaceData(currentUserId);
@@ -1506,20 +1822,17 @@ export function MarketplaceProvider({ children }) {
     return threadsForCurrentUser.find((thread) => thread.id === threadId) || null;
   }
 
-  async function findOrCreateThread({ otherUserId, listingId = null }) {
-    if (!currentUserId) {
-      return { ok: false, error: "You must be logged in to message sellers." };
+  async function findOrCreateThreadInternal({ participantIds, listingId = null }) {
+    const uniqueParticipantIds = [...new Set(participantIds.filter(Boolean))];
+
+    if (!uniqueParticipantIds.length || !currentUserId) {
+      return { ok: false, error: "Conversation participants are missing." };
     }
 
     const existingThread =
       threads.find((thread) => {
         const sameListing = String(thread.listingId || "") === String(listingId || "");
-        const includesBothUsers =
-          thread.participantIds.includes(currentUserId) &&
-          thread.participantIds.includes(otherUserId) &&
-          thread.participantIds.length === 2;
-
-        return sameListing && includesBothUsers;
+        return sameListing && sameParticipantSet(thread.participantIds, uniqueParticipantIds);
       }) || null;
 
     if (existingThread) {
@@ -1529,7 +1842,7 @@ export function MarketplaceProvider({ children }) {
     if (!isSupabaseConfigured) {
       const thread = {
         id: `thread-${Date.now()}`,
-        participantIds: [currentUserId, otherUserId],
+        participantIds: uniqueParticipantIds,
         listingId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -1543,7 +1856,7 @@ export function MarketplaceProvider({ children }) {
       .from("message_threads")
       .insert({
         listing_id: listingId,
-        participant_ids: [currentUserId, otherUserId],
+        participant_ids: uniqueParticipantIds,
       })
       .select("*")
       .single();
@@ -1552,24 +1865,92 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: error.message };
     }
 
-    await refreshMarketplaceData(currentUserId);
-    return {
-      ok: true,
-      thread: {
-        id: data.id,
-        participantIds: data.participant_ids || [],
-        listingId: data.listing_id,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at,
-        messages: [],
-      },
+    const thread = {
+      id: data.id,
+      participantIds: data.participant_ids || [],
+      listingId: data.listing_id,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+      messages: [],
     };
+
+    setThreads((current) => [thread, ...current]);
+    return { ok: true, thread };
   }
 
-  async function sendMessage(threadId, body) {
+  async function findOrCreateThread({ otherUserId, listingId = null, participantIds = null }) {
+    if (!currentUserId) {
+      return { ok: false, error: "You must be logged in to message sellers." };
+    }
+
+    const nextParticipants = participantIds || [currentUserId, otherUserId];
+    return findOrCreateThreadInternal({ participantIds: nextParticipants, listingId });
+  }
+
+  async function markThreadRead(threadId) {
+    const thread = options.thread || threads.find((item) => item.id === threadId);
+    if (!thread || !currentUserId) {
+      return { ok: false, error: "Conversation not found." };
+    }
+
+    const unreadMessages = thread.messages.filter(
+      (message) =>
+        message.senderId !== currentUserId && !(message.readBy || []).includes(currentUserId),
+    );
+
+    if (!unreadMessages.length) {
+      return { ok: true };
+    }
+
+    setThreads((current) =>
+      current.map((item) =>
+        item.id === threadId
+          ? {
+              ...item,
+              messages: item.messages.map((message) =>
+                unreadMessages.some((candidate) => candidate.id === message.id)
+                  ? {
+                      ...message,
+                      readBy: [...new Set([...(message.readBy || []), currentUserId])],
+                    }
+                  : message,
+              ),
+            }
+          : item,
+      ),
+    );
+
+    if (!isSupabaseConfigured) {
+      return { ok: true };
+    }
+
+    await Promise.all(
+      unreadMessages.map((message) =>
+        supabase
+          .from("messages")
+          .update({
+            read_by: [...new Set([...(message.readBy || []), currentUserId])],
+          })
+          .eq("id", message.id),
+      ),
+    );
+
+    return { ok: true };
+  }
+
+  async function sendMessage(threadId, body, options = {}) {
     const trimmed = String(body || "").trim();
     if (!trimmed) {
       return { ok: false, error: "Message cannot be empty." };
+    }
+
+    const access = options.system
+      ? { ok: true }
+      : ensureAccountActive(
+          "This account is suspended. Messaging is disabled until the suspension is lifted.",
+        );
+    if (!access.ok) {
+      return access;
     }
 
     const thread = threads.find((item) => item.id === threadId);
@@ -1577,7 +1958,7 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: "Conversation not found." };
     }
 
-    const otherUserId = thread.participantIds.find((id) => id !== currentUserId);
+    const otherParticipantIds = thread.participantIds.filter((id) => id !== currentUserId);
     const createdAt = new Date().toISOString();
 
     if (!isSupabaseConfigured) {
@@ -1591,7 +1972,7 @@ export function MarketplaceProvider({ children }) {
                   ...item.messages,
                   {
                     id: `message-${Date.now()}`,
-                    senderId: currentUserId,
+                    senderId: options.senderId || currentUserId,
                     body: trimmed,
                     sentAt: createdAt,
                     readBy: [currentUserId],
@@ -1606,7 +1987,7 @@ export function MarketplaceProvider({ children }) {
 
     const { error: messageError } = await supabase.from("messages").insert({
       thread_id: threadId,
-      sender_id: currentUserId,
+      sender_id: options.senderId || currentUserId,
       body: trimmed,
       read_by: [currentUserId],
     });
@@ -1624,23 +2005,32 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: threadError.message };
     }
 
-    if (otherUserId) {
-      await pushNotification({
-        userId: otherUserId,
-        type: "message",
-        title: "New message",
-        body: `${currentUser?.name || "A buyer"} sent a new message.`,
-        entityId: threadId,
-      });
-    }
+    await Promise.all(
+      otherParticipantIds.map((userId) =>
+        pushNotification({
+          userId,
+          type: "message",
+          title: "New message",
+          body: `${currentUser?.publicName || currentUser?.name || "A buyer"} sent a new message.`,
+          entityId: threadId,
+        }),
+      ),
+    );
 
-    await refreshMarketplaceData(currentUserId);
+    await refreshMarketplaceData(currentUserId, { silent: true });
     return { ok: true };
   }
 
   async function createOffer(payload) {
     if (!currentUserId) {
       return { ok: false, error: "You must be logged in to make an offer." };
+    }
+
+    const access = ensureAccountActive(
+      "This account is suspended. Offers are disabled until the suspension is lifted.",
+    );
+    if (!access.ok) {
+      return access;
     }
 
     const listing = listings.find((item) => item.id === payload.listingId);
@@ -1665,6 +2055,15 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: "Trade offers need at least one trade item." };
     }
 
+    const threadResult = await findOrCreateThread({
+      otherUserId: listing.sellerId,
+      listingId: payload.listingId,
+    });
+
+    if (!threadResult.ok) {
+      return threadResult;
+    }
+
     if (!isSupabaseConfigured) {
       const offer = normalizeOfferRecord({
         id: `offer-${Date.now()}`,
@@ -1687,7 +2086,18 @@ export function MarketplaceProvider({ children }) {
             : item,
         ),
       );
-      return { ok: true, offer };
+      await sendMessage(
+        threadResult.thread.id,
+        buildOfferMessage({
+          buyerName: currentUser?.publicName || currentUser?.name,
+          offerType: payload.offerType,
+          cashAmount: normalizedCashAmount,
+          tradeItems: normalizedTradeItems,
+          note: payload.note,
+        }),
+        { thread: threadResult.thread },
+      );
+      return { ok: true, offer, threadId: threadResult.thread.id };
     }
 
     const { data, error } = await supabase
@@ -1718,18 +2128,35 @@ export function MarketplaceProvider({ children }) {
       userId: listing.sellerId,
       type: "offer-received",
       title: "New offer received",
-      body: `${currentUser?.name || "A buyer"} sent an offer on ${listing.title}.`,
+      body: `${currentUser?.publicName || currentUser?.name || "A buyer"} sent an offer on ${listing.title}.`,
       entityId: payload.listingId,
     });
 
-    await refreshMarketplaceData(currentUserId);
-    return { ok: true, offer: fromOfferRow(data) };
+    await sendMessage(
+      threadResult.thread.id,
+      buildOfferMessage({
+        buyerName: currentUser?.publicName || currentUser?.name,
+        offerType: payload.offerType,
+        cashAmount: normalizedCashAmount,
+        tradeItems: normalizedTradeItems,
+        note: payload.note,
+      }),
+      { system: true, thread: threadResult.thread },
+    );
+
+    await refreshMarketplaceData(currentUserId, { silent: true });
+    return { ok: true, offer: fromOfferRow(data), threadId: threadResult.thread.id };
   }
 
   async function respondToOffer(offerId, action, counterPayload = {}) {
     const offer = offers.find((item) => item.id === offerId);
     if (!offer || !currentUserId) {
       return { ok: false, error: "Offer not found." };
+    }
+
+    const access = ensureAccountActive();
+    if (!access.ok) {
+      return access;
     }
 
     const nextStatus =
@@ -1818,18 +2245,44 @@ export function MarketplaceProvider({ children }) {
             : "Counter offer received",
       body:
         nextStatus === "countered"
-          ? `${currentUser?.name || "Seller"} sent a counter offer.`
-          : `${currentUser?.name || "Seller"} ${nextStatus} your offer.`,
+          ? `${currentUser?.publicName || currentUser?.name || "Seller"} sent a counter offer.`
+          : `${currentUser?.publicName || currentUser?.name || "Seller"} ${nextStatus} your offer.`,
       entityId: offer.listingId,
     });
 
-    await refreshMarketplaceData(currentUserId);
+    const threadResult = await findOrCreateThread({
+      otherUserId: offer.buyerId,
+      listingId: offer.listingId,
+    });
+    if (threadResult.ok) {
+      await sendMessage(
+        threadResult.thread.id,
+        buildOfferMessage({
+          buyerName: currentUser?.publicName || currentUser?.name || "Seller",
+          offerType: nextOfferType,
+          cashAmount: nextCashAmount,
+          tradeItems: nextTradeItems,
+          note: nextNote,
+          status: nextStatus,
+        }),
+        { system: true, thread: threadResult.thread },
+      );
+    }
+
+    await refreshMarketplaceData(currentUserId, { silent: true });
     return { ok: true };
   }
 
   async function submitReport(payload) {
     if (!currentUserId) {
       return { ok: false, error: "You must be logged in to submit a report." };
+    }
+
+    const access = ensureAccountActive(
+      "This account is suspended. Reporting stays disabled until the suspension is reviewed.",
+    );
+    if (!access.ok) {
+      return access;
     }
 
     const reasonLabel =
@@ -1880,7 +2333,7 @@ export function MarketplaceProvider({ children }) {
             userId: admin.id,
             type: "report-opened",
             title: "New report opened",
-            body: `${currentUser?.name || "A user"} reported a listing for ${reasonLabel}.`,
+            body: `${currentUser?.publicName || currentUser?.name || "A user"} reported a listing for ${reasonLabel}.`,
             entityId: payload.listingId,
           }),
         ),
@@ -1890,7 +2343,42 @@ export function MarketplaceProvider({ children }) {
     return { ok: true, report: fromReportRow(data) };
   }
 
+  async function openReportResolutionThread(reportId) {
+    const report = reports.find((item) => item.id === reportId);
+    if (!report || !currentUserId) {
+      return { ok: false, error: "Report not found." };
+    }
+
+    const participantIds = [currentUserId, report.reporterId, report.sellerId];
+    const threadResult = await findOrCreateThread({
+      listingId: report.listingId,
+      participantIds,
+    });
+
+    if (!threadResult.ok) {
+      return threadResult;
+    }
+
+    const thread = threadResult.thread;
+    const hasContextMessage = (thread.messages || []).some((message) =>
+      String(message.body || "").includes(`Report ${report.reason}`),
+    );
+
+    if (!hasContextMessage) {
+      const listing = listings.find((item) => item.id === report.listingId);
+      await sendMessage(
+        thread.id,
+        `Report ${report.reason} | Listing: ${listing?.title || "Removed listing"} | Details: ${report.details}`,
+        { system: true, thread },
+      );
+    }
+
+    return { ok: true, thread: threadResult.thread };
+  }
+
   async function updateReportStatus(reportId, status) {
+    const report = reports.find((item) => item.id === reportId);
+
     if (!isSupabaseConfigured || !currentUserId) {
       setReports((current) =>
         current.map((report) =>
@@ -1918,8 +2406,68 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: error.message };
     }
 
+    if (report) {
+      await Promise.all(
+        [report.reporterId, report.sellerId].map((userId) =>
+          pushNotification({
+            userId,
+            type: "report-status",
+            title: status === "resolved" ? "Report resolved" : "Report dismissed",
+            body:
+              status === "resolved"
+                ? "An admin marked the report as resolved."
+                : "An admin dismissed the report after review.",
+            entityId: report.listingId,
+          }),
+        ),
+      );
+    }
+
     await refreshMarketplaceData(currentUserId);
     return { ok: true };
+  }
+
+  async function submitSuspensionAppeal(body) {
+    if (!currentUserId || !currentUserRecord) {
+      return { ok: false, error: "You must be logged in to submit an appeal." };
+    }
+
+    const admins = users.filter((user) => user.role === "admin" && user.id !== currentUserId);
+    if (!admins.length) {
+      return { ok: false, error: "No admin accounts are available for appeals right now." };
+    }
+
+    const appealThread = await findOrCreateThread({
+      participantIds: [currentUserId, ...admins.map((admin) => admin.id)],
+    });
+
+    if (!appealThread.ok) {
+      return appealThread;
+    }
+
+    const result = await sendMessage(
+      appealThread.thread.id,
+      `Suspension appeal from ${currentUserRecord.name}: ${String(body || "").trim()}`,
+      { system: true, thread: appealThread.thread },
+    );
+
+    if (!result.ok) {
+      return result;
+    }
+
+    await Promise.all(
+      admins.map((admin) =>
+        pushNotification({
+          userId: admin.id,
+          type: "suspension-appeal",
+          title: "Suspension appeal submitted",
+          body: `${currentUserRecord.name} submitted a suspension appeal.`,
+          entityId: appealThread.thread.id,
+        }),
+      ),
+    );
+
+    return { ok: true, threadId: appealThread.thread.id };
   }
 
   async function markNotificationRead(notificationId) {
@@ -2175,6 +2723,20 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: error.message };
     }
 
+    await pushNotification({
+      userId,
+      type: accountStatus === "suspended" ? "account-suspended" : "account-restored",
+      title:
+        accountStatus === "suspended"
+          ? "Account suspended"
+          : "Account restored",
+      body:
+        accountStatus === "suspended"
+          ? "Your account is suspended. Browsing is still available, and you can submit an appeal from Account settings."
+          : "Your account has been restored. Selling, messaging, and offers are available again.",
+      entityId: "/account",
+    });
+
     await refreshMarketplaceData(currentUserId);
     return { ok: true };
   }
@@ -2203,6 +2765,70 @@ export function MarketplaceProvider({ children }) {
 
     await refreshMarketplaceData(currentUserId);
     return { ok: true };
+  }
+
+  async function deleteCurrentUserAccount() {
+    if (!currentUserId || !currentUser) {
+      return { ok: false, error: "You must be logged in." };
+    }
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      await apiRequest("/api/admin/delete-user", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.access_token || ""}`,
+        },
+        body: JSON.stringify({
+          userId: currentUserId,
+        }),
+      });
+
+      await logout();
+      return { ok: true };
+    } catch (error) {
+      return {
+        ok: false,
+        error:
+          error.message ||
+          "Account deletion is not configured. Add SUPABASE_SERVICE_ROLE_KEY to the API server to enable it.",
+      };
+    }
+  }
+
+  async function deleteUserAccount(userId) {
+    if (!currentUserId || !currentUser) {
+      return { ok: false, error: "You must be logged in." };
+    }
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      await apiRequest("/api/admin/delete-user", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.access_token || ""}`,
+        },
+        body: JSON.stringify({
+          userId,
+        }),
+      });
+
+      await refreshMarketplaceData(currentUserId);
+      return { ok: true };
+    } catch (error) {
+      return {
+        ok: false,
+        error:
+          error.message ||
+          "Account deletion is not configured. Add SUPABASE_SERVICE_ROLE_KEY to the API server to enable it.",
+      };
+    }
   }
 
   async function addManualEvent(payload) {
@@ -2315,9 +2941,14 @@ export function MarketplaceProvider({ children }) {
     clearSearchHistory,
     closeCreateListing,
     createOffer,
+    createListingPreset,
     currentUser,
+    currentUserDrafts,
     currentUserId,
     currentUserListings,
+    deleteCurrentUserAccount,
+    deleteUserAccount,
+    dismissToast,
     editListing,
     enrichedListings,
     featuredMerchandising,
@@ -2330,8 +2961,10 @@ export function MarketplaceProvider({ children }) {
     isAdmin: currentUser?.role === "admin",
     isAuthenticated: Boolean(currentUser),
     isCreateListingOpen,
+    isSuspended,
     isSupabaseConfigured,
     listingDraft,
+    listingDrafts: currentUserDrafts,
     listings: enrichedListings,
     loading,
     login,
@@ -2340,10 +2973,12 @@ export function MarketplaceProvider({ children }) {
     markAllNotificationsRead,
     markListingSold,
     markNotificationRead,
+    markThreadRead,
     notificationsForCurrentUser,
     offers,
     offersByListingId,
     offersForCurrentUser,
+    openReportResolutionThread,
     openCreateListing,
     openReports,
     recordListingView,
@@ -2356,12 +2991,15 @@ export function MarketplaceProvider({ children }) {
     reviews,
     saveListingDraft,
     searchHistory,
+    selectListingDraft,
     sellerMap,
     sellers: Object.values(sellerMap),
     sendMessage,
     setGlobalSearch,
     signup,
     submitReport,
+    submitSuspensionAppeal,
+    toastItems,
     threadsForCurrentUser,
     toggleListingFeatured,
     toggleListingFlag,

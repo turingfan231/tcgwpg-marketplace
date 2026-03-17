@@ -13,6 +13,7 @@ import MarketPage from "./pages/MarketPage";
 import MessagesPage from "./pages/MessagesPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import SellerProfilePage from "./pages/SellerProfilePage";
+import SellersPage from "./pages/SellersPage";
 import WantToBuyPage from "./pages/WantToBuyPage";
 import WishlistPage from "./pages/WishlistPage";
 
@@ -28,6 +29,7 @@ export default function App() {
             <Route path="/market/:gameSlug" element={<MarketPage />} />
             <Route path="/listing/:listingId" element={<ListingDetailPage />} />
             <Route path="/seller/:sellerId" element={<SellerProfilePage />} />
+            <Route path="/sellers" element={<SellersPage />} />
             <Route path="/events" element={<EventsPage />} />
             <Route path="/wtb" element={<WantToBuyPage />} />
             <Route element={<ProtectedRoute />}>

@@ -19,6 +19,8 @@ import Sparkline from "../ui/Sparkline";
 import ModalShell from "../ui/ModalShell";
 
 const initialFormState = {
+  id: "",
+  name: "",
   title: "",
   game: "Pokemon",
   type: "WTS",
@@ -46,6 +48,7 @@ export default function CreateListingModal({ onClose }) {
   const {
     addListing,
     clearListingDraft,
+    createListingPreset,
     currentUser,
     listingDraft,
     recordSearchQuery,
@@ -109,6 +112,21 @@ export default function CreateListingModal({ onClose }) {
     setSearchQuery(listingDraft.searchQuery || "");
     setDraftMessage("Draft restored.");
   }, [currentUser?.neighborhood, currentUser?.postalCode, listingDraft]);
+
+  useEffect(() => {
+    if (!createListingPreset) {
+      return;
+    }
+
+    setForm((currentForm) => ({
+      ...currentForm,
+      ...createListingPreset,
+      id: "",
+      name: "",
+      neighborhood: currentUser?.neighborhood || currentForm.neighborhood,
+      postalCode: currentUser?.postalCode || currentForm.postalCode,
+    }));
+  }, [createListingPreset, currentUser?.neighborhood, currentUser?.postalCode]);
 
   function updateField(field, value) {
     setDraftMessage("");
@@ -334,16 +352,14 @@ export default function CreateListingModal({ onClose }) {
 
               <label className="block">
                 <FieldLabel>Quantity</FieldLabel>
-                <select
+                <input
+                  min="1"
+                  step="1"
+                  type="number"
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3.5 outline-none transition focus:border-navy focus:bg-white"
                   value={form.quantity}
-                  onChange={(event) => updateField("quantity", event.target.value)}
-                >
-                  <option value={1}>1x</option>
-                  <option value={2}>2x</option>
-                  <option value={4}>4x</option>
-                  <option value={8}>8x</option>
-                </select>
+                  onChange={(event) => updateField("quantity", Math.max(1, Number(event.target.value) || 1))}
+                />
               </label>
 
               <label className="block md:col-span-2">
@@ -690,11 +706,19 @@ export default function CreateListingModal({ onClose }) {
               type="button"
               onClick={async () => {
                 setSubmitError("");
-                const result = await saveListingDraft({ ...form, searchQuery });
+                const result = await saveListingDraft({
+                  ...form,
+                  name: form.name || form.title || `${form.game} draft`,
+                  searchQuery,
+                });
                 if (!result?.ok) {
                   setDraftMessage("");
                   setSubmitError(result?.error || "Draft could not be saved.");
                   return;
+                }
+                if (result.draft?.id) {
+                  updateField("id", result.draft.id);
+                  updateField("name", result.draft.name);
                 }
                 setDraftMessage("Draft saved.");
               }}

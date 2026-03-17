@@ -83,6 +83,8 @@ VITE_API_BASE_URL=https://your-render-service.onrender.com
 
 ```bash
 PORT=10000
+VITE_SUPABASE_URL=your_project_url
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
 
 Optional:
@@ -96,3 +98,4 @@ POKEMONTCG_API_KEY=your_key
 - [`vercel.json`](C:/Users/deoca/Documents/Playground/vercel.json) is included for React Router SPA routing.
 - The frontend now supports `VITE_API_BASE_URL`, so production does not need same-origin `/api` rewrites.
 - In Supabase Auth, add your production Vercel URL to `Site URL` and redirect URLs.
+- `SUPABASE_SERVICE_ROLE_KEY` is only needed on the backend for admin-only account deletion. Do not expose it to the frontend.

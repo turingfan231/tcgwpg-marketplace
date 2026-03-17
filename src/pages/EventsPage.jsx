@@ -3,6 +3,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  ExternalLink,
   LoaderCircle,
   MapPin,
   Store,
@@ -218,15 +219,31 @@ export default function EventsPage() {
                 >
                   <div className="text-sm font-semibold text-ink">{day.day}</div>
                   <div className="mt-3 space-y-2">
-                    {day.events.slice(0, 3).map((event) => (
-                      <div
-                        key={event.id}
-                        className="rounded-[14px] bg-white px-2 py-2 text-left text-[11px] leading-5 text-steel"
-                      >
-                        <p className="font-semibold text-ink">{event.game}</p>
-                        <p className="line-clamp-2">{event.title}</p>
-                      </div>
-                    ))}
+                    {day.events.slice(0, 3).map((event) =>
+                      event.sourceUrl ? (
+                        <a
+                          key={event.id}
+                          className="block rounded-[14px] bg-white px-2 py-2 text-left text-[11px] leading-5 text-steel transition hover:bg-slate-50"
+                          href={event.sourceUrl}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          <p className="flex items-center gap-1 font-semibold text-ink">
+                            {event.game}
+                            <ExternalLink size={11} className="text-navy" />
+                          </p>
+                          <p className="line-clamp-2">{event.title}</p>
+                        </a>
+                      ) : (
+                        <div
+                          key={event.id}
+                          className="rounded-[14px] bg-white px-2 py-2 text-left text-[11px] leading-5 text-steel"
+                        >
+                          <p className="font-semibold text-ink">{event.game}</p>
+                          <p className="line-clamp-2">{event.title}</p>
+                        </div>
+                      ),
+                    )}
                     {day.events.length > 3 ? (
                       <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-navy">
                         +{day.events.length - 3} more
@@ -302,6 +319,17 @@ export default function EventsPage() {
                       </span>
                     ) : null}
                   </div>
+                  {event.sourceUrl ? (
+                    <a
+                      className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-navy transition hover:border-slate-300"
+                      href={event.sourceUrl}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      View event page
+                      <ExternalLink size={14} />
+                    </a>
+                  ) : null}
                   {event.note ? (
                     <p className="mt-4 text-sm leading-7 text-steel">{event.note}</p>
                   ) : null}

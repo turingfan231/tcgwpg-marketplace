@@ -88,7 +88,7 @@ export default function ListingCard({ listing }) {
               {listing.title}
             </h3>
             <p className="text-sm text-steel">
-              {listing.seller?.name} | {listing.timeAgo}
+              {listing.seller?.publicName || listing.seller?.name} | {listing.timeAgo}
             </p>
           </div>
           <ArrowUpRight className="mt-1 text-slate-300 transition group-hover:text-navy" />

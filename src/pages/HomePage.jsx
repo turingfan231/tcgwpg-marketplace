@@ -73,13 +73,20 @@ export default function HomePage() {
               className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3.5 text-sm font-semibold text-ink"
               type="button"
               onClick={() => {
-                const opened = openCreateListing();
+                const opened = openCreateListing({ type: "WTS" });
                 if (!opened) {
                   navigate("/auth", { state: { from: "/" } });
                 }
               }}
             >
               Start selling
+            </button>
+            <button
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3.5 text-sm font-semibold text-ink"
+              type="button"
+              onClick={() => navigate("/sellers")}
+            >
+              Browse sellers
             </button>
           </div>
 

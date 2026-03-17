@@ -8,6 +8,10 @@ function buildTargetLink(notification) {
     return "/dashboard";
   }
 
+  if (String(notification.entityId).startsWith("/")) {
+    return notification.entityId;
+  }
+
   if (
     notification.type === "offer-received" ||
     notification.type === "offer-accepted" ||

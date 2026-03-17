@@ -1,6 +1,7 @@
 import {
   Activity,
   CalendarCog,
+  ExternalLink,
   Flag,
   ShieldCheck,
   Star,
@@ -9,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { neighborhoods } from "../data/mockData";
 import { useMarketplace } from "../hooks/useMarketplace";
 
@@ -29,11 +31,14 @@ function formatEventDate(dateStr) {
 }
 
 export default function AdminPage() {
+  const navigate = useNavigate();
   const {
     adminOverview,
+    deleteUserAccount,
     enrichedListings,
     formatCadPrice,
     manualEvents,
+    openReportResolutionThread,
     openReports,
     reviewBadgeCatalog,
     toggleListingFeatured,
@@ -189,15 +194,34 @@ export default function AdminPage() {
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
                         <p className="font-semibold text-ink">{report.reason}</p>
+                        <p className="mt-2 text-sm text-steel">
+                          Reporter: {report.reporter?.name || "Unknown"} | Reported:{" "}
+                          {report.reportedUser?.name || "Unknown"}
+                        </p>
+                        <p className="mt-1 text-sm text-steel">
+                          Listing: {report.listing?.title || "Removed listing"}
+                        </p>
                         <p className="mt-2 text-sm leading-7 text-steel">{report.details}</p>
                       </div>
                       <div className="flex flex-wrap gap-2">
+                        <button
+                          className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
+                          type="button"
+                          onClick={async () => {
+                            const result = await openReportResolutionThread(report.id);
+                            if (result.ok) {
+                              navigate(`/messages/${result.thread.id}`);
+                            }
+                          }}
+                        >
+                          Open resolution chat
+                        </button>
                         <button
                           className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
                           type="button"
                           onClick={() => updateReportStatus(report.id, "resolved")}
                         >
-                          Resolve
+                          Mark resolved
                         </button>
                         <button
                           className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
@@ -382,6 +406,13 @@ export default function AdminPage() {
                         onClick={() => toggleUserSuspended(user.id)}
                       >
                         {user.accountStatus === "suspended" ? "Unsuspend" : "Suspend"}
+                      </button>
+                      <button
+                        className="rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700"
+                        type="button"
+                        onClick={() => void deleteUserAccount(user.id)}
+                      >
+                        Delete account
                       </button>
                     </div>
                   </div>
@@ -581,6 +612,17 @@ export default function AdminPage() {
                     <p className="mt-1 text-sm text-steel">
                       {formatEventDate(event.dateStr)} | {event.time} | {event.game} | {event.fee}
                     </p>
+                    {event.sourceUrl ? (
+                      <a
+                        className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-navy hover:underline"
+                        href={event.sourceUrl}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        Event link
+                        <ExternalLink size={14} />
+                      </a>
+                    ) : null}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button

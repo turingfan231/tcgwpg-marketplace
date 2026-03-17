@@ -285,7 +285,7 @@ export default function ListingDetailPage() {
                         <div>
                           <p className="font-semibold text-ink">{competitor.title}</p>
                           <p className="mt-1 text-sm text-steel">
-                            {competitor.neighborhood} | {competitor.seller?.name}
+                            {competitor.neighborhood} | {competitor.seller?.publicName || competitor.seller?.name}
                           </p>
                         </div>
                         <div className="text-right">
@@ -453,7 +453,7 @@ export default function ListingDetailPage() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="font-display text-2xl font-semibold tracking-[-0.04em] text-ink">
-                      {listing.seller.name}
+                      {listing.seller.publicName || listing.seller.name}
                     </h2>
                     {listing.seller.verified ? (
                       <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">

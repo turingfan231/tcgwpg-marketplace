@@ -16,7 +16,7 @@ export default function ReviewModal({ seller, onClose }) {
 
   return (
     <ModalShell
-      subtitle={`Leave a rating for ${seller.name} based on your latest local meetup.`}
+      subtitle={`Leave a rating for ${seller.publicName || seller.name} based on your latest local meetup.`}
       title="Leave Review"
       onClose={onClose}
     >

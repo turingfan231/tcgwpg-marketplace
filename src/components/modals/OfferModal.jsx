@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMarketplace } from "../../hooks/useMarketplace";
 import ModalShell from "../ui/ModalShell";
 
 export default function OfferModal({ listing, onClose }) {
+  const navigate = useNavigate();
   const { createOffer, formatCadPrice } = useMarketplace();
   const [offerType, setOfferType] = useState(listing.acceptsTrade ? "cash-trade" : "cash");
   const [cashAmount, setCashAmount] = useState(listing.price);
@@ -33,6 +35,9 @@ export default function OfferModal({ listing, onClose }) {
     }
 
     onClose();
+    if (result.threadId) {
+      navigate(`/messages/${result.threadId}`);
+    }
   }
 
   return (

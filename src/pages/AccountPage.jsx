@@ -1,12 +1,17 @@
-import { LockKeyhole, MapPin, ShieldCheck } from "lucide-react";
+import { AlertTriangle, LockKeyhole, MapPin, ShieldCheck, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { neighborhoods } from "../data/mockData";
 import { useMarketplace } from "../hooks/useMarketplace";
 
 export default function AccountPage() {
+  const navigate = useNavigate();
   const {
     changeCurrentUserPassword,
     currentUser,
+    deleteCurrentUserAccount,
+    isSuspended,
+    submitSuspensionAppeal,
     updateCurrentUserProfile,
   } = useMarketplace();
   const [profileForm, setProfileForm] = useState(() => ({
@@ -27,10 +32,19 @@ export default function AccountPage() {
   const [profileError, setProfileError] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [appealBody, setAppealBody] = useState("");
+  const [appealMessage, setAppealMessage] = useState("");
+  const [appealError, setAppealError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
 
   const accountStatus = useMemo(
-    () => (currentUser?.verified ? "Verified local account" : "Standard local account"),
-    [currentUser],
+    () =>
+      isSuspended
+        ? "Suspended account"
+        : currentUser?.verified
+          ? "Verified local account"
+          : "Standard local account",
+    [currentUser, isSuspended],
   );
 
   useEffect(() => {
@@ -78,6 +92,24 @@ export default function AccountPage() {
     setPasswordMessage("Password updated.");
   }
 
+  async function handleAppealSubmit(event) {
+    event.preventDefault();
+    setAppealMessage("");
+    setAppealError("");
+    const result = await submitSuspensionAppeal(appealBody);
+
+    if (!result.ok) {
+      setAppealError(result.error);
+      return;
+    }
+
+    setAppealBody("");
+    setAppealMessage("Appeal sent to admin support.");
+    if (result.threadId) {
+      navigate(`/messages/${result.threadId}`);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <section className="surface-card p-7">
@@ -90,6 +122,22 @@ export default function AccountPage() {
           code, and password can be updated here.
         </p>
       </section>
+
+      {isSuspended ? (
+        <section className="rounded-[28px] border border-rose-200 bg-rose-50 px-6 py-5">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-1 text-rose-700" size={18} />
+            <div>
+              <p className="font-semibold text-rose-900">Account suspended</p>
+              <p className="mt-2 max-w-3xl text-sm leading-7 text-rose-800">
+                Browsing stays available, but messaging, listing changes, offers, and seller
+                actions are locked. You can still change your password, review your account, and
+                send an appeal below.
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section className="grid gap-7 xl:grid-cols-[0.92fr_1.08fr]">
         <article className="surface-card p-6">
@@ -367,6 +415,89 @@ export default function AccountPage() {
                 </button>
               </div>
             </form>
+          </article>
+
+          {isSuspended ? (
+            <article className="surface-card p-6">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="text-rose-700" size={20} />
+                <div>
+                  <p className="section-kicker">Appeal</p>
+                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                    Request review
+                  </h2>
+                </div>
+              </div>
+
+              <form className="mt-6 grid gap-5" onSubmit={handleAppealSubmit}>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-steel">Appeal message</span>
+                  <textarea
+                    required
+                    className="min-h-28 w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                    placeholder="Add your context, what happened, and anything an admin should review."
+                    value={appealBody}
+                    onChange={(event) => setAppealBody(event.target.value)}
+                  />
+                </label>
+                {appealError ? (
+                  <div className="rounded-[18px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {appealError}
+                  </div>
+                ) : null}
+                {appealMessage ? (
+                  <div className="rounded-[18px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                    {appealMessage}
+                  </div>
+                ) : null}
+                <div>
+                  <button
+                    className="rounded-full bg-navy px-6 py-3 text-sm font-semibold text-white"
+                    type="submit"
+                  >
+                    Send appeal
+                  </button>
+                </div>
+              </form>
+            </article>
+          ) : null}
+
+          <article className="surface-card p-6">
+            <div className="flex items-center gap-3">
+              <Trash2 className="text-rose-700" size={20} />
+              <div>
+                <p className="section-kicker">Delete account</p>
+                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                  Remove this account
+                </h2>
+              </div>
+            </div>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-steel">
+              This removes your marketplace account. For full auth deletion the API server needs
+              Supabase service-role access.
+            </p>
+            {deleteError ? (
+              <div className="mt-4 rounded-[18px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                {deleteError}
+              </div>
+            ) : null}
+            <div className="mt-5">
+              <button
+                className="rounded-full bg-rose-600 px-6 py-3 text-sm font-semibold text-white"
+                type="button"
+                onClick={async () => {
+                  setDeleteError("");
+                  const result = await deleteCurrentUserAccount();
+                  if (!result.ok) {
+                    setDeleteError(result.error);
+                    return;
+                  }
+                  navigate("/");
+                }}
+              >
+                Delete my account
+              </button>
+            </div>
           </article>
         </div>
       </section>

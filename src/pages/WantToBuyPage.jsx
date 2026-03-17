@@ -17,7 +17,7 @@ export default function WantToBuyPage() {
             className="rounded-full bg-orange px-5 py-3 text-sm font-semibold text-white"
             type="button"
             onClick={() => {
-              const opened = openCreateListing();
+              const opened = openCreateListing({ type: "WTB" });
               if (!opened) {
                 navigate("/auth", { state: { from: "/wtb" } });
               }

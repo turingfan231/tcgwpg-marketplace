@@ -53,7 +53,7 @@ export default function SellerProfilePage() {
               <div>
                 <div className="flex flex-wrap items-center gap-3">
                   <h1 className="font-display text-4xl font-semibold tracking-[-0.05em]">
-                    {seller.name}
+                    {seller.publicName || seller.name}
                   </h1>
                   {seller.verified ? (
                     <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white">

@@ -1,9 +1,19 @@
 import "dotenv/config";
 import cors from "cors";
 import express from "express";
+import { createClient } from "@supabase/supabase-js";
 
 const app = express();
 const port = Number(process.env.PORT || 8787);
+const supabaseAdmin =
+  process.env.VITE_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      })
+    : null;
 
 const API_VERSION = "v1.39.0";
 const API_ROOT = `https://api.tcgplayer.com/${API_VERSION}`;
@@ -1316,6 +1326,61 @@ app.get("/api/health", (_req, res) => {
     ok: true,
     supportedGames: ["magic", "pokemon", "one-piece"],
   });
+});
+
+app.post("/api/admin/delete-user", async (req, res) => {
+  if (!supabaseAdmin) {
+    return res.status(501).json({
+      error:
+        "Account deletion is not configured. Set VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY on the API server.",
+    });
+  }
+
+  const authHeader = String(req.headers.authorization || "");
+  const accessToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  const targetUserId = String(req.body?.userId || "").trim();
+
+  if (!accessToken) {
+    return res.status(401).json({ error: "Missing access token." });
+  }
+
+  if (!targetUserId) {
+    return res.status(400).json({ error: "Missing userId." });
+  }
+
+  const {
+    data: { user: actingUser },
+    error: actingUserError,
+  } = await supabaseAdmin.auth.getUser(accessToken);
+
+  if (actingUserError || !actingUser) {
+    return res.status(401).json({ error: "Invalid access token." });
+  }
+
+  const { data: actingProfile, error: profileError } = await supabaseAdmin
+    .from("profiles")
+    .select("id, role")
+    .eq("id", actingUser.id)
+    .maybeSingle();
+
+  if (profileError) {
+    return res.status(500).json({ error: profileError.message });
+  }
+
+  const isSelfDelete = actingUser.id === targetUserId;
+  const isAdminDelete = actingProfile?.role === "admin";
+
+  if (!isSelfDelete && !isAdminDelete) {
+    return res.status(403).json({ error: "You do not have permission to delete this account." });
+  }
+
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  return res.json({ ok: true });
 });
 
 app.get("/api/live/exchange-rate", async (_req, res) => {

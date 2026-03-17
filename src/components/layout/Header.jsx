@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   LogOut,
   MessageCircle,
+  Store,
   Search,
   Shield,
 } from "lucide-react";
@@ -33,6 +34,11 @@ const topLinks = [
     to: "/messages",
     label: "Messages",
     icon: MessageCircle,
+  },
+  {
+    to: "/sellers",
+    label: "Sellers",
+    icon: Store,
   },
   {
     to: "/notifications",
@@ -157,7 +163,7 @@ export default function Header() {
             className="inline-flex items-center gap-2 rounded-full bg-orange px-5 py-3 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-[#ff8d00]"
             type="button"
             onClick={() => {
-              const opened = openCreateListing();
+              const opened = openCreateListing({ type: "WTS" });
               if (!opened) {
                 navigate("/auth", { state: { from: "/dashboard" } });
               }
@@ -165,9 +171,27 @@ export default function Header() {
           >
             Sell cards
           </button>
+          <button
+            className="inline-flex items-center gap-2 rounded-full border border-navy bg-navy/5 px-5 py-3 text-sm font-semibold text-navy shadow-soft transition hover:-translate-y-0.5 hover:bg-navy/10"
+            type="button"
+            onClick={() => {
+              const opened = openCreateListing({ type: "WTB" });
+              if (!opened) {
+                navigate("/auth", { state: { from: "/wtb" } });
+              }
+            }}
+          >
+            Post WTB
+          </button>
 
           {isAuthenticated ? (
             <>
+              <Link
+                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                to={`/seller/${currentUser?.id}`}
+              >
+                My seller page
+              </Link>
               <Link
                 className="max-w-[14rem] truncate rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
                 to="/account"
