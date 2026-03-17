@@ -116,7 +116,7 @@ export default function Header() {
         </form>
 
         <div className="flex min-w-0 flex-wrap items-center justify-end gap-3 xl:col-span-2 xl:justify-between 2xl:col-span-1 2xl:justify-end">
-          <div className="header-chip-scroll flex max-w-full min-w-0 flex-nowrap items-center gap-2 overflow-x-auto rounded-[28px] border border-slate-200/80 bg-white px-2 py-2 shadow-soft">
+          <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2 rounded-[28px] border border-slate-200/80 bg-white px-2 py-2 shadow-soft">
             {[
               ...topLinks,
               ...(isAdmin
