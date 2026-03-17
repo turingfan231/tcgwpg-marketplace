@@ -1074,12 +1074,10 @@ export function MarketplaceProvider({ children }) {
         return { ok: false, error: error.message };
       }
 
-      if (data.user) {
+      if (data.user && data.session?.user) {
         await bootstrapProfile(data.user, payload);
-        if (data.session?.user) {
-          setCurrentUserId(data.user.id);
-          await refreshMarketplaceData(data.user.id);
-        }
+        setCurrentUserId(data.user.id);
+        await refreshMarketplaceData(data.user.id);
       }
 
       return {
