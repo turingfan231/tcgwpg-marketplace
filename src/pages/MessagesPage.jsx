@@ -36,6 +36,7 @@ export default function MessagesPage() {
   } = useMarketplace();
   const [draft, setDraft] = useState("");
   const [sendError, setSendError] = useState("");
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (!threadId && threadsForCurrentUser[0]) {
@@ -76,18 +77,22 @@ export default function MessagesPage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    if (!activeThread) {
+    if (!activeThread || sending) {
       return;
     }
 
+    const messageBody = draft;
     setSendError("");
-    const result = await sendMessage(activeThread.id, draft);
+    setSending(true);
+    setDraft("");
+    const result = await sendMessage(activeThread.id, messageBody);
     if (!result?.ok) {
+      setDraft(messageBody);
       setSendError(result?.error || "Message could not be sent.");
+      setSending(false);
       return;
     }
-
-    setDraft("");
+    setSending(false);
   }
 
   return (
@@ -289,14 +294,16 @@ export default function MessagesPage() {
                 <input
                   className="flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   placeholder="Write a message about condition, trades, or meetup timing"
+                  disabled={sending}
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
                 />
                 <button
-                  className="rounded-full bg-orange px-5 py-3 text-sm font-semibold text-white"
+                  className="rounded-full bg-orange px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+                  disabled={sending || !draft.trim()}
                   type="submit"
                 >
-                  Send
+                  {sending ? "Sending..." : "Send"}
                 </button>
               </div>
               {sendError ? (

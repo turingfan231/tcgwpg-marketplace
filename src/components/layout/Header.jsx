@@ -67,6 +67,7 @@ export default function Header() {
     logout,
     openCreateListing,
     setGlobalSearch,
+    unreadMessageCount,
     unreadNotificationCount,
     wishlist,
   } = useMarketplace();
@@ -152,6 +153,11 @@ export default function Header() {
                   {link.label === "Alerts" && unreadNotificationCount ? (
                     <span className="rounded-full bg-orange px-2 py-0.5 text-xs text-white">
                       {unreadNotificationCount}
+                    </span>
+                  ) : null}
+                  {link.label === "Messages" && unreadMessageCount ? (
+                    <span className="rounded-full bg-orange px-2 py-0.5 text-xs text-white">
+                      {unreadMessageCount}
                     </span>
                   ) : null}
                 </NavLink>

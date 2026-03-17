@@ -23,6 +23,7 @@ import { average, formatCurrency, slugify } from "../utils/formatters";
 const MarketplaceContext = createContext(null);
 const SEARCH_STORAGE_KEY = "tcgwpg.globalSearch";
 const TOAST_SEEN_STORAGE_PREFIX = "tcgwpg.seenToasts";
+const MARKETPLACE_CACHE_KEY = "tcgwpg.marketplaceCache";
 const SUPPORTED_GAME_SLUGS = new Set(["magic", "pokemon", "one-piece"]);
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
 
@@ -70,6 +71,27 @@ function writeToastSeenStorage(userId, ids) {
     getToastSeenStorageKey(userId),
     JSON.stringify([...ids].slice(-250)),
   );
+}
+
+function readMarketplaceCache() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(MARKETPLACE_CACHE_KEY) || "null");
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeMarketplaceCache(snapshot) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(MARKETPLACE_CACHE_KEY, JSON.stringify(snapshot));
 }
 
 async function apiRequest(path, init = {}) {
@@ -599,40 +621,43 @@ function buildSeedState() {
 
 export function MarketplaceProvider({ children }) {
   const seedState = useMemo(() => buildSeedState(), []);
-  const [users, setUsers] = useState(() => (isSupabaseConfigured ? [] : seedState.users));
+  const cachedState = useMemo(() => (isSupabaseConfigured ? readMarketplaceCache() : null), []);
+  const [users, setUsers] = useState(() =>
+    isSupabaseConfigured ? cachedState?.users || [] : seedState.users,
+  );
   const [currentUserId, setCurrentUserId] = useState(null);
   const [listings, setListings] = useState(() =>
-    isSupabaseConfigured ? [] : seedState.listings,
+    isSupabaseConfigured ? cachedState?.listings || [] : seedState.listings,
   );
   const [wishlist, setWishlist] = useState(() =>
-    isSupabaseConfigured ? [] : seedState.wishlist,
+    isSupabaseConfigured ? cachedState?.wishlist || [] : seedState.wishlist,
   );
   const [reviews, setReviews] = useState(() =>
-    isSupabaseConfigured ? [] : seedState.reviews,
+    isSupabaseConfigured ? cachedState?.reviews || [] : seedState.reviews,
   );
   const [threads, setThreads] = useState(() =>
-    isSupabaseConfigured ? [] : seedState.threads,
+    isSupabaseConfigured ? cachedState?.threads || [] : seedState.threads,
   );
   const [manualEvents, setManualEvents] = useState(() =>
-    isSupabaseConfigured ? [] : seedState.manualEvents,
+    isSupabaseConfigured ? cachedState?.manualEvents || [] : seedState.manualEvents,
   );
   const [offers, setOffers] = useState(() =>
-    isSupabaseConfigured ? [] : seedState.offers,
+    isSupabaseConfigured ? cachedState?.offers || [] : seedState.offers,
   );
   const [reports, setReports] = useState(() =>
-    isSupabaseConfigured ? [] : seedState.reports,
+    isSupabaseConfigured ? cachedState?.reports || [] : seedState.reports,
   );
   const [notifications, setNotifications] = useState(() =>
-    isSupabaseConfigured ? [] : seedState.notifications,
+    isSupabaseConfigured ? cachedState?.notifications || [] : seedState.notifications,
   );
   const [listingDrafts, setListingDrafts] = useState(() =>
-    isSupabaseConfigured ? [] : seedState.listingDrafts,
+    isSupabaseConfigured ? cachedState?.listingDrafts || [] : seedState.listingDrafts,
   );
   const [activeDraftId, setActiveDraftId] = useState(() =>
-    isSupabaseConfigured ? null : seedState.activeDraftId,
+    isSupabaseConfigured ? cachedState?.activeDraftId || null : seedState.activeDraftId,
   );
   const [searchHistory, setSearchHistory] = useState(() =>
-    isSupabaseConfigured ? [] : seedState.searchHistory,
+    isSupabaseConfigured ? cachedState?.searchHistory || [] : seedState.searchHistory,
   );
   const [globalSearch, setGlobalSearchState] = useState(() => readSearchStorage());
   const [isCreateListingOpen, setCreateListingOpen] = useState(false);
@@ -810,6 +835,10 @@ export function MarketplaceProvider({ children }) {
   const unreadNotificationCount = notificationsForCurrentUser.filter(
     (notification) => !notification.read,
   ).length;
+  const unreadMessageCount = threadsForCurrentUser.reduce(
+    (total, thread) => total + Number(thread.unreadCount || 0),
+    0,
+  );
 
   const offersForCurrentUser = useMemo(
     () =>
@@ -1185,6 +1214,40 @@ export function MarketplaceProvider({ children }) {
       return;
     }
 
+    writeMarketplaceCache({
+      users,
+      listings,
+      wishlist,
+      reviews,
+      threads,
+      manualEvents,
+      offers,
+      reports,
+      notifications,
+      listingDrafts,
+      activeDraftId,
+      searchHistory,
+    });
+  }, [
+    activeDraftId,
+    listingDrafts,
+    listings,
+    manualEvents,
+    notifications,
+    offers,
+    reports,
+    reviews,
+    searchHistory,
+    threads,
+    users,
+    wishlist,
+  ]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      return;
+    }
+
     let mounted = true;
 
     async function hydrateAuthUser(authUser) {
@@ -1192,26 +1255,31 @@ export function MarketplaceProvider({ children }) {
         return;
       }
 
-      setAuthReady(false);
-
       try {
         if (authUser) {
-          await bootstrapProfile(authUser);
+          const profile = await bootstrapProfile(authUser);
           if (!mounted) {
             return;
           }
+          if (profile) {
+            setUsers((current) => {
+              const nextUsers = current.filter((user) => user.id !== profile.id);
+              return [profile, ...nextUsers];
+            });
+          }
           setCurrentUserId(authUser.id);
-          await refreshMarketplaceData(authUser.id);
+          setAuthReady(true);
+          void refreshMarketplaceData(authUser.id, { silent: true });
         } else {
           if (!mounted) {
             return;
           }
           setCurrentUserId(null);
-          await refreshMarketplaceData(null);
+          setAuthReady(true);
+          void refreshMarketplaceData(null, { silent: true });
         }
       } catch (error) {
         console.error("Supabase auth hydration failed:", error);
-      } finally {
         if (mounted) {
           setAuthReady(true);
         }
@@ -1256,7 +1324,7 @@ export function MarketplaceProvider({ children }) {
 
     const intervalId = window.setInterval(() => {
       void refreshMarketplaceData(currentUserId, { silent: true });
-    }, 5000);
+    }, 3000);
 
     return () => window.clearInterval(intervalId);
   }, [authReady, currentUserId, refreshMarketplaceData]);
@@ -2085,7 +2153,7 @@ export function MarketplaceProvider({ children }) {
     return findOrCreateThreadInternal({ participantIds: nextParticipants, listingId });
   }
 
-  async function markThreadRead(threadId) {
+  async function markThreadRead(threadId, options = {}) {
     const thread = options.thread || threads.find((item) => item.id === threadId);
     if (!thread || !currentUserId) {
       return { ok: false, error: "Conversation not found." };
@@ -2117,21 +2185,39 @@ export function MarketplaceProvider({ children }) {
           : item,
       ),
     );
+    setNotifications((current) =>
+      current.map((notification) =>
+        notification.userId === currentUserId &&
+        notification.type === "message" &&
+        notification.entityId === threadId
+          ? normalizeNotificationRecord({ ...notification, read: true })
+          : notification,
+      ),
+    );
 
     if (!isSupabaseConfigured) {
       return { ok: true };
     }
 
-    await Promise.all(
-      unreadMessages.map((message) =>
-        supabase
-          .from("messages")
-          .update({
-            read_by: [...new Set([...(message.readBy || []), currentUserId])],
-          })
-          .eq("id", message.id),
-      ),
+    const readUpdates = unreadMessages.map((message) =>
+      supabase
+        .from("messages")
+        .update({
+          read_by: [...new Set([...(message.readBy || []), currentUserId])],
+        })
+        .eq("id", message.id),
     );
+    const notificationUpdate = supabase
+      .from("notifications")
+      .update({ read: true })
+      .eq("user_id", currentUserId)
+      .eq("type", "message")
+      .eq("entity_id", threadId);
+
+    await Promise.all([
+      ...readUpdates,
+      notificationUpdate,
+    ]);
 
     return { ok: true };
   }
@@ -2158,6 +2244,14 @@ export function MarketplaceProvider({ children }) {
 
     const otherParticipantIds = thread.participantIds.filter((id) => id !== currentUserId);
     const createdAt = new Date().toISOString();
+    const optimisticMessageId = `message-pending-${Date.now()}`;
+    const optimisticMessage = {
+      id: optimisticMessageId,
+      senderId: options.senderId || currentUserId,
+      body: trimmed,
+      sentAt: createdAt,
+      readBy: [currentUserId],
+    };
 
     if (!isSupabaseConfigured) {
       setThreads((current) =>
@@ -2183,6 +2277,18 @@ export function MarketplaceProvider({ children }) {
       return { ok: true };
     }
 
+    setThreads((current) =>
+      current.map((item) =>
+        item.id === threadId
+          ? {
+              ...item,
+              updatedAt: createdAt,
+              messages: [...item.messages, optimisticMessage],
+            }
+          : item,
+      ),
+    );
+
     const { error: messageError } = await supabase.from("messages").insert({
       thread_id: threadId,
       sender_id: options.senderId || currentUserId,
@@ -2191,6 +2297,16 @@ export function MarketplaceProvider({ children }) {
     });
 
     if (messageError) {
+      setThreads((current) =>
+        current.map((item) =>
+          item.id === threadId
+            ? {
+                ...item,
+                messages: item.messages.filter((message) => message.id !== optimisticMessageId),
+              }
+            : item,
+        ),
+      );
       return { ok: false, error: messageError.message };
     }
 
@@ -2200,6 +2316,16 @@ export function MarketplaceProvider({ children }) {
       .eq("id", threadId);
 
     if (threadError) {
+      setThreads((current) =>
+        current.map((item) =>
+          item.id === threadId
+            ? {
+                ...item,
+                messages: item.messages.filter((message) => message.id !== optimisticMessageId),
+              }
+            : item,
+        ),
+      );
       return { ok: false, error: threadError.message };
     }
 
@@ -3207,6 +3333,7 @@ export function MarketplaceProvider({ children }) {
     toggleUserBadge,
     toggleUserSuspended,
     toggleUserVerified,
+    unreadMessageCount,
     unreadNotificationCount,
     updateCurrentUserProfile,
     updateListingAdminNote,
