@@ -15,7 +15,7 @@ export default function WishlistPage() {
             className="rounded-full bg-orange px-5 py-3 font-display text-sm font-bold uppercase tracking-[0.12em] text-white"
             type="button"
             onClick={() => {
-              const opened = openCreateListing();
+              const opened = openCreateListing({ type: "WTS" });
               if (!opened) {
                 navigate("/auth", { state: { from: "/wishlist" } });
               }

@@ -17,6 +17,7 @@ function buildProfileForm(user) {
     username: user?.username || "",
     neighborhood: user?.neighborhood || neighborhoods[1],
     postalCode: normalizePostalInput(user?.postalCode || ""),
+    defaultListingGame: user?.defaultListingGame || user?.favoriteGames?.[0] || "Pokemon",
     favoriteGames: user?.favoriteGames || [],
     meetupPreferences: user?.meetupPreferences || "",
     responseTime: user?.responseTime || "~ 1 hour",
@@ -171,7 +172,7 @@ export default function AccountPage() {
         </h1>
         <p className="mt-4 max-w-4xl text-base leading-8 text-steel">
           Actual name and email stay locked once the account is created. Username,
-          neighborhood, meetup area, and password can be updated here.
+          default listing game, neighborhood, meetup area, and password can be updated here.
         </p>
       </section>
 
@@ -338,6 +339,23 @@ export default function AccountPage() {
                     </div>
                   </div>
                 </div>
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-steel">
+                  Default listing game
+                </span>
+                <select
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  value={profileForm.defaultListingGame}
+                  onChange={(event) =>
+                    updateProfileFormField("defaultListingGame", event.target.value)
+                  }
+                >
+                  <option value="Pokemon">Pokemon</option>
+                  <option value="Magic">Magic</option>
+                  <option value="One Piece">One Piece</option>
+                </select>
               </label>
 
               <label className="block">

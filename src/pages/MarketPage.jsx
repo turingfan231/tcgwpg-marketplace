@@ -173,7 +173,7 @@ export default function MarketPage() {
               type="button"
               onClick={() => {
                 setGlobalSearch("");
-                const opened = openCreateListing();
+                const opened = openCreateListing({ type: "WTS" });
                 if (!opened) {
                   navigate("/auth", { state: { from: "/market" } });
                 }

@@ -50,6 +50,10 @@ function normalizePostalInput(value) {
     .slice(0, 3);
 }
 
+function getPreferredListingGame(user) {
+  return user?.defaultListingGame || user?.favoriteGames?.[0] || initialFormState.game;
+}
+
 export default function CreateListingModal({ onClose }) {
   const navigate = useNavigate();
   const {
@@ -64,6 +68,7 @@ export default function CreateListingModal({ onClose }) {
   } = useMarketplace();
   const [form, setForm] = useState(() => ({
     ...initialFormState,
+    game: getPreferredListingGame(currentUser),
     neighborhood: currentUser?.neighborhood || initialFormState.neighborhood,
     postalCode: normalizePostalInput(currentUser?.postalCode || ""),
   }));
@@ -79,6 +84,7 @@ export default function CreateListingModal({ onClose }) {
   const [submitError, setSubmitError] = useState("");
   const [conditionPreviewImages, setConditionPreviewImages] = useState([]);
   const [draftMessage, setDraftMessage] = useState("");
+  const [pendingSearchSubmit, setPendingSearchSubmit] = useState(false);
   const searchRequestIdRef = useRef(0);
   const hydratedDraftKeyRef = useRef("");
 
@@ -106,6 +112,10 @@ export default function CreateListingModal({ onClose }) {
   }, [form.marketPrice, form.price]);
 
   useEffect(() => {
+    if (createListingPreset) {
+      return;
+    }
+
     if (!listingDraft) {
       hydratedDraftKeyRef.current = "";
       return;
@@ -129,9 +139,10 @@ export default function CreateListingModal({ onClose }) {
     setSearchQuery(listingDraft.searchQuery || "");
     setSelectedPrintingId("");
     setSearchResults([]);
+    setPendingSearchSubmit(false);
     setDraftMessage("Draft restored.");
     hydratedDraftKeyRef.current = draftKey;
-  }, [currentUser?.neighborhood, currentUser?.postalCode, listingDraft]);
+  }, [createListingPreset, currentUser?.neighborhood, currentUser?.postalCode, listingDraft]);
 
   useEffect(() => {
     if (!createListingPreset) {
@@ -144,6 +155,7 @@ export default function CreateListingModal({ onClose }) {
       ...createListingPreset,
       id: "",
       name: "",
+      game: createListingPreset?.game || getPreferredListingGame(currentUser),
       neighborhood: currentUser?.neighborhood || initialFormState.neighborhood,
       postalCode: normalizePostalInput(currentUser?.postalCode || ""),
     }));
@@ -151,12 +163,14 @@ export default function CreateListingModal({ onClose }) {
     setSearchQuery("");
     setSearchResults([]);
     setSelectedPrintingId("");
+    setPendingSearchSubmit(false);
     setDraftMessage("");
     setSearchError("");
   }, [createListingPreset, currentUser?.neighborhood, currentUser?.postalCode]);
 
   function updateField(field, value) {
     setDraftMessage("");
+    setPendingSearchSubmit(false);
     setForm((currentForm) => ({
       ...currentForm,
       [field]: field === "postalCode" ? normalizePostalInput(value) : value,
@@ -175,6 +189,7 @@ export default function CreateListingModal({ onClose }) {
     setLoadingSearch(true);
     setSearchError("");
     setDraftMessage("");
+    setPendingSearchSubmit(false);
     recordSearchQuery(trimmedQuery, { game: form.game, source: "create-listing" });
 
     try {
@@ -249,6 +264,7 @@ export default function CreateListingModal({ onClose }) {
 
   function applyPrinting(printing) {
     setSelectedPrintingId(printing.id);
+    setPendingSearchSubmit(false);
     setForm((currentForm) => ({
       ...currentForm,
       title: printing.title,
@@ -265,6 +281,31 @@ export default function CreateListingModal({ onClose }) {
         .filter(Boolean)
         .join(". "),
     }));
+  }
+
+  async function saveDraft(forceNew = false) {
+    setSubmitError("");
+    const result = await saveListingDraft({
+      ...form,
+      id: forceNew ? "" : form.id,
+      name: form.name || form.title || `${form.game} draft`,
+      searchQuery,
+    });
+
+    if (!result?.ok) {
+      setDraftMessage("");
+      setSubmitError(result?.error || "Draft could not be saved.");
+      return;
+    }
+
+    if (result.draft?.id) {
+      setForm((currentForm) => ({
+        ...currentForm,
+        id: result.draft.id,
+        name: result.draft.name,
+      }));
+    }
+    setDraftMessage(forceNew ? "New draft saved." : "Draft saved.");
   }
 
   async function handleSubmit(event) {
@@ -299,6 +340,17 @@ export default function CreateListingModal({ onClose }) {
     >
       <form
         className="grid gap-0 bg-[linear-gradient(180deg,#fbf8f1_0%,#f3efe7_100%)] 2xl:grid-cols-[minmax(380px,0.74fr)_minmax(0,1.26fr)]"
+        onKeyDownCapture={(event) => {
+          if (
+            event.key === "Enter" &&
+            pendingSearchSubmit &&
+            !loadingSearch &&
+            event.target.tagName !== "TEXTAREA"
+          ) {
+            event.preventDefault();
+            void handleSearch(event);
+          }
+        }}
         onSubmit={handleSubmit}
       >
         <div className="order-2 space-y-6 border-b border-slate-200 p-4 sm:p-6 lg:p-8 2xl:order-1 2xl:border-b-0 2xl:border-r">
@@ -545,7 +597,11 @@ export default function CreateListingModal({ onClose }) {
                   className="flex-1 border-0 bg-transparent px-1 py-2 text-sm text-white outline-none placeholder:text-white/45"
                   placeholder="Type a card name, code, or variant"
                   value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
+                  onChange={(event) => {
+                    const nextQuery = event.target.value;
+                    setSearchQuery(nextQuery);
+                    setPendingSearchSubmit(Boolean(String(nextQuery || "").trim()));
+                  }}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {
                       void handleSearch(event);
@@ -555,7 +611,7 @@ export default function CreateListingModal({ onClose }) {
               </div>
               <button
                 className="rounded-full bg-orange px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
-                disabled={!searchQuery.trim() || !liveSearchSupported}
+                disabled={!searchQuery.trim() || !liveSearchSupported || loadingSearch}
                 type="button"
                 onClick={handleSearch}
               >
@@ -585,7 +641,10 @@ export default function CreateListingModal({ onClose }) {
                     key={entry.id}
                     className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white/80 transition hover:bg-white/16"
                     type="button"
-                    onClick={() => setSearchQuery(entry.query)}
+                    onClick={() => {
+                      setSearchQuery(entry.query);
+                      setPendingSearchSubmit(Boolean(String(entry.query || "").trim()));
+                    }}
                   >
                     {entry.query}
                   </button>
@@ -752,26 +811,16 @@ export default function CreateListingModal({ onClose }) {
             <button
               className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
               type="button"
-              onClick={async () => {
-                setSubmitError("");
-                const result = await saveListingDraft({
-                  ...form,
-                  name: form.name || form.title || `${form.game} draft`,
-                  searchQuery,
-                });
-                if (!result?.ok) {
-                  setDraftMessage("");
-                  setSubmitError(result?.error || "Draft could not be saved.");
-                  return;
-                }
-                if (result.draft?.id) {
-                  updateField("id", result.draft.id);
-                  updateField("name", result.draft.name);
-                }
-                setDraftMessage("Draft saved.");
-              }}
+              onClick={() => void saveDraft(false)}
             >
               Save draft
+            </button>
+            <button
+              className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+              type="button"
+              onClick={() => void saveDraft(true)}
+            >
+              Save as new draft
             </button>
             {listingDraft ? (
               <button

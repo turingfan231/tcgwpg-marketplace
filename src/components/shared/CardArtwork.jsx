@@ -14,6 +14,8 @@ export default function CardArtwork({ src, title, game, className = "" }) {
       <img
         alt={title}
         className={className}
+        loading="lazy"
+        referrerPolicy="no-referrer"
         src={displaySrc}
         onError={() => setHasError(true)}
       />

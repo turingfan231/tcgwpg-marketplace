@@ -373,6 +373,8 @@ function isSupportedListing(listing) {
 function normalizeUserRecord(user) {
   const username = normalizeUsername(user.username || "");
   const publicName = username || user.publicName || getPublicName(user.name);
+  const favoriteGames = Array.isArray(user.favoriteGames) ? user.favoriteGames : [];
+  const defaultListingGame = user.defaultListingGame || favoriteGames[0] || "Pokemon";
 
   return {
     role: "seller",
@@ -380,7 +382,6 @@ function normalizeUserRecord(user) {
     verified: false,
     accountStatus: "active",
     bannerStyle: "neutral",
-    favoriteGames: [],
     meetupPreferences: "Flexible local meetup.",
     responseTime: "~ 1 hour",
     completedDeals: 0,
@@ -388,6 +389,8 @@ function normalizeUserRecord(user) {
     ...user,
     email: normalizeEmail(user.email),
     postalCode: normalizePostalCode(user.postalCode),
+    favoriteGames,
+    defaultListingGame,
     username,
     firstName: getFirstName(user.name),
     publicName,
@@ -470,6 +473,7 @@ function fromProfileRow(row) {
     role: row.role,
     name: row.name,
     username: row.username || "",
+    defaultListingGame: row.defaultListingGame || row.default_listing_game || "",
     avatarUrl: row.avatar_url || "",
     email: row.email,
     neighborhood: row.neighborhood,
@@ -615,6 +619,11 @@ function mergeAuthedProfileMetadata(profileRow, authUser) {
       normalizeUsername(authUser?.user_metadata?.username) ||
       "",
     avatar_url: profileRow.avatar_url || authUser?.user_metadata?.avatar_url || "",
+    defaultListingGame:
+      profileRow.defaultListingGame ||
+      profileRow.default_listing_game ||
+      authUser?.user_metadata?.default_listing_game ||
+      "",
     postal_code:
       profileRow.postal_code ||
       normalizePostalCode(authUser?.user_metadata?.postal_code) ||
@@ -807,15 +816,19 @@ export function MarketplaceProvider({ children }) {
 
     return map;
   }, [listings, reviews, users]);
+  const normalizedWishlist = useMemo(
+    () => wishlist.filter((listingId) => listings.some((listing) => listing.id === listingId)),
+    [listings, wishlist],
+  );
 
   const enrichedListings = useMemo(
     () =>
       listings.map((listing) => ({
         ...listing,
         seller: sellerMap[listing.sellerId],
-        wishlisted: wishlist.includes(listing.id),
+        wishlisted: normalizedWishlist.includes(listing.id),
       })),
-    [listings, sellerMap, wishlist],
+    [listings, normalizedWishlist, sellerMap],
   );
 
   const activeListings = useMemo(
@@ -867,8 +880,8 @@ export function MarketplaceProvider({ children }) {
   );
 
   const wishlistedListings = useMemo(
-    () => activeListings.filter((listing) => wishlist.includes(listing.id)),
-    [activeListings, wishlist],
+    () => activeListings.filter((listing) => normalizedWishlist.includes(listing.id)),
+    [activeListings, normalizedWishlist],
   );
 
   const threadsForCurrentUser = useMemo(() => {
@@ -1771,6 +1784,8 @@ export function MarketplaceProvider({ children }) {
         neighborhood: payload.neighborhood,
         postal_code: normalizePostalCode(payload.postalCode),
         avatar_url: nextAvatarUrl || null,
+        default_listing_game:
+          payload.defaultListingGame || currentUserRecord?.defaultListingGame || "Pokemon",
       },
     });
 
@@ -1782,6 +1797,8 @@ export function MarketplaceProvider({ children }) {
       username,
       neighborhood: payload.neighborhood,
       postal_code: normalizePostalCode(payload.postalCode),
+      default_listing_game:
+        payload.defaultListingGame || currentUserRecord?.defaultListingGame || "Pokemon",
       favorite_games: payload.favoriteGames || [],
       meetup_preferences: payload.meetupPreferences || "",
       response_time: payload.responseTime || "~ 1 hour",
@@ -3550,7 +3567,7 @@ export function MarketplaceProvider({ children }) {
     updateListingAdminNote,
     updateReportStatus,
     users: Object.values(sellerMap),
-    wishlist,
+    wishlist: normalizedWishlist,
     wishlistedListings,
     toggleWishlist,
   };
