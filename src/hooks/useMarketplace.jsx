@@ -220,6 +220,20 @@ function isMissingColumnError(error, columnName) {
   );
 }
 
+function omitMissingProfileColumns(payload, error) {
+  const nextPayload = { ...payload };
+
+  if (isMissingColumnError(error, "username")) {
+    delete nextPayload.username;
+  }
+
+  if (isMissingColumnError(error, "avatar_url")) {
+    delete nextPayload.avatar_url;
+  }
+
+  return nextPayload;
+}
+
 function buildInitials(name) {
   return String(name || "")
     .split(/\s+/)
@@ -1096,11 +1110,24 @@ export function MarketplaceProvider({ children }) {
           return fromProfileRow(updateResult.data);
         }
 
-        if (
-          !isMissingColumnError(updateResult.error, "username") &&
-          !isMissingColumnError(updateResult.error, "avatar_url")
-        ) {
+        if (!isMissingColumnError(updateResult.error, "username") && !isMissingColumnError(updateResult.error, "avatar_url")) {
           throw updateResult.error;
+        }
+
+        const fallbackPatch = omitMissingProfileColumns(nextProfilePatch, updateResult.error);
+        if (Object.keys(fallbackPatch).length > 1) {
+          const fallbackResult = await supabase
+            .from("profiles")
+            .update(fallbackPatch)
+            .eq("id", authUser.id)
+            .select("*")
+            .single();
+
+          if (!fallbackResult.error) {
+            return fromProfileRow(fallbackResult.data);
+          }
+
+          throw fallbackResult.error;
         }
       }
 
@@ -1141,12 +1168,8 @@ export function MarketplaceProvider({ children }) {
       .select("*")
       .single();
 
-    if (
-      insertResult.error &&
-      (isMissingColumnError(insertResult.error, "username") ||
-        isMissingColumnError(insertResult.error, "avatar_url"))
-    ) {
-      const { username, avatar_url, ...legacyProfilePayload } = profilePayload;
+    if (insertResult.error && (isMissingColumnError(insertResult.error, "username") || isMissingColumnError(insertResult.error, "avatar_url"))) {
+      const legacyProfilePayload = omitMissingProfileColumns(profilePayload, insertResult.error);
       insertResult = await supabase
         .from("profiles")
         .insert(legacyProfilePayload)
@@ -1730,9 +1753,9 @@ export function MarketplaceProvider({ children }) {
       if (uploadResult.error) {
         return {
           ok: false,
-          error:
-            uploadResult.error.message ||
-            "Profile photo upload failed. Check the listing-media storage bucket.",
+          error: uploadResult.error.message
+            ? `${uploadResult.error.message} Make sure the public storage bucket 'listing-media' exists.`
+            : "Profile photo upload failed. Make sure the public storage bucket 'listing-media' exists.",
         };
       }
 
@@ -1772,13 +1795,11 @@ export function MarketplaceProvider({ children }) {
       .from("profiles")
       .update(profilePayload)
       .eq("id", currentUserId);
+    const missingAvatarColumn =
+      Boolean(updateResult.error) && isMissingColumnError(updateResult.error, "avatar_url");
 
-    if (
-      updateResult.error &&
-      (isMissingColumnError(updateResult.error, "username") ||
-        isMissingColumnError(updateResult.error, "avatar_url"))
-    ) {
-      const { username, avatar_url, ...legacyProfilePayload } = profilePayload;
+    if (updateResult.error && (isMissingColumnError(updateResult.error, "username") || isMissingColumnError(updateResult.error, "avatar_url"))) {
+      const legacyProfilePayload = omitMissingProfileColumns(profilePayload, updateResult.error);
       updateResult = await supabase
         .from("profiles")
         .update(legacyProfilePayload)
@@ -1792,7 +1813,13 @@ export function MarketplaceProvider({ children }) {
     }
 
     await refreshMarketplaceData(currentUserId);
-    return { ok: true };
+    return missingAvatarColumn
+      ? {
+          ok: true,
+          warning:
+            "Username and profile settings were saved, but profile photos need the avatar_url column added to your Supabase profiles table.",
+        }
+      : { ok: true };
   }
 
   async function changeCurrentUserPassword(payload) {

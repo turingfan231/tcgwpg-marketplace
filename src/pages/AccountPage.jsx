@@ -96,7 +96,7 @@ export default function AccountPage() {
       return;
     }
 
-    setProfileMessage("Account location details updated.");
+    setProfileMessage(result.warning || "Account location details updated.");
     setAvatarFile(null);
   }
 
