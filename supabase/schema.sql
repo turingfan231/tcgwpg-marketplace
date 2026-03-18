@@ -362,29 +362,15 @@ using (bucket_id = 'listing-media');
 create policy "Authenticated users can upload own listing media"
 on storage.objects for insert
 to authenticated
-with check (
-  bucket_id = 'listing-media'
-  and (storage.foldername(name))[1] = 'avatars'
-  and (storage.foldername(name))[2] = auth.uid()::text
-);
+with check (bucket_id = 'listing-media');
 
 create policy "Users can update own listing media"
 on storage.objects for update
 to authenticated
-using (
-  bucket_id = 'listing-media'
-  and owner_id = auth.uid()::text
-)
-with check (
-  bucket_id = 'listing-media'
-  and (storage.foldername(name))[1] = 'avatars'
-  and (storage.foldername(name))[2] = auth.uid()::text
-);
+using (bucket_id = 'listing-media')
+with check (bucket_id = 'listing-media');
 
 create policy "Users can delete own listing media"
 on storage.objects for delete
 to authenticated
-using (
-  bucket_id = 'listing-media'
-  and owner_id = auth.uid()::text
-);
+using (bucket_id = 'listing-media');
