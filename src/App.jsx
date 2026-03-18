@@ -24,8 +24,8 @@ const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 export default function App() {
   return (
     <AppErrorBoundary>
-      <BrowserRouter>
-        <MarketplaceProvider>
+      <MarketplaceProvider>
+        <BrowserRouter>
           <Suspense fallback={<div className="page-shell py-8 pb-24 lg:py-10"><PageSkeleton cards={3} /></div>}>
             <Routes>
               <Route element={<AppShell />}>
@@ -53,8 +53,8 @@ export default function App() {
               </Route>
             </Routes>
           </Suspense>
-        </MarketplaceProvider>
-      </BrowserRouter>
+        </BrowserRouter>
+      </MarketplaceProvider>
     </AppErrorBoundary>
   );
 }
