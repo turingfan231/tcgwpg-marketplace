@@ -286,7 +286,7 @@ export default function EventsPage() {
           ) : null}
 
           {eventsForMonth.length ? (
-            <div className="mt-5 space-y-4">
+            <div className="header-chip-scroll mt-5 space-y-4 overflow-y-auto pr-1 md:max-h-[46.25rem]">
               {eventsForMonth.map((event) => (
                 <article
                   key={event.id}

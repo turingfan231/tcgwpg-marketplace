@@ -1,4 +1,11 @@
-import { AlertTriangle, MapPin, ShieldCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  MapPin,
+  MessageSquareText,
+  Search,
+  ShieldCheck,
+} from "lucide-react";
 import { Link, Outlet } from "react-router-dom";
 import { useMarketplace } from "../../hooks/useMarketplace";
 import CreateListingModal from "../modals/CreateListingModal";
@@ -38,39 +45,67 @@ export default function AppShell() {
         <Outlet />
       </main>
 
-      <footer className="border-t border-slate-200/80 bg-white">
-        <div className="page-shell grid gap-8 py-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-          <div>
-            <p className="section-kicker">Built for Winnipeg</p>
-            <h2 className="mt-3 font-display text-[2.4rem] font-semibold tracking-[-0.04em] text-ink">
-              Local card deals without the usual clutter.
-            </h2>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-steel">
-              TCGWPG focuses on the parts generic marketplaces usually miss: exact
-              printing search, CAD pricing context, local meetup details, and messaging
-              that stays attached to the card.
-            </p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="surface-muted p-5">
-              <ShieldCheck className="text-navy" />
-              <h3 className="mt-4 font-display text-[1.6rem] font-semibold tracking-[-0.03em] text-ink">
-                Better trust signals
-              </h3>
-              <p className="mt-2 text-sm leading-7 text-steel">
-                Ratings, badges, and listing photos give buyers real local context before
-                the first message.
-              </p>
-            </div>
-            <div className="surface-muted p-5">
-              <MapPin className="text-orange" />
-              <h3 className="mt-4 font-display text-[1.6rem] font-semibold tracking-[-0.03em] text-ink">
-                Neighborhood-aware browsing
-              </h3>
-              <p className="mt-2 text-sm leading-7 text-steel">
-                Filter by St. Vital, Osborne, Transcona, Downtown, and more to actually
-                find cards near you.
-              </p>
+      <footer className="border-t border-slate-200/80 bg-[#f8f4ec]">
+        <div className="page-shell py-10">
+          <div className="overflow-hidden rounded-[32px] border border-slate-200/80 bg-white shadow-soft">
+            <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr]">
+              <div className="border-b border-slate-200/80 bg-[linear-gradient(135deg,#17394a_0%,#1a5b78_58%,#245f7d_100%)] px-6 py-7 text-white lg:border-b-0 lg:border-r lg:border-white/10 lg:px-8 lg:py-8">
+                <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-white/62">
+                  Winnipeg card market
+                </p>
+                <h2 className="mt-3 max-w-xl font-display text-[2.2rem] font-semibold tracking-[-0.04em]">
+                  Built for local deals, not endless marketplace digging.
+                </h2>
+                <p className="mt-4 max-w-xl text-sm leading-7 text-white/78">
+                  Search exact printings, keep offers in one thread, and browse by the
+                  neighborhoods you actually want to meet in.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-2">
+                  <Link
+                    className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-ink"
+                    to="/market"
+                  >
+                    Browse market
+                    <ArrowRight size={15} />
+                  </Link>
+                  <Link
+                    className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white"
+                    to="/wtb"
+                  >
+                    Open WTB board
+                  </Link>
+                </div>
+              </div>
+
+              <div className="grid gap-0 sm:grid-cols-3">
+                <div className="border-b border-slate-200/80 px-6 py-6 sm:border-b-0 sm:border-r">
+                  <Search className="text-navy" size={18} />
+                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                    Exact search
+                  </p>
+                  <p className="mt-2 text-sm leading-7 text-steel">
+                    Find the right printing fast across Magic, Pokemon, and One Piece.
+                  </p>
+                </div>
+                <div className="border-b border-slate-200/80 px-6 py-6 sm:border-b-0 sm:border-r">
+                  <MessageSquareText className="text-orange" size={18} />
+                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                    Attached messages
+                  </p>
+                  <p className="mt-2 text-sm leading-7 text-steel">
+                    Keep offers, questions, and meetup details tied to the listing.
+                  </p>
+                </div>
+                <div className="px-6 py-6">
+                  <MapPin className="text-navy" size={18} />
+                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                    Local filters
+                  </p>
+                  <p className="mt-2 text-sm leading-7 text-steel">
+                    Narrow down by neighborhood, postal area, and trusted local sellers.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
