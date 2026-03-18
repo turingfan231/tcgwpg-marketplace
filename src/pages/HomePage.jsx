@@ -105,13 +105,13 @@ export default function HomePage() {
 
   return (
     <div className="space-y-12 lg:space-y-16">
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_24rem]">
-        <article className="surface-card px-5 py-7 sm:px-8 sm:py-10">
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_21rem]">
+        <article className="surface-card px-5 py-6 sm:px-7 sm:py-8">
           <p className="section-kicker">Winnipeg trading card marketplace</p>
-          <h1 className="mt-4 max-w-4xl font-display text-4xl font-semibold tracking-[-0.05em] text-ink sm:text-5xl lg:text-6xl">
+          <h1 className="mt-4 max-w-3xl font-display text-4xl font-semibold tracking-[-0.05em] text-ink sm:text-[3.1rem] lg:text-[4rem]">
             Buy, sell, and trade locally without digging through the usual marketplace clutter.
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-8 text-steel sm:text-lg">
+          <p className="mt-5 max-w-2xl text-base leading-7 text-steel sm:text-lg">
             Search exact printings for Pokemon, Magic, and One Piece, price everything in
             CAD, message inside the app, and sort listings by the neighborhoods you
             actually want to meet in.
@@ -154,33 +154,33 @@ export default function HomePage() {
             </button>
           </div>
 
-          <div className="mt-10 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-[24px] border border-slate-200 bg-[#faf7f1] p-5">
+          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            <div className="rounded-[24px] border border-slate-200 bg-[#faf7f1] p-4">
               <p className="text-sm text-steel">Live listings</p>
-              <p className="mt-2 font-display text-4xl font-semibold tracking-[-0.04em] text-ink">
+              <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
                 {formatNumber(safeListings.length)}
               </p>
             </div>
-            <div className="rounded-[24px] border border-slate-200 bg-[#faf7f1] p-5">
+            <div className="rounded-[24px] border border-slate-200 bg-[#faf7f1] p-4">
               <p className="text-sm text-steel">Verified sellers</p>
-              <p className="mt-2 font-display text-4xl font-semibold tracking-[-0.04em] text-ink">
+              <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
                 {formatNumber(verifiedSellerCount)}
               </p>
             </div>
-            <div className="rounded-[24px] border border-slate-200 bg-[#faf7f1] p-5">
+            <div className="rounded-[24px] border border-slate-200 bg-[#faf7f1] p-4">
               <p className="text-sm text-steel">Games supported</p>
-              <p className="mt-2 font-display text-4xl font-semibold tracking-[-0.04em] text-ink">
+              <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
                 3
               </p>
             </div>
           </div>
         </article>
 
-        <aside className="surface-card px-5 py-6 sm:px-6 sm:py-7">
+        <aside className="surface-card px-5 py-5 sm:px-6 sm:py-6">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="section-kicker">Right now</p>
-              <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+              <h2 className="mt-2 font-display text-[2rem] font-semibold tracking-[-0.04em] text-ink">
                 Fresh from the feed
               </h2>
             </div>

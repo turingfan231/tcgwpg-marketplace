@@ -37,12 +37,33 @@ export default function MessagesPage() {
   const [draft, setDraft] = useState("");
   const [sendError, setSendError] = useState("");
   const [sending, setSending] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia("(min-width: 1024px)").matches : true,
+  );
 
   useEffect(() => {
-    if (!threadId && threadsForCurrentUser[0]) {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia("(min-width: 1024px)");
+    const syncDesktopState = () => setIsDesktop(mediaQuery.matches);
+    syncDesktopState();
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener("change", syncDesktopState);
+      return () => mediaQuery.removeEventListener("change", syncDesktopState);
+    }
+
+    mediaQuery.addListener(syncDesktopState);
+    return () => mediaQuery.removeListener(syncDesktopState);
+  }, []);
+
+  useEffect(() => {
+    if (isDesktop && !threadId && threadsForCurrentUser[0]) {
       navigate(`/messages/${threadsForCurrentUser[0].id}`, { replace: true });
     }
-  }, [navigate, threadId, threadsForCurrentUser]);
+  }, [isDesktop, navigate, threadId, threadsForCurrentUser]);
 
   const activeThread = useMemo(
     () => getThreadById(threadId) || null,
