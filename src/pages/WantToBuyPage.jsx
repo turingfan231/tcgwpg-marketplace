@@ -50,14 +50,28 @@ export default function WantToBuyPage() {
               Browse active WTB posts for staples, deck cores, and hard-to-find printings.
             </p>
           </div>
-          <div className="rounded-[24px] bg-[#f8f5ee] px-5 py-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-              Active WTB posts
-            </p>
-            <p className="mt-2 inline-flex items-center gap-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
-              <Search size={18} className="text-orange" />
-              {wtbListings.length}
-            </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="rounded-[24px] bg-[#f8f5ee] px-5 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                Active WTB posts
+              </p>
+              <p className="mt-2 inline-flex items-center gap-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
+                <Search size={18} className="text-orange" />
+                {wtbListings.length}
+              </p>
+            </div>
+            <button
+              className="rounded-full bg-orange px-5 py-3 text-sm font-semibold text-white shadow-soft"
+              type="button"
+              onClick={() => {
+                const opened = openCreateListing({ type: "WTB" });
+                if (!opened) {
+                  navigate("/auth", { state: { from: "/wtb" } });
+                }
+              }}
+            >
+              Post a WTB
+            </button>
           </div>
         </div>
       </section>

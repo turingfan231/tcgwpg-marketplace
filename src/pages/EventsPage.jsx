@@ -47,7 +47,6 @@ function normalizeManualEvent(event) {
 export default function EventsPage() {
   const { manualEvents } = useMarketplace();
   const [remoteEvents, setRemoteEvents] = useState([]);
-  const [sourceStatus, setSourceStatus] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const publishedManualEvents = useMemo(
@@ -69,7 +68,6 @@ export default function EventsPage() {
         }
 
         setRemoteEvents(data.events || []);
-        setSourceStatus(data.sources || []);
       } catch (fetchError) {
         if (!cancelled) {
           setError(fetchError.message);
@@ -145,7 +143,7 @@ export default function EventsPage() {
 
   const selectedMonthIndex = monthKeys.indexOf(visibleMonth);
 
-  if (loading && !allEvents.length && !sourceStatus.length) {
+  if (loading && !allEvents.length) {
     return <PageSkeleton cards={4} titleWidth="w-[30rem]" />;
   }
 
@@ -156,26 +154,10 @@ export default function EventsPage() {
         <h1 className="mt-3 font-display text-5xl font-semibold tracking-[-0.05em] text-ink">
           Winnipeg tournaments, leagues, and local nights
         </h1>
-        <p className="mt-4 max-w-4xl text-base leading-8 text-steel">
-          The calendar now mixes live store-source pulls with admin overrides for stores
-          that still do not expose a stable public feed. Fusion is wired for TopDeck,
-          A Muse uses Shopify event products, Arctic uses its public event page, and
-          Galaxy stays on a manual override path until a structured source is available.
+        <p className="mt-4 max-w-3xl text-base leading-8 text-steel">
+          Browse upcoming Magic, Pokemon, and One Piece events across Winnipeg and jump
+          out to the store page when a direct event link is available.
         </p>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {sourceStatus.map((source) => (
-          <article key={source.id} className="surface-muted p-5">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-steel">
-              {source.label}
-            </p>
-            <p className="mt-3 font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
-              {source.mode}
-            </p>
-            <p className="mt-2 text-sm leading-7 text-steel">{source.note}</p>
-          </article>
-        ))}
       </section>
 
       <section className="grid gap-7 xl:grid-cols-[1.05fr_0.95fr]">
