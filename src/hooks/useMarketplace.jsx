@@ -1754,8 +1754,8 @@ export function MarketplaceProvider({ children }) {
         return {
           ok: false,
           error: uploadResult.error.message
-            ? `${uploadResult.error.message} Make sure the public storage bucket 'listing-media' exists.`
-            : "Profile photo upload failed. Make sure the public storage bucket 'listing-media' exists.",
+            ? `${uploadResult.error.message} Make sure the 'listing-media' storage bucket exists and authenticated users can insert and update files in it.`
+            : "Profile photo upload failed. Make sure the 'listing-media' storage bucket exists and authenticated users can insert and update files in it.",
         };
       }
 
