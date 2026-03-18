@@ -151,7 +151,195 @@ export default function HomePage() {
 
   return (
     <div className="space-y-12 lg:space-y-16">
-      <section className="grid gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_21rem]">
+      <section className="space-y-3 sm:hidden">
+        <article className="overflow-hidden rounded-[28px] bg-[linear-gradient(145deg,#17394a_0%,#1a5b78_64%,#215d79_100%)] px-4 py-4 text-white shadow-soft">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-white/60">
+            Market spotlight
+          </p>
+          <h1 className="mt-3 max-w-[15rem] font-display text-[1.95rem] font-semibold leading-[0.98] tracking-[-0.05em]">
+            Start with what Winnipeg buyers are opening first.
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-white/78">
+            Browse local standouts, keep pricing in CAD, and jump straight into the market.
+          </p>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button
+              className="rounded-full bg-white px-4 py-3 text-sm font-semibold text-ink"
+              type="button"
+              onClick={() => {
+                setGlobalSearch("");
+                navigate("/market");
+              }}
+            >
+              Browse
+            </button>
+            <button
+              className="rounded-full border border-white/18 bg-white/10 px-4 py-3 text-sm font-semibold text-white"
+              type="button"
+              onClick={() => {
+                const opened = openCreateListing({ type: "WTS" });
+                if (!opened) {
+                  navigate("/auth", { state: { from: "/" } });
+                }
+              }}
+            >
+              List card
+            </button>
+            <button
+              className="col-span-2 rounded-full border border-white/18 bg-white/10 px-4 py-3 text-sm font-semibold text-white"
+              type="button"
+              onClick={() => {
+                const opened = openCreateListing({ type: "WTB" });
+                if (!opened) {
+                  navigate("/auth", { state: { from: "/wtb" } });
+                }
+              }}
+            >
+              Post a WTB
+            </button>
+          </div>
+
+          <div className="header-chip-scroll mt-4 flex gap-2 overflow-x-auto pb-1">
+            {marketPulse.map((item) => (
+              <div
+                key={item.label}
+                className="min-w-[8.5rem] rounded-[18px] border border-white/12 bg-white/10 px-3 py-3"
+              >
+                <p className="text-lg font-semibold text-white">{item.value}</p>
+                <p className="mt-1 text-[11px] uppercase tracking-[0.16em] text-white/58">
+                  {item.label}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {spotlightListings.length ? (
+            <div
+              ref={spotlightRailRef}
+              className="header-chip-scroll mt-4 flex snap-x gap-3 overflow-x-auto pb-1"
+            >
+              {spotlightListings.map((listing) => (
+                <button
+                  key={listing.id}
+                  className="min-w-[15.5rem] snap-start rounded-[24px] bg-white/96 p-3 text-left text-ink"
+                  type="button"
+                  onClick={() => navigate(`/listing/${listing.id}`)}
+                >
+                  <div className="flex gap-3">
+                    <CardArtwork
+                      className="aspect-[63/88] w-[4.6rem] rounded-[14px] object-cover"
+                      game={listing.game}
+                      src={listing.imageUrl}
+                      title={listing.title}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-full bg-[#f4f1ea] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-700">
+                          {listing.game}
+                        </span>
+                        <span className="rounded-full bg-navy/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-navy">
+                          {listing.type}
+                        </span>
+                      </div>
+                      <p className="mt-2 line-clamp-2 font-display text-[1.05rem] font-semibold leading-tight tracking-[-0.03em]">
+                        {listing.title}
+                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <UserAvatar className="h-7 w-7 text-[0.65rem] font-bold" user={listing.seller} />
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-semibold text-ink">
+                            {listing.seller?.publicName || listing.seller?.name}
+                          </p>
+                          <p className="truncate text-[11px] text-steel">
+                            {listing.neighborhood}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex items-end justify-between gap-2">
+                        <div>
+                          <p className="font-display text-[1.45rem] font-semibold tracking-[-0.03em] text-ink">
+                            {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
+                          </p>
+                          <p className="text-[10px] uppercase tracking-[0.14em] text-steel">
+                            {listing.timeAgo}
+                          </p>
+                        </div>
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-navy">
+                          Open
+                          <ArrowRight size={13} />
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </article>
+
+        <article className="surface-card px-4 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="section-kicker">Right now</p>
+              <h2 className="mt-2 font-display text-[1.6rem] font-semibold tracking-[-0.04em] text-ink">
+                Fresh from the feed
+              </h2>
+            </div>
+            <Store className="mt-1 text-navy" size={18} />
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {freshListings.slice(0, 2).map((listing) => (
+              <button
+                key={listing.id}
+                className="flex w-full items-start justify-between gap-3 rounded-[18px] border border-slate-200 bg-[#faf7f1] px-3 py-3 text-left"
+                type="button"
+                onClick={() => navigate(`/listing/${listing.id}`)}
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-ink">{listing.title}</p>
+                  <p className="mt-1 text-xs text-steel">
+                    {listing.game} | {listing.neighborhood}
+                  </p>
+                </div>
+                <span className="whitespace-nowrap text-sm font-semibold text-ink">
+                  {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-4 rounded-[20px] bg-[#17394a] px-4 py-4 text-white">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/60">
+              Next event
+            </p>
+            <p className="mt-2 font-display text-[1.3rem] font-semibold tracking-[-0.03em]">
+              {upcomingEvents[0]?.title || "More local events coming in"}
+            </p>
+            {upcomingEvents[0] ? (
+              <>
+                <p className="mt-3 text-sm text-white/80">
+                  {upcomingEvents[0].store} | {upcomingEvents[0].time}
+                </p>
+                <Link
+                  className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-white"
+                  to="/events"
+                >
+                  View events
+                  <ArrowRight size={14} />
+                </Link>
+              </>
+            ) : (
+              <p className="mt-3 text-sm text-white/80">
+                Check the events page for upcoming local nights and tournaments.
+              </p>
+            )}
+          </div>
+        </article>
+      </section>
+
+      <section className="hidden grid gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_21rem] sm:grid">
         <article className="surface-card px-4 py-4 sm:px-6 sm:py-6">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div className="max-w-2xl">
