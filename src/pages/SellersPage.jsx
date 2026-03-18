@@ -1,6 +1,7 @@
 import { Search, Star, Store } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import UserAvatar from "../components/shared/UserAvatar";
 import EmptyState from "../components/ui/EmptyState";
 import RatingStars from "../components/ui/RatingStars";
 import { useMarketplace } from "../hooks/useMarketplace";
@@ -93,9 +94,7 @@ export default function SellersPage() {
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-navy text-lg font-bold text-white">
-                  {seller.initials}
-                </div>
+                <UserAvatar className="h-14 w-14 text-lg font-bold" user={seller} />
                 <div>
                   <h2 className="font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
                     {seller.publicName || seller.name}

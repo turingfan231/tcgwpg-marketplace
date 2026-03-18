@@ -5,6 +5,7 @@ create table public.profiles (
   role text not null default 'seller' check (role in ('seller', 'admin')),
   name text not null,
   username text unique,
+  avatar_url text,
   email text not null unique,
   neighborhood text,
   postal_code text,
@@ -113,6 +114,7 @@ create table public.reviews (
 
 alter table public.profiles add column if not exists username text;
 create unique index if not exists profiles_username_key on public.profiles (username);
+alter table public.profiles add column if not exists avatar_url text;
 alter table public.reviews add column if not exists image_url text;
 
 create table public.reports (

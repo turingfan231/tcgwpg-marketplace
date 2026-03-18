@@ -14,6 +14,7 @@ import ListingCard from "../components/cards/ListingCard";
 import OfferModal from "../components/modals/OfferModal";
 import ReportModal from "../components/modals/ReportModal";
 import CardArtwork from "../components/shared/CardArtwork";
+import UserAvatar from "../components/shared/UserAvatar";
 import EmptyState from "../components/ui/EmptyState";
 import RatingStars from "../components/ui/RatingStars";
 import Sparkline from "../components/ui/Sparkline";
@@ -447,9 +448,7 @@ export default function ListingDetailPage() {
           >
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-navy text-xl font-bold text-white">
-                  {listing.seller.initials}
-                </div>
+                <UserAvatar className="h-16 w-16 text-xl font-bold" user={listing.seller} />
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="font-display text-2xl font-semibold tracking-[-0.04em] text-ink">

@@ -1,15 +1,18 @@
 import {
   ArrowRight,
   CalendarRange,
+  ChevronLeft,
   ChevronRight,
   MapPin,
   MessageCircleMore,
   Shield,
   Store,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import ListingCard from "../components/cards/ListingCard";
+import CardArtwork from "../components/shared/CardArtwork";
+import UserAvatar from "../components/shared/UserAvatar";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { fetchLocalEvents } from "../services/cardDatabase";
 import { formatNumber } from "../utils/formatters";
@@ -33,6 +36,7 @@ export default function HomePage() {
     setGlobalSearch,
   } = useMarketplace();
   const [remoteEvents, setRemoteEvents] = useState([]);
+  const spotlightRailRef = useRef(null);
 
   const safeListings = Array.isArray(activeListings) ? activeListings.filter(Boolean) : [];
   const safeHotListings = Array.isArray(hotListings) ? hotListings.filter(Boolean) : [];
@@ -51,6 +55,7 @@ export default function HomePage() {
   );
 
   const freshListings = safeHotListings.slice(0, 6);
+  const spotlightListings = safeHotListings.slice(0, 5);
   const verifiedSellerCount = safeSellers.filter((seller) => seller?.verified).length;
   const topSellers = [...safeSellers]
     .sort((left, right) => {
@@ -79,6 +84,26 @@ export default function HomePage() {
     [remoteEvents, safeManualEvents],
   );
   const upcomingEvents = mergedEvents.slice(0, 4);
+  const marketPulse = [
+    { label: "Live listings", value: formatNumber(safeListings.length) },
+    { label: "Verified sellers", value: formatNumber(verifiedSellerCount) },
+    { label: "Games supported", value: "3" },
+    {
+      label: "Next meetup",
+      value: upcomingEvents[0]?.store || "See events",
+    },
+  ];
+
+  function scrollSpotlights(direction) {
+    if (!spotlightRailRef.current) {
+      return;
+    }
+
+    spotlightRailRef.current.scrollBy({
+      left: direction * Math.max(320, spotlightRailRef.current.clientWidth - 120),
+      behavior: "smooth",
+    });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -106,74 +131,159 @@ export default function HomePage() {
   return (
     <div className="space-y-12 lg:space-y-16">
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_21rem]">
-        <article className="surface-card px-5 py-6 sm:px-7 sm:py-8">
-          <p className="section-kicker">Winnipeg trading card marketplace</p>
-          <h1 className="mt-4 max-w-3xl font-display text-4xl font-semibold tracking-[-0.05em] text-ink sm:text-[3.1rem] lg:text-[4rem]">
-            Buy, sell, and trade locally without digging through the usual marketplace clutter.
-          </h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-steel sm:text-lg">
-            Search exact printings for Pokemon, Magic, and One Piece, price everything in
-            CAD, message inside the app, and sort listings by the neighborhoods you
-            actually want to meet in.
-          </p>
+        <article className="surface-card px-5 py-5 sm:px-6 sm:py-6">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div className="max-w-2xl">
+              <p className="section-kicker">Market spotlight</p>
+              <h1 className="mt-3 font-display text-[2.15rem] font-semibold tracking-[-0.05em] text-ink sm:text-[2.7rem]">
+                Start with the cards local buyers are actually clicking on.
+              </h1>
+              <p className="mt-4 text-base leading-7 text-steel">
+                Scroll through featured local listings, jump straight into the market,
+                and keep everything in CAD with neighborhood-first browsing.
+              </p>
+            </div>
 
-          <div className="mt-8 grid gap-3 sm:flex sm:flex-wrap">
-            <button
-              className="rounded-full bg-navy px-6 py-3.5 text-sm font-semibold text-white shadow-soft"
-              type="button"
-              onClick={() => {
-                setGlobalSearch("");
-                navigate("/market");
-              }}
-            >
-              Browse listings
-            </button>
-            <button
-              className="rounded-full border border-slate-200 bg-white px-6 py-3.5 text-sm font-semibold text-ink transition hover:border-slate-300"
-              type="button"
-              onClick={() => {
-                const opened = openCreateListing({ type: "WTS" });
-                if (!opened) {
-                  navigate("/auth", { state: { from: "/" } });
-                }
-              }}
-            >
-              List a card
-            </button>
-            <button
-              className="rounded-full border border-slate-200 bg-white px-6 py-3.5 text-sm font-semibold text-ink transition hover:border-slate-300"
-              type="button"
-              onClick={() => {
-                const opened = openCreateListing({ type: "WTB" });
-                if (!opened) {
-                  navigate("/auth", { state: { from: "/wtb" } });
-                }
-              }}
-            >
-              Post a WTB
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                className="rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white shadow-soft"
+                type="button"
+                onClick={() => {
+                  setGlobalSearch("");
+                  navigate("/market");
+                }}
+              >
+                Browse listings
+              </button>
+              <button
+                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-ink transition hover:border-slate-300"
+                type="button"
+                onClick={() => {
+                  const opened = openCreateListing({ type: "WTS" });
+                  if (!opened) {
+                    navigate("/auth", { state: { from: "/" } });
+                  }
+                }}
+              >
+                List a card
+              </button>
+              <button
+                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-ink transition hover:border-slate-300"
+                type="button"
+                onClick={() => {
+                  const opened = openCreateListing({ type: "WTB" });
+                  if (!opened) {
+                    navigate("/auth", { state: { from: "/wtb" } });
+                  }
+                }}
+              >
+                Post a WTB
+              </button>
+            </div>
           </div>
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-[24px] border border-slate-200 bg-[#faf7f1] p-4">
-              <p className="text-sm text-steel">Live listings</p>
-              <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                {formatNumber(safeListings.length)}
-              </p>
-            </div>
-            <div className="rounded-[24px] border border-slate-200 bg-[#faf7f1] p-4">
-              <p className="text-sm text-steel">Verified sellers</p>
-              <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                {formatNumber(verifiedSellerCount)}
-              </p>
-            </div>
-            <div className="rounded-[24px] border border-slate-200 bg-[#faf7f1] p-4">
-              <p className="text-sm text-steel">Games supported</p>
-              <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                3
-              </p>
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            {marketPulse.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-full border border-slate-200 bg-[#faf7f1] px-4 py-2 text-sm"
+              >
+                <span className="font-semibold text-ink">{item.value}</span>
+                <span className="ml-2 text-steel">{item.label}</span>
+              </div>
+            ))}
+            <div className="ml-auto hidden items-center gap-2 sm:flex">
+              <button
+                aria-label="Scroll left through spotlight listings"
+                className="rounded-full border border-slate-200 bg-white p-2.5 text-steel transition hover:border-slate-300 hover:text-ink"
+                type="button"
+                onClick={() => scrollSpotlights(-1)}
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                aria-label="Scroll right through spotlight listings"
+                className="rounded-full border border-slate-200 bg-white p-2.5 text-steel transition hover:border-slate-300 hover:text-ink"
+                type="button"
+                onClick={() => scrollSpotlights(1)}
+              >
+                <ChevronRight size={16} />
+              </button>
             </div>
           </div>
+
+          {spotlightListings.length ? (
+            <div
+              ref={spotlightRailRef}
+              className="header-chip-scroll mt-5 flex snap-x gap-4 overflow-x-auto pb-2"
+            >
+              {spotlightListings.map((listing) => (
+                <button
+                  key={listing.id}
+                  className="group min-w-[18.5rem] snap-start rounded-[30px] border border-slate-200 bg-[#fbf8f1] p-4 text-left transition hover:border-slate-300 hover:bg-white sm:min-w-[22rem] xl:min-w-[23.5rem]"
+                  type="button"
+                  onClick={() => navigate(`/listing/${listing.id}`)}
+                >
+                  <div className="flex gap-4">
+                    <div className="w-[6.25rem] shrink-0 sm:w-[7rem]">
+                      <CardArtwork
+                        className="aspect-[63/88] w-full rounded-[20px] object-cover shadow-soft"
+                        game={listing.game}
+                        src={listing.imageUrl}
+                        title={listing.title}
+                      />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-700">
+                          {listing.game}
+                        </span>
+                        <span className="rounded-full bg-navy/8 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-navy">
+                          {listing.type}
+                        </span>
+                      </div>
+
+                      <h3 className="mt-3 line-clamp-2 font-display text-[1.55rem] font-semibold leading-tight tracking-[-0.04em] text-ink">
+                        {listing.title}
+                      </h3>
+
+                      <div className="mt-3 flex items-center gap-3">
+                        <UserAvatar className="h-9 w-9 text-sm font-bold" user={listing.seller} />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-ink">
+                            {listing.seller?.publicName || listing.seller?.name}
+                          </p>
+                          <p className="truncate text-xs text-steel">
+                            {listing.neighborhood} | {listing.timeAgo}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex items-end justify-between gap-3">
+                        <div>
+                          <p className="font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                            {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
+                          </p>
+                          <p className="mt-1 text-xs uppercase tracking-[0.16em] text-steel">
+                            {listing.views} views | {listing.offers} offers
+                          </p>
+                        </div>
+                        <span className="inline-flex items-center gap-2 text-sm font-semibold text-navy">
+                          Open
+                          <ArrowRight size={15} />
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-5 rounded-[26px] border border-dashed border-slate-200 bg-[#faf7f1] px-5 py-8 text-sm leading-7 text-steel">
+              Fresh spotlight listings will land here as soon as more local cards go live.
+            </div>
+          )}
         </article>
 
         <aside className="surface-card px-5 py-5 sm:px-6 sm:py-6">
@@ -375,14 +485,17 @@ export default function HomePage() {
                 type="button"
                 onClick={() => navigate(`/seller/${seller.id}`)}
               >
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-ink">
-                    {seller.publicName || seller.firstName || seller.name}
-                  </p>
-                  <p className="mt-1 text-sm text-steel">
-                    {seller.completedDeals || 0} completed deals
-                    {seller.overallRating ? ` | ${seller.overallRating.toFixed(1)} rating` : ""}
-                  </p>
+                <div className="flex min-w-0 items-center gap-3">
+                  <UserAvatar className="h-11 w-11 text-sm font-bold" user={seller} />
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-ink">
+                      {seller.publicName || seller.firstName || seller.name}
+                    </p>
+                    <p className="mt-1 text-sm text-steel">
+                      {seller.completedDeals || 0} completed deals
+                      {seller.overallRating ? ` | ${seller.overallRating.toFixed(1)} rating` : ""}
+                    </p>
+                  </div>
                 </div>
                 <span className="inline-flex items-center gap-2 text-sm font-semibold text-navy">
                   View

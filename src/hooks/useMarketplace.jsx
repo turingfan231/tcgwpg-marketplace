@@ -26,6 +26,7 @@ const TOAST_SEEN_STORAGE_PREFIX = "tcgwpg.seenToasts";
 const MARKETPLACE_CACHE_KEY = "tcgwpg.marketplaceCache";
 const SUPPORTED_GAME_SLUGS = new Set(["magic", "pokemon", "one-piece"]);
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
+const MEDIA_BUCKET = "listing-media";
 
 function readSearchStorage() {
   if (typeof window === "undefined") {
@@ -117,6 +118,7 @@ function buildMarketplaceCacheSnapshot(snapshot) {
       meetupPreferences: user.meetupPreferences,
       responseTime: user.responseTime,
       completedDeals: user.completedDeals,
+      avatarUrl: user.avatarUrl || "",
       publicName: user.publicName,
       firstName: user.firstName,
       initials: user.initials,
@@ -196,6 +198,16 @@ function normalizeUsername(value) {
     .replace(/\s+/g, "_")
     .replace(/[^a-zA-Z0-9._-]/g, "")
     .slice(0, 24);
+}
+
+function getFileExtension(name, mimeType = "") {
+  const explicitExtension = String(name || "").split(".").pop();
+  if (explicitExtension && explicitExtension !== name) {
+    return explicitExtension.toLowerCase();
+  }
+
+  const mimeSuffix = String(mimeType || "").split("/").pop();
+  return mimeSuffix ? mimeSuffix.toLowerCase() : "jpg";
 }
 
 function isMissingColumnError(error, columnName) {
@@ -357,6 +369,7 @@ function normalizeUserRecord(user) {
     meetupPreferences: "Flexible local meetup.",
     responseTime: "~ 1 hour",
     completedDeals: 0,
+    avatarUrl: "",
     ...user,
     email: normalizeEmail(user.email),
     postalCode: normalizePostalCode(user.postalCode),
@@ -442,6 +455,7 @@ function fromProfileRow(row) {
     role: row.role,
     name: row.name,
     username: row.username || "",
+    avatarUrl: row.avatar_url || "",
     email: row.email,
     neighborhood: row.neighborhood,
     postalCode: row.postal_code,
@@ -585,6 +599,7 @@ function mergeAuthedProfileMetadata(profileRow, authUser) {
       profileRow.username ||
       normalizeUsername(authUser?.user_metadata?.username) ||
       "",
+    avatar_url: profileRow.avatar_url || authUser?.user_metadata?.avatar_url || "",
     postal_code:
       profileRow.postal_code ||
       normalizePostalCode(authUser?.user_metadata?.postal_code) ||
@@ -1052,11 +1067,24 @@ export function MarketplaceProvider({ children }) {
         normalizeUsername(payload.username) ||
         normalizeUsername(authUser.user_metadata?.username) ||
         "";
+      const desiredAvatarUrl = payload.avatarUrl || authUser.user_metadata?.avatar_url || "";
 
-      if (!existingProfile.username && desiredUsername) {
+      if ((!existingProfile.username && desiredUsername) || (!existingProfile.avatar_url && desiredAvatarUrl)) {
+        const nextProfilePatch = {
+          updated_at: new Date().toISOString(),
+        };
+
+        if (!existingProfile.username && desiredUsername) {
+          nextProfilePatch.username = desiredUsername;
+        }
+
+        if (!existingProfile.avatar_url && desiredAvatarUrl) {
+          nextProfilePatch.avatar_url = desiredAvatarUrl;
+        }
+
         const updateResult = await supabase
           .from("profiles")
-          .update({ username: desiredUsername, updated_at: new Date().toISOString() })
+          .update(nextProfilePatch)
           .eq("id", authUser.id)
           .select("*")
           .single();
@@ -1065,7 +1093,10 @@ export function MarketplaceProvider({ children }) {
           return fromProfileRow(updateResult.data);
         }
 
-        if (!isMissingColumnError(updateResult.error, "username")) {
+        if (
+          !isMissingColumnError(updateResult.error, "username") &&
+          !isMissingColumnError(updateResult.error, "avatar_url")
+        ) {
           throw updateResult.error;
         }
       }
@@ -1086,6 +1117,7 @@ export function MarketplaceProvider({ children }) {
         normalizeUsername(authUser.user_metadata?.username) ||
         normalizeUsername(authUser.email?.split("@")[0]) ||
         "",
+      avatar_url: payload.avatarUrl || authUser.user_metadata?.avatar_url || "",
       email: authUser.email,
       neighborhood:
         payload.neighborhood || authUser.user_metadata?.neighborhood || neighborhoods[1],
@@ -1106,8 +1138,12 @@ export function MarketplaceProvider({ children }) {
       .select("*")
       .single();
 
-    if (insertResult.error && isMissingColumnError(insertResult.error, "username")) {
-      const { username, ...legacyProfilePayload } = profilePayload;
+    if (
+      insertResult.error &&
+      (isMissingColumnError(insertResult.error, "username") ||
+        isMissingColumnError(insertResult.error, "avatar_url"))
+    ) {
+      const { username, avatar_url, ...legacyProfilePayload } = profilePayload;
       insertResult = await supabase
         .from("profiles")
         .insert(legacyProfilePayload)
@@ -1644,11 +1680,50 @@ export function MarketplaceProvider({ children }) {
       return access;
     }
 
+    let nextAvatarUrl = currentUserRecord?.avatarUrl || "";
+
+    if (payload.removeAvatar) {
+      nextAvatarUrl = "";
+    } else if (payload.avatarFile) {
+      if (!String(payload.avatarFile.type || "").startsWith("image/")) {
+        return { ok: false, error: "Profile photo must be an image file." };
+      }
+
+      if (Number(payload.avatarFile.size) > 1_500_000) {
+        return { ok: false, error: "Profile photo must be under 1.5 MB." };
+      }
+
+      const extension = getFileExtension(payload.avatarFile.name, payload.avatarFile.type);
+      const filePath = `avatars/${currentUserId}/profile-${Date.now()}.${extension}`;
+      const uploadResult = await supabase.storage
+        .from(MEDIA_BUCKET)
+        .upload(filePath, payload.avatarFile, {
+          cacheControl: "3600",
+          upsert: true,
+          contentType: payload.avatarFile.type || undefined,
+        });
+
+      if (uploadResult.error) {
+        return {
+          ok: false,
+          error:
+            uploadResult.error.message ||
+            "Profile photo upload failed. Check the listing-media storage bucket.",
+        };
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(filePath);
+      nextAvatarUrl = publicUrl;
+    }
+
     const authUpdateResult = await supabase.auth.updateUser({
       data: {
         username,
         neighborhood: payload.neighborhood,
         postal_code: normalizePostalCode(payload.postalCode),
+        avatar_url: nextAvatarUrl || null,
       },
     });
 
@@ -1665,6 +1740,7 @@ export function MarketplaceProvider({ children }) {
       response_time: payload.responseTime || "~ 1 hour",
       banner_style: payload.bannerStyle || "neutral",
       bio: payload.bio || "",
+      avatar_url: nextAvatarUrl || null,
       updated_at: new Date().toISOString(),
     };
 
@@ -1673,8 +1749,12 @@ export function MarketplaceProvider({ children }) {
       .update(profilePayload)
       .eq("id", currentUserId);
 
-    if (updateResult.error && isMissingColumnError(updateResult.error, "username")) {
-      const { username, ...legacyProfilePayload } = profilePayload;
+    if (
+      updateResult.error &&
+      (isMissingColumnError(updateResult.error, "username") ||
+        isMissingColumnError(updateResult.error, "avatar_url"))
+    ) {
+      const { username, avatar_url, ...legacyProfilePayload } = profilePayload;
       updateResult = await supabase
         .from("profiles")
         .update(legacyProfilePayload)

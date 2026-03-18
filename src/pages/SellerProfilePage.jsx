@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import ListingCard from "../components/cards/ListingCard";
 import ReviewModal from "../components/modals/ReviewModal";
+import UserAvatar from "../components/shared/UserAvatar";
 import EmptyState from "../components/ui/EmptyState";
 import RatingStars from "../components/ui/RatingStars";
 import { useMarketplace } from "../hooks/useMarketplace";
@@ -49,9 +50,12 @@ export default function SellerProfilePage() {
         >
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex items-start gap-5">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white/15 bg-white/10 text-3xl font-bold text-white">
-                {seller.initials}
-              </div>
+              <UserAvatar
+                className="h-24 w-24 border border-white/15 bg-white/10 text-3xl"
+                imageClassName="border border-white/15"
+                textClassName="text-3xl font-bold"
+                user={seller}
+              />
               <div>
                 <div className="flex flex-wrap items-center gap-3">
                   <h1 className="font-display text-4xl font-semibold tracking-[-0.05em]">

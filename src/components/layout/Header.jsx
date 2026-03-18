@@ -16,6 +16,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useMarketplace } from "../../hooks/useMarketplace";
+import UserAvatar from "../shared/UserAvatar";
 
 const browseLinks = [
   { to: "/", label: "Home", clearSearch: false },
@@ -228,7 +229,7 @@ export default function Header() {
                       type="button"
                       onClick={() => setMenuOpen((current) => !current)}
                     >
-                      <UserRound size={16} />
+                      <UserAvatar className="h-6 w-6 text-[0.7rem]" user={currentUser} />
                       {currentUser?.firstName || "Account"}
                       <ChevronDown size={16} />
                       {menuNotificationCount ? (
@@ -241,10 +242,15 @@ export default function Header() {
                     {menuOpen ? (
                       <div className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[18rem] rounded-[24px] border border-slate-200 bg-white p-2 shadow-[0_18px_44px_-22px_rgba(15,23,42,0.28)]">
                         <div className="border-b border-slate-100 px-4 py-3">
-                          <p className="font-semibold text-ink">
-                            {currentUser?.firstName || "Account"}
-                          </p>
-                          <p className="truncate text-sm text-steel">{currentUser?.email}</p>
+                          <div className="flex items-center gap-3">
+                            <UserAvatar className="h-11 w-11 text-sm" user={currentUser} />
+                            <div className="min-w-0">
+                              <p className="font-semibold text-ink">
+                                {currentUser?.firstName || "Account"}
+                              </p>
+                              <p className="truncate text-sm text-steel">{currentUser?.email}</p>
+                            </div>
+                          </div>
                         </div>
 
                         <div className="grid gap-1 p-2">
@@ -445,8 +451,13 @@ export default function Header() {
                 {isAuthenticated ? (
                   <div className="mt-3 space-y-2">
                     <div className="rounded-2xl border border-slate-200 bg-[#faf7f1] px-4 py-4">
-                      <p className="font-semibold text-ink">{currentUser?.firstName || "Account"}</p>
-                      <p className="mt-1 truncate text-sm text-steel">{currentUser?.email}</p>
+                      <div className="flex items-center gap-3">
+                        <UserAvatar className="h-11 w-11 text-sm" user={currentUser} />
+                        <div className="min-w-0">
+                          <p className="font-semibold text-ink">{currentUser?.firstName || "Account"}</p>
+                          <p className="mt-1 truncate text-sm text-steel">{currentUser?.email}</p>
+                        </div>
+                      </div>
                     </div>
                     {accountMenuItems.map((item) => {
                       const Icon = item.icon;

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { neighborhoods } from "../data/mockData";
 import { useMarketplace } from "../hooks/useMarketplace";
+import UserAvatar from "../components/shared/UserAvatar";
 
 function normalizePostalInput(value) {
   return String(value || "")
@@ -44,6 +45,8 @@ export default function AccountPage() {
   const [appealMessage, setAppealMessage] = useState("");
   const [appealError, setAppealError] = useState("");
   const [deleteError, setDeleteError] = useState("");
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(currentUser?.avatarUrl || "");
 
   const accountStatus = useMemo(
     () =>
@@ -66,13 +69,27 @@ export default function AccountPage() {
       bannerStyle: currentUser?.bannerStyle || "neutral",
       bio: currentUser?.bio || "",
     });
+    setAvatarFile(null);
+    setAvatarPreviewUrl(currentUser?.avatarUrl || "");
   }, [currentUser]);
+
+  useEffect(() => {
+    return () => {
+      if (String(avatarPreviewUrl || "").startsWith("blob:")) {
+        URL.revokeObjectURL(avatarPreviewUrl);
+      }
+    };
+  }, [avatarPreviewUrl]);
 
   async function handleProfileSubmit(event) {
     event.preventDefault();
     setProfileError("");
     setProfileMessage("");
-    const result = await updateCurrentUserProfile(profileForm);
+    const result = await updateCurrentUserProfile({
+      ...profileForm,
+      avatarFile,
+      removeAvatar: !avatarFile && !avatarPreviewUrl,
+    });
 
     if (!result.ok) {
       setProfileError(result.error);
@@ -80,6 +97,7 @@ export default function AccountPage() {
     }
 
     setProfileMessage("Account location details updated.");
+    setAvatarFile(null);
   }
 
   async function handlePasswordSubmit(event) {
@@ -183,6 +201,22 @@ export default function AccountPage() {
             </div>
             <div className="rounded-[24px] border border-slate-200 bg-[#fbf8f1] px-5 py-4">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                Profile photo
+              </p>
+              <div className="mt-4 flex items-center gap-4">
+                <UserAvatar
+                  className="h-16 w-16"
+                  name={currentUser?.name}
+                  src={avatarPreviewUrl}
+                  user={currentUser}
+                />
+                <p className="text-sm leading-7 text-steel">
+                  Upload a square-ish photo to show on seller pages and listing details.
+                </p>
+              </div>
+            </div>
+            <div className="rounded-[24px] border border-slate-200 bg-[#fbf8f1] px-5 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
                 Account status
               </p>
               <p className="mt-2 text-lg font-semibold text-ink">{accountStatus}</p>
@@ -219,6 +253,62 @@ export default function AccountPage() {
                   }
                 />
               </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-steel">Profile photo</span>
+                <div className="rounded-[22px] border border-slate-200 bg-[#f8f5ee] p-4">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <UserAvatar
+                      className="h-20 w-20"
+                      name={currentUser?.name}
+                      src={avatarPreviewUrl}
+                      user={currentUser}
+                    />
+                    <div className="flex-1 space-y-3">
+                      <input
+                        accept="image/*"
+                        className="block w-full text-sm text-steel file:mr-3 file:rounded-full file:border-0 file:bg-navy file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
+                        type="file"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0] || null;
+                          setAvatarFile(file);
+
+                          if (!file) {
+                            setAvatarPreviewUrl(currentUser?.avatarUrl || "");
+                            return;
+                          }
+
+                          const previewUrl = URL.createObjectURL(file);
+                          setAvatarPreviewUrl(previewUrl);
+                        }}
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                          type="button"
+                          onClick={() => {
+                            setAvatarFile(null);
+                            setAvatarPreviewUrl(currentUser?.avatarUrl || "");
+                          }}
+                        >
+                          Revert
+                        </button>
+                        <button
+                          className="rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:border-rose-300"
+                          type="button"
+                          onClick={() => {
+                            setAvatarFile(null);
+                            setAvatarPreviewUrl("");
+                          }}
+                        >
+                          Remove photo
+                        </button>
+                      </div>
+                      <p className="text-sm text-steel">JPG, PNG, or WebP up to 1.5 MB.</p>
+                    </div>
+                  </div>
+                </div>
+              </label>
+
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-steel">Neighborhood</span>
                 <select
