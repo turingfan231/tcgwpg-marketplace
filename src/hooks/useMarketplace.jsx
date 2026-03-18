@@ -27,6 +27,7 @@ const MARKETPLACE_CACHE_KEY = "tcgwpg.marketplaceCache";
 const SUPPORTED_GAME_SLUGS = new Set(["magic", "pokemon", "one-piece"]);
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
 const MEDIA_BUCKET = "listing-media";
+const FOREGROUND_REFRESH_MS = 12000;
 
 function readSearchStorage() {
   if (typeof window === "undefined") {
@@ -739,7 +740,9 @@ export function MarketplaceProvider({ children }) {
   const [isCreateListingOpen, setCreateListingOpen] = useState(false);
   const [createListingPreset, setCreateListingPreset] = useState(null);
   const [authReady, setAuthReady] = useState(!isSupabaseConfigured);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(
+    Boolean(isSupabaseConfigured && !cachedState?.listings?.length),
+  );
   const [toastItems, setToastItems] = useState([]);
   const seenNotificationIdsRef = useRef(new Set());
   const seededRealtimeStateRef = useRef(false);
@@ -1419,11 +1422,32 @@ export function MarketplaceProvider({ children }) {
       return;
     }
 
-    const intervalId = window.setInterval(() => {
-      void refreshMarketplaceData(currentUserId, { silent: true });
-    }, 3000);
+    const runRefresh = () => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
 
-    return () => window.clearInterval(intervalId);
+      void refreshMarketplaceData(currentUserId, { silent: true });
+    };
+
+    const intervalId = window.setInterval(() => {
+      runRefresh();
+    }, FOREGROUND_REFRESH_MS);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        runRefresh();
+      }
+    };
+
+    window.addEventListener("focus", runRefresh);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", runRefresh);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [authReady, currentUserId, refreshMarketplaceData]);
 
   useEffect(() => {

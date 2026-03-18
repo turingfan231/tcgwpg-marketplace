@@ -5,6 +5,7 @@ import ListingCard from "../components/cards/ListingCard";
 import ReviewModal from "../components/modals/ReviewModal";
 import UserAvatar from "../components/shared/UserAvatar";
 import EmptyState from "../components/ui/EmptyState";
+import PageSkeleton from "../components/ui/PageSkeleton";
 import RatingStars from "../components/ui/RatingStars";
 import { useMarketplace } from "../hooks/useMarketplace";
 
@@ -18,7 +19,7 @@ const bannerToneMap = {
 
 export default function SellerProfilePage() {
   const { sellerId } = useParams();
-  const { activeListings, currentUser, reviewBadgeCatalog, reviews, sellerMap } =
+  const { activeListings, currentUser, loading, reviewBadgeCatalog, reviews, sellerMap } =
     useMarketplace();
   const [isReviewModalOpen, setReviewModalOpen] = useState(false);
 
@@ -32,6 +33,10 @@ export default function SellerProfilePage() {
     [activeListings, sellerId],
   );
   const isOwnProfile = String(currentUser?.id || "") === String(sellerId || "");
+
+  if (loading && !seller) {
+    return <PageSkeleton cards={4} titleWidth="w-72" />;
+  }
 
   if (!seller) {
     return (

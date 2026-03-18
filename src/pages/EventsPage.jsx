@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import EmptyState from "../components/ui/EmptyState";
+import PageSkeleton from "../components/ui/PageSkeleton";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { fetchLocalEvents } from "../services/cardDatabase";
 
@@ -143,6 +144,10 @@ export default function EventsPage() {
   }, [eventsForMonth, visibleMonth]);
 
   const selectedMonthIndex = monthKeys.indexOf(visibleMonth);
+
+  if (loading && !allEvents.length && !sourceStatus.length) {
+    return <PageSkeleton cards={4} titleWidth="w-[30rem]" />;
+  }
 
   return (
     <div className="space-y-7">

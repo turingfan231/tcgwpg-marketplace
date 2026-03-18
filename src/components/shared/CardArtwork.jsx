@@ -2,17 +2,19 @@ import { useEffect, useState } from "react";
 
 export default function CardArtwork({ src, title, game, className = "" }) {
   const [hasError, setHasError] = useState(false);
+  const shouldSkipRemoteImage = String(src || "").includes("images.onepiece-cardgame.dev");
+  const displaySrc = shouldSkipRemoteImage ? "" : src;
 
   useEffect(() => {
     setHasError(false);
   }, [src]);
 
-  if (src && !hasError) {
+  if (displaySrc && !hasError) {
     return (
       <img
         alt={title}
         className={className}
-        src={src}
+        src={displaySrc}
         onError={() => setHasError(true)}
       />
     );

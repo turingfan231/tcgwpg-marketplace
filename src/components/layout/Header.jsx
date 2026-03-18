@@ -25,6 +25,8 @@ const browseLinks = [
   { to: "/market/magic", label: "Magic", clearSearch: true },
   { to: "/market/one-piece", label: "One Piece", clearSearch: true },
   { to: "/wtb", label: "WTB", clearSearch: true },
+  { to: "/sellers", label: "Sellers", clearSearch: false },
+  { to: "/events", label: "Events", clearSearch: false },
 ];
 
 export default function Header() {
@@ -202,25 +204,11 @@ export default function Header() {
 
               <div className="hidden items-center gap-2 lg:flex">
                 <Link
-                  className="rounded-full px-4 py-2.5 text-sm font-semibold text-steel transition hover:bg-slate-100 hover:text-ink"
-                  to="/sellers"
-                >
-                  Sellers
-                </Link>
-                <Link
-                  className="rounded-full px-4 py-2.5 text-sm font-semibold text-steel transition hover:bg-slate-100 hover:text-ink"
-                  to="/events"
-                >
-                  Events
-                </Link>
-                <button
                   className="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-slate-300 hover:bg-slate-50"
-                  type="button"
-                  onClick={() => openListing("WTB", "/wtb")}
+                  to="/wtb"
                 >
-                  Post WTB
-                </button>
-
+                  WTB board
+                </Link>
                 {isAuthenticated ? (
                   <div className="relative" ref={accountMenuRef}>
                     <button
@@ -305,14 +293,14 @@ export default function Header() {
               size={18}
             />
             <input
-              className="w-full rounded-full border border-slate-200 bg-[#f6f2ea] py-3.5 pl-12 pr-4 text-sm text-ink outline-none transition focus:border-navy focus:bg-white"
+              className="w-full rounded-[22px] border border-slate-200 bg-[#f7f3ec] py-3.5 pl-12 pr-4 text-sm text-ink outline-none transition focus:border-navy focus:bg-white"
               placeholder="Search cards, set codes, variants, or sellers"
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
             />
           </form>
 
-          <div className="mt-4 flex items-center gap-2 overflow-x-auto border-t border-slate-200/80 pt-4">
+          <div className="header-chip-scroll mt-4 flex items-center gap-2 overflow-x-auto border-t border-slate-200/80 pt-4">
             {browseLinks.map((link) => (
               <NavLink
                 key={link.to}
@@ -329,13 +317,6 @@ export default function Header() {
                 {link.label}
               </NavLink>
             ))}
-            <Link
-              className="ml-auto hidden whitespace-nowrap rounded-full border border-slate-200 bg-[#f6f2ea] px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink sm:inline-flex"
-              to="/events"
-            >
-              <CalendarRange size={15} />
-              <span className="ml-2">Winnipeg events</span>
-            </Link>
           </div>
         </div>
       </header>

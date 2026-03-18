@@ -13,6 +13,7 @@ import { Link, useNavigate } from "react-router-dom";
 import ListingCard from "../components/cards/ListingCard";
 import CardArtwork from "../components/shared/CardArtwork";
 import UserAvatar from "../components/shared/UserAvatar";
+import PageSkeleton from "../components/ui/PageSkeleton";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { fetchLocalEvents } from "../services/cardDatabase";
 import { formatNumber } from "../utils/formatters";
@@ -30,6 +31,7 @@ export default function HomePage() {
     formatCadPrice,
     gameCatalog,
     hotListings,
+    loading,
     manualEvents,
     openCreateListing,
     sellers,
@@ -52,6 +54,21 @@ export default function HomePage() {
         count: safeListings.filter((listing) => listing?.gameSlug === game.slug).length,
       })),
     [featuredCategories, safeListings],
+  );
+  const gameShelves = useMemo(
+    () =>
+      categorySummaries.map((game) => ({
+        ...game,
+        listings: safeListings
+          .filter((listing) => listing?.gameSlug === game.slug)
+          .sort(
+            (left, right) =>
+              Number(right.featured) - Number(left.featured) ||
+              (right.sortTimestamp || 0) - (left.sortTimestamp || 0),
+          )
+          .slice(0, 2),
+      })),
+    [categorySummaries, safeListings],
   );
 
   const freshListings = safeHotListings.slice(0, 6);
@@ -127,6 +144,10 @@ export default function HomePage() {
       cancelled = true;
     };
   }, []);
+
+  if (loading && !safeListings.length) {
+    return <PageSkeleton cards={4} titleWidth="w-80" />;
+  }
 
   return (
     <div className="space-y-12 lg:space-y-16">
@@ -358,7 +379,7 @@ export default function HomePage() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="section-kicker">Browse by game</p>
-            <h2 className="section-title mt-2">Pick a lane and start browsing</h2>
+            <h2 className="section-title mt-2">Jump into the active shelves</h2>
           </div>
           <Link
             className="inline-flex items-center gap-2 text-sm font-semibold text-navy"
@@ -369,32 +390,89 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="flex flex-wrap gap-2">
           {categorySummaries.map((game) => (
             <button
               key={game.slug}
-              className="surface-card p-6 text-left transition hover:-translate-y-1 hover:border-slate-300"
+              className="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-slate-300 hover:bg-[#faf7f1]"
               type="button"
               onClick={() => {
                 setGlobalSearch("");
                 navigate(`/market/${game.slug}`);
               }}
             >
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-navy/65">
-                {game.shortName}
-              </p>
-              <h3 className="mt-3 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                {game.name}
-              </h3>
-              <p className="mt-3 text-sm leading-7 text-steel">{game.description}</p>
-              <div className="mt-6 flex items-center justify-between">
-                <span className="text-sm font-semibold text-ink">{game.count} live listings</span>
-                <span className="inline-flex items-center gap-1 text-sm font-semibold text-navy">
-                  Browse
-                  <ChevronRight size={15} />
-                </span>
-              </div>
+              {game.name}
+              <span className="ml-2 text-steel">{game.count}</span>
             </button>
+          ))}
+        </div>
+
+        <div className="grid gap-5 xl:grid-cols-3">
+          {gameShelves.map((game) => (
+            <article key={game.slug} className="surface-card overflow-hidden">
+              <div className="border-b border-slate-200 bg-[#fbf7ef] px-5 py-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-navy/65">
+                      {game.shortName}
+                    </p>
+                    <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-ink">
+                      {game.name}
+                    </h3>
+                  </div>
+                  <button
+                    className="inline-flex items-center gap-1 text-sm font-semibold text-navy"
+                    type="button"
+                    onClick={() => {
+                      setGlobalSearch("");
+                      navigate(`/market/${game.slug}`);
+                    }}
+                  >
+                    Browse
+                    <ChevronRight size={15} />
+                  </button>
+                </div>
+                <p className="mt-3 text-sm leading-7 text-steel">{game.description}</p>
+              </div>
+
+              <div className="space-y-3 p-5">
+                {game.listings.length ? (
+                  game.listings.map((listing) => (
+                    <button
+                      key={listing.id}
+                      className="flex w-full items-center gap-4 rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-slate-300 hover:bg-[#fcfaf4]"
+                      type="button"
+                      onClick={() => navigate(`/listing/${listing.id}`)}
+                    >
+                      <CardArtwork
+                        className="aspect-[63/88] w-[4.75rem] rounded-[16px] object-cover"
+                        game={listing.game}
+                        src={listing.imageUrl}
+                        title={listing.title}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 font-semibold text-ink">{listing.title}</p>
+                        <p className="mt-1 text-sm text-steel">
+                          {listing.neighborhood} | {listing.seller?.publicName || listing.seller?.name}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-ink">
+                          {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
+                        </p>
+                        <p className="mt-1 text-xs uppercase tracking-[0.16em] text-steel">
+                          {listing.timeAgo}
+                        </p>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="rounded-[22px] border border-dashed border-slate-200 bg-[#faf7f1] px-4 py-6 text-sm leading-7 text-steel">
+                    No active {game.shortName} listings yet.
+                  </div>
+                )}
+              </div>
+            </article>
           ))}
         </div>
       </section>

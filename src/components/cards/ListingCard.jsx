@@ -13,6 +13,7 @@ import {
   getListingTypeClasses,
 } from "../../utils/formatters";
 import CardArtwork from "../shared/CardArtwork";
+import UserAvatar from "../shared/UserAvatar";
 
 export default function ListingCard({ listing }) {
   const { formatCadPrice, toggleWishlist } = useMarketplace();
@@ -87,9 +88,12 @@ export default function ListingCard({ listing }) {
             <h3 className="line-clamp-2 font-display text-[1.55rem] font-semibold leading-tight tracking-[-0.03em] text-ink">
               {listing.title}
             </h3>
-            <p className="text-sm text-steel">
-              {listing.seller?.publicName || listing.seller?.name} | {listing.timeAgo}
-            </p>
+            <div className="flex items-center gap-2 text-sm text-steel">
+              <UserAvatar className="h-7 w-7 text-[0.7rem] font-bold" user={listing.seller} />
+              <span className="truncate">
+                {listing.seller?.publicName || listing.seller?.name} | {listing.timeAgo}
+              </span>
+            </div>
           </div>
           <ArrowUpRight className="mt-1 text-slate-300 transition group-hover:text-navy" />
         </div>

@@ -39,22 +39,22 @@ export default function AppShell() {
       </main>
 
       <footer className="border-t border-slate-200/80 bg-white">
-        <div className="page-shell grid gap-8 py-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+        <div className="page-shell grid gap-8 py-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
           <div>
             <p className="section-kicker">Built for Winnipeg</p>
-            <h2 className="mt-3 font-display text-4xl font-semibold tracking-[-0.04em] text-ink">
-              A cleaner place to move cards locally.
+            <h2 className="mt-3 font-display text-[2.4rem] font-semibold tracking-[-0.04em] text-ink">
+              Local card deals without the usual clutter.
             </h2>
-            <p className="mt-4 max-w-2xl text-base leading-8 text-steel">
+            <p className="mt-4 max-w-2xl text-base leading-7 text-steel">
               TCGWPG focuses on the parts generic marketplaces usually miss: exact
               printing search, CAD pricing context, local meetup details, and messaging
               that stays attached to the card.
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="surface-card p-6">
+            <div className="surface-muted p-5">
               <ShieldCheck className="text-navy" />
-              <h3 className="mt-4 font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
+              <h3 className="mt-4 font-display text-[1.6rem] font-semibold tracking-[-0.03em] text-ink">
                 Better trust signals
               </h3>
               <p className="mt-2 text-sm leading-7 text-steel">
@@ -62,9 +62,9 @@ export default function AppShell() {
                 the first message.
               </p>
             </div>
-            <div className="surface-card p-6">
+            <div className="surface-muted p-5">
               <MapPin className="text-orange" />
-              <h3 className="mt-4 font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
+              <h3 className="mt-4 font-display text-[1.6rem] font-semibold tracking-[-0.03em] text-ink">
                 Neighborhood-aware browsing
               </h3>
               <p className="mt-2 text-sm leading-7 text-steel">

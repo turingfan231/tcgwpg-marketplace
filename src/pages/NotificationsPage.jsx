@@ -1,6 +1,7 @@
 import { BellRing, CheckCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import EmptyState from "../components/ui/EmptyState";
+import PageSkeleton from "../components/ui/PageSkeleton";
 import { useMarketplace } from "../hooks/useMarketplace";
 
 function buildTargetLink(notification) {
@@ -43,10 +44,15 @@ function formatNotificationDate(dateString) {
 
 export default function NotificationsPage() {
   const {
+    loading,
     markAllNotificationsRead,
     markNotificationRead,
     notificationsForCurrentUser,
   } = useMarketplace();
+
+  if (loading && !notificationsForCurrentUser.length) {
+    return <PageSkeleton cards={3} rows={1} titleWidth="w-56" />;
+  }
 
   if (!notificationsForCurrentUser.length) {
     return (

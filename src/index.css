@@ -6,6 +6,10 @@
 
 :root {
   color-scheme: light;
+  --paper: #f7f4ee;
+  --paper-strong: #fcfaf5;
+  --line: rgba(148, 163, 184, 0.22);
+  --ink-shadow: 0 18px 38px -26px rgba(15, 23, 42, 0.18);
 }
 
 html {
@@ -15,7 +19,9 @@ html {
 body {
   @apply bg-gray-50 font-body text-ink antialiased;
   min-height: 100vh;
-  background: #f5f1ea;
+  background:
+    radial-gradient(circle at top left, rgba(255, 153, 0, 0.08), transparent 24%),
+    linear-gradient(180deg, #f7f3ed 0%, #f3efe8 100%);
 }
 
 a {
@@ -31,7 +37,8 @@ a {
 }
 
 .panel {
-  @apply rounded-[28px] border border-slate-200/80 bg-white shadow-soft;
+  @apply rounded-[24px] border bg-white shadow-soft;
+  border-color: var(--line);
 }
 
 .section-title {
@@ -43,11 +50,16 @@ a {
 }
 
 .surface-card {
-  @apply rounded-[28px] border border-slate-200/80 bg-white shadow-soft;
+  @apply rounded-[24px] border bg-white shadow-soft;
+  border-color: var(--line);
+  box-shadow: var(--ink-shadow);
 }
 
 .surface-muted {
-  @apply rounded-[28px] border border-slate-200/80 bg-[#f8f5ee] shadow-soft;
+  @apply rounded-[24px] border shadow-soft;
+  border-color: var(--line);
+  background: var(--paper-strong);
+  box-shadow: var(--ink-shadow);
 }
 
 .logo-mark {
@@ -166,6 +178,10 @@ a {
 
 .header-chip-scroll::-webkit-scrollbar {
   display: none;
+}
+
+.shelf-divider {
+  background: linear-gradient(90deg, rgba(15, 23, 42, 0.08), rgba(15, 23, 42, 0));
 }
 
 ::selection {

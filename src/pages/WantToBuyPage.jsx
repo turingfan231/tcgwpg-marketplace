@@ -2,12 +2,17 @@ import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ListingCard from "../components/cards/ListingCard";
 import EmptyState from "../components/ui/EmptyState";
+import PageSkeleton from "../components/ui/PageSkeleton";
 import { useMarketplace } from "../hooks/useMarketplace";
 
 export default function WantToBuyPage() {
   const navigate = useNavigate();
-  const { activeListings, openCreateListing } = useMarketplace();
+  const { activeListings, loading, openCreateListing } = useMarketplace();
   const wtbListings = activeListings.filter((listing) => listing.type === "WTB");
+
+  if (loading && !activeListings.length) {
+    return <PageSkeleton cards={4} titleWidth="w-80" />;
+  }
 
   if (!wtbListings.length) {
     return (

@@ -3,11 +3,12 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import UserAvatar from "../components/shared/UserAvatar";
 import EmptyState from "../components/ui/EmptyState";
+import PageSkeleton from "../components/ui/PageSkeleton";
 import RatingStars from "../components/ui/RatingStars";
 import { useMarketplace } from "../hooks/useMarketplace";
 
 export default function SellersPage() {
-  const { sellers } = useMarketplace();
+  const { loading, sellers } = useMarketplace();
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState("deals");
 
@@ -39,6 +40,10 @@ export default function SellersPage() {
 
     return results;
   }, [query, sellers, sortBy]);
+
+  if (loading && !sellers.length) {
+    return <PageSkeleton cards={6} titleWidth="w-72" />;
+  }
 
   if (!sellers.length) {
     return <EmptyState description="Seller profiles will appear here once users start posting." title="No sellers yet" />;

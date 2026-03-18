@@ -3,13 +3,14 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ListingCard from "../components/cards/ListingCard";
 import EmptyState from "../components/ui/EmptyState";
+import PageSkeleton from "../components/ui/PageSkeleton";
 import { neighborhoods } from "../data/mockData";
 import { useMarketplace } from "../hooks/useMarketplace";
 
 export default function MarketPage() {
   const navigate = useNavigate();
   const { gameSlug } = useParams();
-  const { activeListings, gameCatalog, globalSearch, openCreateListing, setGlobalSearch } =
+  const { activeListings, gameCatalog, globalSearch, loading, openCreateListing, setGlobalSearch } =
     useMarketplace();
   const [selectedNeighborhood, setSelectedNeighborhood] = useState("All Winnipeg");
   const [sortBy, setSortBy] = useState("recent");
@@ -61,6 +62,10 @@ export default function MarketPage() {
 
     return results;
   }, [activeListings, deferredSearch, selectedGame, selectedNeighborhood, sortBy]);
+
+  if (loading && !activeListings.length) {
+    return <PageSkeleton cards={6} titleWidth="w-60" />;
+  }
 
   return (
     <div className="space-y-7">

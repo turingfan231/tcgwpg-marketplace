@@ -2,6 +2,7 @@ import { BellRing, MessageSquarePlus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import EmptyState from "../components/ui/EmptyState";
+import PageSkeleton from "../components/ui/PageSkeleton";
 import { useMarketplace } from "../hooks/useMarketplace";
 
 function formatMessageTime(isoString) {
@@ -28,6 +29,7 @@ export default function MessagesPage() {
     currentUserId,
     formatCadPrice,
     getThreadById,
+    loading,
     markThreadRead,
     offersByListingId,
     respondToOffer,
@@ -87,6 +89,10 @@ export default function MessagesPage() {
       activeThread.participantIds.includes(offer.sellerId),
     );
   }, [activeThread, offersByListingId]);
+
+  if (loading && !threadsForCurrentUser.length) {
+    return <PageSkeleton cards={2} rows={1} titleWidth="w-48" />;
+  }
 
   if (!threadsForCurrentUser.length) {
     return (
