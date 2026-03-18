@@ -373,7 +373,7 @@ on storage.objects for update
 to authenticated
 using (
   bucket_id = 'listing-media'
-  and owner_id = auth.uid()
+  and owner_id = auth.uid()::text
 )
 with check (
   bucket_id = 'listing-media'
@@ -386,5 +386,5 @@ on storage.objects for delete
 to authenticated
 using (
   bucket_id = 'listing-media'
-  and owner_id = auth.uid()
+  and owner_id = auth.uid()::text
 );

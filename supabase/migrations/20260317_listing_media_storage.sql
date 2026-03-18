@@ -64,7 +64,7 @@ begin
     to authenticated
     using (
       bucket_id = 'listing-media'
-      and owner_id = auth.uid()
+      and owner_id = auth.uid()::text
     )
     with check (
       bucket_id = 'listing-media'
@@ -89,7 +89,7 @@ begin
     to authenticated
     using (
       bucket_id = 'listing-media'
-      and owner_id = auth.uid()
+      and owner_id = auth.uid()::text
     );
   end if;
 end
