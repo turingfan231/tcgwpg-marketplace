@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useLocation } from "react-router-dom";
 import {
   defaultWishlist,
   gameCatalog,
@@ -27,7 +28,11 @@ const MARKETPLACE_CACHE_KEY = "tcgwpg.marketplaceCache";
 const SUPPORTED_GAME_SLUGS = new Set(["magic", "pokemon", "one-piece"]);
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
 const MEDIA_BUCKET = "listing-media";
-const FOREGROUND_REFRESH_MS = 12000;
+const PUBLIC_REFRESH_MS = 120000;
+const PRIVATE_REFRESH_MS = 30000;
+const INBOX_REFRESH_MS = 8000;
+const ADMIN_REFRESH_MS = 20000;
+const ROUTE_REFRESH_DEBOUNCE_MS = 5000;
 
 function readSearchStorage() {
   if (typeof window === "undefined") {
@@ -269,6 +274,54 @@ function normalizeDraftCollection(value) {
   }
 
   return [];
+}
+
+function getRefreshScope(pathname = "/", isAuthenticated = false, isAdmin = false) {
+  if (!isAuthenticated) {
+    return "public";
+  }
+
+  if (pathname.startsWith("/messages")) {
+    return "inbox";
+  }
+
+  if (pathname.startsWith("/admin") && isAdmin) {
+    return "admin";
+  }
+
+  if (pathname.startsWith("/dashboard")) {
+    return "dashboard";
+  }
+
+  if (pathname.startsWith("/wishlist")) {
+    return "wishlist";
+  }
+
+  if (pathname.startsWith("/account") || pathname.startsWith("/notifications")) {
+    return "account";
+  }
+
+  return "public";
+}
+
+function getRefreshInterval(scope) {
+  if (scope === "inbox") {
+    return INBOX_REFRESH_MS;
+  }
+
+  if (scope === "admin") {
+    return ADMIN_REFRESH_MS;
+  }
+
+  if (scope === "dashboard") {
+    return PRIVATE_REFRESH_MS;
+  }
+
+  if (scope === "wishlist" || scope === "account") {
+    return 45000;
+  }
+
+  return PUBLIC_REFRESH_MS;
 }
 
 function sameParticipantSet(left = [], right = []) {
@@ -711,6 +764,7 @@ function buildSeedState() {
 }
 
 export function MarketplaceProvider({ children }) {
+  const location = useLocation();
   const seedState = useMemo(() => buildSeedState(), []);
   const cachedState = useMemo(() => (isSupabaseConfigured ? readMarketplaceCache() : null), []);
   const [users, setUsers] = useState(() =>
@@ -754,12 +808,23 @@ export function MarketplaceProvider({ children }) {
   const [isCreateListingOpen, setCreateListingOpen] = useState(false);
   const [createListingPreset, setCreateListingPreset] = useState(null);
   const [authReady, setAuthReady] = useState(!isSupabaseConfigured);
+  const [authUser, setAuthUser] = useState(null);
   const [loading, setLoading] = useState(
     Boolean(isSupabaseConfigured && !cachedState?.listings?.length),
   );
   const [toastItems, setToastItems] = useState([]);
   const seenNotificationIdsRef = useRef(new Set());
   const seededRealtimeStateRef = useRef(false);
+  const lastRefreshAtRef = useRef({
+    public: 0,
+    account: 0,
+    dashboard: 0,
+    wishlist: 0,
+    inbox: 0,
+    admin: 0,
+    full: 0,
+    initial: 0,
+  });
 
   const currentUser = useMemo(
     () => sanitizeUser(users.find((user) => user.id === currentUserId)) || null,
@@ -928,9 +993,12 @@ export function MarketplaceProvider({ children }) {
   const unreadNotificationCount = notificationsForCurrentUser.filter(
     (notification) => !notification.read,
   ).length;
-  const unreadMessageCount = threadsForCurrentUser.reduce(
-    (total, thread) => total + Number(thread.unreadCount || 0),
-    0,
+  const unreadMessageNotificationCount = notificationsForCurrentUser.filter(
+    (notification) => !notification.read && notification.type === "message",
+  ).length;
+  const unreadMessageCount = Math.max(
+    threadsForCurrentUser.reduce((total, thread) => total + Number(thread.unreadCount || 0), 0),
+    unreadMessageNotificationCount,
   );
 
   const offersForCurrentUser = useMemo(
@@ -1192,37 +1260,67 @@ export function MarketplaceProvider({ children }) {
         return;
       }
 
+      const scope = options.scope || "full";
+      const shouldLoadPublic =
+        scope === "initial" || scope === "full" || scope === "public";
+      const shouldLoadPrivate =
+        Boolean(authedUserId) &&
+        (scope === "initial" ||
+          scope === "full" ||
+          scope === "public" ||
+          scope === "account" ||
+          scope === "dashboard" ||
+          scope === "wishlist" ||
+          scope === "inbox" ||
+          scope === "admin");
+      const shouldLoadWishlist =
+        shouldLoadPrivate &&
+        (scope === "initial" || scope === "full" || scope === "dashboard" || scope === "wishlist");
+      const shouldLoadDrafts =
+        shouldLoadPrivate &&
+        (scope === "initial" || scope === "full" || scope === "dashboard");
+      const shouldLoadThreads =
+        shouldLoadPrivate &&
+        (scope === "initial" || scope === "full" || scope === "inbox");
+      const shouldLoadOffers =
+        shouldLoadPrivate &&
+        (scope === "initial" || scope === "full" || scope === "dashboard" || scope === "inbox");
+      const shouldLoadReports =
+        shouldLoadPrivate &&
+        currentUserRecord?.role === "admin" &&
+        (scope === "initial" || scope === "full" || scope === "admin");
+      const shouldLoadSearchHistory =
+        shouldLoadPrivate &&
+        (scope === "initial" || scope === "full" || scope === "dashboard");
+
       if (!options.silent) {
         setLoading(true);
       }
 
       try {
-        let authUser = null;
-        if (authedUserId) {
-          const authResult = await supabase.auth.getUser();
-          authUser = authResult.data?.user || null;
+        if (shouldLoadPublic) {
+          const [profilesRes, listingsRes, reviewsRes, manualEventsRes] = await Promise.all([
+            supabase.from("profiles").select("*"),
+            supabase.from("listings").select("*"),
+            supabase.from("reviews").select("*"),
+            supabase.from("manual_events").select("*"),
+          ]);
+
+          if (profilesRes.error) throw profilesRes.error;
+          if (listingsRes.error) throw listingsRes.error;
+          if (reviewsRes.error) throw reviewsRes.error;
+          if (manualEventsRes.error) throw manualEventsRes.error;
+
+          const normalizedProfiles = (profilesRes.data || [])
+            .map((row) => mergeAuthedProfileMetadata(row, authUser))
+            .map(fromProfileRow);
+
+          setUsers(normalizedProfiles);
+          setListings((listingsRes.data || []).map(fromListingRow).filter(isSupportedListing));
+          setReviews((reviewsRes.data || []).map(fromReviewRow));
+          setManualEvents((manualEventsRes.data || []).map(fromEventRow));
+          lastRefreshAtRef.current.public = Date.now();
         }
-
-        const [profilesRes, listingsRes, reviewsRes, manualEventsRes] = await Promise.all([
-          supabase.from("profiles").select("*"),
-          supabase.from("listings").select("*"),
-          supabase.from("reviews").select("*"),
-          supabase.from("manual_events").select("*"),
-        ]);
-
-        if (profilesRes.error) throw profilesRes.error;
-        if (listingsRes.error) throw listingsRes.error;
-        if (reviewsRes.error) throw reviewsRes.error;
-        if (manualEventsRes.error) throw manualEventsRes.error;
-
-        const normalizedProfiles = (profilesRes.data || [])
-          .map((row) => mergeAuthedProfileMetadata(row, authUser))
-          .map(fromProfileRow);
-
-        setUsers(normalizedProfiles);
-        setListings((listingsRes.data || []).map(fromListingRow).filter(isSupportedListing));
-        setReviews((reviewsRes.data || []).map(fromReviewRow));
-        setManualEvents((manualEventsRes.data || []).map(fromEventRow));
 
         if (!authedUserId) {
           setWishlist([]);
@@ -1233,6 +1331,11 @@ export function MarketplaceProvider({ children }) {
           setListingDrafts([]);
           setActiveDraftId(null);
           setSearchHistory([]);
+          lastRefreshAtRef.current[scope] = Date.now();
+          return;
+        }
+
+        if (!shouldLoadPrivate) {
           return;
         }
 
@@ -1245,27 +1348,39 @@ export function MarketplaceProvider({ children }) {
           notificationsRes,
           searchHistoryRes,
         ] = await Promise.all([
-          supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId),
-          supabase
-            .from("listing_drafts")
-            .select("*")
-            .eq("user_id", authedUserId)
-            .maybeSingle(),
-          supabase
-            .from("message_threads")
-            .select("*")
-            .contains("participant_ids", [authedUserId]),
-          supabase.from("offers").select("*"),
-          supabase.from("reports").select("*"),
-          supabase
-            .from("notifications")
-            .select("*")
-            .eq("user_id", authedUserId),
-          supabase
-            .from("search_history")
-            .select("*")
-            .eq("user_id", authedUserId)
-            .order("created_at", { ascending: false }),
+          shouldLoadWishlist
+            ? supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId)
+            : Promise.resolve({ data: null, error: null }),
+          shouldLoadDrafts
+            ? supabase
+                .from("listing_drafts")
+                .select("*")
+                .eq("user_id", authedUserId)
+                .maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
+          shouldLoadThreads
+            ? supabase
+                .from("message_threads")
+                .select("*")
+                .contains("participant_ids", [authedUserId])
+            : Promise.resolve({ data: null, error: null }),
+          shouldLoadOffers
+            ? supabase
+                .from("offers")
+                .select("*")
+                .or(`buyer_id.eq.${authedUserId},seller_id.eq.${authedUserId}`)
+            : Promise.resolve({ data: null, error: null }),
+          shouldLoadReports
+            ? supabase.from("reports").select("*")
+            : Promise.resolve({ data: null, error: null }),
+          supabase.from("notifications").select("*").eq("user_id", authedUserId),
+          shouldLoadSearchHistory
+            ? supabase
+                .from("search_history")
+                .select("*")
+                .eq("user_id", authedUserId)
+                .order("created_at", { ascending: false })
+            : Promise.resolve({ data: null, error: null }),
         ]);
 
         if (wishlistsRes.error) throw wishlistsRes.error;
@@ -1276,56 +1391,72 @@ export function MarketplaceProvider({ children }) {
         if (notificationsRes.error) throw notificationsRes.error;
         if (searchHistoryRes.error) throw searchHistoryRes.error;
 
-        const threadRows = threadRowsRes.data || [];
-        let messageRows = [];
-        if (threadRows.length) {
-          const messagesRes = await supabase
-            .from("messages")
-            .select("*")
-            .in(
-              "thread_id",
-              threadRows.map((thread) => thread.id),
-            );
+        if (shouldLoadThreads) {
+          const threadRows = threadRowsRes.data || [];
+          let messageRows = [];
+          if (threadRows.length) {
+            const messagesRes = await supabase
+              .from("messages")
+              .select("*")
+              .in(
+                "thread_id",
+                threadRows.map((thread) => thread.id),
+              );
 
-          if (messagesRes.error) throw messagesRes.error;
-          messageRows = messagesRes.data || [];
+            if (messagesRes.error) throw messagesRes.error;
+            messageRows = messagesRes.data || [];
+          }
+
+          setThreads(buildThreadMap(threadRows, messageRows));
         }
 
-        const draftPayload = draftRes.data?.payload || null;
-        const nextDrafts = normalizeDraftCollection(draftPayload).map((draft, index) => ({
-          id: draft.id || `legacy-draft-${index + 1}`,
-          name: draft.name || draft.title || "Untitled draft",
-          updatedAt: draft.updatedAt || draftRes.data?.updated_at || new Date().toISOString(),
-          ...draft,
-        }));
+        if (shouldLoadWishlist) {
+          setWishlist((wishlistsRes.data || []).map((item) => item.listing_id));
+        }
 
-        setWishlist((wishlistsRes.data || []).map((item) => item.listing_id));
-        setListingDrafts(nextDrafts);
-        setActiveDraftId(
-          draftPayload?.activeDraftId ||
-            nextDrafts[0]?.id ||
-            null,
-        );
-        setThreads(buildThreadMap(threadRows, messageRows));
-        setOffers((offersRes.data || []).map(fromOfferRow));
-        setReports((reportsRes.data || []).map(fromReportRow));
+        if (shouldLoadDrafts) {
+          const draftPayload = draftRes.data?.payload || null;
+          const nextDrafts = normalizeDraftCollection(draftPayload).map((draft, index) => ({
+            id: draft.id || `legacy-draft-${index + 1}`,
+            name: draft.name || draft.title || "Untitled draft",
+            updatedAt: draft.updatedAt || draftRes.data?.updated_at || new Date().toISOString(),
+            ...draft,
+          }));
+
+          setListingDrafts(nextDrafts);
+          setActiveDraftId(draftPayload?.activeDraftId || nextDrafts[0]?.id || null);
+        }
+
+        if (shouldLoadOffers) {
+          setOffers((offersRes.data || []).map(fromOfferRow));
+        }
+
+        if (shouldLoadReports) {
+          setReports((reportsRes.data || []).map(fromReportRow));
+        }
+
         setNotifications((notificationsRes.data || []).map(fromNotificationRow));
-        setSearchHistory(
-          (searchHistoryRes.data || []).map((row) => ({
-            id: row.id,
-            query: row.query,
-            game: row.game,
-            source: row.source,
-            createdAt: row.created_at,
-          })),
-        );
+
+        if (shouldLoadSearchHistory) {
+          setSearchHistory(
+            (searchHistoryRes.data || []).map((row) => ({
+              id: row.id,
+              query: row.query,
+              game: row.game,
+              source: row.source,
+              createdAt: row.created_at,
+            })),
+          );
+        }
+
+        lastRefreshAtRef.current[scope] = Date.now();
       } finally {
         if (!options.silent) {
           setLoading(false);
         }
       }
     },
-    [currentUserId],
+    [authUser, currentUserId, currentUserRecord?.role],
   );
 
   useEffect(() => {
@@ -1380,6 +1511,7 @@ export function MarketplaceProvider({ children }) {
 
       try {
         if (authUser) {
+          setAuthUser(authUser);
           const profile = await bootstrapProfile(authUser);
           if (!mounted) {
             return;
@@ -1392,14 +1524,15 @@ export function MarketplaceProvider({ children }) {
           }
           setCurrentUserId(authUser.id);
           setAuthReady(true);
-          void refreshMarketplaceData(authUser.id, { silent: true });
+          void refreshMarketplaceData(authUser.id, { silent: true, scope: "initial" });
         } else {
           if (!mounted) {
             return;
           }
+          setAuthUser(null);
           setCurrentUserId(null);
           setAuthReady(true);
-          void refreshMarketplaceData(null, { silent: true });
+          void refreshMarketplaceData(null, { silent: true, scope: "public" });
         }
       } catch (error) {
         console.error("Supabase auth hydration failed:", error);
@@ -1441,25 +1574,31 @@ export function MarketplaceProvider({ children }) {
   }, [bootstrapProfile, refreshMarketplaceData]);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !currentUserId || !authReady) {
+    if (!isSupabaseConfigured || !authReady) {
       return;
     }
+
+    const scope = getRefreshScope(location.pathname, Boolean(currentUserId), currentUserRecord?.role === "admin");
+    const intervalMs = getRefreshInterval(scope);
 
     const runRefresh = () => {
       if (typeof document !== "undefined" && document.visibilityState !== "visible") {
         return;
       }
 
-      void refreshMarketplaceData(currentUserId, { silent: true });
+      void refreshMarketplaceData(currentUserId, { silent: true, scope });
     };
 
     const intervalId = window.setInterval(() => {
       runRefresh();
-    }, FOREGROUND_REFRESH_MS);
+    }, intervalMs);
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        runRefresh();
+        const lastRefreshAt = lastRefreshAtRef.current[scope] || 0;
+        if (Date.now() - lastRefreshAt >= ROUTE_REFRESH_DEBOUNCE_MS) {
+          runRefresh();
+        }
       }
     };
 
@@ -1471,7 +1610,22 @@ export function MarketplaceProvider({ children }) {
       window.removeEventListener("focus", runRefresh);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [authReady, currentUserId, refreshMarketplaceData]);
+  }, [authReady, currentUserId, currentUserRecord?.role, location.pathname, refreshMarketplaceData]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !authReady) {
+      return;
+    }
+
+    const scope = getRefreshScope(location.pathname, Boolean(currentUserId), currentUserRecord?.role === "admin");
+    const lastRefreshAt = lastRefreshAtRef.current[scope] || 0;
+
+    if (Date.now() - lastRefreshAt < ROUTE_REFRESH_DEBOUNCE_MS) {
+      return;
+    }
+
+    void refreshMarketplaceData(currentUserId, { silent: true, scope });
+  }, [authReady, currentUserId, currentUserRecord?.role, location.pathname, refreshMarketplaceData]);
 
   useEffect(() => {
     if (!currentUserId) {
@@ -1564,7 +1718,16 @@ export function MarketplaceProvider({ children }) {
       game: metadata.game || null,
       source: metadata.source || null,
     });
-    await refreshMarketplaceData(currentUserId);
+    setSearchHistory((current) => [
+      {
+        id: `search-${Date.now()}`,
+        query: trimmed,
+        game: metadata.game || null,
+        source: metadata.source || null,
+        createdAt: new Date().toISOString(),
+      },
+      ...current,
+    ].slice(0, 40));
   }
 
   async function clearSearchHistory() {
@@ -1633,7 +1796,8 @@ export function MarketplaceProvider({ children }) {
       if (data.user) {
         await bootstrapProfile(data.user);
         setCurrentUserId(data.user.id);
-        await refreshMarketplaceData(data.user.id);
+        setAuthUser(data.user);
+        await refreshMarketplaceData(data.user.id, { scope: "initial" });
       }
 
       return { ok: true };
@@ -1680,7 +1844,8 @@ export function MarketplaceProvider({ children }) {
       if (data.user && data.session?.user) {
         await bootstrapProfile(data.user, payload);
         setCurrentUserId(data.user.id);
-        await refreshMarketplaceData(data.user.id);
+        setAuthUser(data.user);
+        await refreshMarketplaceData(data.user.id, { scope: "initial" });
       }
 
       return {
@@ -2552,7 +2717,7 @@ export function MarketplaceProvider({ children }) {
       ),
     );
 
-    await refreshMarketplaceData(currentUserId, { silent: true });
+    await refreshMarketplaceData(currentUserId, { silent: true, scope: "inbox" });
     return { ok: true };
   }
 
@@ -2679,7 +2844,7 @@ export function MarketplaceProvider({ children }) {
       { system: true, thread: threadResult.thread },
     );
 
-    await refreshMarketplaceData(currentUserId, { silent: true });
+    await refreshMarketplaceData(currentUserId, { silent: true, scope: "inbox" });
     return { ok: true, offer: fromOfferRow(data), threadId: threadResult.thread.id };
   }
 
@@ -2804,7 +2969,7 @@ export function MarketplaceProvider({ children }) {
       );
     }
 
-    await refreshMarketplaceData(currentUserId, { silent: true });
+    await refreshMarketplaceData(currentUserId, { silent: true, scope: "inbox" });
     return { ok: true };
   }
 
