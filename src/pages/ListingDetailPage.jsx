@@ -71,6 +71,18 @@ export default function ListingDetailPage() {
   );
 
   useEffect(() => {
+    viewRecorded.current = false;
+    setShowOfferModal(false);
+    setShowReportModal(false);
+    setShowComparison(false);
+    setLightboxImage("");
+
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [listingId]);
+
+  useEffect(() => {
     if (!listing || viewRecorded.current) {
       return;
     }
