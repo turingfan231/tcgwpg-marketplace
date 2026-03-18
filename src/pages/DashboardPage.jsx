@@ -64,7 +64,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[32px] bg-white p-6 shadow-soft">
+      <section className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
         <p className="section-kicker">Seller Dashboard</p>
         <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-ink">
           Manage {currentUser.name}'s listings
@@ -74,7 +74,7 @@ export default function DashboardPage() {
           you are still researching printings and condition photos.
         </p>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-4">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-[24px] bg-slate-50 p-5">
             <Tag className="text-orange" />
             <p className="mt-4 text-sm font-semibold uppercase tracking-[0.2em] text-steel">
@@ -130,7 +130,7 @@ export default function DashboardPage() {
       </section>
 
       {currentUserDrafts.length ? (
-        <section className="rounded-[32px] bg-white p-6 shadow-soft">
+        <section className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
           <p className="section-kicker">Drafts</p>
           <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
             Saved listing drafts
@@ -194,7 +194,7 @@ export default function DashboardPage() {
         </section>
       ) : null}
 
-      <section className="rounded-[32px] bg-white p-6 shadow-soft">
+      <section className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
         <p className="section-kicker">Offer queue</p>
         <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
           Incoming offers
@@ -325,7 +325,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3">
+              <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
                 <button
                   className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 px-4 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
                   type="button"
@@ -415,7 +415,7 @@ export default function DashboardPage() {
                     }
                   />
                 </label>
-                <div className="md:col-span-2 flex justify-end gap-3">
+                <div className="flex flex-col gap-3 md:col-span-2 md:flex-row md:justify-end">
                   <button
                     className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
                     type="button"

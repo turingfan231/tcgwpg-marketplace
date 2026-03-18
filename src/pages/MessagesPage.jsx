@@ -48,6 +48,7 @@ export default function MessagesPage() {
     () => getThreadById(threadId) || null,
     [getThreadById, threadId],
   );
+  const showMobileThread = Boolean(threadId && activeThread);
 
   useEffect(() => {
     if (activeThread?.id) {
@@ -97,7 +98,11 @@ export default function MessagesPage() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
-      <section className="overflow-hidden rounded-[32px] bg-white shadow-soft">
+      <section
+        className={`overflow-hidden rounded-[32px] bg-white shadow-soft ${
+          showMobileThread ? "hidden lg:block" : "block"
+        }`}
+      >
         <div className="border-b border-slate-200 px-5 py-4">
           <p className="section-kicker">Messages</p>
           <h1 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
@@ -140,12 +145,23 @@ export default function MessagesPage() {
         </div>
       </section>
 
-      <section className="rounded-[32px] bg-white shadow-soft">
+      <section
+        className={`rounded-[32px] bg-white shadow-soft ${
+          !showMobileThread ? "hidden lg:block" : "block"
+        }`}
+      >
         {activeThread ? (
           <>
-            <div className="border-b border-slate-200 px-6 py-5">
+            <div className="border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
+                  <button
+                    className="mb-3 inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-steel lg:hidden"
+                    type="button"
+                    onClick={() => navigate("/messages")}
+                  >
+                    Back to inbox
+                  </button>
                   <p className="section-kicker">Conversation</p>
                   <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
                     {activeThread.participantIds.length > 2
@@ -162,7 +178,7 @@ export default function MessagesPage() {
                   ) : null}
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex w-full flex-wrap gap-2 sm:w-auto">
                   {activeThread.otherParticipant && activeThread.participantIds.length === 2 ? (
                     <Link
                       className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
@@ -187,7 +203,7 @@ export default function MessagesPage() {
             </div>
 
             {threadOffers.length ? (
-              <div className="border-b border-slate-200 bg-[#fbf8f1] px-6 py-5">
+              <div className="border-b border-slate-200 bg-[#fbf8f1] px-4 py-4 sm:px-6 sm:py-5">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-steel">
                   <BellRing size={14} />
                   Offer activity
@@ -258,7 +274,7 @@ export default function MessagesPage() {
               </div>
             ) : null}
 
-            <div className="flex max-h-[50vh] flex-col gap-3 overflow-y-auto px-6 py-5">
+            <div className="flex max-h-[58vh] flex-col gap-3 overflow-y-auto px-4 py-4 sm:max-h-[50vh] sm:px-6 sm:py-5">
               {activeThread.messages.map((message) => {
                 const mine = message.senderId === currentUserId;
                 const isSystemSupportThread =
@@ -289,8 +305,8 @@ export default function MessagesPage() {
               })}
             </div>
 
-            <form className="border-t border-slate-200 px-6 py-5" onSubmit={handleSubmit}>
-              <div className="flex items-center gap-3">
+            <form className="border-t border-slate-200 px-4 py-4 sm:px-6 sm:py-5" onSubmit={handleSubmit}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <input
                   className="flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   placeholder="Write a message about condition, trades, or meetup timing"
@@ -299,7 +315,7 @@ export default function MessagesPage() {
                   onChange={(event) => setDraft(event.target.value)}
                 />
                 <button
-                  className="rounded-full bg-orange px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+                  className="rounded-full bg-orange px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300 sm:self-auto"
                   disabled={sending || !draft.trim()}
                   type="submit"
                 >

@@ -27,7 +27,7 @@ export default function ModalShell({
   }, [onClose]);
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5">
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-5">
       <button
         aria-label="Close modal"
         className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
@@ -35,17 +35,17 @@ export default function ModalShell({
         onClick={onClose}
       />
       <div
-        className={`relative max-h-[94vh] w-full overflow-hidden rounded-[34px] border border-white/15 bg-white shadow-lift ${
-          wide ? "max-w-[1600px]" : "max-w-2xl"
+        className={`relative h-[100dvh] w-full overflow-hidden rounded-none border border-white/15 bg-white shadow-lift sm:max-h-[94vh] sm:h-auto sm:rounded-[34px] ${
+          wide ? "sm:max-w-[1600px]" : "sm:max-w-2xl"
         }`}
       >
-        <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5 lg:px-8">
+        <div className="flex items-start justify-between border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
           <div>
             <p className="section-kicker">Marketplace Flow</p>
-            <h2 className="mt-2 font-display text-3xl font-bold uppercase tracking-[0.08em] text-ink">
+            <h2 className="mt-2 font-display text-2xl font-bold uppercase tracking-[0.08em] text-ink sm:text-3xl">
               {title}
             </h2>
-            {subtitle ? <p className="mt-2 text-steel">{subtitle}</p> : null}
+            {subtitle ? <p className="mt-2 text-sm text-steel sm:text-base">{subtitle}</p> : null}
           </div>
           <button
             className="rounded-full border border-slate-200 p-2 text-steel transition hover:border-slate-300 hover:text-ink"
@@ -55,7 +55,9 @@ export default function ModalShell({
             <X size={18} />
           </button>
         </div>
-        <div className="max-h-[calc(94vh-106px)] overflow-y-auto">{children}</div>
+        <div className="max-h-[calc(100dvh-92px)] overflow-y-auto sm:max-h-[calc(94vh-106px)]">
+          {children}
+        </div>
       </div>
     </div>,
     document.body,

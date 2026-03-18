@@ -159,7 +159,7 @@ export default function EventsPage() {
         </p>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {sourceStatus.map((source) => (
           <article key={source.id} className="surface-muted p-5">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-steel">
@@ -174,7 +174,7 @@ export default function EventsPage() {
       </section>
 
       <section className="grid gap-7 xl:grid-cols-[1.05fr_0.95fr]">
-        <article className="surface-card p-6">
+        <article className="surface-card hidden p-6 md:block">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Calendar</p>
@@ -258,20 +258,38 @@ export default function EventsPage() {
           </div>
         </article>
 
-        <article className="surface-card p-6">
+        <article className="surface-card p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Upcoming List</p>
-              <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+              <h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-ink sm:text-3xl">
                 {eventsForMonth.length} events in {formatMonthLabel(visibleMonth)}
               </h2>
             </div>
-            {loading ? (
-              <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold text-steel">
-                <LoaderCircle className="animate-spin" size={15} />
-                Loading
-              </span>
-            ) : null}
+            <div className="flex items-center gap-2">
+              <button
+                className="rounded-full border border-slate-200 bg-white p-3 text-steel disabled:opacity-40 md:hidden"
+                disabled={selectedMonthIndex <= 0}
+                type="button"
+                onClick={() => setSelectedMonth(monthKeys[selectedMonthIndex - 1] || visibleMonth)}
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                className="rounded-full border border-slate-200 bg-white p-3 text-steel disabled:opacity-40 md:hidden"
+                disabled={selectedMonthIndex < 0 || selectedMonthIndex >= monthKeys.length - 1}
+                type="button"
+                onClick={() => setSelectedMonth(monthKeys[selectedMonthIndex + 1] || visibleMonth)}
+              >
+                <ChevronRight size={16} />
+              </button>
+              {loading ? (
+                <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold text-steel">
+                  <LoaderCircle className="animate-spin" size={15} />
+                  Loading
+                </span>
+              ) : null}
+            </div>
           </div>
 
           {error ? (

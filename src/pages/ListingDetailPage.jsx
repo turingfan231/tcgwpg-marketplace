@@ -151,7 +151,7 @@ export default function ListingDetailPage() {
     <div className="space-y-10">
       <section className="grid gap-6 xl:grid-cols-[1.06fr_0.94fr]">
         <div className="space-y-5">
-          <div className="rounded-[36px] bg-white p-6 shadow-soft">
+          <div className="rounded-[36px] bg-white p-4 shadow-soft sm:p-6">
             <div className="grid gap-5 lg:grid-cols-[minmax(290px,380px)_minmax(0,1fr)]">
               <div className="mx-auto w-full max-w-[380px]">
                 <button
@@ -186,7 +186,7 @@ export default function ListingDetailPage() {
                   </span>
                 </div>
 
-                <div className="grid gap-3 grid-cols-3">
+                <div className="grid grid-cols-3 gap-3">
                   {listing.imageGallery.map((image, index) => (
                     <button
                       key={`${image}-${index}`}
@@ -228,7 +228,7 @@ export default function ListingDetailPage() {
             </div>
           </div>
 
-          <div className="rounded-[36px] bg-white p-6 shadow-soft">
+          <div className="rounded-[36px] bg-white p-4 shadow-soft sm:p-6">
             <div className="flex items-end justify-between gap-4">
               <div>
                 <p className="section-kicker">Price History</p>
@@ -310,7 +310,7 @@ export default function ListingDetailPage() {
         </div>
 
         <div className="space-y-5">
-          <div className="rounded-[36px] bg-white p-7 shadow-soft">
+          <div className="rounded-[36px] bg-white p-5 shadow-soft sm:p-7">
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${getListingTypeClasses(
@@ -378,7 +378,7 @@ export default function ListingDetailPage() {
               </div>
             </div>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-4">
+            <div className="mt-6 grid gap-3 grid-cols-2 sm:grid-cols-4">
               {[
                 { label: "Views", value: listing.views },
                 { label: "Offers", value: listing.offers },
@@ -396,10 +396,10 @@ export default function ListingDetailPage() {
               ))}
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-6 grid gap-3 sm:flex sm:flex-wrap">
               {!isOwner ? (
                 <button
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-orange px-5 py-4 text-sm font-semibold text-white shadow-soft"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-orange px-5 py-4 text-sm font-semibold text-white shadow-soft sm:w-auto"
                   type="button"
                   onClick={() => setShowOfferModal(true)}
                 >
@@ -407,7 +407,7 @@ export default function ListingDetailPage() {
                 </button>
               ) : null}
               <button
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-navy px-5 py-4 text-sm font-semibold text-white shadow-soft"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-navy px-5 py-4 text-sm font-semibold text-white shadow-soft sm:w-auto"
                 type="button"
                 onClick={async () => {
                   if (!currentUser) {
@@ -430,7 +430,7 @@ export default function ListingDetailPage() {
               </button>
               {!isOwner ? (
                 <button
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-semibold text-rose-700"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-semibold text-rose-700 sm:w-auto"
                   type="button"
                   onClick={() => setShowReportModal(true)}
                 >
@@ -442,7 +442,7 @@ export default function ListingDetailPage() {
           </div>
 
           <Link
-            className="block rounded-[36px] bg-white p-6 shadow-soft transition hover:-translate-y-1 hover:shadow-lift"
+            className="block rounded-[36px] bg-white p-5 shadow-soft transition hover:-translate-y-1 hover:shadow-lift sm:p-6"
             to={`/seller/${listing.seller.id}`}
           >
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
@@ -490,7 +490,7 @@ export default function ListingDetailPage() {
           </Link>
 
           {(isOwner || listingOffers.length) && (
-            <div className="rounded-[36px] bg-white p-6 shadow-soft">
+            <div className="rounded-[36px] bg-white p-5 shadow-soft sm:p-6">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="section-kicker">Offer Activity</p>
@@ -573,7 +573,7 @@ export default function ListingDetailPage() {
           )}
 
           {listing.editHistory?.length ? (
-            <div className="rounded-[36px] bg-white p-6 shadow-soft">
+            <div className="rounded-[36px] bg-white p-5 shadow-soft sm:p-6">
               <p className="section-kicker">Edit History</p>
               <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
                 Listing changes
@@ -637,10 +637,10 @@ export default function ListingDetailPage() {
         <ReportModal listing={listing} onClose={() => setShowReportModal(false)} />
       ) : null}
       {lightboxImage ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-6" onClick={() => setLightboxImage("")}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-3 sm:p-6" onClick={() => setLightboxImage("")}>
           <img
             alt={listing.title}
-            className="max-h-[90vh] max-w-[90vw] rounded-[28px] object-contain"
+            className="max-h-[92vh] max-w-[96vw] rounded-[20px] object-contain sm:max-w-[90vw] sm:rounded-[28px]"
             src={lightboxImage}
           />
         </div>

@@ -301,7 +301,7 @@ export default function CreateListingModal({ onClose }) {
         className="grid gap-0 bg-[linear-gradient(180deg,#fbf8f1_0%,#f3efe7_100%)] 2xl:grid-cols-[minmax(380px,0.74fr)_minmax(0,1.26fr)]"
         onSubmit={handleSubmit}
       >
-        <div className="space-y-6 border-b border-slate-200 p-6 lg:p-8 2xl:border-b-0 2xl:border-r">
+        <div className="order-2 space-y-6 border-b border-slate-200 p-4 sm:p-6 lg:p-8 2xl:order-1 2xl:border-b-0 2xl:border-r">
           <section className="surface-card p-6">
             <p className="section-kicker">Listing basics</p>
             <h3 className="mt-3 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
@@ -516,7 +516,7 @@ export default function CreateListingModal({ onClose }) {
           </section>
         </div>
 
-        <div className="space-y-6 bg-[linear-gradient(180deg,#f7f3eb_0%,#efe8dd_100%)] p-6 lg:p-8">
+        <div className="order-1 space-y-6 bg-[linear-gradient(180deg,#f7f3eb_0%,#efe8dd_100%)] p-4 sm:p-6 lg:p-8 2xl:order-2">
           <section className="rounded-[34px] bg-[#17394a] p-6 text-white shadow-lift">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
@@ -748,7 +748,7 @@ export default function CreateListingModal({ onClose }) {
             </section>
           </div>
 
-          <div className="flex flex-wrap justify-end gap-3 border-t border-slate-200 pt-2">
+          <div className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-3 border-t border-slate-200 bg-[#efe8dd] px-4 pb-4 pt-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 md:flex-row md:flex-wrap md:justify-end">
             <button
               className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
               type="button"
@@ -805,12 +805,14 @@ export default function CreateListingModal({ onClose }) {
               Post listing
             </button>
           </div>
-          {draftMessage ? (
-            <p className="text-right text-sm font-semibold text-emerald-700">{draftMessage}</p>
-          ) : null}
-          {submitError ? (
-            <p className="text-right text-sm font-semibold text-rose-700">{submitError}</p>
-          ) : null}
+          <div className="space-y-2">
+            {draftMessage ? (
+              <p className="text-sm font-semibold text-emerald-700 md:text-right">{draftMessage}</p>
+            ) : null}
+            {submitError ? (
+              <p className="text-sm font-semibold text-rose-700 md:text-right">{submitError}</p>
+            ) : null}
+          </div>
         </div>
       </form>
     </ModalShell>

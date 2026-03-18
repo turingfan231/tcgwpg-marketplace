@@ -65,10 +65,10 @@ export default function MarketPage() {
   return (
     <div className="space-y-7">
       <section className="surface-card overflow-hidden">
-        <div className="grid gap-5 p-7 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
+        <div className="grid gap-5 p-5 sm:p-7 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
           <div>
             <p className="section-kicker">Market feed</p>
-            <h1 className="mt-3 font-display text-5xl font-semibold tracking-[-0.05em] text-ink">
+            <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-ink sm:text-5xl">
               {selectedGame?.name || "All Listings"}
             </h1>
             <p className="mt-4 max-w-3xl text-base leading-8 text-steel">

@@ -106,7 +106,7 @@ export default function HomePage() {
   return (
     <div className="space-y-12 lg:space-y-16">
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_24rem]">
-        <article className="surface-card px-6 py-8 sm:px-8 sm:py-10">
+        <article className="surface-card px-5 py-7 sm:px-8 sm:py-10">
           <p className="section-kicker">Winnipeg trading card marketplace</p>
           <h1 className="mt-4 max-w-4xl font-display text-4xl font-semibold tracking-[-0.05em] text-ink sm:text-5xl lg:text-6xl">
             Buy, sell, and trade locally without digging through the usual marketplace clutter.
@@ -117,7 +117,7 @@ export default function HomePage() {
             actually want to meet in.
           </p>
 
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-8 grid gap-3 sm:flex sm:flex-wrap">
             <button
               className="rounded-full bg-navy px-6 py-3.5 text-sm font-semibold text-white shadow-soft"
               type="button"
@@ -176,7 +176,7 @@ export default function HomePage() {
           </div>
         </article>
 
-        <aside className="surface-card px-6 py-7">
+        <aside className="surface-card px-5 py-6 sm:px-6 sm:py-7">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="section-kicker">Right now</p>
@@ -315,7 +315,7 @@ export default function HomePage() {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <article className="surface-card px-6 py-7">
+        <article className="surface-card px-5 py-6 sm:px-6 sm:py-7">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Upcoming events</p>
@@ -356,7 +356,7 @@ export default function HomePage() {
           </div>
         </article>
 
-        <article className="surface-card px-6 py-7">
+        <article className="surface-card px-5 py-6 sm:px-6 sm:py-7">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Local sellers</p>
