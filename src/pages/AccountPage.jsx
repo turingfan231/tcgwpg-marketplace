@@ -1,5 +1,5 @@
 import { AlertTriangle, LockKeyhole, MapPin, ShieldCheck, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { neighborhoods } from "../data/mockData";
 import { useMarketplace } from "../hooks/useMarketplace";
@@ -12,6 +12,19 @@ function normalizePostalInput(value) {
     .slice(0, 3);
 }
 
+function buildProfileForm(user) {
+  return {
+    username: user?.username || "",
+    neighborhood: user?.neighborhood || neighborhoods[1],
+    postalCode: normalizePostalInput(user?.postalCode || ""),
+    favoriteGames: user?.favoriteGames || [],
+    meetupPreferences: user?.meetupPreferences || "",
+    responseTime: user?.responseTime || "~ 1 hour",
+    bannerStyle: user?.bannerStyle || "neutral",
+    bio: user?.bio || "",
+  };
+}
+
 export default function AccountPage() {
   const navigate = useNavigate();
   const {
@@ -22,16 +35,7 @@ export default function AccountPage() {
     submitSuspensionAppeal,
     updateCurrentUserProfile,
   } = useMarketplace();
-  const [profileForm, setProfileForm] = useState(() => ({
-    username: currentUser?.username || "",
-    neighborhood: currentUser?.neighborhood || neighborhoods[1],
-    postalCode: normalizePostalInput(currentUser?.postalCode || ""),
-    favoriteGames: currentUser?.favoriteGames || [],
-    meetupPreferences: currentUser?.meetupPreferences || "",
-    responseTime: currentUser?.responseTime || "~ 1 hour",
-    bannerStyle: currentUser?.bannerStyle || "neutral",
-    bio: currentUser?.bio || "",
-  }));
+  const [profileForm, setProfileForm] = useState(() => buildProfileForm(currentUser));
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -47,6 +51,9 @@ export default function AccountPage() {
   const [deleteError, setDeleteError] = useState("");
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(currentUser?.avatarUrl || "");
+  const [isProfileDirty, setIsProfileDirty] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const lastSyncedAccountIdRef = useRef(currentUser?.id || "");
 
   const accountStatus = useMemo(
     () =>
@@ -59,19 +66,19 @@ export default function AccountPage() {
   );
 
   useEffect(() => {
-    setProfileForm({
-      username: currentUser?.username || "",
-      neighborhood: currentUser?.neighborhood || neighborhoods[1],
-      postalCode: normalizePostalInput(currentUser?.postalCode || ""),
-      favoriteGames: currentUser?.favoriteGames || [],
-      meetupPreferences: currentUser?.meetupPreferences || "",
-      responseTime: currentUser?.responseTime || "~ 1 hour",
-      bannerStyle: currentUser?.bannerStyle || "neutral",
-      bio: currentUser?.bio || "",
-    });
+    const nextAccountId = currentUser?.id || "";
+    const accountChanged = nextAccountId !== lastSyncedAccountIdRef.current;
+
+    if (!accountChanged && (isProfileDirty || isSavingProfile)) {
+      return;
+    }
+
+    setProfileForm(buildProfileForm(currentUser));
     setAvatarFile(null);
     setAvatarPreviewUrl(currentUser?.avatarUrl || "");
-  }, [currentUser]);
+    setIsProfileDirty(false);
+    lastSyncedAccountIdRef.current = nextAccountId;
+  }, [currentUser, isProfileDirty, isSavingProfile]);
 
   useEffect(() => {
     return () => {
@@ -85,11 +92,15 @@ export default function AccountPage() {
     event.preventDefault();
     setProfileError("");
     setProfileMessage("");
+    setIsSavingProfile(true);
+
     const result = await updateCurrentUserProfile({
       ...profileForm,
       avatarFile,
       removeAvatar: !avatarFile && !avatarPreviewUrl,
     });
+
+    setIsSavingProfile(false);
 
     if (!result.ok) {
       setProfileError(result.error);
@@ -98,6 +109,20 @@ export default function AccountPage() {
 
     setProfileMessage(result.warning || "Account location details updated.");
     setAvatarFile(null);
+    if (typeof result.avatarUrl === "string") {
+      setAvatarPreviewUrl(result.avatarUrl);
+    }
+    setIsProfileDirty(false);
+  }
+
+  function updateProfileFormField(field, value) {
+    setProfileError("");
+    setProfileMessage("");
+    setIsProfileDirty(true);
+    setProfileForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
   }
 
   async function handlePasswordSubmit(event) {
@@ -246,10 +271,7 @@ export default function AccountPage() {
                   placeholder="localcardguy"
                   value={profileForm.username}
                   onChange={(event) =>
-                    setProfileForm((current) => ({
-                      ...current,
-                      username: event.target.value,
-                    }))
+                    updateProfileFormField("username", event.target.value)
                   }
                 />
               </label>
@@ -270,6 +292,9 @@ export default function AccountPage() {
                         type="file"
                         onChange={(event) => {
                           const file = event.target.files?.[0] || null;
+                          setProfileError("");
+                          setProfileMessage("");
+                          setIsProfileDirty(true);
                           setAvatarFile(file);
 
                           if (!file) {
@@ -288,6 +313,9 @@ export default function AccountPage() {
                           onClick={() => {
                             setAvatarFile(null);
                             setAvatarPreviewUrl(currentUser?.avatarUrl || "");
+                            setProfileError("");
+                            setProfileMessage("");
+                            setIsProfileDirty(true);
                           }}
                         >
                           Revert
@@ -298,6 +326,9 @@ export default function AccountPage() {
                           onClick={() => {
                             setAvatarFile(null);
                             setAvatarPreviewUrl("");
+                            setProfileError("");
+                            setProfileMessage("");
+                            setIsProfileDirty(true);
                           }}
                         >
                           Remove photo
@@ -315,10 +346,7 @@ export default function AccountPage() {
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={profileForm.neighborhood}
                   onChange={(event) =>
-                    setProfileForm((current) => ({
-                      ...current,
-                      neighborhood: event.target.value,
-                    }))
+                    updateProfileFormField("neighborhood", event.target.value)
                   }
                 >
                   {neighborhoods.slice(1).map((neighborhood) => (
@@ -336,10 +364,7 @@ export default function AccountPage() {
                   placeholder="R2P"
                   value={profileForm.postalCode}
                   onChange={(event) =>
-                    setProfileForm((current) => ({
-                      ...current,
-                      postalCode: normalizePostalInput(event.target.value),
-                    }))
+                    updateProfileFormField("postalCode", normalizePostalInput(event.target.value))
                   }
                 />
               </label>
@@ -359,12 +384,12 @@ export default function AccountPage() {
                         }`}
                         type="button"
                         onClick={() =>
-                          setProfileForm((current) => ({
-                            ...current,
-                            favoriteGames: active
-                              ? current.favoriteGames.filter((item) => item !== game)
-                              : [...current.favoriteGames, game],
-                          }))
+                          updateProfileFormField(
+                            "favoriteGames",
+                            active
+                              ? profileForm.favoriteGames.filter((item) => item !== game)
+                              : [...profileForm.favoriteGames, game],
+                          )
                         }
                       >
                         {game}
@@ -380,10 +405,7 @@ export default function AccountPage() {
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={profileForm.bannerStyle}
                   onChange={(event) =>
-                    setProfileForm((current) => ({
-                      ...current,
-                      bannerStyle: event.target.value,
-                    }))
+                    updateProfileFormField("bannerStyle", event.target.value)
                   }
                 >
                   <option value="neutral">Neutral</option>
@@ -399,10 +421,7 @@ export default function AccountPage() {
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={profileForm.responseTime}
                   onChange={(event) =>
-                    setProfileForm((current) => ({
-                      ...current,
-                      responseTime: event.target.value,
-                    }))
+                    updateProfileFormField("responseTime", event.target.value)
                   }
                 >
                   <option value="< 15 min">&lt; 15 min</option>
@@ -418,10 +437,7 @@ export default function AccountPage() {
                   className="min-h-24 w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={profileForm.meetupPreferences}
                   onChange={(event) =>
-                    setProfileForm((current) => ({
-                      ...current,
-                      meetupPreferences: event.target.value,
-                    }))
+                    updateProfileFormField("meetupPreferences", event.target.value)
                   }
                 />
               </label>
@@ -432,10 +448,7 @@ export default function AccountPage() {
                   className="min-h-28 w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={profileForm.bio}
                   onChange={(event) =>
-                    setProfileForm((current) => ({
-                      ...current,
-                      bio: event.target.value,
-                    }))
+                    updateProfileFormField("bio", event.target.value)
                   }
                 />
               </label>
@@ -454,9 +467,10 @@ export default function AccountPage() {
               <div className="sm:col-span-2">
                 <button
                   className="rounded-full bg-navy px-6 py-3 text-sm font-semibold text-white"
+                  disabled={isSavingProfile}
                   type="submit"
                 >
-                  Save profile settings
+                  {isSavingProfile ? "Saving..." : "Save profile settings"}
                 </button>
               </div>
             </form>

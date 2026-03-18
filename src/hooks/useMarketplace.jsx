@@ -1816,10 +1816,14 @@ export function MarketplaceProvider({ children }) {
     return missingAvatarColumn
       ? {
           ok: true,
+          avatarUrl: nextAvatarUrl,
           warning:
             "Username and profile settings were saved, but profile photos need the avatar_url column added to your Supabase profiles table.",
         }
-      : { ok: true };
+      : {
+          ok: true,
+          avatarUrl: nextAvatarUrl,
+        };
   }
 
   async function changeCurrentUserPassword(payload) {
