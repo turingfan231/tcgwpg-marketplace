@@ -231,6 +231,10 @@ function omitMissingProfileColumns(payload, error) {
     delete nextPayload.avatar_url;
   }
 
+  if (isMissingColumnError(error, "default_listing_game")) {
+    delete nextPayload.default_listing_game;
+  }
+
   return nextPayload;
 }
 
@@ -817,7 +821,12 @@ export function MarketplaceProvider({ children }) {
     return map;
   }, [listings, reviews, users]);
   const normalizedWishlist = useMemo(
-    () => wishlist.filter((listingId) => listings.some((listing) => listing.id === listingId)),
+    () =>
+      wishlist.filter((listingId) =>
+        listings.some(
+          (listing) => listing.id === listingId && String(listing.status || "active") === "active",
+        ),
+      ),
     [listings, wishlist],
   );
 
@@ -1814,8 +1823,16 @@ export function MarketplaceProvider({ children }) {
       .eq("id", currentUserId);
     const missingAvatarColumn =
       Boolean(updateResult.error) && isMissingColumnError(updateResult.error, "avatar_url");
+    const missingDefaultListingGameColumn =
+      Boolean(updateResult.error) &&
+      isMissingColumnError(updateResult.error, "default_listing_game");
 
-    if (updateResult.error && (isMissingColumnError(updateResult.error, "username") || isMissingColumnError(updateResult.error, "avatar_url"))) {
+    if (
+      updateResult.error &&
+      (isMissingColumnError(updateResult.error, "username") ||
+        isMissingColumnError(updateResult.error, "avatar_url") ||
+        isMissingColumnError(updateResult.error, "default_listing_game"))
+    ) {
       const legacyProfilePayload = omitMissingProfileColumns(profilePayload, updateResult.error);
       updateResult = await supabase
         .from("profiles")
@@ -1837,6 +1854,13 @@ export function MarketplaceProvider({ children }) {
           warning:
             "Username and profile settings were saved, but profile photos need the avatar_url column added to your Supabase profiles table.",
         }
+      : missingDefaultListingGameColumn
+        ? {
+            ok: true,
+            avatarUrl: nextAvatarUrl,
+            warning:
+              "Profile settings were saved, but the profiles table is still missing the default_listing_game column in Supabase.",
+          }
       : {
           ok: true,
           avatarUrl: nextAvatarUrl,
@@ -1955,8 +1979,27 @@ export function MarketplaceProvider({ children }) {
     return { ok: true };
   }
 
-  function selectListingDraft(draftId) {
+  async function selectListingDraft(draftId) {
     setActiveDraftId(draftId);
+
+    if (!isSupabaseConfigured || !currentUserId) {
+      return { ok: true };
+    }
+
+    const { error } = await supabase.from("listing_drafts").upsert({
+      user_id: currentUserId,
+      payload: {
+        drafts: listingDrafts,
+        activeDraftId: draftId,
+      },
+      updated_at: new Date().toISOString(),
+    });
+
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+
+    return { ok: true };
   }
 
   async function addListing(payload) {
