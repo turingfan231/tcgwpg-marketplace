@@ -462,6 +462,7 @@ function normalizeOfferRecord(offer) {
     cashAmount: 0,
     offerType: "cash",
     status: "pending",
+    lastActorId: null,
     ...offer,
   };
 }
@@ -593,6 +594,9 @@ function fromOfferRow(row) {
     tradeItems: row.trade_items || [],
     note: row.note,
     status: row.status,
+    lastActorId:
+      row.last_actor_id ||
+      (row.status === "pending" ? row.buyer_id : row.seller_id),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   });
@@ -2813,20 +2817,21 @@ export function MarketplaceProvider({ children }) {
       return threadResult;
     }
 
-    if (!isSupabaseConfigured) {
-      const offer = normalizeOfferRecord({
-        id: `offer-${Date.now()}`,
-        listingId: payload.listingId,
-        sellerId: listing.sellerId,
-        buyerId: currentUserId,
-        offerType: payload.offerType,
-        cashAmount: normalizedCashAmount,
-        tradeItems: normalizedTradeItems,
-        note: String(payload.note || "").trim(),
-        status: "pending",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
+      if (!isSupabaseConfigured) {
+        const offer = normalizeOfferRecord({
+          id: `offer-${Date.now()}`,
+          listingId: payload.listingId,
+          sellerId: listing.sellerId,
+          buyerId: currentUserId,
+          offerType: payload.offerType,
+          cashAmount: normalizedCashAmount,
+          tradeItems: normalizedTradeItems,
+          note: String(payload.note || "").trim(),
+          status: "pending",
+          lastActorId: currentUserId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
       setOffers((current) => [offer, ...current]);
       setListings((current) =>
         current.map((item) =>
@@ -2851,17 +2856,18 @@ export function MarketplaceProvider({ children }) {
 
     const { data, error } = await supabase
       .from("offers")
-      .insert({
-        listing_id: payload.listingId,
-        seller_id: listing.sellerId,
-        buyer_id: currentUserId,
-        offer_type: payload.offerType,
-        cash_amount: normalizedCashAmount,
-        trade_items: normalizedTradeItems,
-        note: String(payload.note || "").trim(),
-      })
-      .select("*")
-      .single();
+        .insert({
+          listing_id: payload.listingId,
+          seller_id: listing.sellerId,
+          buyer_id: currentUserId,
+          offer_type: payload.offerType,
+          cash_amount: normalizedCashAmount,
+          trade_items: normalizedTradeItems,
+          note: String(payload.note || "").trim(),
+          last_actor_id: currentUserId,
+        })
+        .select("*")
+        .single();
 
     if (error) {
       return { ok: false, error: error.message };
@@ -2898,18 +2904,40 @@ export function MarketplaceProvider({ children }) {
   }
 
   async function respondToOffer(offerId, action, counterPayload = {}) {
-    const offer = offers.find((item) => item.id === offerId);
-    if (!offer || !currentUserId) {
-      return { ok: false, error: "Offer not found." };
-    }
+      const offer = offers.find((item) => item.id === offerId);
+      if (!offer || !currentUserId) {
+        return { ok: false, error: "Offer not found." };
+      }
 
     const access = ensureAccountActive();
     if (!access.ok) {
       return access;
     }
 
-    const nextStatus =
-      action === "accept" ? "accepted" : action === "decline" ? "declined" : "countered";
+      const isParticipant =
+        String(currentUserId) === String(offer.sellerId) ||
+        String(currentUserId) === String(offer.buyerId);
+      if (!isParticipant) {
+        return { ok: false, error: "You cannot respond to this offer." };
+      }
+
+      const lastActorId =
+        offer.lastActorId ||
+        (offer.status === "pending" ? offer.buyerId : offer.sellerId);
+
+      if (offer.status === "pending" && String(currentUserId) !== String(offer.sellerId)) {
+        return { ok: false, error: "Only the seller can respond to a new offer." };
+      }
+
+      if (
+        offer.status === "countered" &&
+        String(currentUserId) === String(lastActorId)
+      ) {
+        return { ok: false, error: "You cannot respond to your own counter offer." };
+      }
+
+      const nextStatus =
+        action === "accept" ? "accepted" : action === "decline" ? "declined" : "countered";
     const nextUpdatedAt = new Date().toISOString();
     const nextOfferType = counterPayload.offerType || offer.offerType;
     const nextCashAmount =
@@ -2930,21 +2958,23 @@ export function MarketplaceProvider({ children }) {
                 ...item,
                 status: nextStatus,
                 offerType: nextOfferType,
-                cashAmount: nextCashAmount,
-                tradeItems: nextTradeItems,
-                note: nextNote,
-                updatedAt: nextUpdatedAt,
-              })
-            : item,
+                  cashAmount: nextCashAmount,
+                  tradeItems: nextTradeItems,
+                  note: nextNote,
+                  lastActorId: currentUserId,
+                  updatedAt: nextUpdatedAt,
+                })
+              : item,
         ),
       );
       return { ok: true };
     }
 
-    const updatePayload = {
-      status: nextStatus,
-      updated_at: nextUpdatedAt,
-    };
+      const updatePayload = {
+        status: nextStatus,
+        last_actor_id: currentUserId,
+        updated_at: nextUpdatedAt,
+      };
 
     if (action === "counter") {
       updatePayload.offer_type = nextOfferType;

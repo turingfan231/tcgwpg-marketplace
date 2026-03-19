@@ -97,6 +97,7 @@ create table public.offers (
   trade_items jsonb not null default '[]'::jsonb,
   note text not null default '',
   status text not null default 'pending' check (status in ('pending', 'accepted', 'declined', 'countered')),
+  last_actor_id uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

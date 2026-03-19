@@ -260,9 +260,14 @@ export default function MessagesPage() {
                   {threadOffers.map((offer) => {
                     const isSeller = offer.sellerId === currentUserId;
                     const isBuyer = offer.buyerId === currentUserId;
+                    const lastActorId =
+                      offer.lastActorId ||
+                      (offer.status === "pending" ? offer.buyerId : offer.sellerId);
                     const canRespond =
                       (offer.status === "pending" && isSeller) ||
-                      (offer.status === "countered" && isBuyer);
+                      (offer.status === "countered" &&
+                        (isSeller || isBuyer) &&
+                        String(lastActorId) !== String(currentUserId));
                     const counterDraft = counterDrafts[offer.id];
                     return (
                       <div
