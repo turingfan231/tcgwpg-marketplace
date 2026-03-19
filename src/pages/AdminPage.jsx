@@ -5,8 +5,6 @@ import {
   ExternalLink,
   Flag,
   ShieldCheck,
-  Star,
-  Store,
   Trash2,
   Users,
 } from "lucide-react";
@@ -29,6 +27,35 @@ function formatEventDate(dateStr) {
   } catch {
     return dateStr;
   }
+}
+
+function SectionButton({ active, count, label, onClick }) {
+  return (
+    <button
+      className={`flex items-center justify-between gap-3 rounded-[18px] border px-4 py-3 text-left transition ${
+        active
+          ? "border-navy bg-navy text-white shadow-soft"
+          : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
+      }`}
+      type="button"
+      onClick={onClick}
+    >
+      <span className="text-sm font-semibold uppercase tracking-[0.18em]">{label}</span>
+      {count !== undefined ? (
+        <span
+          className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
+            active ? "bg-white/15 text-white" : "bg-slate-100 text-slate-600"
+          }`}
+        >
+          {count}
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
+function EmptyAdminState({ children }) {
+  return <p className="text-sm leading-7 text-steel">{children}</p>;
 }
 
 export default function AdminPage() {
@@ -58,6 +85,9 @@ export default function AdminPage() {
     addManualEvent,
     removeManualEvent,
   } = useMarketplace();
+  const [activeSection, setActiveSection] = useState("overview");
+  const [userSearch, setUserSearch] = useState("");
+  const [listingSearch, setListingSearch] = useState("");
   const [eventForm, setEventForm] = useState({
     title: "",
     store: "Galaxy Comics",
@@ -89,6 +119,48 @@ export default function AdminPage() {
     [enrichedListings],
   );
 
+  const filteredUsers = useMemo(() => {
+    const query = userSearch.trim().toLowerCase();
+    if (!query) {
+      return sortedUsers;
+    }
+
+    return sortedUsers.filter((user) =>
+      [user.name, user.username, user.email, user.neighborhood, user.role]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(query)),
+    );
+  }, [sortedUsers, userSearch]);
+
+  const filteredListings = useMemo(() => {
+    const query = listingSearch.trim().toLowerCase();
+    if (!query) {
+      return sortedListings;
+    }
+
+    return sortedListings.filter((listing) =>
+      [
+        listing.title,
+        listing.game,
+        listing.neighborhood,
+        listing.seller?.name,
+        listing.seller?.publicName,
+        listing.type,
+        listing.status,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(query)),
+    );
+  }, [listingSearch, sortedListings]);
+
+  const sectionButtons = [
+    { id: "overview", label: "Overview" },
+    { id: "moderation", label: "Moderation", count: openReports.length + adminBugReports.length },
+    { id: "listings", label: "Listings", count: sortedListings.length },
+    { id: "users", label: "Users", count: sortedUsers.length },
+    { id: "events", label: "Events", count: manualEvents.length },
+  ];
+
   function handleAddEvent(event) {
     event.preventDefault();
     addManualEvent(eventForm);
@@ -108,20 +180,36 @@ export default function AdminPage() {
   return (
     <div className="space-y-8">
       <section className="surface-card p-7">
-        <p className="section-kicker">Admin Console</p>
-        <h1 className="mt-3 font-display text-5xl font-semibold tracking-[-0.05em] text-ink">
-          Moderation, analytics, and merchandising controls
-        </h1>
-        <p className="mt-4 max-w-4xl text-base leading-8 text-steel">
-          Manage listings, trust signals, user roles, reports, featured homepage slots,
-          and event overrides from one place.
-        </p>
+        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <p className="section-kicker">Admin Console</p>
+            <h1 className="mt-3 font-display text-5xl font-semibold tracking-[-0.05em] text-ink">
+              Admin controls
+            </h1>
+            <p className="mt-4 max-w-4xl text-base leading-8 text-steel">
+              Moderate listings, handle reports, manage user trust, and keep the local calendar
+              clean without digging through one long page.
+            </p>
+          </div>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-7">
+          <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[420px] xl:max-w-[520px]">
+            {sectionButtons.map((section) => (
+              <SectionButton
+                key={section.id}
+                active={activeSection === section.id}
+                count={section.count}
+                label={section.label}
+                onClick={() => setActiveSection(section.id)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="surface-muted p-5">
             <Flag className="text-orange" size={18} />
             <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-steel">
-              Flagged
+              Flagged listings
             </p>
             <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
               {adminOverview.flaggedListings}
@@ -130,19 +218,10 @@ export default function AdminPage() {
           <div className="surface-muted p-5">
             <Trash2 className="text-rose-600" size={18} />
             <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-steel">
-              Removed
+              Removed listings
             </p>
             <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
               {adminOverview.removedListings}
-            </p>
-          </div>
-          <div className="surface-muted p-5">
-            <Star className="text-amber-500" size={18} />
-            <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-steel">
-              Featured
-            </p>
-            <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
-              {adminOverview.featuredListings}
             </p>
           </div>
           <div className="surface-muted p-5">
@@ -163,28 +242,152 @@ export default function AdminPage() {
               {adminOverview.conversionRate}%
             </p>
           </div>
-          <div className="surface-muted p-5">
-            <CalendarCog className="text-navy" size={18} />
-            <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-steel">
-              Open reports
-            </p>
-            <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
-              {adminOverview.openReports}
-            </p>
-          </div>
-          <div className="surface-muted p-5">
-            <Bug className="text-orange" size={18} />
-            <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-steel">
-              Open bugs
-            </p>
-            <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
-              {adminOverview.openBugReports}
-            </p>
-          </div>
         </div>
       </section>
 
-      <section className="grid gap-8 xl:grid-cols-[1.15fr_0.85fr]">
+      {activeSection === "overview" ? (
+        <section className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
+          <div className="space-y-8">
+            <section className="surface-card p-6">
+              <div className="flex items-center gap-3">
+                <Flag className="text-orange" size={20} />
+                <div>
+                  <p className="section-kicker">Queue snapshot</p>
+                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                    What needs attention now
+                  </h2>
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                <div className="rounded-[24px] bg-[#f8f5ee] p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                    Open reports
+                  </p>
+                  <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
+                    {adminOverview.openReports}
+                  </p>
+                  <p className="mt-3 text-sm text-steel">
+                    Buyer, seller, and listing disputes waiting for review.
+                  </p>
+                </div>
+                <div className="rounded-[24px] bg-[#f8f5ee] p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                    Open beta bugs
+                  </p>
+                  <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
+                    {adminOverview.openBugReports}
+                  </p>
+                  <p className="mt-3 text-sm text-steel">
+                    Tester issues reported from the live beta build.
+                  </p>
+                </div>
+                <div className="rounded-[24px] bg-[#f8f5ee] p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                    Featured listings
+                  </p>
+                  <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
+                    {adminOverview.featuredListings}
+                  </p>
+                </div>
+                <div className="rounded-[24px] bg-[#f8f5ee] p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                    Manual events
+                  </p>
+                  <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
+                    {manualEvents.length}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section className="surface-card p-6">
+              <div className="flex items-center gap-3">
+                <Activity className="text-orange" size={20} />
+                <div>
+                  <p className="section-kicker">Analytics</p>
+                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                    Search and neighborhood trends
+                  </h2>
+                </div>
+              </div>
+              <div className="mt-5 grid gap-4 lg:grid-cols-3">
+                <div className="rounded-[24px] bg-[#f8f5ee] p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                    Flagged listing rate
+                  </p>
+                  <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
+                    {adminOverview.flaggedRate}%
+                  </p>
+                </div>
+                <div className="rounded-[24px] bg-[#f8f5ee] p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                    Top neighborhoods
+                  </p>
+                  <div className="mt-3 space-y-2">
+                    {adminOverview.topNeighborhoods.map((item) => (
+                      <div key={item.label} className="flex items-center justify-between text-sm">
+                        <span className="text-steel">{item.label}</span>
+                        <span className="font-semibold text-ink">{item.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-[24px] bg-[#f8f5ee] p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                    Top searches
+                  </p>
+                  <div className="mt-3 space-y-2">
+                    {adminOverview.topSearches.length ? (
+                      adminOverview.topSearches.map((item) => (
+                        <div key={item.query} className="flex items-center justify-between text-sm">
+                          <span className="text-steel">{item.query}</span>
+                          <span className="font-semibold text-ink">{item.count}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-steel">No search telemetry yet.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <section className="surface-card p-6">
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="text-navy" size={20} />
+              <div>
+                <p className="section-kicker">Quick actions</p>
+                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                  Fast admin jumps
+                </h2>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3">
+              <button className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-slate-300" type="button" onClick={() => setActiveSection("moderation")}>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">Moderation</p>
+                <p className="mt-2 font-semibold text-ink">Open reports and bug triage</p>
+              </button>
+              <button className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-slate-300" type="button" onClick={() => setActiveSection("listings")}>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">Listings</p>
+                <p className="mt-2 font-semibold text-ink">Merchandising and removals</p>
+              </button>
+              <button className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-slate-300" type="button" onClick={() => setActiveSection("users")}>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">Users</p>
+                <p className="mt-2 font-semibold text-ink">Badges, roles, and access</p>
+              </button>
+              <button className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-slate-300" type="button" onClick={() => setActiveSection("events")}>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">Events</p>
+                <p className="mt-2 font-semibold text-ink">Calendar overrides</p>
+              </button>
+            </div>
+          </section>
+        </section>
+      ) : null}
+
+      {activeSection === "moderation" ? (
         <div className="space-y-8">
           <section className="surface-card p-6">
             <div className="flex items-center gap-3">
@@ -248,7 +451,7 @@ export default function AdminPage() {
                   </article>
                 ))
               ) : (
-                <p className="text-sm leading-7 text-steel">No open reports right now.</p>
+                <EmptyAdminState>No open reports right now.</EmptyAdminState>
               )}
             </div>
           </section>
@@ -377,26 +580,43 @@ export default function AdminPage() {
                   </article>
                 ))
               ) : (
-                <p className="text-sm leading-7 text-steel">
-                  No beta bug reports yet.
-                </p>
+                <EmptyAdminState>No beta bug reports yet.</EmptyAdminState>
               )}
             </div>
           </section>
+        </div>
+      ) : null}
 
-          <section className="surface-card p-6">
-            <div className="flex items-center gap-3">
-              <Store className="text-navy" size={20} />
-              <div>
-                <p className="section-kicker">Listings</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                  Moderation and merchandising
-                </h2>
+      {activeSection === "listings" ? (
+        <section className="surface-card p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <Trash2 className="text-navy" size={20} />
+                <div>
+                  <p className="section-kicker">Listings</p>
+                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                    Moderation and merchandising
+                  </h2>
+                </div>
               </div>
+              <p className="mt-4 max-w-3xl text-sm leading-7 text-steel">
+                Search the live listing pool, then flag, feature, remove, restore, or leave internal
+                notes without jumping around the app.
+              </p>
             </div>
 
-            <div className="mt-5 space-y-4">
-              {sortedListings.map((listing) => (
+            <input
+              className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 text-sm outline-none transition focus:border-navy lg:max-w-sm"
+              placeholder="Search listings, sellers, neighborhoods..."
+              value={listingSearch}
+              onChange={(event) => setListingSearch(event.target.value)}
+            />
+          </div>
+
+          <div className="mt-5 space-y-4">
+            {filteredListings.length ? (
+              filteredListings.map((listing) => (
                 <article
                   key={listing.id}
                   className="rounded-[26px] border border-slate-200 bg-[#fbf8f1] p-5"
@@ -423,7 +643,8 @@ export default function AdminPage() {
                       </div>
                       <p className="mt-2 text-sm text-steel">
                         {listing.game} | {listing.neighborhood}
-                        {listing.postalCode ? ` | ${listing.postalCode}` : ""} | {listing.seller?.name}
+                        {listing.postalCode ? ` | ${listing.postalCode}` : ""} |{" "}
+                        {listing.seller?.name}
                       </p>
                       <p className="mt-2 text-sm font-semibold text-ink">
                         {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
@@ -481,25 +702,44 @@ export default function AdminPage() {
                     </button>
                   </div>
                 </article>
-              ))}
-            </div>
-          </section>
-        </div>
+              ))
+            ) : (
+              <EmptyAdminState>No listings match this search.</EmptyAdminState>
+            )}
+          </div>
+        </section>
+      ) : null}
 
-        <div className="space-y-8">
-          <section className="surface-card p-6">
-            <div className="flex items-center gap-3">
-              <ShieldCheck className="text-navy" size={20} />
-              <div>
-                <p className="section-kicker">Users</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                  Roles, badges, and access
-                </h2>
+      {activeSection === "users" ? (
+        <section className="surface-card p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="text-navy" size={20} />
+                <div>
+                  <p className="section-kicker">Users</p>
+                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                    Roles, badges, and access
+                  </h2>
+                </div>
               </div>
+              <p className="mt-4 max-w-3xl text-sm leading-7 text-steel">
+                Search accounts, promote admins, verify sellers, grant beta access, or suspend bad
+                actors from one queue.
+              </p>
             </div>
 
-            <div className="mt-5 space-y-4">
-              {sortedUsers.map((user) => (
+            <input
+              className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 text-sm outline-none transition focus:border-navy lg:max-w-sm"
+              placeholder="Search users, email, role, neighborhood..."
+              value={userSearch}
+              onChange={(event) => setUserSearch(event.target.value)}
+            />
+          </div>
+
+          <div className="mt-5 space-y-4">
+            {filteredUsers.length ? (
+              filteredUsers.map((user) => (
                 <article
                   key={user.id}
                   className="rounded-[24px] border border-slate-200 bg-[#fbf8f1] p-5"
@@ -581,170 +821,124 @@ export default function AdminPage() {
                     })}
                   </div>
                 </article>
+              ))
+            ) : (
+              <EmptyAdminState>No users match this search.</EmptyAdminState>
+            )}
+          </div>
+        </section>
+      ) : null}
+
+      {activeSection === "events" ? (
+        <section className="surface-card p-6">
+          <div className="flex items-center gap-3">
+            <CalendarCog className="text-orange" size={20} />
+            <div>
+              <p className="section-kicker">Manual events</p>
+              <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                Store overrides and calendar fixes
+              </h2>
+            </div>
+          </div>
+
+          <form className="mt-5 grid gap-4 md:grid-cols-2" onSubmit={handleAddEvent}>
+            <input
+              required
+              className="rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy"
+              placeholder="Event title"
+              value={eventForm.title}
+              onChange={(event) =>
+                setEventForm((current) => ({ ...current, title: event.target.value }))
+              }
+            />
+            <select
+              className="rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy"
+              value={eventForm.store}
+              onChange={(event) =>
+                setEventForm((current) => ({ ...current, store: event.target.value }))
+              }
+            >
+              {storeOptions.map((store) => (
+                <option key={store}>{store}</option>
               ))}
-            </div>
-          </section>
-
-          <section className="surface-card p-6">
-            <div className="flex items-center gap-3">
-              <Activity className="text-orange" size={20} />
-              <div>
-                <p className="section-kicker">Analytics</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                  Search and neighborhood trends
-                </h2>
-              </div>
-            </div>
-            <div className="mt-5 grid gap-4">
-              <div className="rounded-[24px] bg-[#f8f5ee] p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                  Flagged listing rate
-                </p>
-                <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
-                  {adminOverview.flaggedRate}%
-                </p>
-              </div>
-              <div className="rounded-[24px] bg-[#f8f5ee] p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                  Top neighborhoods
-                </p>
-                <div className="mt-3 space-y-2">
-                  {adminOverview.topNeighborhoods.map((item) => (
-                    <div key={item.label} className="flex items-center justify-between text-sm">
-                      <span className="text-steel">{item.label}</span>
-                      <span className="font-semibold text-ink">{item.count}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="rounded-[24px] bg-[#f8f5ee] p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                  Top searches
-                </p>
-                <div className="mt-3 space-y-2">
-                  {adminOverview.topSearches.length ? (
-                    adminOverview.topSearches.map((item) => (
-                      <div key={item.query} className="flex items-center justify-between text-sm">
-                        <span className="text-steel">{item.query}</span>
-                        <span className="font-semibold text-ink">{item.count}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-steel">No search telemetry yet.</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="surface-card p-6">
-            <div className="flex items-center gap-3">
-              <CalendarCog className="text-orange" size={20} />
-              <div>
-                <p className="section-kicker">Manual events</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                  Store overrides and calendar fixes
-                </h2>
-              </div>
-            </div>
-
-            <form className="mt-5 grid gap-4 md:grid-cols-2" onSubmit={handleAddEvent}>
-              <input
-                required
-                className="rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy"
-                placeholder="Event title"
-                value={eventForm.title}
-                onChange={(event) =>
-                  setEventForm((current) => ({ ...current, title: event.target.value }))
-                }
-              />
-              <select
-                className="rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy"
-                value={eventForm.store}
-                onChange={(event) =>
-                  setEventForm((current) => ({ ...current, store: event.target.value }))
-                }
+            </select>
+            <input
+              required
+              className="rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy"
+              type="date"
+              value={eventForm.dateStr}
+              onChange={(event) =>
+                setEventForm((current) => ({ ...current, dateStr: event.target.value }))
+              }
+            />
+            <input
+              required
+              className="rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy"
+              placeholder="6:30 PM"
+              value={eventForm.time}
+              onChange={(event) =>
+                setEventForm((current) => ({ ...current, time: event.target.value }))
+              }
+            />
+            <select
+              className="rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy"
+              value={eventForm.game}
+              onChange={(event) =>
+                setEventForm((current) => ({ ...current, game: event.target.value }))
+              }
+            >
+              {gameOptions.map((game) => (
+                <option key={game}>{game}</option>
+              ))}
+            </select>
+            <input
+              className="rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy"
+              placeholder="Entry fee"
+              value={eventForm.fee}
+              onChange={(event) =>
+                setEventForm((current) => ({ ...current, fee: event.target.value }))
+              }
+            />
+            <select
+              className="rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy"
+              value={eventForm.neighborhood}
+              onChange={(event) =>
+                setEventForm((current) => ({ ...current, neighborhood: event.target.value }))
+              }
+            >
+              {neighborhoods.slice(1).map((neighborhood) => (
+                <option key={neighborhood}>{neighborhood}</option>
+              ))}
+            </select>
+            <input
+              className="rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy"
+              placeholder="Source URL"
+              value={eventForm.sourceUrl}
+              onChange={(event) =>
+                setEventForm((current) => ({ ...current, sourceUrl: event.target.value }))
+              }
+            />
+            <textarea
+              className="min-h-24 rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy md:col-span-2"
+              placeholder="Why this override exists"
+              value={eventForm.note}
+              onChange={(event) =>
+                setEventForm((current) => ({ ...current, note: event.target.value }))
+              }
+            />
+            <div className="md:col-span-2">
+              <button
+                className="rounded-full bg-orange px-5 py-3 text-sm font-semibold text-white"
+                type="submit"
               >
-                {storeOptions.map((store) => (
-                  <option key={store}>{store}</option>
-                ))}
-              </select>
-              <input
-                required
-                className="rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy"
-                type="date"
-                value={eventForm.dateStr}
-                onChange={(event) =>
-                  setEventForm((current) => ({ ...current, dateStr: event.target.value }))
-                }
-              />
-              <input
-                required
-                className="rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy"
-                placeholder="6:30 PM"
-                value={eventForm.time}
-                onChange={(event) =>
-                  setEventForm((current) => ({ ...current, time: event.target.value }))
-                }
-              />
-              <select
-                className="rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy"
-                value={eventForm.game}
-                onChange={(event) =>
-                  setEventForm((current) => ({ ...current, game: event.target.value }))
-                }
-              >
-                {gameOptions.map((game) => (
-                  <option key={game}>{game}</option>
-                ))}
-              </select>
-              <input
-                className="rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy"
-                placeholder="Entry fee"
-                value={eventForm.fee}
-                onChange={(event) =>
-                  setEventForm((current) => ({ ...current, fee: event.target.value }))
-                }
-              />
-              <select
-                className="rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy"
-                value={eventForm.neighborhood}
-                onChange={(event) =>
-                  setEventForm((current) => ({ ...current, neighborhood: event.target.value }))
-                }
-              >
-                {neighborhoods.slice(1).map((neighborhood) => (
-                  <option key={neighborhood}>{neighborhood}</option>
-                ))}
-              </select>
-              <input
-                className="rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy"
-                placeholder="Source URL"
-                value={eventForm.sourceUrl}
-                onChange={(event) =>
-                  setEventForm((current) => ({ ...current, sourceUrl: event.target.value }))
-                }
-              />
-              <textarea
-                className="min-h-24 rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy md:col-span-2"
-                placeholder="Why this override exists"
-                value={eventForm.note}
-                onChange={(event) =>
-                  setEventForm((current) => ({ ...current, note: event.target.value }))
-                }
-              />
-              <div className="md:col-span-2">
-                <button
-                  className="rounded-full bg-orange px-5 py-3 text-sm font-semibold text-white"
-                  type="submit"
-                >
-                  Add manual event
-                </button>
-              </div>
-            </form>
+                Add manual event
+              </button>
+            </div>
+          </form>
 
-            <div className="mt-6 space-y-3">
-              {manualEvents.map((event) => (
+          <div className="mt-6 space-y-3">
+            {manualEvents.length ? (
+              manualEvents.map((event) => (
                 <div
                   key={event.id}
                   className="flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-slate-200 bg-white px-4 py-4"
@@ -785,11 +979,13 @@ export default function AdminPage() {
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          </section>
-        </div>
-      </section>
+              ))
+            ) : (
+              <EmptyAdminState>No manual event overrides yet.</EmptyAdminState>
+            )}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
