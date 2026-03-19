@@ -259,6 +259,10 @@ export default function MessagesPage() {
                 <div className="grid gap-3">
                   {threadOffers.map((offer) => {
                     const isSeller = offer.sellerId === currentUserId;
+                    const isBuyer = offer.buyerId === currentUserId;
+                    const canRespond =
+                      (offer.status === "pending" && isSeller) ||
+                      (offer.status === "countered" && isBuyer);
                     const counterDraft = counterDrafts[offer.id];
                     return (
                       <div
@@ -286,7 +290,7 @@ export default function MessagesPage() {
                             {offer.status}
                           </span>
                         </div>
-                        {isSeller && offer.status === "pending" ? (
+                        {canRespond ? (
                           <>
                             <div className="mt-4 flex flex-wrap gap-2">
                               <button
@@ -308,7 +312,7 @@ export default function MessagesPage() {
                                 type="button"
                                 onClick={() => beginCounterDraft(offer)}
                               >
-                                Counter
+                                {offer.status === "countered" ? "Counter back" : "Counter"}
                               </button>
                             </div>
 
@@ -317,7 +321,7 @@ export default function MessagesPage() {
                                 <div className="grid gap-3 md:grid-cols-2">
                                   <label className="block">
                                     <span className="mb-2 block text-sm font-semibold text-steel">
-                                      Counter type
+                                      {isSeller ? "Counter type" : "Reply type"}
                                     </span>
                                     <select
                                       className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-navy"
@@ -341,7 +345,7 @@ export default function MessagesPage() {
                                   {counterDraft.offerType !== "trade" ? (
                                     <label className="block">
                                       <span className="mb-2 block text-sm font-semibold text-steel">
-                                        Counter amount (CAD)
+                                        {isSeller ? "Counter amount (CAD)" : "Reply amount (CAD)"}
                                       </span>
                                       <input
                                         min="0"
@@ -385,7 +389,7 @@ export default function MessagesPage() {
 
                                   <label className="block md:col-span-2">
                                     <span className="mb-2 block text-sm font-semibold text-steel">
-                                      Counter note
+                                      {isSeller ? "Counter note" : "Reply note"}
                                     </span>
                                     <textarea
                                       className="min-h-24 w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-navy"
@@ -429,7 +433,7 @@ export default function MessagesPage() {
                                       })
                                     }
                                   >
-                                    Send counter
+                                    {offer.status === "countered" ? "Send reply counter" : "Send counter"}
                                   </button>
                                   <button
                                     className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
