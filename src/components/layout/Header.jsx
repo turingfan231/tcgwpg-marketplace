@@ -38,6 +38,7 @@ export default function Header() {
     globalSearch,
     isAdmin,
     isAuthenticated,
+    isBetaTester,
     logout,
     openCreateListing,
     setGlobalSearch,
@@ -142,6 +143,15 @@ export default function Header() {
       label: `Alerts${safeUnreadNotificationCount ? ` (${safeUnreadNotificationCount})` : ""}`,
       icon: Bell,
     },
+    ...((isBetaTester || isAdmin)
+      ? [
+          {
+            to: "/beta/bugs",
+            label: "Bug reports",
+            icon: Shield,
+          },
+        ]
+      : []),
     ...(isAdmin
       ? [
           {

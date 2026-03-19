@@ -1,8 +1,8 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useMarketplace } from "../../hooks/useMarketplace";
 
-export default function ProtectedRoute({ requireAdmin = false }) {
-  const { authReady, isAdmin, isAuthenticated } = useMarketplace();
+export default function ProtectedRoute({ requireAdmin = false, requireBadge = "" }) {
+  const { authReady, currentUser, isAdmin, isAuthenticated } = useMarketplace();
   const location = useLocation();
 
   if (!authReady) {
@@ -18,6 +18,14 @@ export default function ProtectedRoute({ requireAdmin = false }) {
   }
 
   if (requireAdmin && !isAdmin) {
+    return <Navigate replace to="/dashboard" />;
+  }
+
+  if (
+    requireBadge &&
+    !isAdmin &&
+    (!Array.isArray(currentUser?.badges) || !currentUser.badges.includes(requireBadge))
+  ) {
     return <Navigate replace to="/dashboard" />;
   }
 

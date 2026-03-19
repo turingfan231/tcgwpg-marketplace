@@ -134,6 +134,7 @@ function buildMarketplaceCacheSnapshot(snapshot) {
     })),
     wishlist: trimCacheArray(snapshot.wishlist, 200),
     reviews: trimCacheArray(snapshot.reviews, 120),
+    bugReports: trimCacheArray(snapshot.bugReports, 120),
     manualEvents: trimCacheArray(snapshot.manualEvents, 80),
     listingDrafts: trimCacheArray(snapshot.listingDrafts, 8),
     activeDraftId: snapshot.activeDraftId || null,
@@ -238,6 +239,16 @@ function omitMissingProfileColumns(payload, error) {
   return nextPayload;
 }
 
+function isMissingTableError(error, tableName) {
+  const message = String(error?.message || "").toLowerCase();
+  return (
+    message.includes(String(tableName || "").toLowerCase()) &&
+    (message.includes("does not exist") ||
+      message.includes("schema cache") ||
+      message.includes("could not find"))
+  );
+}
+
 function buildInitials(name) {
   return String(name || "")
     .split(/\s+/)
@@ -257,6 +268,14 @@ function getFirstName(name) {
 
 function getPublicName(name) {
   return getFirstName(name);
+}
+
+function titleCaseWords(value) {
+  return String(value || "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 function normalizeDraftCollection(value) {
@@ -455,6 +474,24 @@ function normalizeReportRecord(report) {
   };
 }
 
+function normalizeBugReportRecord(report) {
+  return {
+    status: "open",
+    severity: "medium",
+    area: "general",
+    adminNotes: "",
+    expectedBehavior: "",
+    actualBehavior: "",
+    reproductionSteps: "",
+    pagePath: "",
+    screenshotUrl: "",
+    environmentLabel: "",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    ...report,
+  };
+}
+
 function normalizeNotificationRecord(notification) {
   return {
     read: false,
@@ -589,6 +626,26 @@ function fromNotificationRow(row) {
   });
 }
 
+function fromBugReportRow(row) {
+  return normalizeBugReportRecord({
+    id: row.id,
+    reporterId: row.reporter_id,
+    title: row.title,
+    area: row.area,
+    severity: row.severity,
+    status: row.status,
+    pagePath: row.page_path || "",
+    expectedBehavior: row.expected_behavior || "",
+    actualBehavior: row.actual_behavior || "",
+    reproductionSteps: row.reproduction_steps || "",
+    environmentLabel: row.environment_label || "",
+    screenshotUrl: row.screenshot_url || "",
+    adminNotes: row.admin_notes || "",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  });
+}
+
 function fromEventRow(row) {
   return normalizeManualEventRecord({
     id: row.id,
@@ -712,10 +769,11 @@ function buildSeedState() {
     listings: seedListings.map(normalizeListingRecord).filter(isSupportedListing),
     reviews: seedReviews,
     wishlist: defaultWishlist,
-    threads: [],
-    offers: [],
-    reports: [],
-    notifications: [],
+      threads: [],
+      offers: [],
+      reports: [],
+      bugReports: [],
+      notifications: [],
     manualEvents: seedManualEvents.map(normalizeManualEventRecord),
     listingDrafts: [],
     activeDraftId: null,
@@ -751,6 +809,9 @@ export function MarketplaceProvider({ children }) {
   const [reports, setReports] = useState(() =>
     isSupabaseConfigured ? cachedState?.reports || [] : seedState.reports,
   );
+  const [bugReports, setBugReports] = useState(() =>
+    isSupabaseConfigured ? cachedState?.bugReports || [] : seedState.bugReports,
+  );
   const [notifications, setNotifications] = useState(() =>
     isSupabaseConfigured ? cachedState?.notifications || [] : seedState.notifications,
   );
@@ -784,6 +845,9 @@ export function MarketplaceProvider({ children }) {
     [currentUserId, users],
   );
   const isSuspended = currentUserRecord?.accountStatus === "suspended";
+  const isBetaTester = Boolean(
+    currentUserRecord?.badges?.includes("beta") || currentUserRecord?.role === "admin",
+  );
   const listingDraft = useMemo(
     () =>
       activeDraftId
@@ -993,6 +1057,52 @@ export function MarketplaceProvider({ children }) {
     [enrichedListings, reports, sellerMap],
   );
 
+  const bugReportsForCurrentUser = useMemo(
+    () =>
+      currentUserId
+        ? bugReports
+            .filter((report) => report.reporterId === currentUserId)
+            .sort(
+              (left, right) =>
+                new Date(right.updatedAt || right.createdAt).getTime() -
+                new Date(left.updatedAt || left.createdAt).getTime(),
+            )
+        : [],
+    [bugReports, currentUserId],
+  );
+
+  const adminBugReports = useMemo(
+    () =>
+      [...bugReports]
+        .map((report) => ({
+          ...report,
+          reporter: sellerMap[report.reporterId] || null,
+        }))
+        .sort((left, right) => {
+          const statusWeight = {
+            open: 0,
+            triaged: 1,
+            "in-progress": 2,
+            fixed: 3,
+            closed: 4,
+          };
+          const severityWeight = {
+            critical: 0,
+            high: 1,
+            medium: 2,
+            low: 3,
+          };
+
+          return (
+            (statusWeight[left.status] ?? 99) - (statusWeight[right.status] ?? 99) ||
+            (severityWeight[left.severity] ?? 99) - (severityWeight[right.severity] ?? 99) ||
+            new Date(right.updatedAt || right.createdAt).getTime() -
+              new Date(left.updatedAt || left.createdAt).getTime()
+          );
+        }),
+    [bugReports, sellerMap],
+  );
+
   const topSearches = useMemo(() => {
     const counts = new Map();
     searchHistory.forEach((item) => {
@@ -1044,12 +1154,13 @@ export function MarketplaceProvider({ children }) {
       suspendedUsers,
       manualEvents: manualEvents.length,
       openReports: openReports.length,
+      openBugReports: bugReports.filter((report) => report.status !== "closed").length,
       conversionRate,
       flaggedRate,
       topNeighborhoods,
       topSearches,
     };
-  }, [listings, manualEvents.length, openReports.length, threads.length, topSearches, users]);
+  }, [bugReports, listings, manualEvents.length, openReports.length, threads.length, topSearches, users]);
 
   const pushToast = useCallback((toast) => {
     const id = toast.id || `toast-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -1251,6 +1362,7 @@ export function MarketplaceProvider({ children }) {
           setThreads([]);
           setOffers([]);
           setReports([]);
+          setBugReports([]);
           setNotifications([]);
           setListingDrafts([]);
           setActiveDraftId(null);
@@ -1260,28 +1372,30 @@ export function MarketplaceProvider({ children }) {
 
         const [
           wishlistsRes,
-          draftRes,
-          threadRowsRes,
-          offersRes,
-          reportsRes,
-          notificationsRes,
-          searchHistoryRes,
-        ] = await Promise.all([
+            draftRes,
+            threadRowsRes,
+            offersRes,
+            reportsRes,
+            bugReportsRes,
+            notificationsRes,
+            searchHistoryRes,
+          ] = await Promise.all([
           supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId),
           supabase
             .from("listing_drafts")
             .select("*")
             .eq("user_id", authedUserId)
             .maybeSingle(),
-          supabase
-            .from("message_threads")
-            .select("*")
-            .contains("participant_ids", [authedUserId]),
-          supabase.from("offers").select("*"),
-          supabase.from("reports").select("*"),
-          supabase
-            .from("notifications")
-            .select("*")
+            supabase
+              .from("message_threads")
+              .select("*")
+              .contains("participant_ids", [authedUserId]),
+            supabase.from("offers").select("*"),
+            supabase.from("reports").select("*"),
+            supabase.from("bug_reports").select("*"),
+            supabase
+              .from("notifications")
+              .select("*")
             .eq("user_id", authedUserId),
           supabase
             .from("search_history")
@@ -1292,10 +1406,13 @@ export function MarketplaceProvider({ children }) {
 
         if (wishlistsRes.error) throw wishlistsRes.error;
         if (draftRes.error) throw draftRes.error;
-        if (threadRowsRes.error) throw threadRowsRes.error;
-        if (offersRes.error) throw offersRes.error;
-        if (reportsRes.error) throw reportsRes.error;
-        if (notificationsRes.error) throw notificationsRes.error;
+          if (threadRowsRes.error) throw threadRowsRes.error;
+          if (offersRes.error) throw offersRes.error;
+          if (reportsRes.error) throw reportsRes.error;
+          if (bugReportsRes.error && !isMissingTableError(bugReportsRes.error, "bug_reports")) {
+            throw bugReportsRes.error;
+          }
+          if (notificationsRes.error) throw notificationsRes.error;
         if (searchHistoryRes.error) throw searchHistoryRes.error;
 
         const threadRows = threadRowsRes.data || [];
@@ -1328,10 +1445,13 @@ export function MarketplaceProvider({ children }) {
             nextDrafts[0]?.id ||
             null,
         );
-        setThreads(buildThreadMap(threadRows, messageRows));
-        setOffers((offersRes.data || []).map(fromOfferRow));
-        setReports((reportsRes.data || []).map(fromReportRow));
-        setNotifications((notificationsRes.data || []).map(fromNotificationRow));
+          setThreads(buildThreadMap(threadRows, messageRows));
+          setOffers((offersRes.data || []).map(fromOfferRow));
+          setReports((reportsRes.data || []).map(fromReportRow));
+          if (!bugReportsRes.error) {
+            setBugReports((bugReportsRes.data || []).map(fromBugReportRow));
+          }
+          setNotifications((notificationsRes.data || []).map(fromNotificationRow));
         setSearchHistory(
           (searchHistoryRes.data || []).map((row) => ({
             id: row.id,
@@ -1368,6 +1488,7 @@ export function MarketplaceProvider({ children }) {
       manualEvents,
       offers,
       reports,
+      bugReports,
       notifications,
       listingDrafts,
       activeDraftId,
@@ -1375,6 +1496,7 @@ export function MarketplaceProvider({ children }) {
     });
   }, [
     activeDraftId,
+    bugReports,
     listingDrafts,
     listings,
     manualEvents,
@@ -1520,14 +1642,18 @@ export function MarketplaceProvider({ children }) {
         pushToast({
           title: notification.title,
           body: notification.body,
-          href:
-            notification.type === "message"
-              ? `/messages/${notification.entityId}`
-              : notification.type.startsWith("offer-")
-                ? "/dashboard"
-                : notification.type === "report-opened" || notification.type === "listing-flagged"
-                  ? "/admin"
-                  : notification.entityId
+            href:
+              notification.type === "message"
+                ? `/messages/${notification.entityId}`
+                : notification.type.startsWith("offer-")
+                  ? "/dashboard"
+                  : notification.type === "bug-opened"
+                    ? "/admin"
+                    : notification.type === "bug-status"
+                      ? "/beta/bugs"
+                  : notification.type === "report-opened" || notification.type === "listing-flagged"
+                    ? "/admin"
+                    : notification.entityId
                     ? `/listing/${notification.entityId}`
                     : "/notifications",
           tone:
@@ -3022,6 +3148,179 @@ export function MarketplaceProvider({ children }) {
     return { ok: true };
   }
 
+  async function submitBugReport(payload) {
+    if (!currentUserId || !currentUserRecord) {
+      return { ok: false, error: "You must be logged in to submit a bug report." };
+    }
+
+    if (!isBetaTester) {
+      return { ok: false, error: "Only beta testers can access the bug tracker." };
+    }
+
+    const title = String(payload.title || "").trim();
+    const actualBehavior = String(payload.actualBehavior || "").trim();
+    const reproductionSteps = String(payload.reproductionSteps || "").trim();
+
+    if (!title) {
+      return { ok: false, error: "Bug title is required." };
+    }
+
+    if (!actualBehavior || !reproductionSteps) {
+      return {
+        ok: false,
+        error: "Actual behavior and reproduction steps are required.",
+      };
+    }
+
+    const nextBugReport = normalizeBugReportRecord({
+      id: `bug-${Date.now()}`,
+      reporterId: currentUserId,
+      title,
+      area: payload.area || "general",
+      severity: payload.severity || "medium",
+      pagePath: String(payload.pagePath || "").trim(),
+      expectedBehavior: String(payload.expectedBehavior || "").trim(),
+      actualBehavior,
+      reproductionSteps,
+      environmentLabel: String(payload.environmentLabel || "").trim(),
+      screenshotUrl: String(payload.screenshotUrl || "").trim(),
+      adminNotes: "",
+      status: "open",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    if (!isSupabaseConfigured) {
+      setBugReports((current) => [nextBugReport, ...current]);
+      return { ok: true, bugReport: nextBugReport, warning: "Saved locally only." };
+    }
+
+    const insertPayload = {
+      reporter_id: currentUserId,
+      title,
+      area: payload.area || "general",
+      severity: payload.severity || "medium",
+      status: "open",
+      page_path: String(payload.pagePath || "").trim() || null,
+      expected_behavior: String(payload.expectedBehavior || "").trim() || null,
+      actual_behavior: actualBehavior,
+      reproduction_steps: reproductionSteps,
+      environment_label: String(payload.environmentLabel || "").trim() || null,
+      screenshot_url: String(payload.screenshotUrl || "").trim() || null,
+      admin_notes: null,
+    };
+
+    const { data, error } = await supabase
+      .from("bug_reports")
+      .insert(insertPayload)
+      .select("*")
+      .single();
+
+    if (error && isMissingTableError(error, "bug_reports")) {
+      setBugReports((current) => [nextBugReport, ...current]);
+      return {
+        ok: true,
+        bugReport: nextBugReport,
+        warning:
+          "Bug report was saved only in this browser because the bug_reports table is not set up in Supabase yet.",
+      };
+    }
+
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+
+    await Promise.all(
+      users
+        .filter((user) => user.role === "admin")
+        .map((admin) =>
+          pushNotification({
+            userId: admin.id,
+            type: "bug-opened",
+            title: "New beta bug report",
+            body: `${currentUserRecord.publicName || currentUserRecord.name} reported: ${title}.`,
+            entityId: "/admin",
+          }),
+        ),
+    );
+
+    await refreshMarketplaceData(currentUserId, { silent: true });
+    return { ok: true, bugReport: fromBugReportRow(data) };
+  }
+
+  async function updateBugReport(reportId, updates) {
+    const report = bugReports.find((item) => item.id === reportId);
+    if (!report) {
+      return { ok: false, error: "Bug report not found." };
+    }
+
+    if (!currentUserRecord || currentUserRecord.role !== "admin") {
+      return { ok: false, error: "Only admins can update bug reports." };
+    }
+
+    const nextStatus = updates.status || report.status;
+    const nextSeverity = updates.severity || report.severity;
+    const nextAdminNotes =
+      updates.adminNotes !== undefined ? String(updates.adminNotes || "") : report.adminNotes;
+    const nextUpdatedAt = new Date().toISOString();
+
+    const nextBugReport = normalizeBugReportRecord({
+      ...report,
+      status: nextStatus,
+      severity: nextSeverity,
+      adminNotes: nextAdminNotes,
+      updatedAt: nextUpdatedAt,
+    });
+
+    if (!isSupabaseConfigured) {
+      setBugReports((current) =>
+        current.map((item) => (item.id === reportId ? nextBugReport : item)),
+      );
+      return { ok: true, bugReport: nextBugReport };
+    }
+
+    const { data, error } = await supabase
+      .from("bug_reports")
+      .update({
+        status: nextStatus,
+        severity: nextSeverity,
+        admin_notes: nextAdminNotes || null,
+        updated_at: nextUpdatedAt,
+      })
+      .eq("id", reportId)
+      .select("*")
+      .single();
+
+    if (error && isMissingTableError(error, "bug_reports")) {
+      setBugReports((current) =>
+        current.map((item) => (item.id === reportId ? nextBugReport : item)),
+      );
+      return {
+        ok: true,
+        bugReport: nextBugReport,
+        warning:
+          "Bug report was updated only in this browser because the bug_reports table is not set up in Supabase yet.",
+      };
+    }
+
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+
+    if (report.reporterId) {
+      await pushNotification({
+        userId: report.reporterId,
+        type: "bug-status",
+        title: "Bug report updated",
+        body: `${titleCaseWords(nextStatus.replace("-", " "))} | ${report.title}`,
+        entityId: "/beta/bugs",
+      });
+    }
+
+    await refreshMarketplaceData(currentUserId, { silent: true });
+    return { ok: true, bugReport: fromBugReportRow(data) };
+  }
+
   async function submitSuspensionAppeal(body) {
     if (!currentUserId || !currentUserRecord) {
       return { ok: false, error: "You must be logged in to submit an appeal." };
@@ -3555,9 +3854,12 @@ export function MarketplaceProvider({ children }) {
     hotListings,
     isAdmin: currentUser?.role === "admin",
     isAuthenticated: Boolean(currentUser),
+    isBetaTester,
     isCreateListingOpen,
     isSuspended,
     isSupabaseConfigured,
+    bugReports,
+    bugReportsForCurrentUser,
     listingDraft,
     listingDrafts: currentUserDrafts,
     listings: enrichedListings,
@@ -3573,6 +3875,7 @@ export function MarketplaceProvider({ children }) {
     offers,
     offersByListingId,
     offersForCurrentUser,
+    adminBugReports,
     openReportResolutionThread,
     openCreateListing,
     openReports,
@@ -3592,6 +3895,7 @@ export function MarketplaceProvider({ children }) {
     sendMessage,
     setGlobalSearch,
     signup,
+    submitBugReport,
     submitReport,
     submitSuspensionAppeal,
     toastItems,
@@ -3606,6 +3910,7 @@ export function MarketplaceProvider({ children }) {
     toggleUserVerified,
     unreadMessageCount,
     unreadNotificationCount,
+    updateBugReport,
     updateCurrentUserProfile,
     updateListingAdminNote,
     updateReportStatus,

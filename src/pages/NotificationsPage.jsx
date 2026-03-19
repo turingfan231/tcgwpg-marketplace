@@ -22,6 +22,14 @@ function buildTargetLink(notification) {
     return "/dashboard";
   }
 
+  if (notification.type === "bug-opened") {
+    return "/admin";
+  }
+
+  if (notification.type === "bug-status") {
+    return "/beta/bugs";
+  }
+
   if (notification.type === "message") {
     return `/messages/${notification.entityId}`;
   }

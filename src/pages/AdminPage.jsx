@@ -1,5 +1,6 @@
 import {
   Activity,
+  Bug,
   CalendarCog,
   ExternalLink,
   Flag,
@@ -14,7 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { neighborhoods } from "../data/mockData";
 import { useMarketplace } from "../hooks/useMarketplace";
 
-const badgeIds = ["fast", "trusted", "verified", "community", "power", "judge"];
+const badgeIds = ["fast", "trusted", "verified", "community", "power", "judge", "beta"];
 const storeOptions = ["Fusion Gaming", "Galaxy Comics", "A Muse N Games", "Arctic Rift Cards", "Other"];
 const gameOptions = ["Magic", "Pokemon", "One Piece"];
 
@@ -34,6 +35,7 @@ export default function AdminPage() {
   const navigate = useNavigate();
   const {
     adminOverview,
+    adminBugReports,
     deleteUserAccount,
     enrichedListings,
     formatCadPrice,
@@ -49,6 +51,7 @@ export default function AdminPage() {
     toggleUserBadge,
     toggleUserSuspended,
     toggleUserVerified,
+    updateBugReport,
     updateListingAdminNote,
     updateReportStatus,
     users,
@@ -67,6 +70,7 @@ export default function AdminPage() {
     note: "",
   });
   const [noteDrafts, setNoteDrafts] = useState({});
+  const [bugNoteDrafts, setBugNoteDrafts] = useState({});
 
   const sortedUsers = useMemo(
     () =>
@@ -113,7 +117,7 @@ export default function AdminPage() {
           and event overrides from one place.
         </p>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-6">
+        <div className="mt-6 grid gap-4 lg:grid-cols-7">
           <div className="surface-muted p-5">
             <Flag className="text-orange" size={18} />
             <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-steel">
@@ -166,6 +170,15 @@ export default function AdminPage() {
             </p>
             <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
               {adminOverview.openReports}
+            </p>
+          </div>
+          <div className="surface-muted p-5">
+            <Bug className="text-orange" size={18} />
+            <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-steel">
+              Open bugs
+            </p>
+            <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
+              {adminOverview.openBugReports}
             </p>
           </div>
         </div>
@@ -236,6 +249,137 @@ export default function AdminPage() {
                 ))
               ) : (
                 <p className="text-sm leading-7 text-steel">No open reports right now.</p>
+              )}
+            </div>
+          </section>
+
+          <section className="surface-card p-6">
+            <div className="flex items-center gap-3">
+              <Bug className="text-orange" size={20} />
+              <div>
+                <p className="section-kicker">Beta bugs</p>
+                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                  Bug tracker triage
+                </h2>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-4">
+              {adminBugReports.length ? (
+                adminBugReports.map((report) => (
+                  <article
+                    key={report.id}
+                    className="rounded-[26px] border border-slate-200 bg-[#fbf8f1] p-5"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
+                            {report.title}
+                          </h3>
+                          <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                            {report.status}
+                          </span>
+                          <span className="rounded-full bg-rose-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-700">
+                            {report.severity}
+                          </span>
+                          <span className="rounded-full bg-navy/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">
+                            {report.area}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-sm text-steel">
+                          Reporter: {report.reporter?.name || "Unknown"}
+                          {report.pagePath ? ` | Page: ${report.pagePath}` : ""}
+                          {report.environmentLabel ? ` | Env: ${report.environmentLabel}` : ""}
+                        </p>
+                        <div className="mt-3 grid gap-3 text-sm leading-7 text-steel lg:grid-cols-2">
+                          <div>
+                            <p className="font-semibold text-ink">Actual behavior</p>
+                            <p>{report.actualBehavior}</p>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-ink">Expected behavior</p>
+                            <p>{report.expectedBehavior || "Not provided."}</p>
+                          </div>
+                        </div>
+                        <div className="mt-3">
+                          <p className="text-sm font-semibold text-ink">Reproduction steps</p>
+                          <p className="mt-1 text-sm leading-7 text-steel">
+                            {report.reproductionSteps}
+                          </p>
+                        </div>
+                        {report.screenshotUrl ? (
+                          <a
+                            className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-navy"
+                            href={report.screenshotUrl}
+                            rel="noreferrer"
+                            target="_blank"
+                          >
+                            Screenshot
+                            <ExternalLink size={14} />
+                          </a>
+                        ) : null}
+                      </div>
+
+                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                        <select
+                          className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
+                          value={report.status}
+                          onChange={(event) =>
+                            updateBugReport(report.id, { status: event.target.value })
+                          }
+                        >
+                          <option value="open">Open</option>
+                          <option value="triaged">Triaged</option>
+                          <option value="in-progress">In progress</option>
+                          <option value="fixed">Fixed</option>
+                          <option value="closed">Closed</option>
+                        </select>
+                        <select
+                          className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
+                          value={report.severity}
+                          onChange={(event) =>
+                            updateBugReport(report.id, { severity: event.target.value })
+                          }
+                        >
+                          <option value="low">Low</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
+                          <option value="critical">Critical</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+                      <textarea
+                        className="min-h-24 rounded-[20px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-navy"
+                        placeholder="Admin notes, reproduction findings, workaround, or release note"
+                        value={bugNoteDrafts[report.id] ?? report.adminNotes ?? ""}
+                        onChange={(event) =>
+                          setBugNoteDrafts((current) => ({
+                            ...current,
+                            [report.id]: event.target.value,
+                          }))
+                        }
+                      />
+                      <button
+                        className="rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
+                        type="button"
+                        onClick={() =>
+                          updateBugReport(report.id, {
+                            adminNotes: bugNoteDrafts[report.id] ?? report.adminNotes ?? "",
+                          })
+                        }
+                      >
+                        Save bug note
+                      </button>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <p className="text-sm leading-7 text-steel">
+                  No beta bug reports yet.
+                </p>
               )}
             </div>
           </section>

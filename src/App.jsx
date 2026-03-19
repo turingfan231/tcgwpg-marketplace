@@ -9,6 +9,7 @@ import { MarketplaceProvider } from "./hooks/useMarketplace";
 const AccountPage = lazy(() => import("./pages/AccountPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
+const BugReportsPage = lazy(() => import("./pages/BugReportsPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const EventsPage = lazy(() => import("./pages/EventsPage"));
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -45,6 +46,9 @@ export default function App() {
                   <Route path="/notifications" element={<NotificationsPage />} />
                   <Route path="/messages" element={<MessagesPage />} />
                   <Route path="/messages/:threadId" element={<MessagesPage />} />
+                </Route>
+                <Route element={<ProtectedRoute requireBadge="beta" />}>
+                  <Route path="/beta/bugs" element={<BugReportsPage />} />
                 </Route>
                 <Route element={<ProtectedRoute requireAdmin />}>
                   <Route path="/admin" element={<AdminPage />} />

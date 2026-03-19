@@ -81,6 +81,10 @@ export const sellerBadgeCatalog = {
     label: "Judge / Staff",
     description: "Recognized local judge, organizer, or event staff member.",
   },
+  beta: {
+    label: "Beta Tester",
+    description: "Can access the private beta bug tracker and report app issues.",
+  },
 };
 
 export const sellers = [
