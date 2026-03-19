@@ -57,6 +57,10 @@ export default function ListingDetailPage() {
     recordListingView,
     respondToOffer,
     reviewBadgeCatalog,
+    toggleListingFeatured,
+    toggleListingFlag,
+    toggleListingRemoved,
+    updateListingAdminNote,
   } = useMarketplace();
   const viewRecorded = useRef(false);
   const [selectedImage, setSelectedImage] = useState("");
@@ -64,6 +68,9 @@ export default function ListingDetailPage() {
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  const [adminNoteDraft, setAdminNoteDraft] = useState("");
+  const [adminFeedback, setAdminFeedback] = useState("");
+  const [isSavingAdminNote, setIsSavingAdminNote] = useState(false);
 
   const listing = useMemo(
     () => activeListings.find((item) => item.id === listingId),
@@ -97,6 +104,8 @@ export default function ListingDetailPage() {
     }
 
     setSelectedImage(listing.primaryImage || listing.imageUrl || "");
+    setAdminNoteDraft(listing.adminNotes || "");
+    setAdminFeedback("");
   }, [listing]);
 
   const relatedListings = useMemo(() => {
@@ -150,6 +159,25 @@ export default function ListingDetailPage() {
   }, [listing]);
 
   const isOwner = currentUser && listing && currentUser.id === listing.sellerId;
+  const isAdmin = currentUser?.role === "admin";
+
+  async function handleSaveAdminNote() {
+    if (!listing || !isAdmin) {
+      return;
+    }
+
+    setIsSavingAdminNote(true);
+    setAdminFeedback("");
+    const result = await updateListingAdminNote(listing.id, adminNoteDraft);
+    setIsSavingAdminNote(false);
+
+    if (!result?.ok) {
+      setAdminFeedback(result?.error || "Could not save the admin note.");
+      return;
+    }
+
+    setAdminFeedback("Admin note saved.");
+  }
 
   if (!listing) {
     return (
@@ -459,6 +487,158 @@ export default function ListingDetailPage() {
               ) : null}
             </div>
           </div>
+
+          {isAdmin ? (
+            <div className="rounded-[36px] border border-amber-200 bg-amber-50/70 p-5 shadow-soft sm:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="section-kicker text-amber-700">Admin Controls</p>
+                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                    Listing moderation
+                  </h2>
+                  <p className="mt-3 max-w-2xl text-sm leading-7 text-steel">
+                    Review listing health, leave internal notes, and take moderation actions
+                    without leaving the listing.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <span
+                    className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
+                      listing.flagged
+                        ? "bg-rose-100 text-rose-700"
+                        : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {listing.flagged ? "Flagged" : "Not flagged"}
+                  </span>
+                  <span
+                    className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
+                      listing.featured
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {listing.featured ? "Featured" : "Standard"}
+                  </span>
+                  <span
+                    className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
+                      listing.status === "removed"
+                        ? "bg-amber-200 text-amber-800"
+                        : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {listing.status === "removed" ? "Removed" : "Live"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <button
+                  className={`rounded-[22px] border px-4 py-4 text-left transition ${
+                    listing.flagged
+                      ? "border-rose-200 bg-white text-rose-700"
+                      : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
+                  }`}
+                  type="button"
+                  onClick={() => void toggleListingFlag(listing.id)}
+                >
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em]">Safety</p>
+                  <p className="mt-2 font-semibold">
+                    {listing.flagged ? "Unflag listing" : "Flag listing"}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-current/80">
+                    Mark this listing for admin review or clear the flag state.
+                  </p>
+                </button>
+                <button
+                  className={`rounded-[22px] border px-4 py-4 text-left transition ${
+                    listing.featured
+                      ? "border-emerald-200 bg-white text-emerald-700"
+                      : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
+                  }`}
+                  type="button"
+                  onClick={() => void toggleListingFeatured(listing.id)}
+                >
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em]">Merchandising</p>
+                  <p className="mt-2 font-semibold">
+                    {listing.featured ? "Remove feature" : "Feature listing"}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-current/80">
+                    Control whether this listing appears in curated marketplace surfaces.
+                  </p>
+                </button>
+                <button
+                  className={`rounded-[22px] border px-4 py-4 text-left transition ${
+                    listing.status === "removed"
+                      ? "border-emerald-200 bg-white text-emerald-700"
+                      : "border-amber-200 bg-white text-amber-800"
+                  }`}
+                  type="button"
+                  onClick={() => void toggleListingRemoved(listing.id)}
+                >
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em]">Moderation</p>
+                  <p className="mt-2 font-semibold">
+                    {listing.status === "removed" ? "Restore listing" : "Remove listing"}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-current/80">
+                    {listing.status === "removed"
+                      ? "Put this listing back into the active marketplace."
+                      : "Take this listing out of public browse surfaces."}
+                  </p>
+                </button>
+                <Link
+                  className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left text-steel transition hover:border-slate-300 hover:text-ink"
+                  to={`/seller/${listing.seller.id}`}
+                >
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em]">Seller</p>
+                  <p className="mt-2 font-semibold">Open seller profile</p>
+                  <p className="mt-2 text-sm leading-6 text-current/80">
+                    Review seller badges, ratings, and the rest of their active listings.
+                  </p>
+                </Link>
+              </div>
+
+              <div className="mt-5 rounded-[24px] border border-amber-200/70 bg-white p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                      Internal note
+                    </p>
+                    <p className="mt-2 text-sm leading-7 text-steel">
+                      Only admins can see this note. Use it for moderation context, seller history,
+                      or follow-up reminders.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+                    Seller: {listing.seller.publicName || listing.seller.name}
+                  </span>
+                </div>
+                <textarea
+                  className="mt-4 min-h-[120px] w-full rounded-[20px] border border-slate-200 bg-[#fbf8f1] px-4 py-3 text-sm leading-7 text-ink outline-none transition focus:border-navy"
+                  placeholder="Internal moderation note"
+                  value={adminNoteDraft}
+                  onChange={(event) => setAdminNoteDraft(event.target.value)}
+                />
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                  <p
+                    className={`text-sm ${
+                      adminFeedback === "Admin note saved." ? "text-emerald-700" : "text-rose-700"
+                    }`}
+                  >
+                    {adminFeedback}
+                  </p>
+                  <button
+                    className="rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white shadow-soft disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={isSavingAdminNote}
+                    type="button"
+                    onClick={() => void handleSaveAdminNote()}
+                  >
+                    {isSavingAdminNote ? "Saving..." : "Save admin note"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <Link
             className="block rounded-[36px] bg-white p-5 shadow-soft transition hover:-translate-y-1 hover:shadow-lift sm:p-6"
