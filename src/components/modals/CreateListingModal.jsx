@@ -333,13 +333,13 @@ export default function CreateListingModal({ onClose }) {
 
   return (
     <ModalShell
-      subtitle="Create a local listing with live print search, cleaner card framing, and extra condition photos."
+      subtitle="Build the listing first, then pull in the exact printing and market data when you need it."
       title="Create Listing"
       wide
       onClose={onClose}
     >
       <form
-        className="grid gap-0 bg-[linear-gradient(180deg,#fbf8f1_0%,#f3efe7_100%)] 2xl:grid-cols-[minmax(380px,0.74fr)_minmax(0,1.26fr)]"
+        className="grid gap-0 bg-[linear-gradient(180deg,#fbf8f1_0%,#f5f1e8_100%)] 2xl:grid-cols-[minmax(360px,0.8fr)_minmax(0,1.2fr)]"
         onKeyDownCapture={(event) => {
           if (
             event.key === "Enter" &&
@@ -353,10 +353,10 @@ export default function CreateListingModal({ onClose }) {
         }}
         onSubmit={handleSubmit}
       >
-        <div className="order-2 space-y-6 border-b border-slate-200 p-4 sm:p-6 lg:p-8 2xl:order-1 2xl:border-b-0 2xl:border-r">
-          <section className="surface-card p-6">
+        <div className="order-2 space-y-5 border-b border-slate-200 p-4 sm:p-6 lg:p-7 2xl:order-1 2xl:border-b-0 2xl:border-r">
+          <section className="surface-card p-5 sm:p-6">
             <p className="section-kicker">Listing basics</p>
-            <h3 className="mt-3 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+            <h3 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.04em] text-ink">
               Card details
             </h3>
             <p className="mt-2 text-sm leading-7 text-steel">
@@ -364,12 +364,12 @@ export default function CreateListingModal({ onClose }) {
               right to pull in the exact printing and current market context.
             </p>
 
-            <div className="mt-6 grid gap-5 md:grid-cols-2">
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
               <label className="block md:col-span-2">
                 <FieldLabel>Listing title</FieldLabel>
                 <input
                   required
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3.5 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   placeholder="Card title or bundle name"
                   value={form.title}
                   onChange={(event) => updateField("title", event.target.value)}
@@ -379,7 +379,7 @@ export default function CreateListingModal({ onClose }) {
               <label className="block">
                 <FieldLabel>Game</FieldLabel>
                 <select
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3.5 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={form.game}
                   onChange={(event) => updateField("game", event.target.value)}
                 >
@@ -392,7 +392,7 @@ export default function CreateListingModal({ onClose }) {
               <label className="block">
                 <FieldLabel>Listing type</FieldLabel>
                 <select
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3.5 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={form.type}
                   onChange={(event) => updateField("type", event.target.value)}
                 >
@@ -405,7 +405,7 @@ export default function CreateListingModal({ onClose }) {
               <label className="block">
                 <FieldLabel>Format</FieldLabel>
                 <select
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3.5 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={form.listingFormat}
                   onChange={(event) => updateField("listingFormat", event.target.value)}
                 >
@@ -421,7 +421,7 @@ export default function CreateListingModal({ onClose }) {
               <label className="block">
                 <FieldLabel>Condition</FieldLabel>
                 <select
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3.5 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={form.condition}
                   onChange={(event) => updateField("condition", event.target.value)}
                 >
@@ -439,7 +439,7 @@ export default function CreateListingModal({ onClose }) {
                   min="0"
                   step="0.01"
                   type="number"
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3.5 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={form.price}
                   onChange={(event) => updateField("price", event.target.value)}
                 />
@@ -451,7 +451,7 @@ export default function CreateListingModal({ onClose }) {
                   min="1"
                   step="1"
                   type="number"
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3.5 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={form.quantity}
                   onChange={(event) => updateField("quantity", Math.max(1, Number(event.target.value) || 1))}
                 />
@@ -460,7 +460,7 @@ export default function CreateListingModal({ onClose }) {
               <label className="block md:col-span-2">
                 <FieldLabel>Neighborhood</FieldLabel>
                 <select
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3.5 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={form.neighborhood}
                   onChange={(event) => updateField("neighborhood", event.target.value)}
                 >
@@ -485,7 +485,7 @@ export default function CreateListingModal({ onClose }) {
                 <label className="block md:col-span-2">
                   <FieldLabel>Bundle contents</FieldLabel>
                   <textarea
-                    className="min-h-28 w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3.5 outline-none transition focus:border-navy focus:bg-white"
+                  className="min-h-24 w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                     placeholder="One item or note per line. Example: 4x Charizard ex&#10;Sleeved deck core&#10;Matching tokens"
                     value={form.bundleItems}
                     onChange={(event) => updateField("bundleItems", event.target.value)}
@@ -493,7 +493,7 @@ export default function CreateListingModal({ onClose }) {
                 </label>
               ) : null}
 
-              <label className="flex items-center gap-3 rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-4 md:col-span-2">
+              <label className="flex items-center gap-3 rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3.5 md:col-span-2">
                 <input
                   checked={form.acceptsTrade}
                   className="h-4 w-4 accent-navy"
@@ -505,14 +505,14 @@ export default function CreateListingModal({ onClose }) {
             </div>
           </section>
 
-          <section className="surface-card p-6">
+          <section className="surface-card p-5 sm:p-6">
             <p className="section-kicker">Photos and notes</p>
-            <div className="mt-5 space-y-5">
+            <div className="mt-4 space-y-4">
               <label className="block">
                 <FieldLabel>Description</FieldLabel>
                 <textarea
                   required
-                  className="min-h-40 w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3.5 outline-none transition focus:border-navy focus:bg-white"
+                  className="min-h-32 w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   placeholder="Call out set, rarity, defects, meetup range, and trade interests."
                   value={form.description}
                   onChange={(event) => updateField("description", event.target.value)}
@@ -521,7 +521,7 @@ export default function CreateListingModal({ onClose }) {
 
               <div className="block">
                 <FieldLabel>Primary card image</FieldLabel>
-                <label className="flex cursor-pointer items-center gap-3 rounded-[22px] border border-dashed border-slate-300 bg-[#f8f5ee] px-4 py-5 text-steel transition hover:border-navy hover:text-ink">
+                <label className="flex cursor-pointer items-center gap-3 rounded-[20px] border border-dashed border-slate-300 bg-[#f8f5ee] px-4 py-4 text-steel transition hover:border-navy hover:text-ink">
                   <ImagePlus size={18} />
                   <span className="text-sm font-semibold">
                     Upload the front-facing card image or let live search fill it in
@@ -537,7 +537,7 @@ export default function CreateListingModal({ onClose }) {
 
               <div className="block">
                 <FieldLabel>Condition photos</FieldLabel>
-                <label className="flex cursor-pointer items-center gap-3 rounded-[22px] border border-dashed border-slate-300 bg-[#f8f5ee] px-4 py-5 text-steel transition hover:border-navy hover:text-ink">
+                <label className="flex cursor-pointer items-center gap-3 rounded-[20px] border border-dashed border-slate-300 bg-[#f8f5ee] px-4 py-4 text-steel transition hover:border-navy hover:text-ink">
                   <ImagePlus size={18} />
                   <span className="text-sm font-semibold">
                     Upload close-ups of corners, edges, back, or surface wear
@@ -568,22 +568,22 @@ export default function CreateListingModal({ onClose }) {
           </section>
         </div>
 
-        <div className="order-1 space-y-6 bg-[linear-gradient(180deg,#f7f3eb_0%,#efe8dd_100%)] p-4 sm:p-6 lg:p-8 2xl:order-2">
-          <section className="rounded-[34px] bg-[#17394a] p-6 text-white shadow-lift">
+        <div className="order-1 space-y-5 bg-[linear-gradient(180deg,#f7f3eb_0%,#efe8dd_100%)] p-4 sm:p-6 lg:p-7 2xl:order-2">
+          <section className="surface-card border-slate-200 p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="section-kicker text-white/65">Live print search</p>
-                <h3 className="mt-3 font-display text-4xl font-semibold tracking-[-0.04em]">
+                <p className="section-kicker">Live print search</p>
+                <h3 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.04em] text-ink">
                   Find the exact printing
                 </h3>
-                <p className="mt-3 max-w-3xl text-sm leading-7 text-white/82">
+                <p className="mt-3 max-w-3xl text-sm leading-7 text-steel">
                   Search live printings for Pokemon, Magic, and One Piece. The search is
                   intentionally broad so product codes, variant terms, and partial names can
                   still surface the right printings.
                 </p>
               </div>
-              {selectedPrintingId ? (
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-white">
+                {selectedPrintingId ? (
+                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
                   <CheckCircle2 size={14} />
                   Printing selected
                 </span>
@@ -591,10 +591,10 @@ export default function CreateListingModal({ onClose }) {
             </div>
 
             <div className="mt-6 grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto]">
-              <div className="flex items-center gap-2 rounded-[24px] border border-white/12 bg-white/10 p-2.5">
-                <Search className="ml-2 text-white/65" size={16} />
+              <div className="flex items-center gap-2 rounded-[20px] border border-slate-200 bg-[#f8f5ee] p-2.5">
+                <Search className="ml-2 text-steel" size={16} />
                 <input
-                  className="flex-1 border-0 bg-transparent px-1 py-2 text-sm text-white outline-none placeholder:text-white/45"
+                  className="flex-1 border-0 bg-transparent px-1 py-2 text-sm text-ink outline-none placeholder:text-slate-400"
                   placeholder="Type a card name, code, or variant"
                   value={searchQuery}
                   onChange={(event) => {
@@ -626,9 +626,9 @@ export default function CreateListingModal({ onClose }) {
               </button>
             </div>
 
-            <div className="mt-4 rounded-[24px] border border-white/12 bg-white/10 px-4 py-3 text-sm text-white/82">
-              <span className="font-semibold text-white">{providerLabel}</span>
-              <span className="mx-2 text-white/30">|</span>
+            <div className="mt-4 rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 text-sm text-steel">
+              <span className="font-semibold text-ink">{providerLabel}</span>
+              <span className="mx-2 text-slate-300">|</span>
               {liveSearchSupported
                 ? searchError || searchNote
                 : "Live search is available only for Magic, Pokemon, and One Piece."}
@@ -639,7 +639,7 @@ export default function CreateListingModal({ onClose }) {
                 {recentQueries.map((entry) => (
                   <button
                     key={entry.id}
-                    className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-white/80 transition hover:bg-white/16"
+                    className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-steel transition hover:border-slate-300 hover:text-ink"
                     type="button"
                     onClick={() => {
                       setSearchQuery(entry.query);
@@ -653,13 +653,13 @@ export default function CreateListingModal({ onClose }) {
             ) : null}
           </section>
 
-          <div className="grid gap-5 xl:grid-cols-[minmax(320px,0.72fr)_minmax(0,1.28fr)]">
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)]">
             <section className="surface-card p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-steel">Listing preview</p>
+                  <p className="text-sm font-semibold text-steel">Listing summary</p>
                   <p className="mt-1 text-sm text-steel">
-                    Buyers see the title image as the main card face.
+                    A lighter preview of what buyers will care about most.
                   </p>
                 </div>
                 {form.marketPrice ? (
@@ -670,41 +670,61 @@ export default function CreateListingModal({ onClose }) {
                 ) : null}
               </div>
 
-              <CardArtwork
-                className="mt-4 aspect-[63/88] w-full rounded-[26px] object-cover"
-                game={form.game}
-                src={form.imageUrl}
-                title={form.title || "Your card preview"}
-              />
-
-              <div className="mt-5 space-y-3">
-                <h4 className="font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                  {form.title || "Untitled listing"}
-                </h4>
-                <p className="text-sm leading-7 text-steel">
-                  {form.description ||
-                    "Add a description to show local buyers what matters about this card and where you can meet."}
-                </p>
-                <div className="flex flex-wrap items-center gap-3 pt-2">
-                  <span className="font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                    {form.price ? formatCurrency(form.price, "CAD") : "$0"}
-                  </span>
-                  {form.marketPrice ? (
-                    <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                      <Sparkles size={13} />
-                      Market {formatCurrency(form.marketPrice, form.marketPriceCurrency)}
-                    </span>
-                  ) : null}
+              <div className="mt-4 grid gap-4 lg:grid-cols-[120px_minmax(0,1fr)_220px]">
+                <div className="flex items-start justify-center lg:justify-start">
+                  {form.imageUrl ? (
+                    <CardArtwork
+                      className="aspect-[63/88] w-full max-w-[120px] rounded-[20px] object-cover"
+                      game={form.game}
+                      src={form.imageUrl}
+                      title={form.title || "Selected card"}
+                    />
+                  ) : (
+                    <div className="flex aspect-[63/88] w-full max-w-[120px] items-center justify-center rounded-[20px] border border-dashed border-slate-300 bg-[#f8f5ee] px-4 text-center text-xs font-semibold uppercase tracking-[0.16em] text-steel">
+                      No image yet
+                    </div>
+                  )}
                 </div>
+
+                <div className="space-y-3">
+                  <h4 className="font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                  {form.title || "Untitled listing"}
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+                      {form.game}
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+                      {form.type}
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+                      {form.condition}
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+                      Qty {form.quantity}x
+                    </span>
+                  </div>
+                  <p className="text-sm leading-7 text-steel">
+                    {form.description
+                      ? `${form.description.slice(0, 180)}${form.description.length > 180 ? "..." : ""}`
+                      : "Search a printing or upload an image to make this listing feel complete."}
+                  </p>
+                </div>
+
                 <div className="rounded-[22px] border border-slate-200 bg-[#f8f5ee] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
                       Price context
                     </p>
-                    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                      Qty {form.quantity}x
+                    <span className="font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
+                      {form.price ? formatCurrency(form.price, "CAD") : "$0"}
                     </span>
                   </div>
+                  {form.marketPrice ? (
+                    <p className="mt-2 text-sm font-semibold text-emerald-700">
+                      Market {formatCurrency(form.marketPrice, form.marketPriceCurrency)}
+                    </p>
+                  ) : null}
                   <Sparkline className="mt-3 w-full" points={comparisonSparkPoints} />
                 </div>
               </div>
@@ -724,11 +744,11 @@ export default function CreateListingModal({ onClose }) {
                 </span>
               </div>
 
-              <div className="grid max-h-[42rem] gap-4 overflow-y-auto pr-1">
+              <div className="grid max-h-[34rem] gap-4 overflow-y-auto pr-1">
                 {searchResults.map((printing) => (
                   <button
                     key={printing.id}
-                    className={`grid gap-0 overflow-hidden rounded-[28px] border bg-white text-left transition lg:grid-cols-[200px_minmax(0,1fr)] ${
+                    className={`grid gap-0 overflow-hidden rounded-[24px] border bg-white text-left transition lg:grid-cols-[160px_minmax(0,1fr)] ${
                       selectedPrintingId === printing.id
                         ? "border-navy shadow-soft ring-2 ring-navy/10"
                         : "border-slate-200 hover:border-slate-300 hover:shadow-soft"
@@ -736,16 +756,16 @@ export default function CreateListingModal({ onClose }) {
                     type="button"
                     onClick={() => applyPrinting(printing)}
                   >
-                    <div className="flex items-center justify-center bg-[linear-gradient(180deg,#faf7f0_0%,#f3efe7_100%)] p-4">
+                    <div className="flex items-center justify-center bg-[linear-gradient(180deg,#faf7f0_0%,#f3efe7_100%)] p-3">
                       <CardArtwork
-                        className="aspect-[63/88] w-full max-w-[10.5rem] rounded-[22px] object-cover"
+                        className="aspect-[63/88] w-full max-w-[8.5rem] rounded-[18px] object-cover"
                         game={form.game}
                         src={printing.imageUrl}
                         title={printing.title}
                       />
                     </div>
 
-                    <div className="flex min-w-0 flex-col justify-between gap-4 p-5">
+                    <div className="flex min-w-0 flex-col justify-between gap-4 p-4">
                       <div className="space-y-3">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
@@ -764,7 +784,7 @@ export default function CreateListingModal({ onClose }) {
                           ) : null}
                         </div>
                         <div>
-                          <h4 className="font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
+                          <h4 className="font-display text-xl font-semibold tracking-[-0.03em] text-ink">
                             {printing.title}
                           </h4>
                           <p className="mt-2 text-sm leading-7 text-steel">
@@ -781,7 +801,7 @@ export default function CreateListingModal({ onClose }) {
                           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
                             Market reference
                           </p>
-                          <p className="mt-1 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
+                          <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
                             {printing.marketPrice
                               ? formatCurrency(
                                   printing.marketPrice,
@@ -800,7 +820,7 @@ export default function CreateListingModal({ onClose }) {
               </div>
 
               {!searchResults.length && !loadingSearch ? (
-                <div className="mt-4 rounded-[28px] border border-dashed border-slate-200 bg-[#f8f5ee] px-5 py-16 text-center text-sm leading-7 text-steel">
+                <div className="mt-4 rounded-[24px] border border-dashed border-slate-200 bg-[#f8f5ee] px-5 py-12 text-center text-sm leading-7 text-steel">
                   Search a card name, code, or variant above to load live printings here.
                 </div>
               ) : null}
