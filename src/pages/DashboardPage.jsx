@@ -36,6 +36,7 @@ export default function DashboardPage() {
     quantity: 1,
     description: "",
   });
+  const [counterDrafts, setCounterDrafts] = useState({});
 
   const activeCount = currentUserListings.filter(
     (listing) => listing.status !== "sold",
@@ -59,6 +60,26 @@ export default function DashboardPage() {
       condition: listing.condition,
       quantity: listing.quantity || 1,
       description: listing.description,
+    });
+  }
+
+  function beginCounterDraft(offer) {
+    setCounterDrafts((current) => ({
+      ...current,
+      [offer.id]: {
+        offerType: offer.offerType,
+        cashAmount: String(offer.cashAmount || ""),
+        tradeItems: Array.isArray(offer.tradeItems) ? offer.tradeItems.join("\n") : "",
+        note: offer.note || "",
+      },
+    }));
+  }
+
+  function clearCounterDraft(offerId) {
+    setCounterDrafts((current) => {
+      const next = { ...current };
+      delete next[offerId];
+      return next;
     });
   }
 
@@ -206,6 +227,10 @@ export default function DashboardPage() {
                 key={offer.id}
                 className="rounded-[24px] border border-slate-200 bg-[#fbf8f1] p-4"
               >
+                {(() => {
+                  const counterDraft = counterDrafts[offer.id];
+                  return (
+                    <>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold text-ink">
@@ -228,35 +253,165 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 {offer.status === "pending" ? (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button
-                      className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
-                      type="button"
-                      onClick={() => respondToOffer(offer.id, "accept")}
-                    >
-                      Accept
-                    </button>
-                    <button
-                      className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                      type="button"
-                      onClick={() => respondToOffer(offer.id, "decline")}
-                    >
-                      Decline
-                    </button>
-                    <button
-                      className="rounded-full border border-navy bg-navy/5 px-4 py-2 text-sm font-semibold text-navy"
-                      type="button"
-                      onClick={() =>
-                        respondToOffer(offer.id, "counter", {
-                          cashAmount: Number(offer.cashAmount || 0) + 10,
-                          note: "Counter from dashboard",
-                        })
-                      }
-                    >
-                      Counter
-                    </button>
-                  </div>
+                  <>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
+                        type="button"
+                        onClick={() => respondToOffer(offer.id, "accept")}
+                      >
+                        Accept
+                      </button>
+                      <button
+                        className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
+                        type="button"
+                        onClick={() => respondToOffer(offer.id, "decline")}
+                      >
+                        Decline
+                      </button>
+                      <button
+                        className="rounded-full border border-navy bg-navy/5 px-4 py-2 text-sm font-semibold text-navy"
+                        type="button"
+                        onClick={() => beginCounterDraft(offer)}
+                      >
+                        Counter
+                      </button>
+                    </div>
+
+                    {counterDraft ? (
+                      <div className="mt-4 rounded-[20px] border border-slate-200 bg-white p-4">
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <label className="block">
+                            <span className="mb-2 block text-sm font-semibold text-steel">
+                              Counter type
+                            </span>
+                            <select
+                              className="w-full rounded-[18px] border border-slate-200 bg-[#fbf8f1] px-4 py-3 text-sm outline-none transition focus:border-navy"
+                              value={counterDraft.offerType}
+                              onChange={(event) =>
+                                setCounterDrafts((current) => ({
+                                  ...current,
+                                  [offer.id]: {
+                                    ...current[offer.id],
+                                    offerType: event.target.value,
+                                  },
+                                }))
+                              }
+                            >
+                              <option value="cash">Cash</option>
+                              <option value="trade">Trade</option>
+                              <option value="cash-trade">Cash + Trade</option>
+                            </select>
+                          </label>
+
+                          {counterDraft.offerType !== "trade" ? (
+                            <label className="block">
+                              <span className="mb-2 block text-sm font-semibold text-steel">
+                                Counter amount (CAD)
+                              </span>
+                              <input
+                                min="0"
+                                step="0.01"
+                                className="w-full rounded-[18px] border border-slate-200 bg-[#fbf8f1] px-4 py-3 text-sm outline-none transition focus:border-navy"
+                                type="number"
+                                value={counterDraft.cashAmount}
+                                onChange={(event) =>
+                                  setCounterDrafts((current) => ({
+                                    ...current,
+                                    [offer.id]: {
+                                      ...current[offer.id],
+                                      cashAmount: event.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+                            </label>
+                          ) : null}
+
+                          {counterDraft.offerType !== "cash" ? (
+                            <label className="block md:col-span-2">
+                              <span className="mb-2 block text-sm font-semibold text-steel">
+                                Trade items
+                              </span>
+                              <textarea
+                                className="min-h-24 w-full rounded-[18px] border border-slate-200 bg-[#fbf8f1] px-4 py-3 text-sm outline-none transition focus:border-navy"
+                                value={counterDraft.tradeItems}
+                                onChange={(event) =>
+                                  setCounterDrafts((current) => ({
+                                    ...current,
+                                    [offer.id]: {
+                                      ...current[offer.id],
+                                      tradeItems: event.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+                            </label>
+                          ) : null}
+
+                          <label className="block md:col-span-2">
+                            <span className="mb-2 block text-sm font-semibold text-steel">
+                              Counter note
+                            </span>
+                            <textarea
+                              className="min-h-24 w-full rounded-[18px] border border-slate-200 bg-[#fbf8f1] px-4 py-3 text-sm outline-none transition focus:border-navy"
+                              value={counterDraft.note}
+                              onChange={(event) =>
+                                setCounterDrafts((current) => ({
+                                  ...current,
+                                  [offer.id]: {
+                                    ...current[offer.id],
+                                    note: event.target.value,
+                                  },
+                                }))
+                              }
+                            />
+                          </label>
+                        </div>
+
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <button
+                            className="rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white"
+                            type="button"
+                            onClick={() =>
+                              void respondToOffer(offer.id, "counter", {
+                                offerType: counterDraft.offerType,
+                                cashAmount:
+                                  counterDraft.offerType === "trade"
+                                    ? 0
+                                    : Number(counterDraft.cashAmount || 0),
+                                tradeItems:
+                                  counterDraft.offerType === "cash"
+                                    ? []
+                                    : counterDraft.tradeItems
+                                        .split("\n")
+                                        .map((item) => item.trim())
+                                        .filter(Boolean),
+                                note: counterDraft.note,
+                              }).then((result) => {
+                                if (result?.ok) {
+                                  clearCounterDraft(offer.id);
+                                }
+                              })
+                            }
+                          >
+                            Send counter
+                          </button>
+                          <button
+                            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
+                            type="button"
+                            onClick={() => clearCounterDraft(offer.id)}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </>
                 ) : null}
+                    </>
+                  );
+                })()}
               </div>
             ))
           ) : (

@@ -306,6 +306,15 @@ on public.reviews for select using (true);
 create policy "authenticated users can insert reviews"
 on public.reviews for insert with check (auth.uid() = author_id);
 
+create policy "admins can delete reviews"
+on public.reviews for delete using (
+  exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid() and p.role = 'admin'
+  )
+);
+
 create policy "reporter or admins can read reports"
 on public.reports for select using (
   auth.uid() = reporter_id

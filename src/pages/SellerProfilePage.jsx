@@ -22,6 +22,7 @@ export default function SellerProfilePage() {
   const { activeListings, currentUser, deleteReview, loading, reviewBadgeCatalog, reviews, sellerMap } =
     useMarketplace();
   const [isReviewModalOpen, setReviewModalOpen] = useState(false);
+  const [deleteReviewError, setDeleteReviewError] = useState("");
 
   const seller = sellerMap[sellerId];
   const sellerReviews = useMemo(
@@ -171,6 +172,9 @@ export default function SellerProfilePage() {
           <p className="section-kicker">Buyer reviews</p>
           <h2 className="section-title mt-2">Recent feedback</h2>
         </div>
+        {deleteReviewError ? (
+          <p className="text-sm font-semibold text-rose-700">{deleteReviewError}</p>
+        ) : null}
         <div className="grid gap-4 lg:grid-cols-2">
           {sellerReviews.map((review) => (
             <article
@@ -190,7 +194,13 @@ export default function SellerProfilePage() {
                     <button
                       className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-rose-700"
                       type="button"
-                      onClick={() => void deleteReview(review.id)}
+                      onClick={async () => {
+                        setDeleteReviewError("");
+                        const result = await deleteReview(review.id);
+                        if (!result?.ok) {
+                          setDeleteReviewError(result?.error || "Review could not be removed.");
+                        }
+                      }}
                     >
                       <Trash2 size={13} />
                       Remove
