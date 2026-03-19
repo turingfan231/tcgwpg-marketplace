@@ -239,6 +239,16 @@ function omitMissingProfileColumns(payload, error) {
   return nextPayload;
 }
 
+function omitMissingOfferColumns(payload, error) {
+  const nextPayload = { ...payload };
+
+  if (isMissingColumnError(error, "last_actor_id")) {
+    delete nextPayload.last_actor_id;
+  }
+
+  return nextPayload;
+}
+
 function isMissingTableError(error, tableName) {
   const message = String(error?.message || "").toLowerCase();
   return (
@@ -2854,20 +2864,32 @@ export function MarketplaceProvider({ children }) {
       return { ok: true, offer, threadId: threadResult.thread.id };
     }
 
-    const { data, error } = await supabase
+    const offerInsertPayload = {
+      listing_id: payload.listingId,
+      seller_id: listing.sellerId,
+      buyer_id: currentUserId,
+      offer_type: payload.offerType,
+      cash_amount: normalizedCashAmount,
+      trade_items: normalizedTradeItems,
+      note: String(payload.note || "").trim(),
+      last_actor_id: currentUserId,
+    };
+
+    let insertResult = await supabase
       .from("offers")
-        .insert({
-          listing_id: payload.listingId,
-          seller_id: listing.sellerId,
-          buyer_id: currentUserId,
-          offer_type: payload.offerType,
-          cash_amount: normalizedCashAmount,
-          trade_items: normalizedTradeItems,
-          note: String(payload.note || "").trim(),
-          last_actor_id: currentUserId,
-        })
+      .insert(offerInsertPayload)
+      .select("*")
+      .single();
+
+    if (insertResult.error && isMissingColumnError(insertResult.error, "last_actor_id")) {
+      insertResult = await supabase
+        .from("offers")
+        .insert(omitMissingOfferColumns(offerInsertPayload, insertResult.error))
         .select("*")
         .single();
+    }
+
+    const { data, error } = insertResult;
 
     if (error) {
       return { ok: false, error: error.message };
@@ -2983,7 +3005,16 @@ export function MarketplaceProvider({ children }) {
       updatePayload.note = nextNote;
     }
 
-    const { error } = await supabase.from("offers").update(updatePayload).eq("id", offerId);
+    let updateResult = await supabase.from("offers").update(updatePayload).eq("id", offerId);
+
+    if (updateResult.error && isMissingColumnError(updateResult.error, "last_actor_id")) {
+      updateResult = await supabase
+        .from("offers")
+        .update(omitMissingOfferColumns(updatePayload, updateResult.error))
+        .eq("id", offerId);
+    }
+
+    const { error } = updateResult;
 
     if (error) {
       return { ok: false, error: error.message };
