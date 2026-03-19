@@ -1,4 +1,4 @@
-import { BadgeCheck, Clock3, ShieldCheck, Store } from "lucide-react";
+import { BadgeCheck, Clock3, ShieldCheck, Store, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import ListingCard from "../components/cards/ListingCard";
@@ -19,7 +19,7 @@ const bannerToneMap = {
 
 export default function SellerProfilePage() {
   const { sellerId } = useParams();
-  const { activeListings, currentUser, loading, reviewBadgeCatalog, reviews, sellerMap } =
+  const { activeListings, currentUser, deleteReview, loading, reviewBadgeCatalog, reviews, sellerMap } =
     useMarketplace();
   const [isReviewModalOpen, setReviewModalOpen] = useState(false);
 
@@ -33,6 +33,7 @@ export default function SellerProfilePage() {
     [activeListings, sellerId],
   );
   const isOwnProfile = String(currentUser?.id || "") === String(sellerId || "");
+  const isAdmin = currentUser?.role === "admin";
 
   if (loading && !seller) {
     return <PageSkeleton cards={4} titleWidth="w-72" />;
@@ -183,7 +184,19 @@ export default function SellerProfilePage() {
                   </p>
                   <p className="mt-1 text-sm text-steel">{review.createdAt}</p>
                 </div>
-                <RatingStars value={review.rating} />
+                <div className="flex items-center gap-3">
+                  <RatingStars value={review.rating} />
+                  {isAdmin ? (
+                    <button
+                      className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-rose-700"
+                      type="button"
+                      onClick={() => void deleteReview(review.id)}
+                    >
+                      <Trash2 size={13} />
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
               </div>
               <p className="mt-4 text-base text-steel">{review.comment}</p>
               {review.imageUrl ? (

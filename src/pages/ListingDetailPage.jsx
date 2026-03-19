@@ -419,28 +419,34 @@ export default function ListingDetailPage() {
                   Make offer
                 </button>
               ) : null}
-              <button
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-navy px-5 py-4 text-sm font-semibold text-white shadow-soft sm:w-auto"
-                type="button"
-                onClick={async () => {
-                  if (!currentUser) {
-                    navigate("/auth", { state: { from: `/listing/${listing.id}` } });
-                    return;
-                  }
+              {!isOwner ? (
+                <button
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-navy px-5 py-4 text-sm font-semibold text-white shadow-soft sm:w-auto"
+                  type="button"
+                  onClick={async () => {
+                    if (!currentUser) {
+                      navigate("/auth", { state: { from: `/listing/${listing.id}` } });
+                      return;
+                    }
 
-                  const result = await findOrCreateThread({
-                    otherUserId: listing.seller.id,
-                    listingId: listing.id,
-                  });
+                    const result = await findOrCreateThread({
+                      otherUserId: listing.seller.id,
+                      listingId: listing.id,
+                    });
 
-                  if (result.ok) {
-                    navigate(`/messages/${result.thread.id}`);
-                  }
-                }}
-              >
-                <MessageSquare size={18} />
-                Message seller
-              </button>
+                    if (result.ok) {
+                      navigate(`/messages/${result.thread.id}`);
+                    }
+                  }}
+                >
+                  <MessageSquare size={18} />
+                  Message seller
+                </button>
+              ) : (
+                <div className="inline-flex w-full items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-semibold text-steel sm:w-auto">
+                  Your own listing
+                </div>
+              )}
               {!isOwner ? (
                 <button
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-semibold text-rose-700 sm:w-auto"

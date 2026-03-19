@@ -2466,6 +2466,30 @@ export function MarketplaceProvider({ children }) {
     return { ok: true, review: fromReviewRow(data) };
   }
 
+  async function deleteReview(reviewId) {
+    const review = reviews.find((item) => item.id === reviewId);
+    if (!review) {
+      return { ok: false, error: "Review not found." };
+    }
+
+    if (!currentUserRecord || currentUserRecord.role !== "admin") {
+      return { ok: false, error: "Only admins can remove reviews." };
+    }
+
+    if (!isSupabaseConfigured) {
+      setReviews((current) => current.filter((item) => item.id !== reviewId));
+      return { ok: true };
+    }
+
+    const { error } = await supabase.from("reviews").delete().eq("id", reviewId);
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+
+    await refreshMarketplaceData(currentUserId, { silent: true });
+    return { ok: true };
+  }
+
   function getThreadById(threadId) {
     return threadsForCurrentUser.find((thread) => thread.id === threadId) || null;
   }
@@ -2529,6 +2553,10 @@ export function MarketplaceProvider({ children }) {
   async function findOrCreateThread({ otherUserId, listingId = null, participantIds = null }) {
     if (!currentUserId) {
       return { ok: false, error: "You must be logged in to message sellers." };
+    }
+
+    if (otherUserId && String(otherUserId) === String(currentUserId)) {
+      return { ok: false, error: "You cannot message yourself from your own listing." };
     }
 
     const nextParticipants = participantIds || [currentUserId, otherUserId];
@@ -3840,6 +3868,7 @@ export function MarketplaceProvider({ children }) {
     currentUserDrafts,
     currentUserId,
     currentUserListings,
+    deleteReview,
     deleteCurrentUserAccount,
     deleteUserAccount,
     dismissToast,
