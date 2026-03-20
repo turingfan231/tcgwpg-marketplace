@@ -1,4 +1,5 @@
 const LIVE_SEARCH_PATH = "/api/live/search";
+const SOURCE_SALES_PATH = "/api/live/source-sales";
 const EXCHANGE_RATE_PATH = "/api/live/exchange-rate";
 const LOCAL_EVENTS_PATH = "/api/events/local";
 const OPTCG_ENDPOINT_CANDIDATES = {
@@ -721,4 +722,26 @@ export async function searchCardPrintings({ game, query, limit = 24, language = 
 
     throw proxyError;
   }
+}
+
+export async function fetchSourceSalesForPrinting({
+  game,
+  language = "english",
+  title,
+  setName = "",
+  printLabel = "",
+  rarity = "",
+}) {
+  const normalizedGame = normalizeGameName(game);
+  const normalizedLanguage = normalizeLanguage(language);
+  const path = `${SOURCE_SALES_PATH}?${new URLSearchParams({
+    game: normalizedGame,
+    language: normalizedLanguage,
+    title: String(title || "").trim(),
+    setName: String(setName || "").trim(),
+    printLabel: String(printLabel || "").trim(),
+    rarity: String(rarity || "").trim(),
+  }).toString()}`;
+
+  return fetchJsonFromCandidates(path, undefined, "Recent sold lookup failed.");
 }

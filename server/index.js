@@ -1066,11 +1066,16 @@ function buildPriceChartingResult(
   };
 }
 
-function extractPriceChartingProductPaths(html, prefix) {
+function extractPriceChartingProductPaths(html, prefix, excludePrefixes = []) {
   const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const productRegex = new RegExp(`\\/game\\/${escapedPrefix}[^\\/'"\\s<]+\\/[^"'\\s<]+`, "g");
   return uniqueBy(
-    (html.match(productRegex) || []).map((path) => decodeHtml(path)),
+    (html.match(productRegex) || [])
+      .map((path) => decodeHtml(path))
+      .filter(
+        (path) =>
+          !excludePrefixes.some((excludedPrefix) => path.startsWith(`/game/${excludedPrefix}`)),
+      ),
     (item) => item,
   );
 }
@@ -1081,6 +1086,7 @@ async function searchPriceChartingProducts({
   usdToCadRate,
   searchQuery,
   pathPrefix,
+  excludePrefixes = [],
   language = "Japanese",
   descriptionLabel,
   rarity,
@@ -1101,7 +1107,7 @@ async function searchPriceChartingProducts({
   }
 
   const html = await response.text();
-  const productPaths = extractPriceChartingProductPaths(html, pathPrefix).slice(
+  const productPaths = extractPriceChartingProductPaths(html, pathPrefix, excludePrefixes).slice(
     0,
     Math.min(limit * 3, 15),
   );
@@ -1141,6 +1147,149 @@ async function searchPriceChartingProducts({
   }
 
   return products.sort((left, right) => right.score - left.score).slice(0, limit);
+}
+
+function getPriceChartingLookupConfig(game, language) {
+  const normalizedGame = normalizeGameName(game);
+  const normalizedLanguage = normalizeLanguage(language);
+
+  if (normalizedGame === "pokemon" && normalizedLanguage === "japanese") {
+    return {
+      pathPrefix: "pokemon-japanese-",
+      excludePrefixes: [],
+      language: "Japanese",
+      descriptionLabel: "PriceCharting Japanese Pokemon data",
+      rarity: "Japanese print",
+    };
+  }
+
+  if (normalizedGame === "pokemon") {
+    return {
+      pathPrefix: "pokemon-",
+      excludePrefixes: ["pokemon-japanese-"],
+      language: "English",
+      descriptionLabel: "PriceCharting Pokemon data",
+      rarity: "English print",
+    };
+  }
+
+  if (normalizedGame === "one-piece" && normalizedLanguage === "japanese") {
+    return {
+      pathPrefix: "one-piece-japanese-",
+      excludePrefixes: [],
+      language: "Japanese",
+      descriptionLabel: "PriceCharting Japanese One Piece data",
+      rarity: "Japanese print",
+    };
+  }
+
+  if (normalizedGame === "one-piece") {
+    return {
+      pathPrefix: "one-piece-",
+      excludePrefixes: ["one-piece-japanese-"],
+      language: "English",
+      descriptionLabel: "PriceCharting One Piece data",
+      rarity: "English print",
+    };
+  }
+
+  if (normalizedGame === "magic") {
+    return {
+      pathPrefix: "magic-",
+      excludePrefixes: [],
+      language: normalizedLanguage === "japanese" ? "Japanese" : "English",
+      descriptionLabel:
+        normalizedLanguage === "japanese"
+          ? "PriceCharting Japanese Magic data"
+          : "PriceCharting Magic data",
+      rarity: normalizedLanguage === "japanese" ? "Japanese print" : "English print",
+    };
+  }
+
+  return null;
+}
+
+function buildPriceChartingLookupQuery({ title, setName, printLabel }) {
+  return [title, printLabel, setName]
+    .filter(Boolean)
+    .map((part) => String(part).replace(/[|#]/g, " ").trim())
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function rankPriceChartingResultForPrinting(result, { title, setName, printLabel, rarity }) {
+  let score = rankSearchMatch(
+    [result.title, result.setName, result.printLabel, result.description],
+    buildPriceChartingLookupQuery({ title, setName, printLabel }),
+  );
+
+  const normalizedSetName = normalizeSearchText(setName);
+  const normalizedPrintLabel = normalizeSearchText(printLabel);
+  const normalizedRarity = normalizeSearchText(rarity);
+  const normalizedResultSetName = normalizeSearchText(result.setName);
+  const normalizedResultPrintLabel = normalizeSearchText(result.printLabel);
+  const normalizedResultDescription = normalizeSearchText(result.description);
+
+  if (normalizedSetName && normalizedResultSetName.includes(normalizedSetName)) {
+    score += 35;
+  }
+
+  if (
+    normalizedPrintLabel &&
+    (normalizedResultPrintLabel.includes(normalizedPrintLabel) ||
+      normalizedResultDescription.includes(normalizedPrintLabel))
+  ) {
+    score += 30;
+  }
+
+  if (normalizedRarity && normalizedResultDescription.includes(normalizedRarity)) {
+    score += 10;
+  }
+
+  return score;
+}
+
+async function lookupPriceChartingSalesForPrinting(
+  { game, language, title, setName, printLabel, rarity },
+  usdToCadRate,
+) {
+  const config = getPriceChartingLookupConfig(game, language);
+  if (!config || !title) {
+    return null;
+  }
+
+  const query = title;
+  const searchQuery = buildPriceChartingLookupQuery({ title, setName, printLabel }) || title;
+  const results = await searchPriceChartingProducts({
+    query,
+    limit: 5,
+    usdToCadRate,
+    searchQuery,
+    pathPrefix: config.pathPrefix,
+    excludePrefixes: config.excludePrefixes,
+    language: config.language,
+    descriptionLabel: config.descriptionLabel,
+    rarity: config.rarity,
+  });
+
+  const rankedResults = [...results].sort((left, right) => {
+    const rightScore = rankPriceChartingResultForPrinting(right, {
+      title,
+      setName,
+      printLabel,
+      rarity,
+    });
+    const leftScore = rankPriceChartingResultForPrinting(left, {
+      title,
+      setName,
+      printLabel,
+      rarity,
+    });
+    return rightScore - leftScore;
+  });
+
+  return rankedResults[0] || null;
 }
 
 async function searchJapanesePokemonCards(query, limit, usdToCadRate) {
@@ -1765,7 +1914,7 @@ app.get("/api/live/search", async (req, res) => {
     const exchangeRate = await getUsdToCadRate();
     let providerLabel = "Live Search";
     let results = [];
-    let note = `Market values are shown in CAD using USD/CAD ${exchangeRate.usdToCadRate}. Source-backed history only appears when the source exposes it.`;
+    let note = `Market values are shown in CAD using USD/CAD ${exchangeRate.usdToCadRate}. Source-backed recent solds only appear when the source exposes them.`;
 
     if (game === "pokemon" && language === "japanese") {
       providerLabel = "PriceCharting";
@@ -1797,6 +1946,53 @@ app.get("/api/live/search", async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       error: error.message,
+    });
+  }
+});
+
+app.get("/api/live/source-sales", async (req, res) => {
+  const game = normalizeGameName(req.query.game);
+  const language = normalizeLanguage(req.query.language);
+  const title = String(req.query.title || "").trim();
+  const setName = String(req.query.setName || "").trim();
+  const printLabel = String(req.query.printLabel || "").trim();
+  const rarity = String(req.query.rarity || "").trim();
+
+  if (!game || !title) {
+    return res.status(400).json({
+      error: "Game and title are required.",
+    });
+  }
+
+  const exchangeRate = await getUsdToCadRate();
+
+  try {
+    const result = await lookupPriceChartingSalesForPrinting(
+      {
+        game,
+        language,
+        title,
+        setName,
+        printLabel,
+        rarity,
+      },
+      exchangeRate.usdToCadRate,
+    );
+
+    return res.json({
+      providerLabel: result?.providerLabel || "PriceCharting",
+      result,
+      note: result
+        ? `Recent solds are sourced from PriceCharting and normalized to CAD using USD/CAD ${exchangeRate.usdToCadRate}.`
+        : "No recent solds were found from the source for this printing.",
+      exchangeRate,
+    });
+  } catch (error) {
+    return res.json({
+      providerLabel: "PriceCharting",
+      result: null,
+      note: `Recent sold lookup is currently unavailable for this printing. ${error.message}`,
+      exchangeRate,
     });
   }
 });
