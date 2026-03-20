@@ -184,9 +184,9 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[24rem_minmax(0,1fr)]">
+    <div className="grid gap-4 lg:grid-cols-[24rem_minmax(0,1fr)]">
       <section
-        className={`overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-soft ${
+        className={`overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-soft lg:rounded-[30px] ${
           showMobileThread ? "hidden lg:block" : "block"
         }`}
       >
@@ -228,7 +228,7 @@ export default function MessagesPage() {
           </div>
         </div>
 
-        <div className="max-h-[72vh] overflow-y-auto">
+        <div className="max-h-[calc(100dvh-16rem)] overflow-y-auto lg:max-h-[72vh]">
           {filteredThreads.length ? (
             filteredThreads.map((thread) => {
               const offerCount = (offersByListingId[thread.listingId] || []).length;
@@ -286,7 +286,7 @@ export default function MessagesPage() {
       </section>
 
       <section
-        className={`overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-soft ${
+        className={`overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-soft lg:rounded-[30px] ${
           !showMobileThread ? "hidden lg:block" : "block"
         }`}
       >
@@ -549,7 +549,7 @@ export default function MessagesPage() {
               </div>
             ) : null}
 
-            <div className="flex max-h-[58vh] flex-col gap-3 overflow-y-auto bg-[#fcfaf4] px-4 py-4 sm:max-h-[50vh] sm:px-6 sm:py-5">
+            <div className="flex max-h-[calc(100dvh-22rem)] flex-col gap-3 overflow-y-auto bg-[#fcfaf4] px-4 py-4 sm:max-h-[50vh] sm:px-6 sm:py-5">
               {activeThread.messages.map((message) => {
                 const mine = message.senderId === currentUserId;
                 const isSystemSupportThread =
@@ -580,7 +580,7 @@ export default function MessagesPage() {
               })}
             </div>
 
-            <form className="border-t border-slate-200 px-4 py-4 sm:px-6 sm:py-5" onSubmit={handleSubmit}>
+            <form className="sticky bottom-0 border-t border-slate-200 bg-white px-4 py-4 sm:px-6 sm:py-5" onSubmit={handleSubmit}>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <input
                   className="flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-navy focus:bg-white"

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="116" fill="#f7f3ed"/>
+  <g transform="translate(84 84) rotate(-9 172 172)">
+    <rect x="56" y="56" width="288" height="288" rx="68" fill="#1a5b78"/>
+    <rect x="34" y="34" width="288" height="288" rx="76" fill="none" stroke="#ff9900" stroke-width="24"/>
+    <text x="200" y="240" text-anchor="middle" font-family="Space Grotesk, Arial, sans-serif" font-size="164" font-style="italic" font-weight="700" fill="#ffffff">W</text>
+  </g>
+</svg>

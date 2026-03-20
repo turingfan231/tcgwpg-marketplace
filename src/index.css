@@ -14,6 +14,7 @@
 
 html {
   scroll-behavior: smooth;
+  background: #f7f3ed;
 }
 
 body {
@@ -30,6 +31,12 @@ a {
 
 #root {
   min-height: 100vh;
+}
+
+@supports (padding: max(0px)) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
 .page-shell {
@@ -178,6 +185,11 @@ a {
 
 .header-chip-scroll::-webkit-scrollbar {
   display: none;
+}
+
+.app-pane {
+  @apply rounded-[24px] border bg-white shadow-soft;
+  border-color: var(--line);
 }
 
 .shelf-divider {

@@ -176,10 +176,13 @@ export default function Header() {
                 <span>W</span>
               </div>
               <div className="min-w-0">
-                <p className="truncate font-display text-[1.45rem] font-semibold tracking-[-0.04em] text-ink sm:text-[1.7rem]">
+                <p className="truncate font-display text-[1.2rem] font-semibold tracking-[-0.04em] text-ink sm:text-[1.7rem]">
                   TCGWPG
                 </p>
                 <p className="hidden text-sm text-steel sm:block">Winnipeg card marketplace</p>
+                <p className="text-[11px] uppercase tracking-[0.18em] text-steel sm:hidden">
+                  Local market
+                </p>
               </div>
             </Link>
 
@@ -300,14 +303,14 @@ export default function Header() {
               size={18}
             />
             <input
-              className="w-full rounded-[22px] border border-slate-200 bg-[#f7f3ec] py-3.5 pl-12 pr-4 text-sm text-ink outline-none transition focus:border-navy focus:bg-white"
+              className="w-full rounded-[20px] border border-slate-200 bg-[#f7f3ec] py-3 pl-12 pr-4 text-sm text-ink outline-none transition focus:border-navy focus:bg-white sm:rounded-[22px] sm:py-3.5"
               placeholder="Search cards, set codes, variants, or sellers"
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
             />
           </form>
 
-          <div className="mt-4 flex flex-col gap-3 border-t border-slate-200/80 pt-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="mt-4 hidden flex-col gap-3 border-t border-slate-200/80 pt-4 sm:flex lg:flex-row lg:items-center lg:justify-between">
             <div className="header-chip-scroll flex items-center gap-2 overflow-x-auto">
               {browseLinks.map((link) => (
                 <NavLink

@@ -1,9 +1,14 @@
 import { AlertTriangle, Clock3, MapPin, ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, Outlet } from "react-router-dom";
 import { useMarketplace } from "../../hooks/useMarketplace";
 import CreateListingModal from "../modals/CreateListingModal";
+import InstallPrompt from "../ui/InstallPrompt";
 import ToastStack from "../ui/ToastStack";
 import Header from "./Header";
+import MobileTabBar from "./MobileTabBar";
+
+const INSTALL_DISMISS_KEY = "tcgwpg.installPromptDismissed";
 
 export default function AppShell() {
   const {
@@ -13,6 +18,93 @@ export default function AppShell() {
     isSuspended,
     toastItems,
   } = useMarketplace();
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [installVisible, setInstallVisible] = useState(false);
+
+  const isStandalone = useMemo(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return (
+      window.matchMedia?.("(display-mode: standalone)")?.matches ||
+      window.navigator.standalone === true
+    );
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const isMobile = window.matchMedia("(max-width: 1023px)").matches;
+    const dismissed = window.localStorage.getItem(INSTALL_DISMISS_KEY) === "1";
+    const userAgent = window.navigator.userAgent || "";
+    const isIos =
+      /iPad|iPhone|iPod/.test(userAgent) ||
+      (window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1);
+
+    const handleBeforeInstallPrompt = (event) => {
+      event.preventDefault();
+      setDeferredPrompt(event);
+      if (!dismissed && isMobile && !isStandalone) {
+        setInstallVisible(true);
+      }
+    };
+
+    const handleAppInstalled = () => {
+      setInstallVisible(false);
+      setDeferredPrompt(null);
+      window.localStorage.setItem(INSTALL_DISMISS_KEY, "1");
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+
+    if (!dismissed && isMobile && !isStandalone) {
+      setInstallVisible(true);
+    }
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
+    };
+  }, [isStandalone]);
+
+  function dismissInstallPrompt() {
+    setInstallVisible(false);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(INSTALL_DISMISS_KEY, "1");
+    }
+  }
+
+  async function handleInstall() {
+    if (!deferredPrompt) {
+      dismissInstallPrompt();
+      return;
+    }
+
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice.catch(() => null);
+    setDeferredPrompt(null);
+    dismissInstallPrompt();
+  }
+
+  const installState = useMemo(() => {
+    if (!installVisible || typeof window === "undefined" || isStandalone) {
+      return { visible: false, mode: "native" };
+    }
+
+    const userAgent = window.navigator.userAgent || "";
+    const isIos =
+      /iPad|iPhone|iPod/.test(userAgent) ||
+      (window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1);
+
+    return {
+      visible: true,
+      mode: deferredPrompt ? "native" : isIos ? "ios" : "manual",
+    };
+  }, [deferredPrompt, installVisible, isStandalone]);
 
   return (
     <div className="min-h-screen bg-[#f5f1ea]">
@@ -34,11 +126,11 @@ export default function AppShell() {
           </div>
         </div>
       ) : null}
-      <main className="page-shell py-8 pb-24 lg:py-10">
+      <main className="page-shell py-5 pb-[calc(7.75rem+env(safe-area-inset-bottom))] sm:py-6 lg:py-10 lg:pb-24">
         <Outlet />
       </main>
 
-      <footer className="border-t border-slate-200/80 bg-[#f8f4ec]">
+      <footer className="hidden border-t border-slate-200/80 bg-[#f8f4ec] md:block">
         <div className="page-shell py-10">
           <div className="rounded-[30px] border border-slate-200/80 bg-white px-6 py-7 shadow-soft sm:px-8">
             <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr_0.8fr]">
@@ -112,9 +204,19 @@ export default function AppShell() {
         </div>
       </footer>
 
+      <div className="border-t border-slate-200/70 bg-white/90 px-4 py-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-steel md:hidden">
+        TCGWPG · Local cards, faster meetups
+      </div>
+
       {isCreateListingOpen ? (
         <CreateListingModal onClose={closeCreateListing} />
       ) : null}
+      <InstallPrompt
+        installState={installState}
+        onDismiss={dismissInstallPrompt}
+        onInstall={handleInstall}
+      />
+      <MobileTabBar />
       <ToastStack items={toastItems} onDismiss={dismissToast} />
     </div>
   );

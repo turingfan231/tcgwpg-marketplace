@@ -353,13 +353,13 @@ export default function CreateListingModal({ onClose }) {
         }}
         onSubmit={handleSubmit}
       >
-        <div className="order-2 space-y-5 border-b border-slate-200 p-4 sm:p-6 lg:p-7 2xl:order-1 2xl:border-b-0 2xl:border-r">
+        <div className="order-2 space-y-4 border-b border-slate-200 p-4 sm:space-y-5 sm:p-6 lg:p-7 2xl:order-1 2xl:border-b-0 2xl:border-r">
           <section className="surface-card p-5 sm:p-6">
             <p className="section-kicker">Listing basics</p>
-            <h3 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.04em] text-ink">
+            <h3 className="mt-3 font-display text-[1.6rem] font-semibold tracking-[-0.04em] text-ink sm:text-[2rem]">
               Card details
             </h3>
-            <p className="mt-2 text-sm leading-7 text-steel">
+            <p className="mt-2 hidden text-sm leading-7 text-steel sm:block">
               Fill in the local listing details first. Then search the live database on the
               right to pull in the exact printing and current market context.
             </p>
@@ -568,15 +568,15 @@ export default function CreateListingModal({ onClose }) {
           </section>
         </div>
 
-        <div className="order-1 space-y-5 bg-[linear-gradient(180deg,#f7f3eb_0%,#efe8dd_100%)] p-4 sm:p-6 lg:p-7 2xl:order-2">
+        <div className="order-1 space-y-4 bg-[linear-gradient(180deg,#f7f3eb_0%,#efe8dd_100%)] p-4 sm:space-y-5 sm:p-6 lg:p-7 2xl:order-2">
           <section className="surface-card border-slate-200 p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="section-kicker">Live print search</p>
-                <h3 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.04em] text-ink">
+                <h3 className="mt-3 font-display text-[1.6rem] font-semibold tracking-[-0.04em] text-ink sm:text-[2rem]">
                   Find the exact printing
                 </h3>
-                <p className="mt-3 max-w-3xl text-sm leading-7 text-steel">
+                <p className="mt-3 hidden max-w-3xl text-sm leading-7 text-steel sm:block">
                   Search live printings for Pokemon, Magic, and One Piece. The search is
                   intentionally broad so product codes, variant terms, and partial names can
                   still surface the right printings.
@@ -654,11 +654,11 @@ export default function CreateListingModal({ onClose }) {
           </section>
 
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)]">
-            <section className="surface-card p-5">
+            <section className="surface-card p-4 sm:p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-steel">Listing summary</p>
-                  <p className="mt-1 text-sm text-steel">
+                  <p className="mt-1 hidden text-sm text-steel sm:block">
                     A lighter preview of what buyers will care about most.
                   </p>
                 </div>
@@ -671,7 +671,7 @@ export default function CreateListingModal({ onClose }) {
               </div>
 
               <div className="mt-4 grid gap-4 lg:grid-cols-[120px_minmax(0,1fr)_220px]">
-                <div className="flex items-start justify-center lg:justify-start">
+                <div className="hidden items-start justify-center lg:flex lg:justify-start">
                   {form.imageUrl ? (
                     <CardArtwork
                       className="aspect-[63/88] w-full max-w-[120px] rounded-[20px] object-cover"
@@ -687,7 +687,7 @@ export default function CreateListingModal({ onClose }) {
                 </div>
 
                 <div className="space-y-3">
-                  <h4 className="font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                  <h4 className="font-display text-[1.8rem] font-semibold tracking-[-0.04em] text-ink sm:text-3xl">
                   {form.title || "Untitled listing"}
                   </h4>
                   <div className="flex flex-wrap gap-2">
@@ -725,12 +725,12 @@ export default function CreateListingModal({ onClose }) {
                       Market {formatCurrency(form.marketPrice, form.marketPriceCurrency)}
                     </p>
                   ) : null}
-                  <Sparkline className="mt-3 w-full" points={comparisonSparkPoints} />
+                  <Sparkline className="mt-3 hidden w-full sm:block" points={comparisonSparkPoints} />
                 </div>
               </div>
             </section>
 
-            <section className="surface-card p-5">
+            <section className="surface-card p-4 sm:p-5">
               <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-steel">Matching printings</p>
@@ -744,7 +744,7 @@ export default function CreateListingModal({ onClose }) {
                 </span>
               </div>
 
-              <div className="grid max-h-[34rem] gap-4 overflow-y-auto pr-1">
+              <div className="grid max-h-[45dvh] gap-4 overflow-y-auto pr-1 sm:max-h-[34rem]">
                 {searchResults.map((printing) => (
                   <button
                     key={printing.id}
@@ -756,9 +756,9 @@ export default function CreateListingModal({ onClose }) {
                     type="button"
                     onClick={() => applyPrinting(printing)}
                   >
-                    <div className="flex items-center justify-center bg-[linear-gradient(180deg,#faf7f0_0%,#f3efe7_100%)] p-3">
-                      <CardArtwork
-                        className="aspect-[63/88] w-full max-w-[8.5rem] rounded-[18px] object-cover"
+                      <div className="flex items-center justify-center bg-[linear-gradient(180deg,#faf7f0_0%,#f3efe7_100%)] p-3">
+                        <CardArtwork
+                        className="aspect-[63/88] w-full max-w-[7.2rem] rounded-[18px] object-cover sm:max-w-[8.5rem]"
                         game={form.game}
                         src={printing.imageUrl}
                         title={printing.title}
