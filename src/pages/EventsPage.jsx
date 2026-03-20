@@ -5,12 +5,12 @@ import {
   Clock3,
   ExternalLink,
   Filter,
-  LoaderCircle,
   MapPin,
   Store,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import EmptyState from "../components/ui/EmptyState";
+import InlineSpinner from "../components/ui/InlineSpinner";
 import PageSkeleton from "../components/ui/PageSkeleton";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { fetchLocalEvents } from "../services/cardDatabase";
@@ -448,7 +448,7 @@ export default function EventsPage() {
               ) : null}
               {loading ? (
                 <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold text-steel">
-                  <LoaderCircle className="animate-spin" size={15} />
+                  <InlineSpinner size={15} />
                   Loading
                 </span>
               ) : null}

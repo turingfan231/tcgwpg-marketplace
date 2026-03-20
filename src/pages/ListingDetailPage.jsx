@@ -2,7 +2,6 @@ import {
   BadgeCheck,
   Camera,
   ChevronRight,
-  LoaderCircle,
   Flag,
   MessageSquare,
   Repeat2,
@@ -17,6 +16,7 @@ import ReportModal from "../components/modals/ReportModal";
 import CardArtwork from "../components/shared/CardArtwork";
 import UserAvatar from "../components/shared/UserAvatar";
 import EmptyState from "../components/ui/EmptyState";
+import InlineSpinner from "../components/ui/InlineSpinner";
 import RatingStars from "../components/ui/RatingStars";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { fetchSourceSalesForPrinting } from "../services/cardDatabase";
@@ -368,7 +368,7 @@ export default function ListingDetailPage() {
               >
                 {loadingSourceSales ? (
                   <span className="inline-flex items-center gap-2">
-                    <LoaderCircle className="animate-spin" size={14} />
+                    <InlineSpinner size={14} />
                     Loading solds
                   </span>
                 ) : visibleSourceSales.length ? (
