@@ -14,6 +14,7 @@ import {
 } from "../../services/cardDatabase";
 import { formatCurrency } from "../../utils/formatters";
 import CardArtwork from "../shared/CardArtwork";
+import InlineSpinner from "../ui/InlineSpinner";
 import ModalShell from "../ui/ModalShell";
 
 const initialFormState = {
@@ -638,7 +639,7 @@ export default function CreateListingModal({ onClose }) {
               >
                 {loadingSearch ? (
                   <span className="inline-flex items-center gap-2">
-                    <LoaderCircle className="animate-spin" size={14} />
+                    <InlineSpinner size={14} />
                     Searching
                   </span>
                 ) : (
