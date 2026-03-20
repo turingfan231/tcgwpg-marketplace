@@ -1,4 +1,4 @@
-import { BellRing, MessageSquarePlus } from "lucide-react";
+import { BellRing, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import EmptyState from "../components/ui/EmptyState";
@@ -40,6 +40,8 @@ export default function MessagesPage() {
   const [counterDrafts, setCounterDrafts] = useState({});
   const [sendError, setSendError] = useState("");
   const [sending, setSending] = useState(false);
+  const [threadQuery, setThreadQuery] = useState("");
+  const [threadFilter, setThreadFilter] = useState("all");
   const [isDesktop, setIsDesktop] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(min-width: 1024px)").matches : true,
   );
@@ -62,16 +64,46 @@ export default function MessagesPage() {
     return () => mediaQuery.removeListener(syncDesktopState);
   }, []);
 
-  useEffect(() => {
-    if (isDesktop && !threadId && threadsForCurrentUser[0]) {
-      navigate(`/messages/${threadsForCurrentUser[0].id}`, { replace: true });
-    }
-  }, [isDesktop, navigate, threadId, threadsForCurrentUser]);
+  const filteredThreads = useMemo(() => {
+    const normalizedQuery = threadQuery.trim().toLowerCase();
 
-  const activeThread = useMemo(
-    () => getThreadById(threadId) || null,
-    [getThreadById, threadId],
-  );
+    return threadsForCurrentUser.filter((thread) => {
+      if (threadFilter === "unread" && !thread.unreadCount) {
+        return false;
+      }
+
+      if (threadFilter === "offers") {
+        const threadOffers = offersByListingId[thread.listingId] || [];
+        if (!threadOffers.length) {
+          return false;
+        }
+      }
+
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      return [
+        thread.otherParticipant?.publicName,
+        thread.otherParticipant?.name,
+        thread.listing?.title,
+        thread.lastMessage?.body,
+        thread.participantLabel,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedQuery);
+    });
+  }, [offersByListingId, threadFilter, threadQuery, threadsForCurrentUser]);
+
+  useEffect(() => {
+    if (isDesktop && !threadId && filteredThreads[0]) {
+      navigate(`/messages/${filteredThreads[0].id}`, { replace: true });
+    }
+  }, [filteredThreads, isDesktop, navigate, threadId]);
+
+  const activeThread = useMemo(() => getThreadById(threadId) || null, [getThreadById, threadId]);
   const showMobileThread = Boolean(threadId && activeThread);
 
   useEffect(() => {
@@ -85,10 +117,17 @@ export default function MessagesPage() {
       return [];
     }
 
-    return (offersByListingId[activeThread.listingId] || []).filter((offer) =>
-      activeThread.participantIds.includes(offer.buyerId) &&
-      activeThread.participantIds.includes(offer.sellerId),
-    );
+    return (offersByListingId[activeThread.listingId] || [])
+      .filter(
+        (offer) =>
+          activeThread.participantIds.includes(offer.buyerId) &&
+          activeThread.participantIds.includes(offer.sellerId),
+      )
+      .sort(
+        (left, right) =>
+          new Date(right.updatedAt || right.createdAt || 0).getTime() -
+          new Date(left.updatedAt || left.createdAt || 0).getTime(),
+      );
   }, [activeThread, offersByListingId]);
 
   if (loading && !threadsForCurrentUser.length) {
@@ -145,56 +184,109 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
+    <div className="grid gap-6 lg:grid-cols-[24rem_minmax(0,1fr)]">
       <section
-        className={`overflow-hidden rounded-[32px] bg-white shadow-soft ${
+        className={`overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-soft ${
           showMobileThread ? "hidden lg:block" : "block"
         }`}
       >
         <div className="border-b border-slate-200 px-5 py-4">
           <p className="section-kicker">Messages</p>
-          <h1 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+          <h1 className="mt-2 font-display text-[2.2rem] font-semibold tracking-[-0.04em] text-ink">
             Inbox
           </h1>
+          <div className="mt-4 rounded-[18px] border border-slate-200 bg-[#f8f5ee] px-4 py-3">
+            <div className="flex items-center gap-3">
+              <Search size={16} className="text-steel" />
+              <input
+                className="w-full bg-transparent text-sm outline-none"
+                placeholder="Seller, listing, or message"
+                value={threadQuery}
+                onChange={(event) => setThreadQuery(event.target.value)}
+              />
+            </div>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {[
+              { id: "all", label: "All" },
+              { id: "unread", label: "Unread" },
+              { id: "offers", label: "Offers" },
+            ].map((filter) => (
+              <button
+                key={filter.id}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  threadFilter === filter.id
+                    ? "bg-navy text-white"
+                    : "border border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
+                }`}
+                type="button"
+                onClick={() => setThreadFilter(filter.id)}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="max-h-[70vh] overflow-y-auto">
-          {threadsForCurrentUser.map((thread) => (
-            <button
-              key={thread.id}
-              className={`w-full border-b border-slate-100 px-5 py-4 text-left transition hover:bg-slate-50 ${
-                thread.id === threadId ? "bg-slate-50" : ""
-              }`}
-              type="button"
-              onClick={() => navigate(`/messages/${thread.id}`)}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-display text-xl font-semibold tracking-[-0.03em] text-ink">
-                    {thread.participantIds.length > 2
-                      ? thread.participantLabel || `Support chat (${thread.participantIds.length} people)`
-                      : thread.otherParticipant?.publicName || "Conversation"}
+
+        <div className="max-h-[72vh] overflow-y-auto">
+          {filteredThreads.length ? (
+            filteredThreads.map((thread) => {
+              const offerCount = (offersByListingId[thread.listingId] || []).length;
+
+              return (
+                <button
+                  key={thread.id}
+                  className={`w-full border-b border-slate-100 px-5 py-4 text-left transition hover:bg-slate-50 ${
+                    thread.id === threadId ? "bg-[#faf7f1]" : ""
+                  }`}
+                  type="button"
+                  onClick={() => navigate(`/messages/${thread.id}`)}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-display text-xl font-semibold tracking-[-0.03em] text-ink">
+                        {thread.participantIds.length > 2
+                          ? thread.participantLabel || `Support chat (${thread.participantIds.length} people)`
+                          : thread.otherParticipant?.publicName || "Conversation"}
+                      </p>
+                      <p className="mt-1 truncate text-sm text-steel">
+                        {thread.listing?.title || "General thread"}
+                      </p>
+                    </div>
+                    <span className="whitespace-nowrap text-xs text-steel">
+                      {formatMessageTime(thread.updatedAt)}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {thread.unreadCount ? (
+                      <span className="inline-flex rounded-full bg-orange px-2 py-0.5 text-xs font-semibold text-white">
+                        {thread.unreadCount} unread
+                      </span>
+                    ) : null}
+                    {offerCount ? (
+                      <span className="rounded-full bg-navy/8 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-navy">
+                        {offerCount} offer{offerCount === 1 ? "" : "s"}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">
+                    {thread.lastMessage?.body || "No messages yet. Start the conversation."}
                   </p>
-                  <p className="mt-1 text-sm text-steel">
-                    {thread.listing?.title || "General thread"}
-                  </p>
-                </div>
-                <span className="text-xs text-steel">{formatMessageTime(thread.updatedAt)}</span>
-              </div>
-              {thread.unreadCount ? (
-                <span className="mt-2 inline-flex rounded-full bg-orange px-2 py-0.5 text-xs font-semibold text-white">
-                  {thread.unreadCount} unread
-                </span>
-              ) : null}
-              <p className="mt-3 line-clamp-2 text-sm text-slate-600">
-                {thread.lastMessage?.body || "No messages yet. Start the conversation."}
-              </p>
-            </button>
-          ))}
+                </button>
+              );
+            })
+          ) : (
+            <div className="px-5 py-10 text-sm text-steel">
+              No inbox threads match this search.
+            </div>
+          )}
         </div>
       </section>
 
       <section
-        className={`rounded-[32px] bg-white shadow-soft ${
+        className={`overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-soft ${
           !showMobileThread ? "hidden lg:block" : "block"
         }`}
       >
@@ -219,11 +311,6 @@ export default function MessagesPage() {
                   <p className="mt-2 text-sm text-steel">
                     {activeThread.listing?.title || "General thread"}
                   </p>
-                  {activeThread.participantIds.length > 2 ? (
-                    <p className="mt-1 text-sm text-steel">
-                      Group chat with {activeThread.participantLabel}
-                    </p>
-                  ) : null}
                 </div>
 
                 <div className="flex w-full flex-wrap gap-2 sm:w-auto">
@@ -254,7 +341,7 @@ export default function MessagesPage() {
               <div className="border-b border-slate-200 bg-[#fbf8f1] px-4 py-4 sm:px-6 sm:py-5">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-steel">
                   <BellRing size={14} />
-                  Offer activity
+                  Offer timeline
                 </div>
                 <div className="grid gap-3">
                   {threadOffers.map((offer) => {
@@ -275,12 +362,15 @@ export default function MessagesPage() {
                         className="rounded-[22px] border border-slate-200 bg-white px-4 py-4"
                       >
                         <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
+                          <div className="min-w-0">
                             <p className="font-semibold text-ink">
                               {formatOfferTypeLabel(offer.offerType)}
                               {offer.cashAmount
                                 ? ` | ${formatCadPrice(offer.cashAmount, "CAD")}`
                                 : ""}
+                            </p>
+                            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-steel">
+                              Updated {formatMessageTime(offer.updatedAt || offer.createdAt)}
                             </p>
                             {offer.tradeItems.length ? (
                               <p className="mt-2 text-sm text-steel">
@@ -459,7 +549,7 @@ export default function MessagesPage() {
               </div>
             ) : null}
 
-            <div className="flex max-h-[58vh] flex-col gap-3 overflow-y-auto px-4 py-4 sm:max-h-[50vh] sm:px-6 sm:py-5">
+            <div className="flex max-h-[58vh] flex-col gap-3 overflow-y-auto bg-[#fcfaf4] px-4 py-4 sm:max-h-[50vh] sm:px-6 sm:py-5">
               {activeThread.messages.map((message) => {
                 const mine = message.senderId === currentUserId;
                 const isSystemSupportThread =
@@ -469,12 +559,12 @@ export default function MessagesPage() {
                 return (
                   <div
                     key={message.id}
-                    className={`max-w-[85%] rounded-[24px] px-4 py-3 ${
+                    className={`max-w-[85%] rounded-[22px] px-4 py-3 ${
                       isSystemSupportThread
                         ? "mx-auto w-full max-w-full border border-amber-200 bg-amber-50 text-amber-900"
                         : mine
                           ? "ml-auto bg-navy text-white"
-                          : "bg-slate-100 text-ink"
+                          : "border border-slate-200 bg-white text-ink"
                     }`}
                   >
                     <p className="text-sm leading-7">{message.body}</p>

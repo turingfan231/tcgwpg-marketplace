@@ -1,5 +1,12 @@
-import { ArrowUpDown, MapPin, SearchX } from "lucide-react";
-import { useDeferredValue, useMemo, useState } from "react";
+import {
+  ArrowUpDown,
+  BookmarkPlus,
+  MapPin,
+  Search,
+  SearchX,
+  SlidersHorizontal,
+} from "lucide-react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ListingCard from "../components/cards/ListingCard";
 import EmptyState from "../components/ui/EmptyState";
@@ -7,14 +14,64 @@ import PageSkeleton from "../components/ui/PageSkeleton";
 import { neighborhoods } from "../data/mockData";
 import { useMarketplace } from "../hooks/useMarketplace";
 
+const SAVED_FILTERS_KEY = "tcgwpg.market.savedFilters";
+
+function readSavedFilters() {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(SAVED_FILTERS_KEY) || "[]");
+    return Array.isArray(stored) ? stored.filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeSavedFilters(filters) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(SAVED_FILTERS_KEY, JSON.stringify(filters.slice(0, 8)));
+  } catch {
+    // Ignore local storage write errors.
+  }
+}
+
+function buildSavedFilterLabel({ gameName, neighborhood, search }) {
+  const parts = [gameName || "All listings"];
+  if (neighborhood && neighborhood !== "All Winnipeg") {
+    parts.push(neighborhood);
+  }
+  if (search) {
+    parts.push(search);
+  }
+  return parts.join(" · ");
+}
+
 export default function MarketPage() {
   const navigate = useNavigate();
   const { gameSlug } = useParams();
-  const { activeListings, gameCatalog, globalSearch, loading, openCreateListing, setGlobalSearch } =
-    useMarketplace();
+  const {
+    activeListings,
+    gameCatalog,
+    globalSearch,
+    loading,
+    openCreateListing,
+    setGlobalSearch,
+  } = useMarketplace();
+  const [marketSearch, setMarketSearch] = useState(globalSearch);
   const [selectedNeighborhood, setSelectedNeighborhood] = useState("All Winnipeg");
   const [sortBy, setSortBy] = useState("recent");
-  const deferredSearch = useDeferredValue(globalSearch.trim().toLowerCase());
+  const [savedFilters, setSavedFilters] = useState(readSavedFilters);
+  const deferredSearch = useDeferredValue(marketSearch.trim().toLowerCase());
+
+  useEffect(() => {
+    setMarketSearch(globalSearch);
+  }, [globalSearch]);
 
   const selectedGame = useMemo(() => {
     if (!gameSlug) {
@@ -32,9 +89,7 @@ export default function MarketPage() {
     }
 
     if (selectedNeighborhood !== "All Winnipeg") {
-      results = results.filter(
-        (listing) => listing.neighborhood === selectedNeighborhood,
-      );
+      results = results.filter((listing) => listing.neighborhood === selectedNeighborhood);
     }
 
     if (deferredSearch) {
@@ -42,9 +97,14 @@ export default function MarketPage() {
         const searchableText = [
           listing.title,
           listing.game,
-          listing.seller?.name,
           listing.description,
+          listing.condition,
+          listing.neighborhood,
+          listing.seller?.name,
+          listing.seller?.publicName,
+          listing.seller?.username,
         ]
+          .filter(Boolean)
           .join(" ")
           .toLowerCase();
 
@@ -63,6 +123,56 @@ export default function MarketPage() {
     return results;
   }, [activeListings, deferredSearch, selectedGame, selectedNeighborhood, sortBy]);
 
+  function handleSearchChange(value) {
+    setMarketSearch(value);
+    setGlobalSearch(value);
+  }
+
+  function clearFilters() {
+    setSelectedNeighborhood("All Winnipeg");
+    setSortBy("recent");
+    handleSearchChange("");
+  }
+
+  function saveCurrentFilter() {
+    const nextFilter = {
+      id: `filter-${Date.now()}`,
+      label: buildSavedFilterLabel({
+        gameName: selectedGame?.name,
+        neighborhood: selectedNeighborhood,
+        search: marketSearch.trim(),
+      }),
+      gameSlug: selectedGame?.slug || "all",
+      neighborhood: selectedNeighborhood,
+      search: marketSearch.trim(),
+      sortBy,
+    };
+    const nextFilters = [
+      nextFilter,
+      ...savedFilters.filter((filter) => filter.label !== nextFilter.label),
+    ].slice(0, 8);
+    setSavedFilters(nextFilters);
+    writeSavedFilters(nextFilters);
+  }
+
+  function applySavedFilter(filter) {
+    handleSearchChange(filter.search || "");
+    setSelectedNeighborhood(filter.neighborhood || "All Winnipeg");
+    setSortBy(filter.sortBy || "recent");
+    navigate(filter.gameSlug && filter.gameSlug !== "all" ? `/market/${filter.gameSlug}` : "/market");
+  }
+
+  const activeFilterChips = [
+    selectedGame?.slug !== "all" ? selectedGame?.name : null,
+    deferredSearch ? `Search: ${marketSearch.trim()}` : null,
+    selectedNeighborhood !== "All Winnipeg" ? selectedNeighborhood : null,
+    sortBy !== "recent"
+      ? sortBy === "price-low"
+        ? "Price low to high"
+        : "Price high to low"
+      : null,
+  ].filter(Boolean);
+
   if (loading && !activeListings.length) {
     return <PageSkeleton cards={6} titleWidth="w-60" />;
   }
@@ -70,15 +180,15 @@ export default function MarketPage() {
   return (
     <div className="space-y-7">
       <section className="surface-card overflow-hidden">
-        <div className="grid gap-5 p-5 sm:p-7 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
+        <div className="grid gap-5 p-5 sm:p-7 xl:grid-cols-[1.15fr_0.85fr] xl:items-end">
           <div>
             <p className="section-kicker">Market feed</p>
-            <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-ink sm:text-5xl">
+            <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-ink sm:text-[3.25rem]">
               {selectedGame?.name || "All Listings"}
             </h1>
             <p className="mt-4 max-w-3xl text-base leading-8 text-steel">
               {selectedGame?.description ||
-                "Filter local listings by game, neighborhood, price, and search query."}
+                "Search by card, seller, neighborhood, or condition without relying on the global header alone."}
             </p>
           </div>
 
@@ -90,77 +200,130 @@ export default function MarketPage() {
               </p>
             </div>
             <div className="surface-muted p-4">
-              <p className="text-sm text-steel">Area</p>
+              <p className="text-sm text-steel">Current area</p>
               <p className="mt-2 text-lg font-semibold text-ink">{selectedNeighborhood}</p>
             </div>
             <div className="surface-muted p-4">
-              <p className="text-sm text-steel">Search</p>
-              <p className="mt-2 truncate text-lg font-semibold text-ink">
-                {globalSearch || "Open feed"}
-              </p>
+              <p className="text-sm text-steel">Saved filters</p>
+              <p className="mt-2 text-lg font-semibold text-ink">{savedFilters.length}</p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="surface-card grid gap-4 p-5 lg:grid-cols-[1fr_1fr_1fr_auto] lg:p-6">
-        <label className="block">
-          <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-steel">
-            <MapPin size={16} />
-            Neighborhood
-          </span>
-          <select
-            className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-            value={selectedNeighborhood}
-            onChange={(event) => setSelectedNeighborhood(event.target.value)}
-          >
-            {neighborhoods.map((neighborhood) => (
-              <option key={neighborhood}>{neighborhood}</option>
-            ))}
-          </select>
-        </label>
+      <section className="surface-card space-y-5 p-5 lg:p-6">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,0.75fr)_minmax(0,0.6fr)_auto]">
+          <label className="block">
+            <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-steel">
+              <Search size={16} />
+              Search the market
+            </span>
+            <div className="relative">
+              <Search
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-steel"
+                size={16}
+              />
+              <input
+                className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] py-3 pl-11 pr-4 outline-none transition focus:border-navy focus:bg-white"
+                placeholder="Card, set code, seller, condition"
+                value={marketSearch}
+                onChange={(event) => handleSearchChange(event.target.value)}
+              />
+            </div>
+          </label>
 
-        <label className="block">
-          <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-steel">
-            <ArrowUpDown size={16} />
-            Sort
-          </span>
-          <select
-            className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-            value={sortBy}
-            onChange={(event) => setSortBy(event.target.value)}
-          >
-            <option value="recent">Most recent</option>
-            <option value="price-low">Price low to high</option>
-            <option value="price-high">Price high to low</option>
-          </select>
-        </label>
+          <label className="block">
+            <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-steel">
+              <MapPin size={16} />
+              Neighborhood
+            </span>
+            <select
+              className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              value={selectedNeighborhood}
+              onChange={(event) => setSelectedNeighborhood(event.target.value)}
+            >
+              {neighborhoods.map((neighborhood) => (
+                <option key={neighborhood}>{neighborhood}</option>
+              ))}
+            </select>
+          </label>
 
-        <div className="rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3.5">
-          <p className="text-sm font-semibold text-steel">Header search</p>
-          <p className="mt-2 text-sm text-ink">
-            {globalSearch
-              ? `"${globalSearch}"`
-              : "Use the top search bar to filter by card, game, seller, or set."}
-          </p>
-        </div>
+          <label className="block">
+            <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-steel">
+              <ArrowUpDown size={16} />
+              Sort
+            </span>
+            <select
+              className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              value={sortBy}
+              onChange={(event) => setSortBy(event.target.value)}
+            >
+              <option value="recent">Most recent</option>
+              <option value="price-low">Price low to high</option>
+              <option value="price-high">Price high to low</option>
+            </select>
+          </label>
 
-        <div className="flex items-end gap-3">
-          {globalSearch ? (
+          <div className="flex flex-col justify-end gap-2 sm:flex-row xl:flex-col">
             <button
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-navy px-4 py-3 text-sm font-semibold text-white"
               type="button"
-              onClick={() => setGlobalSearch("")}
+              onClick={saveCurrentFilter}
+            >
+              <BookmarkPlus size={16} />
+              Save filter
+            </button>
+            <button
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+              type="button"
+              onClick={clearFilters}
             >
               <SearchX size={16} />
-              Clear search
+              Reset
             </button>
-          ) : null}
+          </div>
         </div>
+
+        {activeFilterChips.length ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+              <SlidersHorizontal size={14} />
+              Active
+            </span>
+            {activeFilterChips.map((chip) => (
+              <span
+                key={chip}
+                className="rounded-full border border-slate-200 bg-[#faf7f1] px-3 py-1.5 text-sm font-semibold text-ink"
+              >
+                {chip}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        {savedFilters.length ? (
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+              Saved searches
+            </p>
+            <div className="header-chip-scroll flex gap-2 overflow-x-auto pb-1">
+              {savedFilters.map((filter) => (
+                <button
+                  key={filter.id}
+                  className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-ink transition hover:border-slate-300 hover:bg-[#faf7f1]"
+                  type="button"
+                  onClick={() => applySavedFilter(filter)}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </section>
 
       {filteredListings.length ? (
-        <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {filteredListings.map((listing) => (
             <ListingCard key={listing.id} listing={listing} />
           ))}
@@ -172,7 +335,7 @@ export default function MarketPage() {
               className="rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
               type="button"
               onClick={() => {
-                setGlobalSearch("");
+                clearFilters();
                 const opened = openCreateListing({ type: "WTS" });
                 if (!opened) {
                   navigate("/auth", { state: { from: "/market" } });
@@ -182,7 +345,7 @@ export default function MarketPage() {
               Post a listing
             </button>
           }
-          description="No listings match the current game, neighborhood, and search filters. Try widening the search or post the listing you want buyers to find."
+          description="No listings match the current game, search, and neighborhood filters. Try widening the search or save a broader filter for later."
           title="No active matches"
         />
       )}

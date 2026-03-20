@@ -28,6 +28,7 @@ export default function HomePage() {
   const navigate = useNavigate();
   const {
     activeListings,
+    currentUser,
     formatCadPrice,
     gameCatalog,
     hotListings,
@@ -74,6 +75,31 @@ export default function HomePage() {
   const freshListings = safeHotListings.slice(0, 6);
   const spotlightListings = safeHotListings.slice(0, 5);
   const verifiedSellerCount = safeSellers.filter((seller) => seller?.verified).length;
+  const onboardingItems = useMemo(
+    () =>
+      currentUser
+        ? [
+            {
+              label: "Set a username",
+              done: Boolean(currentUser.username),
+            },
+            {
+              label: "Pick your default game",
+              done: Boolean(currentUser.defaultListingGame),
+            },
+            {
+              label: "Add a neighborhood",
+              done: Boolean(currentUser.neighborhood),
+            },
+            {
+              label: "Upload a profile photo",
+              done: Boolean(currentUser.avatarUrl),
+            },
+          ]
+        : [],
+    [currentUser],
+  );
+  const incompleteOnboardingCount = onboardingItems.filter((item) => !item.done).length;
   const topSellers = [...safeSellers]
     .sort((left, right) => {
       const dealsDiff = Number(right.completedDeals || 0) - Number(left.completedDeals || 0);
@@ -565,11 +591,54 @@ export default function HomePage() {
         </aside>
       </section>
 
+      {currentUser && incompleteOnboardingCount ? (
+        <section className="surface-card border border-navy/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8f5ee_100%)] px-5 py-5 sm:px-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="section-kicker">Finish your setup</p>
+              <h2 className="mt-2 font-display text-[1.9rem] font-semibold tracking-[-0.04em] text-ink">
+                A few account details still need to be filled in.
+              </h2>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-steel">
+                Complete your seller profile once so new listings, messages, and public pages feel consistent.
+              </p>
+            </div>
+            <Link
+              className="inline-flex items-center gap-2 rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
+              to="/account"
+            >
+              Finish setup
+              <ArrowRight size={15} />
+            </Link>
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {onboardingItems.map((item) => (
+              <div
+                key={item.label}
+                className={`rounded-[22px] border px-4 py-4 ${
+                  item.done
+                    ? "border-emerald-200 bg-emerald-50/80"
+                    : "border-slate-200 bg-white"
+                }`}
+              >
+                <p className="text-sm font-semibold text-ink">{item.label}</p>
+                <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                  {item.done ? "Done" : "Still needed"}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <section className="space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="section-kicker">Browse by game</p>
-            <h2 className="section-title mt-2">Jump into the active shelves</h2>
+            <h2 className="mt-2 font-display text-[2.15rem] font-semibold tracking-[-0.04em] text-ink">
+              Jump into the active shelves
+            </h2>
           </div>
           <Link
             className="inline-flex items-center gap-2 text-sm font-semibold text-navy"
@@ -671,7 +740,9 @@ export default function HomePage() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="section-kicker">Newest listings</p>
-            <h2 className="section-title mt-2">Fresh cards from local sellers</h2>
+            <h2 className="mt-2 font-display text-[2.15rem] font-semibold tracking-[-0.04em] text-ink">
+              Fresh cards from local sellers
+            </h2>
           </div>
           <button
             className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
@@ -697,7 +768,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Upcoming events</p>
-              <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+              <h2 className="mt-2 font-display text-[2.15rem] font-semibold tracking-[-0.04em] text-ink">
                 Where local players are meeting
               </h2>
             </div>
@@ -738,7 +809,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Local sellers</p>
-              <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+              <h2 className="mt-2 font-display text-[2.15rem] font-semibold tracking-[-0.04em] text-ink">
                 Trusted accounts to browse
               </h2>
             </div>

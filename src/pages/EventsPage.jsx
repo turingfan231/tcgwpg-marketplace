@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Clock3,
   ExternalLink,
+  Filter,
   LoaderCircle,
   MapPin,
   Store,
@@ -15,6 +16,10 @@ import { useMarketplace } from "../hooks/useMarketplace";
 import { fetchLocalEvents } from "../services/cardDatabase";
 
 const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const rangeOptions = [
+  { id: "month", label: "This month" },
+  { id: "week", label: "Next 14 days" },
+];
 
 function getMonthKey(dateStr) {
   return String(dateStr || "").slice(0, 7);
@@ -44,11 +49,21 @@ function normalizeManualEvent(event) {
   };
 }
 
+function daysUntil(dateStr) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const nextDate = new Date(`${dateStr}T12:00:00`);
+  return Math.round((nextDate.getTime() - today.getTime()) / 86400000);
+}
+
 export default function EventsPage() {
   const { manualEvents } = useMarketplace();
   const [remoteEvents, setRemoteEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedStore, setSelectedStore] = useState("All stores");
+  const [selectedGame, setSelectedGame] = useState("All games");
+  const [rangeMode, setRangeMode] = useState("month");
   const publishedManualEvents = useMemo(
     () => manualEvents.filter((event) => event.published).map(normalizeManualEvent),
     [manualEvents],
@@ -63,11 +78,9 @@ export default function EventsPage() {
 
       try {
         const data = await fetchLocalEvents();
-        if (cancelled) {
-          return;
+        if (!cancelled) {
+          setRemoteEvents(data.events || []);
         }
-
-        setRemoteEvents(data.events || []);
       } catch (fetchError) {
         if (!cancelled) {
           setError(fetchError.message);
@@ -86,18 +99,53 @@ export default function EventsPage() {
     };
   }, []);
 
-  const allEvents = useMemo(() => {
-    return [...remoteEvents, ...publishedManualEvents].sort((left, right) => {
-      const leftStamp = new Date(`${left.dateStr}T12:00:00`).getTime();
-      const rightStamp = new Date(`${right.dateStr}T12:00:00`).getTime();
-      return leftStamp - rightStamp;
+  const allEvents = useMemo(
+    () =>
+      [...remoteEvents, ...publishedManualEvents]
+        .filter(Boolean)
+        .sort(
+          (left, right) =>
+            new Date(`${left.dateStr}T12:00:00`).getTime() -
+            new Date(`${right.dateStr}T12:00:00`).getTime(),
+        )
+        .filter(
+          (event, index, items) =>
+            items.findIndex(
+              (candidate) =>
+                String(candidate.title) === String(event.title) &&
+                String(candidate.store) === String(event.store) &&
+                String(candidate.dateStr) === String(event.dateStr) &&
+                String(candidate.time) === String(event.time),
+            ) === index,
+        ),
+    [publishedManualEvents, remoteEvents],
+  );
+
+  const storeOptions = useMemo(
+    () => ["All stores", ...new Set(allEvents.map((event) => event.store).filter(Boolean))],
+    [allEvents],
+  );
+  const gameOptions = useMemo(
+    () => ["All games", ...new Set(allEvents.map((event) => event.game).filter(Boolean))],
+    [allEvents],
+  );
+
+  const prefilteredEvents = useMemo(() => {
+    return allEvents.filter((event) => {
+      if (selectedStore !== "All stores" && event.store !== selectedStore) {
+        return false;
+      }
+      if (selectedGame !== "All games" && event.game !== selectedGame) {
+        return false;
+      }
+      return true;
     });
-  }, [publishedManualEvents, remoteEvents]);
+  }, [allEvents, selectedGame, selectedStore]);
 
   const monthKeys = useMemo(() => {
-    const keys = [...new Set(allEvents.map((event) => getMonthKey(event.dateStr)).filter(Boolean))];
+    const keys = [...new Set(prefilteredEvents.map((event) => getMonthKey(event.dateStr)).filter(Boolean))];
     return keys.sort();
-  }, [allEvents]);
+  }, [prefilteredEvents]);
 
   const [selectedMonth, setSelectedMonth] = useState("");
 
@@ -113,12 +161,22 @@ export default function EventsPage() {
 
   const visibleMonth = selectedMonth || monthKeys[0] || getMonthKey(new Date().toISOString());
 
-  const eventsForMonth = useMemo(
-    () => allEvents.filter((event) => getMonthKey(event.dateStr) === visibleMonth),
-    [allEvents, visibleMonth],
-  );
+  const eventsForList = useMemo(() => {
+    if (rangeMode === "week") {
+      return prefilteredEvents.filter((event) => {
+        const diff = daysUntil(event.dateStr);
+        return diff >= 0 && diff <= 13;
+      });
+    }
+
+    return prefilteredEvents.filter((event) => getMonthKey(event.dateStr) === visibleMonth);
+  }, [prefilteredEvents, rangeMode, visibleMonth]);
 
   const calendarDays = useMemo(() => {
+    if (rangeMode !== "month") {
+      return [];
+    }
+
     const [year, month] = visibleMonth.split("-").map(Number);
     const firstOfMonth = new Date(year, month - 1, 1);
     const daysInMonth = new Date(year, month, 0).getDate();
@@ -134,12 +192,31 @@ export default function EventsPage() {
       grid.push({
         dateStr,
         day,
-        events: eventsForMonth.filter((event) => event.dateStr === dateStr),
+        events: eventsForList.filter((event) => event.dateStr === dateStr),
       });
     }
 
     return grid;
-  }, [eventsForMonth, visibleMonth]);
+  }, [eventsForList, rangeMode, visibleMonth]);
+
+  const groupedUpcomingEvents = useMemo(() => {
+    if (rangeMode !== "week") {
+      return [];
+    }
+
+    return eventsForList.reduce((groups, event) => {
+      const existing = groups.find((group) => group.dateStr === event.dateStr);
+      if (existing) {
+        existing.events.push(event);
+      } else {
+        groups.push({
+          dateStr: event.dateStr,
+          events: [event],
+        });
+      }
+      return groups;
+    }, []);
+  }, [eventsForList, rangeMode]);
 
   const selectedMonthIndex = monthKeys.indexOf(visibleMonth);
 
@@ -149,127 +226,226 @@ export default function EventsPage() {
 
   return (
     <div className="space-y-7">
-      <section className="surface-card p-7">
+      <section className="surface-card p-6 sm:p-7">
         <p className="section-kicker">Local Events</p>
-        <h1 className="mt-3 font-display text-5xl font-semibold tracking-[-0.05em] text-ink">
+        <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-ink sm:text-[3.25rem]">
           Winnipeg tournaments, leagues, and local nights
         </h1>
         <p className="mt-4 max-w-3xl text-base leading-8 text-steel">
-          Browse upcoming Magic, Pokemon, and One Piece events across Winnipeg and jump
-          out to the store page when a direct event link is available.
+          Filter by game, store, and date range, then jump straight to the event page when a direct link is available.
         </p>
+      </section>
+
+      <section className="surface-card space-y-5 p-5 sm:p-6">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+          <Filter size={14} />
+          Filters
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,0.8fr)_auto]">
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-steel">Store</span>
+            <select
+              className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              value={selectedStore}
+              onChange={(event) => setSelectedStore(event.target.value)}
+            >
+              {storeOptions.map((store) => (
+                <option key={store}>{store}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-steel">Game</span>
+            <select
+              className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              value={selectedGame}
+              onChange={(event) => setSelectedGame(event.target.value)}
+            >
+              {gameOptions.map((game) => (
+                <option key={game}>{game}</option>
+              ))}
+            </select>
+          </label>
+
+          <div className="flex items-end gap-2">
+            <div className="inline-flex rounded-full bg-[#f4f0e8] p-1">
+              {rangeOptions.map((option) => (
+                <button
+                  key={option.id}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    rangeMode === option.id ? "bg-white text-ink shadow-sm" : "text-steel"
+                  }`}
+                  type="button"
+                  onClick={() => setRangeMode(option.id)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="grid gap-7 xl:grid-cols-[1.05fr_0.95fr]">
         <article className="surface-card hidden p-6 md:block">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="section-kicker">Calendar</p>
-              <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                {formatMonthLabel(visibleMonth)}
-              </h2>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                className="rounded-full border border-slate-200 bg-white p-3 text-steel disabled:opacity-40"
-                disabled={selectedMonthIndex <= 0}
-                type="button"
-                onClick={() => setSelectedMonth(monthKeys[selectedMonthIndex - 1] || visibleMonth)}
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <button
-                className="rounded-full border border-slate-200 bg-white p-3 text-steel disabled:opacity-40"
-                disabled={selectedMonthIndex < 0 || selectedMonthIndex >= monthKeys.length - 1}
-                type="button"
-                onClick={() => setSelectedMonth(monthKeys[selectedMonthIndex + 1] || visibleMonth)}
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-5 grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-            {weekdayLabels.map((label) => (
-              <div key={label} className="py-2">
-                {label}
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-7 gap-2">
-            {calendarDays.map((day, index) =>
-              day ? (
-                <div
-                  key={day.dateStr}
-                  className="min-h-[8.5rem] rounded-[20px] border border-slate-200 bg-[#fbf8f1] p-3"
-                >
-                  <div className="text-sm font-semibold text-ink">{day.day}</div>
-                  <div className="mt-3 space-y-2">
-                    {day.events.slice(0, 3).map((event) =>
-                      event.sourceUrl ? (
-                        <a
-                          key={event.id}
-                          className="block rounded-[14px] bg-white px-2 py-2 text-left text-[11px] leading-5 text-steel transition hover:bg-slate-50"
-                          href={event.sourceUrl}
-                          rel="noreferrer"
-                          target="_blank"
-                        >
-                          <p className="flex items-center gap-1 font-semibold text-ink">
-                            {event.game}
-                            <ExternalLink size={11} className="text-navy" />
-                          </p>
-                          <p className="line-clamp-2">{event.title}</p>
-                        </a>
-                      ) : (
-                        <div
-                          key={event.id}
-                          className="rounded-[14px] bg-white px-2 py-2 text-left text-[11px] leading-5 text-steel"
-                        >
-                          <p className="font-semibold text-ink">{event.game}</p>
-                          <p className="line-clamp-2">{event.title}</p>
-                        </div>
-                      ),
-                    )}
-                    {day.events.length > 3 ? (
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-navy">
-                        +{day.events.length - 3} more
-                      </div>
-                    ) : null}
-                  </div>
+          {rangeMode === "month" ? (
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p className="section-kicker">Calendar</p>
+                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                    {formatMonthLabel(visibleMonth)}
+                  </h2>
                 </div>
-              ) : (
-                <div key={`empty-${index}`} className="min-h-[8.5rem] rounded-[20px] bg-transparent" />
-              ),
-            )}
-          </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="rounded-full border border-slate-200 bg-white p-3 text-steel disabled:opacity-40"
+                    disabled={selectedMonthIndex <= 0}
+                    type="button"
+                    onClick={() => setSelectedMonth(monthKeys[selectedMonthIndex - 1] || visibleMonth)}
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button
+                    className="rounded-full border border-slate-200 bg-white p-3 text-steel disabled:opacity-40"
+                    disabled={selectedMonthIndex < 0 || selectedMonthIndex >= monthKeys.length - 1}
+                    type="button"
+                    onClick={() => setSelectedMonth(monthKeys[selectedMonthIndex + 1] || visibleMonth)}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-5 grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                {weekdayLabels.map((label) => (
+                  <div key={label} className="py-2">
+                    {label}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-2">
+                {calendarDays.map((day, index) =>
+                  day ? (
+                    <div
+                      key={day.dateStr}
+                      className="min-h-[8.25rem] rounded-[20px] border border-slate-200 bg-[#fbf8f1] p-3"
+                    >
+                      <div className="text-sm font-semibold text-ink">{day.day}</div>
+                      <div className="mt-3 space-y-2">
+                        {day.events.slice(0, 3).map((event) =>
+                          event.sourceUrl ? (
+                            <a
+                              key={event.id}
+                              className="block rounded-[14px] bg-white px-2 py-2 text-left text-[11px] leading-5 text-steel transition hover:bg-slate-50"
+                              href={event.sourceUrl}
+                              rel="noreferrer"
+                              target="_blank"
+                            >
+                              <p className="flex items-center gap-1 font-semibold text-ink">
+                                {event.game}
+                                <ExternalLink size={11} className="text-navy" />
+                              </p>
+                              <p className="line-clamp-2">{event.title}</p>
+                            </a>
+                          ) : (
+                            <div
+                              key={event.id}
+                              className="rounded-[14px] bg-white px-2 py-2 text-left text-[11px] leading-5 text-steel"
+                            >
+                              <p className="font-semibold text-ink">{event.game}</p>
+                              <p className="line-clamp-2">{event.title}</p>
+                            </div>
+                          ),
+                        )}
+                        {day.events.length > 3 ? (
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-navy">
+                            +{day.events.length - 3} more
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : (
+                    <div key={`empty-${index}`} className="min-h-[8.25rem] rounded-[20px] bg-transparent" />
+                  ),
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <p className="section-kicker">Next 14 days</p>
+                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                  Upcoming local schedule
+                </h2>
+              </div>
+              <div className="mt-5 space-y-4">
+                {groupedUpcomingEvents.length ? (
+                  groupedUpcomingEvents.map((group) => (
+                    <div
+                      key={group.dateStr}
+                      className="rounded-[22px] border border-slate-200 bg-[#fbf8f1] p-4"
+                    >
+                      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-steel">
+                        {formatLongDate(group.dateStr)}
+                      </p>
+                      <div className="mt-3 space-y-2">
+                        {group.events.map((event) => (
+                          <div
+                            key={event.id}
+                            className="rounded-[16px] border border-slate-200 bg-white px-4 py-3"
+                          >
+                            <p className="font-semibold text-ink">{event.title}</p>
+                            <p className="mt-1 text-sm text-steel">
+                              {event.store} | {event.time}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-[22px] border border-dashed border-slate-200 bg-[#faf7f1] px-4 py-6 text-sm text-steel">
+                    No matching events in the next 14 days.
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </article>
 
         <article className="surface-card p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="section-kicker">Upcoming List</p>
+              <p className="section-kicker">Upcoming list</p>
               <h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-ink sm:text-3xl">
-                {eventsForMonth.length} events in {formatMonthLabel(visibleMonth)}
+                {eventsForList.length} matching event{eventsForList.length === 1 ? "" : "s"}
               </h2>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                className="rounded-full border border-slate-200 bg-white p-3 text-steel disabled:opacity-40 md:hidden"
-                disabled={selectedMonthIndex <= 0}
-                type="button"
-                onClick={() => setSelectedMonth(monthKeys[selectedMonthIndex - 1] || visibleMonth)}
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <button
-                className="rounded-full border border-slate-200 bg-white p-3 text-steel disabled:opacity-40 md:hidden"
-                disabled={selectedMonthIndex < 0 || selectedMonthIndex >= monthKeys.length - 1}
-                type="button"
-                onClick={() => setSelectedMonth(monthKeys[selectedMonthIndex + 1] || visibleMonth)}
-              >
-                <ChevronRight size={16} />
-              </button>
+              {rangeMode === "month" ? (
+                <>
+                  <button
+                    className="rounded-full border border-slate-200 bg-white p-3 text-steel disabled:opacity-40 md:hidden"
+                    disabled={selectedMonthIndex <= 0}
+                    type="button"
+                    onClick={() => setSelectedMonth(monthKeys[selectedMonthIndex - 1] || visibleMonth)}
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button
+                    className="rounded-full border border-slate-200 bg-white p-3 text-steel disabled:opacity-40 md:hidden"
+                    disabled={selectedMonthIndex < 0 || selectedMonthIndex >= monthKeys.length - 1}
+                    type="button"
+                    onClick={() => setSelectedMonth(monthKeys[selectedMonthIndex + 1] || visibleMonth)}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </>
+              ) : null}
               {loading ? (
                 <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold text-steel">
                   <LoaderCircle className="animate-spin" size={15} />
@@ -285,9 +461,9 @@ export default function EventsPage() {
             </div>
           ) : null}
 
-          {eventsForMonth.length ? (
+          {eventsForList.length ? (
             <div className="header-chip-scroll mt-5 space-y-4 overflow-y-auto pr-1 md:max-h-[46.25rem]">
-              {eventsForMonth.map((event) => (
+              {eventsForList.map((event) => (
                 <article
                   key={event.id}
                   className="rounded-[24px] border border-slate-200 bg-[#fbf8f1] p-5"
@@ -295,6 +471,9 @@ export default function EventsPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full bg-orange/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-orange">
                       {event.game}
+                    </span>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+                      {event.store}
                     </span>
                     <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
                       {event.source}
@@ -343,8 +522,8 @@ export default function EventsPage() {
             </div>
           ) : loading ? null : (
             <EmptyState
-              description="No Magic, Pokemon, or One Piece events were found for this month from the connected store sources."
-              title="No events in this month"
+              description="No Magic, Pokemon, or One Piece events were found for the current filter combination."
+              title="No matching events"
             />
           )}
         </article>

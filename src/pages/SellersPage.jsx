@@ -8,7 +8,7 @@ import RatingStars from "../components/ui/RatingStars";
 import { useMarketplace } from "../hooks/useMarketplace";
 
 export default function SellersPage() {
-  const { loading, sellers } = useMarketplace();
+  const { loading, reviewBadgeCatalog, sellers } = useMarketplace();
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState("deals");
 
@@ -21,10 +21,14 @@ export default function SellersPage() {
 
       return [
         seller.publicName,
+        seller.username,
         seller.name,
         seller.neighborhood,
+        seller.bio,
         ...(seller.favoriteGames || []),
+        ...(seller.badges || []).map((badge) => reviewBadgeCatalog[badge]?.label || badge),
       ]
+        .filter(Boolean)
         .join(" ")
         .toLowerCase()
         .includes(normalizedQuery);
@@ -39,30 +43,36 @@ export default function SellersPage() {
     });
 
     return results;
-  }, [query, sellers, sortBy]);
+  }, [query, reviewBadgeCatalog, sellers, sortBy]);
 
   if (loading && !sellers.length) {
     return <PageSkeleton cards={6} titleWidth="w-72" />;
   }
 
   if (!sellers.length) {
-    return <EmptyState description="Seller profiles will appear here once users start posting." title="No sellers yet" />;
+    return (
+      <EmptyState
+        description="Seller profiles will appear here once users start posting."
+        title="No sellers yet"
+      />
+    );
   }
 
   return (
     <div className="space-y-6">
       <section className="surface-card p-6">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <p className="section-kicker">Browse sellers</p>
             <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.04em] text-ink">
               Search local seller storefronts
             </h1>
             <p className="mt-3 max-w-3xl text-base leading-8 text-steel">
-              Compare seller ratings, completed deals, favorite games, and meetup areas.
+              Sort by completed deals or rating, then skim badges, favorite games, and meetup areas without opening every profile first.
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_13rem] xl:min-w-[34rem]">
             <label className="rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3">
               <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-steel">
                 <Search size={15} />
@@ -70,7 +80,7 @@ export default function SellersPage() {
               </span>
               <input
                 className="w-full bg-transparent text-sm outline-none"
-                placeholder="Name, game, neighborhood"
+                placeholder="Seller, badge, game, neighborhood"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
               />
@@ -90,25 +100,25 @@ export default function SellersPage() {
         </div>
       </section>
 
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {filteredSellers.map((seller) => (
           <Link
             key={seller.id}
-            className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-soft transition hover:-translate-y-1 hover:shadow-lift"
+            className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-soft transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lift"
             to={`/seller/${seller.id}`}
           >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <UserAvatar className="h-14 w-14 text-lg font-bold" user={seller} />
-                <div>
-                  <h2 className="font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <UserAvatar className="h-12 w-12 text-sm font-bold" user={seller} />
+                <div className="min-w-0">
+                  <h2 className="truncate font-display text-[1.45rem] font-semibold tracking-[-0.03em] text-ink">
                     {seller.publicName || seller.name}
                   </h2>
-                  <p className="mt-1 text-sm text-steel">{seller.neighborhood}</p>
+                  <p className="truncate text-sm text-steel">{seller.neighborhood}</p>
                 </div>
               </div>
               {seller.verified ? (
-                <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
                   Verified
                 </span>
               ) : null}
@@ -121,28 +131,47 @@ export default function SellersPage() {
               </span>
             </div>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[20px] bg-[#f8f5ee] px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                  Deals done
+            <div className="mt-4 flex flex-wrap gap-2">
+              {(seller.favoriteGames || []).slice(0, 3).map((game) => (
+                <span
+                  key={`${seller.id}-${game}`}
+                  className="rounded-full bg-[#f8f5ee] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700"
+                >
+                  {game}
+                </span>
+              ))}
+              {(seller.badges || []).slice(0, 3).map((badge) => (
+                <span
+                  key={`${seller.id}-${badge}`}
+                  className="rounded-full bg-navy/8 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-navy"
+                >
+                  {reviewBadgeCatalog[badge]?.label || badge}
+                </span>
+              ))}
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[18px] bg-[#f8f5ee] px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-steel">
+                  Deals
                 </p>
-                <p className="mt-2 inline-flex items-center gap-2 text-lg font-semibold text-ink">
+                <p className="mt-2 inline-flex items-center gap-2 text-base font-semibold text-ink">
                   <Store size={15} className="text-orange" />
                   {seller.completedDeals}
                 </p>
               </div>
-              <div className="rounded-[20px] bg-[#f8f5ee] px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+              <div className="rounded-[18px] bg-[#f8f5ee] px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-steel">
                   Rating
                 </p>
-                <p className="mt-2 inline-flex items-center gap-2 text-lg font-semibold text-ink">
+                <p className="mt-2 inline-flex items-center gap-2 text-base font-semibold text-ink">
                   <Star size={15} className="text-navy" />
                   {seller.overallRating.toFixed(1)}
                 </p>
               </div>
             </div>
 
-            <p className="mt-4 text-sm leading-7 text-steel">
+            <p className="mt-4 line-clamp-3 text-sm leading-7 text-steel">
               {seller.bio || "Local seller storefront."}
             </p>
           </Link>

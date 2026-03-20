@@ -24,8 +24,8 @@ export default function ListingCard({ listing }) {
       className="group block overflow-hidden rounded-[30px] border border-slate-200/85 bg-white shadow-soft transition duration-300 hover:-translate-y-1 hover:border-navy/20 hover:shadow-lift"
       to={`/listing/${listing.id}`}
     >
-      <div className="relative border-b border-slate-200/70 bg-[linear-gradient(180deg,#faf7f0_0%,#f3efe7_100%)] px-5 pb-5 pt-4">
-        <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="relative border-b border-slate-200/70 bg-[linear-gradient(180deg,#faf7f0_0%,#f3efe7_100%)] px-4 pb-4 pt-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${getListingTypeClasses(
@@ -65,9 +65,9 @@ export default function ListingCard({ listing }) {
           </button>
         </div>
 
-        <div className="flex min-h-[18rem] items-center justify-center rounded-[26px] border border-slate-200/75 bg-white/80 p-4">
+        <div className="flex min-h-[14.5rem] items-center justify-center rounded-[22px] border border-slate-200/75 bg-white/80 p-3">
           <CardArtwork
-            className="aspect-[63/88] w-[12rem] max-w-full rounded-[24px] object-cover shadow-soft"
+            className="aspect-[63/88] w-[9.75rem] max-w-full rounded-[20px] object-cover shadow-soft"
             game={listing.game}
             src={listing.imageUrl}
             title={listing.title}
@@ -75,17 +75,17 @@ export default function ListingCard({ listing }) {
         </div>
 
         {listing.acceptsTrade ? (
-          <div className="absolute bottom-4 left-5 inline-flex items-center gap-2 rounded-full bg-navy px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-white">
+          <div className="absolute bottom-3 left-4 inline-flex items-center gap-2 rounded-full bg-navy px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-white">
             <Repeat2 size={13} />
             Trades accepted
           </div>
         ) : null}
       </div>
 
-      <div className="space-y-4 p-5">
+      <div className="space-y-4 p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-2">
-            <h3 className="line-clamp-2 font-display text-[1.55rem] font-semibold leading-tight tracking-[-0.03em] text-ink">
+            <h3 className="line-clamp-2 font-display text-[1.35rem] font-semibold leading-tight tracking-[-0.03em] text-ink">
               {listing.title}
             </h3>
             <div className="flex items-center gap-2 text-sm text-steel">
@@ -117,7 +117,7 @@ export default function ListingCard({ listing }) {
           ) : null}
         </div>
 
-        <div className="flex items-end justify-between gap-4 border-t border-slate-100 pt-4">
+        <div className="flex items-end justify-between gap-4 border-t border-slate-100 pt-3">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               {hasSalePrice ? (
@@ -125,7 +125,7 @@ export default function ListingCard({ listing }) {
                   {formatCadPrice(listing.previousPrice, listing.priceCurrency || "CAD")}
                 </span>
               ) : null}
-              <span className="font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
+              <span className="font-display text-[2rem] font-semibold tracking-[-0.03em] text-ink">
                 {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
               </span>
               {listing.marketPrice ? (

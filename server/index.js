@@ -43,7 +43,9 @@ const FUSION_TOPDECK_HUB_ID = "sTSJ3zWce0fWw8lip6hhHoXkGzk1";
 const FUSION_TOPDECK_ENDPOINT = `https://topdeck.gg/api/event-filter/${FUSION_TOPDECK_HUB_ID}`;
 const A_MUSE_EVENTS_ENDPOINT =
   "https://amusengames.ca/collections/events/products.json?limit=250";
-const ARCTIC_EVENTS_PAGE = "https://www.arcticriftcards.ca/pages/events";
+const ARCTIC_HOME_PAGE = "https://www.arcticriftcards.ca/";
+const ARCTIC_MAHINA_ENDPOINT = "https://mahina.app/app/5d7678.myshopify.com";
+const ARCTIC_EVENTS_PAGE = ARCTIC_HOME_PAGE;
 const GALAXY_EVENTS_PAGE = "https://www.galaxy-comics.ca/index.php/calendar/";
 const SERVER_TIMEOUT_MS = 15000;
 const FX_TIMEOUT_MS = 2500;
@@ -1224,7 +1226,102 @@ async function fetchAMuseEvents() {
 
 async function fetchArcticEvents() {
   try {
-    const response = await fetchWithTimeout(ARCTIC_EVENTS_PAGE, {
+    const mahinaResponse = await fetchWithTimeout(ARCTIC_MAHINA_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "text/plain;charset=UTF-8",
+        Referer: ARCTIC_HOME_PAGE,
+      },
+      body: JSON.stringify({
+        shop: "5d7678.myshopify.com",
+        selectedEventId: null,
+        selectedRecurringDate: null,
+        page: 1,
+      }),
+    });
+
+    if (!mahinaResponse.ok) {
+      throw new Error(`Arctic event feed failed (${mahinaResponse.status}).`);
+    }
+
+    const payload = await mahinaResponse.json();
+    const eventTemplates = new Map(
+      (Array.isArray(payload.events) ? payload.events : []).map((event) => [String(event.id), event]),
+    );
+    const rawEventDates = Array.isArray(payload.eventDates)
+      ? payload.eventDates
+      : (Array.isArray(payload.events) ? payload.events : []).map((event) => ({
+          id: event.id,
+          start: event.startDate,
+          timezone: event.timezone,
+          isRecurring: event.isRecurring,
+        }));
+
+    const events = rawEventDates
+      .map((occurrence, index) => {
+        const template = eventTemplates.get(String(occurrence.id));
+        const title = stripHtml(template?.title || "");
+        const game = normalizeEventGame(title);
+        const startDate = occurrence.start ? new Date(occurrence.start) : null;
+
+        if (!template || !title || !game || !startDate || Number.isNaN(startDate.getTime())) {
+          return null;
+        }
+
+        if (!isUpcomingDate(startDate)) {
+          return null;
+        }
+
+        const fee =
+          template.tickets?.priceType === "free"
+            ? "Free"
+            : normalizeEventFee(
+                template.tickets?.priceMin ||
+                  template.tickets?.priceMax ||
+                  template.tickets?.price,
+              );
+
+        return normalizeEventRecord({
+          id: buildEventId("arctic", `${occurrence.id}-${startDate.toISOString()}-${index}`),
+          title,
+          store: "Arctic Rift Cards",
+          source: "Arctic homepage feed",
+          sourceUrl: template.tickets?.links?.[0]?.link || ARCTIC_HOME_PAGE,
+          dateStr: startDate.toISOString().slice(0, 10),
+          time: startDate.toLocaleTimeString("en-CA", {
+            hour: "numeric",
+            minute: "2-digit",
+            timeZone: occurrence.timezone || template.timezone || "America/Chicago",
+          }),
+          game,
+          fee,
+          neighborhood: "North End",
+          note: stripHtml(template.description || "") || stripHtml(template.location?.name || ""),
+        });
+      })
+      .filter(Boolean)
+      .sort(
+        (left, right) =>
+          new Date(`${left.dateStr}T12:00:00`).getTime() -
+          new Date(`${right.dateStr}T12:00:00`).getTime(),
+      )
+      .slice(0, 80);
+
+    return {
+      events,
+      status: {
+        id: "arctic",
+        label: "Arctic Rift Cards",
+        mode: events.length ? "Live homepage feed" : "Live source / no supported events",
+        note: events.length
+          ? `Pulled ${events.length} upcoming event occurrence(s) from Arctic Rift's homepage calendar feed.`
+          : "Arctic Rift's homepage feed is reachable, but it did not return upcoming Magic, Pokemon, or One Piece events right now.",
+        sourceUrl: ARCTIC_HOME_PAGE,
+      },
+    };
+
+    /* const response = await fetchWithTimeout(ARCTIC_EVENTS_PAGE, {
       headers: {
         Accept: "text/html",
       },
@@ -1270,7 +1367,7 @@ async function fetchArcticEvents() {
           : "The public events page is reachable, but it does not currently expose upcoming Magic, Pokemon, or One Piece events beyond unsupported schedules.",
         sourceUrl: ARCTIC_EVENTS_PAGE,
       },
-    };
+    }; */
   } catch (error) {
     return {
       events: [],

@@ -25,8 +25,11 @@ const browseLinks = [
   { to: "/market/magic", label: "Magic", clearSearch: true },
   { to: "/market/one-piece", label: "One Piece", clearSearch: true },
   { to: "/wtb", label: "WTB", clearSearch: true },
-  { to: "/sellers", label: "Sellers", clearSearch: false },
-  { to: "/events", label: "Events", clearSearch: false },
+];
+
+const utilityLinks = [
+  { to: "/sellers", label: "Sellers" },
+  { to: "/events", label: "Events" },
 ];
 
 export default function Header() {
@@ -213,12 +216,6 @@ export default function Header() {
               </button>
 
               <div className="hidden items-center gap-2 lg:flex">
-                <Link
-                  className="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-slate-300 hover:bg-slate-50"
-                  to="/wtb"
-                >
-                  WTB board
-                </Link>
                 {isAuthenticated ? (
                   <div className="relative" ref={accountMenuRef}>
                     <button
@@ -310,23 +307,41 @@ export default function Header() {
             />
           </form>
 
-          <div className="header-chip-scroll mt-4 flex items-center gap-2 overflow-x-auto border-t border-slate-200/80 pt-4">
-            {browseLinks.map((link) => (
-              <NavLink
-                key={link.to}
-                className={({ isActive }) =>
-                  `whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
-                    isActive
-                      ? "bg-navy text-white"
-                      : "text-steel hover:bg-slate-100 hover:text-ink"
-                  }`
-                }
-                onClick={() => handleBrowseLink(link)}
-                to={link.to}
-              >
-                {link.label}
-              </NavLink>
-            ))}
+          <div className="mt-4 flex flex-col gap-3 border-t border-slate-200/80 pt-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="header-chip-scroll flex items-center gap-2 overflow-x-auto">
+              {browseLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  className={({ isActive }) =>
+                    `whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
+                      isActive
+                        ? "bg-navy text-white"
+                        : "text-steel hover:bg-slate-100 hover:text-ink"
+                    }`
+                  }
+                  onClick={() => handleBrowseLink(link)}
+                  to={link.to}
+                >
+                  {link.label}
+                </NavLink>
+              ))}
+            </div>
+
+            <div className="hidden items-center gap-5 lg:flex">
+              {utilityLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  className={({ isActive }) =>
+                    `text-sm font-semibold transition ${
+                      isActive ? "text-ink" : "text-steel hover:text-ink"
+                    }`
+                  }
+                  to={link.to}
+                >
+                  {link.label}
+                </NavLink>
+              ))}
+            </div>
           </div>
         </div>
       </header>

@@ -101,6 +101,8 @@ export default function AdminPage() {
   });
   const [noteDrafts, setNoteDrafts] = useState({});
   const [bugNoteDrafts, setBugNoteDrafts] = useState({});
+  const [listingFilter, setListingFilter] = useState("all");
+  const [userFilter, setUserFilter] = useState("all");
 
   const sortedUsers = useMemo(
     () =>
@@ -121,25 +123,60 @@ export default function AdminPage() {
 
   const filteredUsers = useMemo(() => {
     const query = userSearch.trim().toLowerCase();
-    if (!query) {
-      return sortedUsers;
-    }
+    return sortedUsers.filter((user) => {
+      if (
+        userFilter === "admins" &&
+        String(user.role || "").toLowerCase() !== "admin"
+      ) {
+        return false;
+      }
 
-    return sortedUsers.filter((user) =>
-      [user.name, user.username, user.email, user.neighborhood, user.role]
+      if (userFilter === "suspended" && user.accountStatus !== "suspended") {
+        return false;
+      }
+
+      if (userFilter === "verified" && !user.verified) {
+        return false;
+      }
+
+      if (userFilter === "beta" && !user.badges.includes("beta")) {
+        return false;
+      }
+
+      if (!query) {
+        return true;
+      }
+
+      return [user.name, user.username, user.email, user.neighborhood, user.role]
         .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(query)),
-    );
-  }, [sortedUsers, userSearch]);
+        .some((value) => String(value).toLowerCase().includes(query));
+    });
+  }, [sortedUsers, userFilter, userSearch]);
 
   const filteredListings = useMemo(() => {
     const query = listingSearch.trim().toLowerCase();
-    if (!query) {
-      return sortedListings;
-    }
+    return sortedListings.filter((listing) => {
+      if (listingFilter === "flagged" && !listing.flagged) {
+        return false;
+      }
 
-    return sortedListings.filter((listing) =>
-      [
+      if (listingFilter === "featured" && !listing.featured) {
+        return false;
+      }
+
+      if (listingFilter === "removed" && listing.status !== "removed") {
+        return false;
+      }
+
+      if (listingFilter === "active" && listing.status !== "active") {
+        return false;
+      }
+
+      if (!query) {
+        return true;
+      }
+
+      return [
         listing.title,
         listing.game,
         listing.neighborhood,
@@ -149,9 +186,9 @@ export default function AdminPage() {
         listing.status,
       ]
         .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(query)),
-    );
-  }, [listingSearch, sortedListings]);
+        .some((value) => String(value).toLowerCase().includes(query));
+    });
+  }, [listingFilter, listingSearch, sortedListings]);
 
   const sectionButtons = [
     { id: "overview", label: "Overview" },
@@ -615,6 +652,30 @@ export default function AdminPage() {
           </div>
 
           <div className="mt-5 space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: "all", label: "All" },
+                { id: "flagged", label: "Flagged" },
+                { id: "featured", label: "Featured" },
+                { id: "removed", label: "Removed" },
+                { id: "active", label: "Active" },
+              ].map((filter) => (
+                <button
+                  key={filter.id}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    listingFilter === filter.id
+                      ? "bg-navy text-white"
+                      : "border border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
+                  }`}
+                  type="button"
+                  onClick={() => setListingFilter(filter.id)}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-4">
             {filteredListings.length ? (
               filteredListings.map((listing) => (
                 <article
@@ -706,6 +767,7 @@ export default function AdminPage() {
             ) : (
               <EmptyAdminState>No listings match this search.</EmptyAdminState>
             )}
+            </div>
           </div>
         </section>
       ) : null}
@@ -738,6 +800,30 @@ export default function AdminPage() {
           </div>
 
           <div className="mt-5 space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: "all", label: "All" },
+                { id: "admins", label: "Admins" },
+                { id: "suspended", label: "Suspended" },
+                { id: "verified", label: "Verified" },
+                { id: "beta", label: "Beta testers" },
+              ].map((filter) => (
+                <button
+                  key={filter.id}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    userFilter === filter.id
+                      ? "bg-navy text-white"
+                      : "border border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
+                  }`}
+                  type="button"
+                  onClick={() => setUserFilter(filter.id)}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-4">
             {filteredUsers.length ? (
               filteredUsers.map((user) => (
                 <article
@@ -825,6 +911,7 @@ export default function AdminPage() {
             ) : (
               <EmptyAdminState>No users match this search.</EmptyAdminState>
             )}
+            </div>
           </div>
         </section>
       ) : null}
