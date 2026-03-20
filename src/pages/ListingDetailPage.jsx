@@ -140,6 +140,7 @@ export default function ListingDetailPage() {
     () => sourcePriceHistory.map((item) => ({ value: item.price })).slice(-12),
     [sourcePriceHistory],
   );
+  const showHistoryChart = sourcePriceHistory.length >= 3;
 
   const priceHistorySourceLabel =
     sourcePriceHistory[0]?.sourceLabel || sourcePriceHistory[0]?.source || "";
@@ -265,7 +266,7 @@ export default function ListingDetailPage() {
                   </h2>
                   <p className="mt-3 text-sm leading-7 text-steel">
                     {priceHistorySourceLabel || "Source-backed"} price history is shown in CAD and
-                    only appears when the selected autofill source exposes a real series.
+                    only appears when the selected autofill source exposes a real recent series.
                   </p>
                 </div>
                 <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
@@ -274,7 +275,25 @@ export default function ListingDetailPage() {
               </div>
 
               <div className="mt-5 rounded-[28px] border border-slate-200 bg-[#fbf8f1] p-5">
-                <Sparkline className="w-full" height={110} points={priceSparkPoints} />
+                {showHistoryChart ? (
+                  <Sparkline className="w-full" height={110} points={priceSparkPoints} />
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {sourcePriceHistory.map((point) => (
+                      <div
+                        key={point.id || point.createdAt}
+                        className="rounded-[20px] border border-slate-200 bg-white px-4 py-4"
+                      >
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                          {point.label}
+                        </p>
+                        <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
+                          {formatCadPrice(point.price, point.currency || "CAD")}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   <span className="font-display text-4xl font-semibold tracking-[-0.04em] text-ink">
                     {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
@@ -285,7 +304,8 @@ export default function ListingDetailPage() {
                     </span>
                   ) : null}
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                    Latest source point {sourcePriceHistory[sourcePriceHistory.length - 1]?.label}
+                    {sourcePriceHistory[sourcePriceHistory.length - 1]?.rangeLabel ||
+                      "Recent source window"}
                   </span>
                 </div>
               </div>

@@ -981,10 +981,18 @@ function extractPriceChartingHistory(html, usdToCadRate) {
   try {
     const chartData = JSON.parse(chartDataMatch[1]);
     const series = getPriceChartingHistorySeries(chartData);
+    const now = Date.now();
+    const ninetyDaysAgo = now - 90 * 24 * 60 * 60 * 1000;
+    const recentValues = series.values.filter(
+      (point) => Array.isArray(point) && Number(point[1]) > 0 && Number(point[0]) >= ninetyDaysAgo,
+    );
+    const usableValues =
+      recentValues.length >= 2
+        ? recentValues
+        : series.values.filter((point) => Array.isArray(point) && Number(point[1]) > 0).slice(-3);
 
-    return series.values
+    return usableValues
       .filter((point) => Array.isArray(point) && Number(point[1]) > 0)
-      .slice(-18)
       .map(([timestamp, cents]) => {
         const usdPrice = Number((Number(cents) / 100).toFixed(2));
         return {
@@ -997,6 +1005,7 @@ function extractPriceChartingHistory(html, usdToCadRate) {
             month: "short",
             year: "numeric",
           }),
+          rangeLabel: "Last 1-3 months",
           createdAt: new Date(timestamp).toISOString(),
         };
       });
