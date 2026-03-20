@@ -253,12 +253,14 @@ export default function HomePage() {
                   onClick={() => navigate(`/listing/${listing.id}`)}
                 >
                   <div className="flex gap-3">
-                    <CardArtwork
-                      className="aspect-[63/88] w-[4.6rem] rounded-[14px] object-cover"
-                      game={listing.game}
-                      src={listing.imageUrl}
-                      title={listing.title}
-                    />
+                    <div className="w-[5.1rem] shrink-0">
+                      <CardArtwork
+                        className="aspect-[63/88] w-full rounded-[14px] object-cover"
+                        game={listing.game}
+                        src={listing.imageUrl}
+                        title={listing.title}
+                      />
+                    </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="rounded-full bg-[#f4f1ea] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-700">
