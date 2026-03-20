@@ -570,8 +570,8 @@ export default function CreateListingModal({ onClose }) {
                 </h3>
                 <p className="mt-3 hidden max-w-3xl text-sm leading-7 text-steel sm:block">
                   Search live printings for Pokemon, Magic, and One Piece. Japanese autofill is
-                  supported where the source is stable, and price history only appears when the
-                  source actually exposes it.
+                  supported where the source is stable, and recent solds only appear when the
+                  source actually exposes them.
                 </p>
               </div>
                 {selectedPrintingId ? (
@@ -601,8 +601,8 @@ export default function CreateListingModal({ onClose }) {
                       setSearchError("");
                       setSearchNote(
                         language === "Japanese"
-                          ? "Japanese search uses source-specific card data and only shows history when the source provides it."
-                          : "English search uses the live source for the selected game and only shows history when the source provides it.",
+                          ? "Japanese search uses source-specific card data and only shows recent solds when the source provides them."
+                          : "English search uses the live source for the selected game and only shows recent solds when the source provides them.",
                       );
                     }}
                   >
@@ -752,11 +752,11 @@ export default function CreateListingModal({ onClose }) {
                   ) : null}
                   {form.priceHistory?.length ? (
                     <p className="mt-3 text-xs font-semibold uppercase tracking-[0.16em] text-navy">
-                      Source price history available
+                      Recent solds available
                     </p>
                   ) : (
                     <p className="mt-3 text-xs leading-6 text-steel">
-                      No source-backed price history is available for this autofill.
+                      No source-backed recent solds are available for this autofill.
                     </p>
                   )}
                 </div>
@@ -817,7 +817,7 @@ export default function CreateListingModal({ onClose }) {
                           ) : null}
                           {printing.priceHistory?.length ? (
                             <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                              Source history
+                              Recent solds
                             </span>
                           ) : null}
                           {selectedPrintingId === printing.id ? (

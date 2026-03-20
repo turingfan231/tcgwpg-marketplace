@@ -952,66 +952,40 @@ async function searchOnePieceCards(query, limit, usdToCadRate) {
   });
 }
 
-function getPriceChartingHistorySeries(chartData) {
-  const seriesOrder = [
-    ["used", "Ungraded history"],
-    ["boxonly", "Ungraded history"],
-    ["new", "New history"],
-    ["cib", "Complete history"],
-    ["graded", "Graded history"],
-    ["manualonly", "High-grade history"],
-  ];
+function extractPriceChartingRecentSales(html, usdToCadRate) {
+  const sales = [];
+  const saleRegex = /<tr id="ebay-(\d+)"[\s\S]*?<td class="date">([\s\S]*?)<\/td>[\s\S]*?<td class="title"[^>]*>([\s\S]*?)<\/td>[\s\S]*?<td class="numeric">\s*<span class="js-price"[^>]*>\$([0-9,]+(?:\.\d{2})?)/gi;
 
-  for (const [key, label] of seriesOrder) {
-    const values = Array.isArray(chartData?.[key]) ? chartData[key] : [];
-    if (values.some((point) => Array.isArray(point) && Number(point[1]) > 0)) {
-      return { key, label, values };
+  for (const match of html.matchAll(saleRegex)) {
+    const [, saleId, dateText, titleHtml, usdPriceText] = match;
+    const rawDate = stripHtml(dateText);
+    const title = stripHtml(titleHtml).replace(/\[eBay\]\s*$/i, "").trim();
+    const usdPrice = parseNumber(String(usdPriceText || "").replace(/,/g, ""));
+    const parsedDate = rawDate ? new Date(`${rawDate}T12:00:00Z`) : null;
+
+    if (!usdPrice || !title) {
+      continue;
     }
+
+    sales.push({
+      id: `pricecharting-sale-${saleId}`,
+      price: toCad(usdPrice, usdToCadRate),
+      originalPriceUsd: usdPrice,
+      currency: "CAD",
+      sourceLabel: "PriceCharting",
+      label: rawDate || "Recent sold",
+      title,
+      sourceUrl: saleId ? `https://www.ebay.com/itm/${saleId}` : "",
+      createdAt:
+        parsedDate && Number.isFinite(parsedDate.getTime())
+          ? parsedDate.toISOString()
+          : new Date().toISOString(),
+    });
   }
 
-  return { key: null, label: "", values: [] };
-}
-
-function extractPriceChartingHistory(html, usdToCadRate) {
-  const chartDataMatch = html.match(/VGPC\.chart_data\s*=\s*(\{.*?\});/s);
-  if (!chartDataMatch?.[1]) {
-    return [];
-  }
-
-  try {
-    const chartData = JSON.parse(chartDataMatch[1]);
-    const series = getPriceChartingHistorySeries(chartData);
-    const now = Date.now();
-    const ninetyDaysAgo = now - 90 * 24 * 60 * 60 * 1000;
-    const recentValues = series.values.filter(
-      (point) => Array.isArray(point) && Number(point[1]) > 0 && Number(point[0]) >= ninetyDaysAgo,
-    );
-    const usableValues =
-      recentValues.length >= 2
-        ? recentValues
-        : series.values.filter((point) => Array.isArray(point) && Number(point[1]) > 0).slice(-3);
-
-    return usableValues
-      .filter((point) => Array.isArray(point) && Number(point[1]) > 0)
-      .map(([timestamp, cents]) => {
-        const usdPrice = Number((Number(cents) / 100).toFixed(2));
-        return {
-          id: `pricecharting-${timestamp}`,
-          price: toCad(usdPrice, usdToCadRate),
-          originalPriceUsd: usdPrice,
-          currency: "CAD",
-          sourceLabel: "PriceCharting",
-          label: new Date(timestamp).toLocaleDateString("en-CA", {
-            month: "short",
-            year: "numeric",
-          }),
-          rangeLabel: "Last 1-3 months",
-          createdAt: new Date(timestamp).toISOString(),
-        };
-      });
-  } catch {
-    return [];
-  }
+  return sales
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+    .slice(0, 3);
 }
 
 function extractPriceChartingCurrentUsdPrice(html) {
@@ -1061,7 +1035,7 @@ function buildPriceChartingResult(
     ? headingText.slice(0, headingText.length - setName.length).trim()
     : headingText;
   const usdPrice = extractPriceChartingCurrentUsdPrice(html);
-  const priceHistory = extractPriceChartingHistory(html, usdToCadRate);
+  const priceHistory = extractPriceChartingRecentSales(html, usdToCadRate);
   const imageUrl = extractPriceChartingImageUrl(html);
   const normalizedPath = decodeHtml(pathname);
   const productSlug = normalizedPath.split("/").pop() || title;

@@ -125,18 +125,22 @@ export default function ListingDetailPage() {
     [listing, offersByListingId],
   );
 
-  const sourcePriceHistory = useMemo(() => {
+  const recentSourceSales = useMemo(() => {
     if (!listing) {
       return [];
     }
 
     return (listing.priceHistory || []).filter(
-      (item) => item && (item.sourceLabel || item.source || item.originalPriceUsd != null),
+      (item) =>
+        item &&
+        (item.sourceLabel || item.source) &&
+        item.price != null &&
+        (item.title || item.sourceUrl),
     );
   }, [listing]);
 
-  const priceHistorySourceLabel =
-    sourcePriceHistory[0]?.sourceLabel || sourcePriceHistory[0]?.source || "";
+  const recentSalesSourceLabel =
+    recentSourceSales[0]?.sourceLabel || recentSourceSales[0]?.source || "";
 
   const isOwner = currentUser && listing && currentUser.id === listing.sellerId;
   const isAdmin = currentUser?.role === "admin";
@@ -249,54 +253,64 @@ export default function ListingDetailPage() {
             </div>
           </div>
 
-          {sourcePriceHistory.length ? (
+          {recentSourceSales.length ? (
             <div className="rounded-[36px] bg-white p-4 shadow-soft sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="section-kicker">Source Price History</p>
+                  <p className="section-kicker">Recent Source Sales</p>
                   <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                    Recent source prices
+                    Last 3 solds
                   </h2>
                   <p className="mt-3 text-sm leading-7 text-steel">
-                    {priceHistorySourceLabel || "Source-backed"} pricing is shown in CAD and only
-                    appears when the selected autofill source exposes recent price points.
+                    {recentSalesSourceLabel || "Source-backed"} sold comps are shown in CAD and only
+                    appear when the selected autofill source exposes recent sale data.
                   </p>
                 </div>
                 <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                  {sourcePriceHistory.length} points
+                  {recentSourceSales.length} sales
                 </span>
               </div>
 
-              <div className="mt-5 rounded-[28px] border border-slate-200 bg-[#fbf8f1] p-5">
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {sourcePriceHistory.map((point) => (
-                    <div
-                      key={point.id || point.createdAt}
-                      className="rounded-[20px] border border-slate-200 bg-white px-4 py-4"
+              <div className="mt-5 space-y-3">
+                {recentSourceSales.map((sale) => {
+                  const Wrapper = sale.sourceUrl ? "a" : "div";
+                  return (
+                    <Wrapper
+                      key={sale.id || sale.createdAt}
+                      {...(sale.sourceUrl
+                        ? {
+                            href: sale.sourceUrl,
+                            rel: "noreferrer",
+                            target: "_blank",
+                          }
+                        : {})}
+                      className={`block rounded-[24px] border border-slate-200 bg-[#fbf8f1] p-4 transition ${
+                        sale.sourceUrl ? "hover:border-slate-300 hover:bg-white" : ""
+                      }`}
                     >
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                        {point.label}
-                      </p>
-                      <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
-                        {formatCadPrice(point.price, point.currency || "CAD")}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <span className="font-display text-4xl font-semibold tracking-[-0.04em] text-ink">
-                    {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
-                  </span>
-                  {listing.marketPrice ? (
-                    <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-semibold text-emerald-700">
-                      Market {formatCadPrice(listing.marketPrice, listing.marketPriceCurrency || "CAD")}
-                    </span>
-                  ) : null}
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                    {sourcePriceHistory[sourcePriceHistory.length - 1]?.rangeLabel ||
-                      "Recent source window"}
-                  </span>
-                </div>
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                            Sold {sale.label}
+                          </p>
+                          <p className="mt-2 text-sm leading-7 text-ink">
+                            {sale.title || "Recent sold listing"}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
+                            {formatCadPrice(sale.price, sale.currency || "CAD")}
+                          </p>
+                          {sale.sourceUrl ? (
+                            <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-navy">
+                              Open sold listing
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    </Wrapper>
+                  );
+                })}
               </div>
             </div>
           ) : null}
@@ -368,8 +382,8 @@ export default function ListingDetailPage() {
                     : "Unavailable"}
                 </p>
                 <p className="mt-2 text-sm text-steel">
-                  {sourcePriceHistory.length
-                    ? `${priceHistorySourceLabel || "Source"} pricing is shown in CAD.`
+                  {recentSourceSales.length
+                    ? `${recentSalesSourceLabel || "Source"} pricing is shown in CAD.`
                     : "Market references are shown in CAD."}
                 </p>
               </div>
