@@ -49,6 +49,7 @@ const ARCTIC_HOME_PAGE = "https://www.arcticriftcards.ca/";
 const ARCTIC_MAHINA_ENDPOINT = "https://mahina.app/app/5d7678.myshopify.com";
 const ARCTIC_EVENTS_PAGE = ARCTIC_HOME_PAGE;
 const GALAXY_EVENTS_PAGE = "https://www.galaxy-comics.ca/index.php/calendar/";
+const GALAXY_FACEBOOK_EVENTS_PAGE = "https://www.facebook.com/galaxycomicscollectibles/events";
 const SERVER_TIMEOUT_MS = 15000;
 const FX_TIMEOUT_MS = 2500;
 
@@ -1562,6 +1563,48 @@ function normalizeEventRecord(event) {
   };
 }
 
+const GALAXY_FACEBOOK_SNAPSHOT_EVENTS = [
+  { title: "Magic: The Gathering Standard League", dateStr: "2026-03-20", time: "6:00 p.m.", game: "Magic" },
+  { title: "Pokemon Mega Evolution Perfect Order Prerelease", dateStr: "2026-03-21", time: "10:00 a.m.", game: "Pokemon" },
+  { title: "ONE PIECE CARD GAME Store Treasure Cup 2026 March", dateStr: "2026-03-22", time: "10:00 a.m.", game: "One Piece" },
+  { title: "Sunday Evening Legacy Season 7", dateStr: "2026-03-22", time: "6:00 p.m.", game: "Magic" },
+  { title: "Magic: The Gathering Pauper League", dateStr: "2026-03-27", time: "6:00 p.m.", game: "Magic" },
+  { title: "ONE PIECE CARD GAME OP-15 Release Event", dateStr: "2026-03-29", time: "12:00 p.m.", game: "One Piece" },
+  { title: "Magic: The Gathering Standard League", dateStr: "2026-04-03", time: "6:00 p.m.", game: "Magic" },
+  { title: "Sunday Evening Legacy Season 7", dateStr: "2026-04-05", time: "6:00 p.m.", game: "Magic" },
+  { title: "Magic: The Gathering Teenage Mutant Ninja Turtles Commander Party", dateStr: "2026-04-06", time: "5:00 p.m.", game: "Magic" },
+  { title: "Magic: The Gathering Pauper League", dateStr: "2026-04-10", time: "6:00 p.m.", game: "Magic" },
+  { title: "One Piece Store Championship April", dateStr: "2026-04-12", time: "10:00 a.m.", game: "One Piece" },
+  { title: "Pokemon TCG League Challenge", dateStr: "2026-04-16", time: "6:00 p.m.", game: "Pokemon" },
+  { title: "Magic: The Gathering Secrets of Strixhaven Two-Headed Prerelease!", dateStr: "2026-04-17", time: "6:00 p.m.", game: "Magic" },
+  { title: "Magic: The Gathering Standard League", dateStr: "2026-04-17", time: "6:00 p.m.", game: "Magic" },
+  { title: "Pokemon TCG League Cup", dateStr: "2026-04-18", time: "10:00 a.m.", game: "Pokemon" },
+  { title: "Sunday Evening Legacy Season 7", dateStr: "2026-04-19", time: "6:00 p.m.", game: "Magic" },
+  { title: "Magic: The Gathering Pauper League", dateStr: "2026-04-24", time: "6:00 p.m.", game: "Magic" },
+  { title: "Magic: The Gathering Standard League", dateStr: "2026-05-01", time: "6:00 p.m.", game: "Magic" },
+  { title: "Sunday Evening Legacy Season 7", dateStr: "2026-05-03", time: "6:00 p.m.", game: "Magic" },
+  { title: "Magic: The Gathering Pauper League", dateStr: "2026-05-08", time: "6:00 p.m.", game: "Magic" },
+  { title: "Magic: The Gathering Standard League", dateStr: "2026-05-15", time: "6:00 p.m.", game: "Magic" },
+  { title: "Sunday Evening Legacy Season 7", dateStr: "2026-05-17", time: "6:00 p.m.", game: "Magic" },
+  { title: "Magic: The Gathering Pauper League", dateStr: "2026-05-22", time: "6:00 p.m.", game: "Magic" },
+  { title: "Magic: The Gathering Standard League", dateStr: "2026-05-29", time: "6:00 p.m.", game: "Magic" },
+  { title: "Sunday Evening Legacy Season 7", dateStr: "2026-05-31", time: "6:00 p.m.", game: "Magic" },
+  { title: "Magic: The Gathering Pauper League", dateStr: "2026-06-05", time: "6:00 p.m.", game: "Magic" },
+  { title: "Magic: The Gathering Standard League", dateStr: "2026-06-12", time: "6:00 p.m.", game: "Magic" },
+  { title: "Sunday Evening Legacy Season 7", dateStr: "2026-06-14", time: "6:00 p.m.", game: "Magic" },
+  { title: "Magic: The Gathering Pauper League", dateStr: "2026-06-19", time: "6:00 p.m.", game: "Magic" },
+  { title: "Magic: The Gathering Standard League", dateStr: "2026-06-26", time: "6:00 p.m.", game: "Magic" },
+  { title: "Sunday Evening Legacy Season 7", dateStr: "2026-06-28", time: "6:00 p.m.", game: "Magic" },
+  { title: "Magic: The Gathering Pauper League", dateStr: "2026-07-03", time: "6:00 p.m.", game: "Magic" },
+  { title: "Magic: The Gathering Standard League", dateStr: "2026-07-10", time: "6:00 p.m.", game: "Magic" },
+  { title: "Sunday Evening Legacy Season 7", dateStr: "2026-07-12", time: "6:00 p.m.", game: "Magic" },
+  { title: "Magic: The Gathering Pauper League", dateStr: "2026-07-17", time: "6:00 p.m.", game: "Magic" },
+  { title: "Sunday Evening Legacy Season 7", dateStr: "2026-07-26", time: "6:00 p.m.", game: "Magic" },
+  { title: "Magic: The Gathering Pauper League", dateStr: "2026-07-31", time: "6:00 p.m.", game: "Magic" },
+  { title: "Sunday Evening Legacy Season 7", dateStr: "2026-08-09", time: "6:00 p.m.", game: "Magic" },
+  { title: "Magic: The Gathering Pauper League", dateStr: "2026-08-14", time: "6:00 p.m.", game: "Magic" },
+];
+
 async function fetchFusionEvents() {
   try {
     const response = await fetchWithTimeout(FUSION_TOPDECK_ENDPOINT, {
@@ -1890,14 +1933,28 @@ async function fetchGalaxyStatus() {
       throw new Error(`Galaxy calendar page failed (${response.status}).`);
     }
 
+    const events = GALAXY_FACEBOOK_SNAPSHOT_EVENTS.map((event) =>
+      normalizeEventRecord({
+        id: buildEventId("galaxy", `${event.title}-${event.dateStr}-${event.time}`),
+        store: "Galaxy Comics",
+        source: "Facebook events snapshot",
+        sourceUrl: GALAXY_FACEBOOK_EVENTS_PAGE,
+        neighborhood: "North Kildonan",
+        note: "Imported from Galaxy's Facebook events feed snapshot supplied on March 19, 2026.",
+        ...event,
+      }),
+    ).filter((event) => isUpcomingDate(new Date(`${event.dateStr}T12:00:00`)));
+
     return {
-      events: [],
+      events,
       status: {
         id: "galaxy",
         label: "Galaxy Comics",
-        mode: "Manual override",
-        note: "The public calendar page is reachable, but it does not expose a stable structured event feed. Admin overrides are used for this store.",
-        sourceUrl: GALAXY_EVENTS_PAGE,
+        mode: events.length ? "Facebook snapshot" : "Manual override",
+        note: events.length
+          ? `Loaded ${events.length} upcoming Galaxy event(s) from the supplied Facebook snapshot.`
+          : "The public calendar page is reachable, but it does not expose a stable structured event feed. Admin overrides are used for this store.",
+        sourceUrl: GALAXY_FACEBOOK_EVENTS_PAGE,
       },
     };
   } catch (error) {
