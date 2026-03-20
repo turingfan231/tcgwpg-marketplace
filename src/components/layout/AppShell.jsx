@@ -205,7 +205,7 @@ export default function AppShell() {
       </footer>
 
       <div className="border-t border-slate-200/70 bg-white/90 px-4 py-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-steel md:hidden">
-        TCGWPG · Local cards, faster meetups
+        TCGWPG | Local cards, faster meetups
       </div>
 
       {isCreateListingOpen ? (
