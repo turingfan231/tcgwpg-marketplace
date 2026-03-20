@@ -1,7 +1,6 @@
 import {
   CheckCircle2,
   ImagePlus,
-  LoaderCircle,
   Search,
   Sparkles,
 } from "lucide-react";
@@ -10,7 +9,6 @@ import { useNavigate } from "react-router-dom";
 import { neighborhoods } from "../../data/mockData";
 import { useMarketplace } from "../../hooks/useMarketplace";
 import {
-  fetchSourceSalesForPrinting,
   searchCardPrintings,
   supportsLiveSearch,
 } from "../../services/cardDatabase";
@@ -87,10 +85,7 @@ export default function CreateListingModal({ onClose }) {
   const [conditionPreviewImages, setConditionPreviewImages] = useState([]);
   const [draftMessage, setDraftMessage] = useState("");
   const [pendingSearchSubmit, setPendingSearchSubmit] = useState(false);
-  const [loadingSourceSales, setLoadingSourceSales] = useState(false);
   const searchRequestIdRef = useRef(0);
-  const sourceSalesRequestIdRef = useRef(0);
-  const sourceSalesPromiseRef = useRef(Promise.resolve());
   const hydratedDraftKeyRef = useRef("");
 
   const liveSearchSupported = useMemo(
@@ -258,8 +253,6 @@ export default function CreateListingModal({ onClose }) {
   }
 
   async function applyPrinting(printing) {
-    const sourceSalesRequestId = sourceSalesRequestIdRef.current + 1;
-    sourceSalesRequestIdRef.current = sourceSalesRequestId;
     setSelectedPrintingId(printing.id);
     setPendingSearchSubmit(false);
     setForm((currentForm) => ({
@@ -279,53 +272,6 @@ export default function CreateListingModal({ onClose }) {
         .filter(Boolean)
         .join(". "),
     }));
-
-    if (printing.priceHistory?.length) {
-      setLoadingSourceSales(false);
-      sourceSalesPromiseRef.current = Promise.resolve();
-      return;
-    }
-
-    setLoadingSourceSales(true);
-    const sourceSalesPromise = (async () => {
-      try {
-        const salesResult = await fetchSourceSalesForPrinting({
-          game: form.game,
-          language: form.language,
-          title: printing.title,
-          setName: printing.setName,
-          printLabel: printing.printLabel,
-          rarity: printing.rarity,
-        });
-
-        if (sourceSalesRequestIdRef.current !== sourceSalesRequestId) {
-          return;
-        }
-
-        const recentSales = salesResult?.result?.priceHistory || [];
-        if (!recentSales.length) {
-          return;
-        }
-
-        setForm((currentForm) =>
-          currentForm.title === printing.title
-            ? {
-                ...currentForm,
-                priceHistory: recentSales,
-              }
-            : currentForm,
-        );
-      } catch {
-        // Keep the selected printing even if source sold comps are unavailable.
-      } finally {
-        if (sourceSalesRequestIdRef.current === sourceSalesRequestId) {
-          setLoadingSourceSales(false);
-        }
-      }
-    })();
-
-    sourceSalesPromiseRef.current = sourceSalesPromise;
-    await sourceSalesPromise;
   }
 
   async function saveDraft(forceNew = false) {
@@ -357,15 +303,6 @@ export default function CreateListingModal({ onClose }) {
     event.preventDefault();
     setSubmitError("");
     setDraftMessage("");
-
-    if (loadingSourceSales) {
-      try {
-        await sourceSalesPromiseRef.current;
-      } catch {
-        // Continue posting even if sold comps were unavailable.
-      }
-    }
-
     const result = await addListing({
       ...form,
       bundleItems: form.bundleItems
@@ -812,19 +749,13 @@ export default function CreateListingModal({ onClose }) {
                       Market {formatCurrency(form.marketPrice, form.marketPriceCurrency)}
                     </p>
                   ) : null}
-                  {loadingSourceSales ? (
-                    <p className="mt-3 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-steel">
-                      <LoaderCircle className="animate-spin" size={13} />
-                      Looking up recent solds
-                    </p>
-                  ) : null}
                   {form.priceHistory?.length ? (
                     <p className="mt-3 text-xs font-semibold uppercase tracking-[0.16em] text-navy">
                       Recent solds available
                     </p>
-                  ) : loadingSourceSales ? null : (
+                  ) : (
                     <p className="mt-3 text-xs leading-6 text-steel">
-                      No source-backed recent solds are available for this autofill.
+                      Recent solds can be loaded from the listing page when someone views it.
                     </p>
                   )}
                 </div>

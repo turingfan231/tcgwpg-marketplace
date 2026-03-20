@@ -2,6 +2,7 @@ import {
   BadgeCheck,
   Camera,
   ChevronRight,
+  LoaderCircle,
   Flag,
   MessageSquare,
   Repeat2,
@@ -18,6 +19,7 @@ import UserAvatar from "../components/shared/UserAvatar";
 import EmptyState from "../components/ui/EmptyState";
 import RatingStars from "../components/ui/RatingStars";
 import { useMarketplace } from "../hooks/useMarketplace";
+import { fetchSourceSalesForPrinting } from "../services/cardDatabase";
 import { getConditionClasses, getListingTypeClasses } from "../utils/formatters";
 
 function formatChangeLabel(change) {
@@ -42,6 +44,33 @@ function formatOfferTypeLabel(type) {
   }
 
   return type[0].toUpperCase() + type.slice(1);
+}
+
+function parseListingSourceMetadata(listing) {
+  const descriptionPrefix = String(listing?.description || "").split(". Source:")[0];
+  const parts = descriptionPrefix
+    .split("|")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const setName = parts[0] || "";
+  const printLabel =
+    parts.find((part) => /[A-Z]{2,}\d{2}-\d+/i.test(part)) ||
+    parts.find((part) => /#\s*[A-Z0-9-]+/i.test(part)) ||
+    "";
+  const rarity =
+    parts.find((part) =>
+      /(sp|secret|rare|super rare|ultra rare|common|uncommon|mythic|foil|parallel)/i.test(part),
+    ) || "";
+  const sourceSection = String(listing?.description || "").split("Source:")[1] || "";
+  const language = /japanese/i.test(sourceSection) ? "japanese" : "english";
+
+  return {
+    setName,
+    printLabel,
+    rarity,
+    language,
+  };
 }
 
 export default function ListingDetailPage() {
@@ -69,6 +98,10 @@ export default function ListingDetailPage() {
   const [adminNoteDraft, setAdminNoteDraft] = useState("");
   const [adminFeedback, setAdminFeedback] = useState("");
   const [isSavingAdminNote, setIsSavingAdminNote] = useState(false);
+  const [sourceSales, setSourceSales] = useState([]);
+  const [sourceSalesLoaded, setSourceSalesLoaded] = useState(false);
+  const [loadingSourceSales, setLoadingSourceSales] = useState(false);
+  const [sourceSalesError, setSourceSalesError] = useState("");
 
   const listing = useMemo(
     () => activeListings.find((item) => item.id === listingId),
@@ -80,6 +113,10 @@ export default function ListingDetailPage() {
     setShowOfferModal(false);
     setShowReportModal(false);
     setLightboxImage("");
+    setSourceSales([]);
+    setSourceSalesLoaded(false);
+    setLoadingSourceSales(false);
+    setSourceSalesError("");
 
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -125,7 +162,7 @@ export default function ListingDetailPage() {
     [listing, offersByListingId],
   );
 
-  const recentSourceSales = useMemo(() => {
+  const storedSourceSales = useMemo(() => {
     if (!listing) {
       return [];
     }
@@ -139,8 +176,13 @@ export default function ListingDetailPage() {
     );
   }, [listing]);
 
+  const visibleSourceSales = sourceSalesLoaded ? sourceSales : [];
   const recentSalesSourceLabel =
-    recentSourceSales[0]?.sourceLabel || recentSourceSales[0]?.source || "";
+    visibleSourceSales[0]?.sourceLabel ||
+    visibleSourceSales[0]?.source ||
+    storedSourceSales[0]?.sourceLabel ||
+    storedSourceSales[0]?.source ||
+    "";
 
   const isOwner = currentUser && listing && currentUser.id === listing.sellerId;
   const isAdmin = currentUser?.role === "admin";
@@ -161,6 +203,46 @@ export default function ListingDetailPage() {
     }
 
     setAdminFeedback("Admin note saved.");
+  }
+
+  async function handleLoadSourceSales() {
+    if (!listing || loadingSourceSales) {
+      return;
+    }
+
+    if (storedSourceSales.length) {
+      setSourceSales(storedSourceSales);
+      setSourceSalesLoaded(true);
+      setSourceSalesError("");
+      return;
+    }
+
+    setLoadingSourceSales(true);
+    setSourceSalesError("");
+
+    try {
+      const metadata = parseListingSourceMetadata(listing);
+      const salesResult = await fetchSourceSalesForPrinting({
+        game: listing.game,
+        language: metadata.language,
+        title: listing.title,
+        setName: metadata.setName,
+        printLabel: metadata.printLabel,
+        rarity: metadata.rarity,
+      });
+      const recentSales = salesResult?.result?.priceHistory || [];
+      setSourceSales(recentSales);
+      setSourceSalesLoaded(true);
+      if (!recentSales.length) {
+        setSourceSalesError("No recent solds were found for this printing.");
+      }
+    } catch (error) {
+      setSourceSales([]);
+      setSourceSalesLoaded(true);
+      setSourceSalesError(error.message || "Could not load recent solds.");
+    } finally {
+      setLoadingSourceSales(false);
+    }
   }
 
   if (!listing) {
@@ -253,26 +335,55 @@ export default function ListingDetailPage() {
             </div>
           </div>
 
-          {recentSourceSales.length ? (
-            <div className="rounded-[36px] bg-white p-4 shadow-soft sm:p-6">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="section-kicker">Recent Source Sales</p>
-                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                    Last 3 solds
-                  </h2>
-                  <p className="mt-3 text-sm leading-7 text-steel">
-                    {recentSalesSourceLabel || "Source-backed"} sold comps are shown in CAD and only
-                    appear when the selected autofill source exposes recent sale data.
-                  </p>
-                </div>
-                <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                  {recentSourceSales.length} sales
-                </span>
+          <div className="rounded-[36px] bg-white p-4 shadow-soft sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="section-kicker">Recent Source Sales</p>
+                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                  Last 3 solds
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-steel">
+                  Load recent sold comps on demand from the autofill source. Results are shown in
+                  CAD and only appear when the source exposes recent sale data.
+                </p>
               </div>
+              <button
+                className="rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white shadow-soft disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={loadingSourceSales}
+                type="button"
+                onClick={() => void handleLoadSourceSales()}
+              >
+                {loadingSourceSales ? (
+                  <span className="inline-flex items-center gap-2">
+                    <LoaderCircle className="animate-spin" size={14} />
+                    Loading solds
+                  </span>
+                ) : visibleSourceSales.length ? (
+                  "Refresh solds"
+                ) : (
+                  "Show last solds"
+                )}
+              </button>
+            </div>
 
+            {sourceSalesError && !visibleSourceSales.length ? (
+              <p className="mt-5 rounded-[20px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                {sourceSalesError}
+              </p>
+            ) : null}
+
+            {visibleSourceSales.length ? (
+            <div className="rounded-[36px] bg-white p-4 shadow-soft sm:p-6">
               <div className="mt-5 space-y-3">
-                {recentSourceSales.map((sale) => {
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <p className="text-sm leading-7 text-steel">
+                    {recentSalesSourceLabel || "Source-backed"} sold comps are shown in CAD.
+                  </p>
+                  <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                    {visibleSourceSales.length} sales
+                  </span>
+                </div>
+                {visibleSourceSales.map((sale) => {
                   const Wrapper = sale.sourceUrl ? "a" : "div";
                   return (
                     <Wrapper
@@ -313,7 +424,8 @@ export default function ListingDetailPage() {
                 })}
               </div>
             </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
 
         <div className="space-y-5">
@@ -382,7 +494,7 @@ export default function ListingDetailPage() {
                     : "Unavailable"}
                 </p>
                 <p className="mt-2 text-sm text-steel">
-                  {recentSourceSales.length
+                  {visibleSourceSales.length || storedSourceSales.length
                     ? `${recentSalesSourceLabel || "Source"} pricing is shown in CAD.`
                     : "Market references are shown in CAD."}
                 </p>
