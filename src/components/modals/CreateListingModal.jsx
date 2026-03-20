@@ -90,6 +90,7 @@ export default function CreateListingModal({ onClose }) {
   const [loadingSourceSales, setLoadingSourceSales] = useState(false);
   const searchRequestIdRef = useRef(0);
   const sourceSalesRequestIdRef = useRef(0);
+  const sourceSalesPromiseRef = useRef(Promise.resolve());
   const hydratedDraftKeyRef = useRef("");
 
   const liveSearchSupported = useMemo(
@@ -281,44 +282,50 @@ export default function CreateListingModal({ onClose }) {
 
     if (printing.priceHistory?.length) {
       setLoadingSourceSales(false);
+      sourceSalesPromiseRef.current = Promise.resolve();
       return;
     }
 
     setLoadingSourceSales(true);
-    try {
-      const salesResult = await fetchSourceSalesForPrinting({
-        game: form.game,
-        language: form.language,
-        title: printing.title,
-        setName: printing.setName,
-        printLabel: printing.printLabel,
-        rarity: printing.rarity,
-      });
+    const sourceSalesPromise = (async () => {
+      try {
+        const salesResult = await fetchSourceSalesForPrinting({
+          game: form.game,
+          language: form.language,
+          title: printing.title,
+          setName: printing.setName,
+          printLabel: printing.printLabel,
+          rarity: printing.rarity,
+        });
 
-      if (sourceSalesRequestIdRef.current !== sourceSalesRequestId) {
-        return;
-      }
+        if (sourceSalesRequestIdRef.current !== sourceSalesRequestId) {
+          return;
+        }
 
-      const recentSales = salesResult?.result?.priceHistory || [];
-      if (!recentSales.length) {
-        return;
-      }
+        const recentSales = salesResult?.result?.priceHistory || [];
+        if (!recentSales.length) {
+          return;
+        }
 
-      setForm((currentForm) =>
-        currentForm.title === printing.title
-          ? {
-              ...currentForm,
-              priceHistory: recentSales,
-            }
-          : currentForm,
-      );
-    } catch {
-      // Keep the selected printing even if source sold comps are unavailable.
-    } finally {
-      if (sourceSalesRequestIdRef.current === sourceSalesRequestId) {
-        setLoadingSourceSales(false);
+        setForm((currentForm) =>
+          currentForm.title === printing.title
+            ? {
+                ...currentForm,
+                priceHistory: recentSales,
+              }
+            : currentForm,
+        );
+      } catch {
+        // Keep the selected printing even if source sold comps are unavailable.
+      } finally {
+        if (sourceSalesRequestIdRef.current === sourceSalesRequestId) {
+          setLoadingSourceSales(false);
+        }
       }
-    }
+    })();
+
+    sourceSalesPromiseRef.current = sourceSalesPromise;
+    await sourceSalesPromise;
   }
 
   async function saveDraft(forceNew = false) {
@@ -350,6 +357,15 @@ export default function CreateListingModal({ onClose }) {
     event.preventDefault();
     setSubmitError("");
     setDraftMessage("");
+
+    if (loadingSourceSales) {
+      try {
+        await sourceSalesPromiseRef.current;
+      } catch {
+        // Continue posting even if sold comps were unavailable.
+      }
+    }
+
     const result = await addListing({
       ...form,
       bundleItems: form.bundleItems
