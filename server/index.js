@@ -1210,12 +1210,23 @@ function getPriceChartingLookupConfig(game, language) {
 }
 
 function buildPriceChartingLookupQuery({ title, setName, printLabel }) {
-  return [title, printLabel, setName]
+  return [title, printLabel || null, printLabel ? null : setName]
     .filter(Boolean)
     .map((part) => String(part).replace(/[|#]/g, " ").trim())
     .join(" ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function extractCardCode(value) {
+  const match = String(value || "").toUpperCase().match(/[A-Z]{2,}\d{2}-\d+/);
+  return match ? match[0] : "";
+}
+
+function extractVariantTokens(...values) {
+  const variantTerms = ["sp", "alternate", "alt", "foil", "gold", "silver", "manga", "parallel"];
+  const text = normalizeSearchText(values.filter(Boolean).join(" "));
+  return variantTerms.filter((term) => text.includes(term));
 }
 
 function rankPriceChartingResultForPrinting(result, { title, setName, printLabel, rarity }) {
@@ -1224,15 +1235,39 @@ function rankPriceChartingResultForPrinting(result, { title, setName, printLabel
     buildPriceChartingLookupQuery({ title, setName, printLabel }),
   );
 
-  const normalizedSetName = normalizeSearchText(setName);
+  const normalizedTitle = normalizeSearchText(title);
   const normalizedPrintLabel = normalizeSearchText(printLabel);
   const normalizedRarity = normalizeSearchText(rarity);
+  const normalizedResultTitle = normalizeSearchText(result.title);
   const normalizedResultSetName = normalizeSearchText(result.setName);
   const normalizedResultPrintLabel = normalizeSearchText(result.printLabel);
   const normalizedResultDescription = normalizeSearchText(result.description);
+  const queryCode = extractCardCode(printLabel || title);
+  const resultCode = extractCardCode(
+    [result.title, result.printLabel, result.description, result.setName].join(" "),
+  );
+  const queryVariantTokens = extractVariantTokens(title, rarity, printLabel);
+  const resultVariantTokens = extractVariantTokens(
+    result.title,
+    result.description,
+    result.printLabel,
+  );
 
-  if (normalizedSetName && normalizedResultSetName.includes(normalizedSetName)) {
-    score += 35;
+  if (normalizedTitle && normalizedResultTitle === normalizedTitle) {
+    score += 80;
+  } else if (
+    normalizedTitle &&
+    normalizedTitle.split(/\s+/).every((term) => normalizedResultTitle.includes(term))
+  ) {
+    score += 40;
+  }
+
+  if (queryCode) {
+    if (resultCode === queryCode) {
+      score += 140;
+    } else {
+      score -= 120;
+    }
   }
 
   if (
@@ -1240,11 +1275,29 @@ function rankPriceChartingResultForPrinting(result, { title, setName, printLabel
     (normalizedResultPrintLabel.includes(normalizedPrintLabel) ||
       normalizedResultDescription.includes(normalizedPrintLabel))
   ) {
-    score += 30;
+    score += 50;
   }
 
   if (normalizedRarity && normalizedResultDescription.includes(normalizedRarity)) {
     score += 10;
+  }
+
+  if (
+    normalizedResultSetName &&
+    normalizedTitle &&
+    normalizedResultSetName.includes(normalizedTitle)
+  ) {
+    score += 10;
+  }
+
+  if (queryVariantTokens.length) {
+    const matchedVariantCount = queryVariantTokens.filter((token) =>
+      resultVariantTokens.includes(token),
+    ).length;
+    score += matchedVariantCount * 40;
+    if (!matchedVariantCount) {
+      score -= 60;
+    }
   }
 
   return score;
