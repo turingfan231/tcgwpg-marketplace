@@ -15,7 +15,6 @@ import {
 } from "../../services/cardDatabase";
 import { formatCurrency } from "../../utils/formatters";
 import CardArtwork from "../shared/CardArtwork";
-import Sparkline from "../ui/Sparkline";
 import ModalShell from "../ui/ModalShell";
 
 const initialFormState = {
@@ -23,11 +22,13 @@ const initialFormState = {
   name: "",
   title: "",
   game: "Pokemon",
+  language: "English",
   type: "WTS",
   condition: "NM",
   price: "",
   marketPrice: "",
   marketPriceCurrency: "CAD",
+  priceHistory: [],
   neighborhood: "St. Vital",
   postalCode: "",
   acceptsTrade: false,
@@ -99,17 +100,6 @@ export default function CreateListingModal({ onClose }) {
         .slice(0, 6),
     [searchHistory],
   );
-  const comparisonSparkPoints = useMemo(() => {
-    const market = Number(form.marketPrice) || 0;
-    const asking = Number(form.price) || 0;
-    const anchor = market || asking || 0;
-    return [
-      { value: anchor * 0.92 || 1 },
-      { value: anchor * 0.98 || 1.2 },
-      { value: market || anchor || 1.1 },
-      { value: asking || anchor || 1.3 },
-    ];
-  }, [form.marketPrice, form.price]);
 
   useEffect(() => {
     if (createListingPreset) {
@@ -195,6 +185,7 @@ export default function CreateListingModal({ onClose }) {
     try {
       const result = await searchCardPrintings({
         game: form.game,
+        language: form.language,
         query: trimmedQuery,
       });
 
@@ -271,6 +262,7 @@ export default function CreateListingModal({ onClose }) {
       imageUrl: printing.imageUrl || currentForm.imageUrl,
       marketPrice: printing.marketPrice ?? "",
       marketPriceCurrency: printing.marketPriceCurrency || "CAD",
+      priceHistory: printing.priceHistory || [],
       price:
         currentForm.price ||
         (printing.marketPrice ? Math.round(printing.marketPrice) : ""),
@@ -386,6 +378,18 @@ export default function CreateListingModal({ onClose }) {
                   <option>Pokemon</option>
                   <option>Magic</option>
                   <option>One Piece</option>
+                </select>
+              </label>
+
+              <label className="block">
+                <FieldLabel>Card language</FieldLabel>
+                <select
+                  className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  value={form.language}
+                  onChange={(event) => updateField("language", event.target.value)}
+                >
+                  <option>English</option>
+                  <option>Japanese</option>
                 </select>
               </label>
 
@@ -577,9 +581,9 @@ export default function CreateListingModal({ onClose }) {
                   Find the exact printing
                 </h3>
                 <p className="mt-3 hidden max-w-3xl text-sm leading-7 text-steel sm:block">
-                  Search live printings for Pokemon, Magic, and One Piece. The search is
-                  intentionally broad so product codes, variant terms, and partial names can
-                  still surface the right printings.
+                  Search live printings for Pokemon, Magic, and One Piece. Japanese autofill is
+                  supported where the source is stable, and price history only appears when the
+                  source actually exposes it.
                 </p>
               </div>
                 {selectedPrintingId ? (
@@ -695,6 +699,9 @@ export default function CreateListingModal({ onClose }) {
                       {form.game}
                     </span>
                     <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+                      {form.language}
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
                       {form.type}
                     </span>
                     <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
@@ -725,7 +732,15 @@ export default function CreateListingModal({ onClose }) {
                       Market {formatCurrency(form.marketPrice, form.marketPriceCurrency)}
                     </p>
                   ) : null}
-                  <Sparkline className="mt-3 hidden w-full sm:block" points={comparisonSparkPoints} />
+                  {form.priceHistory?.length ? (
+                    <p className="mt-3 text-xs font-semibold uppercase tracking-[0.16em] text-navy">
+                      Source price history available
+                    </p>
+                  ) : (
+                    <p className="mt-3 text-xs leading-6 text-steel">
+                      No source-backed price history is available for this autofill.
+                    </p>
+                  )}
                 </div>
               </div>
             </section>
@@ -777,6 +792,16 @@ export default function CreateListingModal({ onClose }) {
                           <span className="rounded-full bg-navy/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">
                             {printing.rarity}
                           </span>
+                          {printing.language ? (
+                            <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                              {printing.language}
+                            </span>
+                          ) : null}
+                          {printing.priceHistory?.length ? (
+                            <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                              Source history
+                            </span>
+                          ) : null}
                           {selectedPrintingId === printing.id ? (
                             <span className="rounded-full bg-navy/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">
                               Selected

@@ -67,7 +67,6 @@ export default function ListingDetailPage() {
   const [lightboxImage, setLightboxImage] = useState("");
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
-  const [showComparison, setShowComparison] = useState(false);
   const [adminNoteDraft, setAdminNoteDraft] = useState("");
   const [adminFeedback, setAdminFeedback] = useState("");
   const [isSavingAdminNote, setIsSavingAdminNote] = useState(false);
@@ -81,7 +80,6 @@ export default function ListingDetailPage() {
     viewRecorded.current = false;
     setShowOfferModal(false);
     setShowReportModal(false);
-    setShowComparison(false);
     setLightboxImage("");
 
     if (typeof window !== "undefined") {
@@ -123,40 +121,28 @@ export default function ListingDetailPage() {
       .slice(0, 4);
   }, [activeListings, listing]);
 
-  const competitorListings = useMemo(() => {
-    if (!listing) {
-      return [];
-    }
-
-    const normalizedTitle = String(listing.title || "").toLowerCase();
-    return activeListings
-      .filter((candidate) => candidate.id !== listing.id)
-      .filter(
-        (candidate) =>
-          candidate.gameSlug === listing.gameSlug &&
-          (candidate.neighborhood === listing.neighborhood ||
-            String(candidate.title || "").toLowerCase().includes(normalizedTitle.split(" ")[0])),
-      )
-      .slice(0, 5);
-  }, [activeListings, listing]);
-
   const listingOffers = useMemo(
     () => (listing ? offersByListingId[listing.id] || [] : []),
     [listing, offersByListingId],
   );
 
-  const priceSparkPoints = useMemo(() => {
+  const sourcePriceHistory = useMemo(() => {
     if (!listing) {
       return [];
     }
 
-    const history = listing.priceHistory?.length
-      ? listing.priceHistory.map((item) => ({ value: item.price }))
-      : [{ value: listing.previousPrice || listing.price }, { value: listing.price }];
-    const marketValue = listing.marketPriceCad || listing.marketPrice || listing.price;
-
-    return [...history, { value: marketValue }].slice(-6);
+    return (listing.priceHistory || []).filter(
+      (item) => item && (item.sourceLabel || item.source || item.originalPriceUsd != null),
+    );
   }, [listing]);
+
+  const priceSparkPoints = useMemo(
+    () => sourcePriceHistory.map((item) => ({ value: item.price })).slice(-12),
+    [sourcePriceHistory],
+  );
+
+  const priceHistorySourceLabel =
+    sourcePriceHistory[0]?.sourceLabel || sourcePriceHistory[0]?.source || "";
 
   const isOwner = currentUser && listing && currentUser.id === listing.sellerId;
   const isAdmin = currentUser?.role === "admin";
@@ -269,85 +255,42 @@ export default function ListingDetailPage() {
             </div>
           </div>
 
-          <div className="rounded-[36px] bg-white p-4 shadow-soft sm:p-6">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="section-kicker">Price History</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                  Seller pricing and market context
-                </h2>
-              </div>
-              <button
-                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
-                type="button"
-                onClick={() => setShowComparison((current) => !current)}
-              >
-                {showComparison ? "Hide comparison" : "Compare prices"}
-              </button>
-            </div>
-
-            <div className="mt-5 rounded-[28px] border border-slate-200 bg-[#fbf8f1] p-5">
-              <Sparkline className="w-full" height={110} points={priceSparkPoints} />
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                {listing.previousPrice && listing.previousPrice > listing.price ? (
-                  <span className="text-lg font-semibold text-slate-400 line-through">
-                    {formatCadPrice(listing.previousPrice, listing.priceCurrency || "CAD")}
-                  </span>
-                ) : null}
-                <span className="font-display text-4xl font-semibold tracking-[-0.04em] text-ink">
-                  {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
+          {sourcePriceHistory.length ? (
+            <div className="rounded-[36px] bg-white p-4 shadow-soft sm:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="section-kicker">Source Price History</p>
+                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                    Real market history from the autofill source
+                  </h2>
+                  <p className="mt-3 text-sm leading-7 text-steel">
+                    {priceHistorySourceLabel || "Source-backed"} price history is shown in CAD and
+                    only appears when the selected autofill source exposes a real series.
+                  </p>
+                </div>
+                <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                  {sourcePriceHistory.length} points
                 </span>
-                {listing.marketPrice ? (
-                  <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-semibold text-emerald-700">
-                    Market {formatCadPrice(listing.marketPrice, listing.marketPriceCurrency || "CAD")}
+              </div>
+
+              <div className="mt-5 rounded-[28px] border border-slate-200 bg-[#fbf8f1] p-5">
+                <Sparkline className="w-full" height={110} points={priceSparkPoints} />
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <span className="font-display text-4xl font-semibold tracking-[-0.04em] text-ink">
+                    {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
                   </span>
-                ) : null}
+                  {listing.marketPrice ? (
+                    <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-semibold text-emerald-700">
+                      Market {formatCadPrice(listing.marketPrice, listing.marketPriceCurrency || "CAD")}
+                    </span>
+                  ) : null}
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+                    Latest source point {sourcePriceHistory[sourcePriceHistory.length - 1]?.label}
+                  </span>
+                </div>
               </div>
             </div>
-
-            {showComparison ? (
-              <div className="mt-5 rounded-[28px] border border-slate-200 bg-white p-5">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                    Comparison drawer
-                  </span>
-                  <span className="rounded-full bg-navy/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-navy">
-                    {listing.neighborhood}
-                  </span>
-                </div>
-                <div className="mt-5 grid gap-3">
-                  {competitorListings.length ? (
-                    competitorListings.map((competitor) => (
-                      <Link
-                        key={competitor.id}
-                        className="flex items-center justify-between gap-3 rounded-[22px] border border-slate-200 px-4 py-4 transition hover:border-slate-300"
-                        to={`/listing/${competitor.id}`}
-                      >
-                        <div>
-                          <p className="font-semibold text-ink">{competitor.title}</p>
-                          <p className="mt-1 text-sm text-steel">
-                            {competitor.neighborhood} | {competitor.seller?.publicName || competitor.seller?.name}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-ink">
-                            {formatCadPrice(competitor.price, competitor.priceCurrency || "CAD")}
-                          </p>
-                          <p className="text-xs uppercase tracking-[0.18em] text-steel">
-                            {competitor.type}
-                          </p>
-                        </div>
-                      </Link>
-                    ))
-                  ) : (
-                    <p className="text-sm leading-7 text-steel">
-                      No close local comparisons yet for this card and neighborhood mix.
-                    </p>
-                  )}
-                </div>
-              </div>
-            ) : null}
-          </div>
+          ) : null}
         </div>
 
         <div className="space-y-5">
@@ -415,7 +358,11 @@ export default function ListingDetailPage() {
                     ? formatCadPrice(listing.marketPrice, listing.marketPriceCurrency || "CAD")
                     : "Unavailable"}
                 </p>
-                <p className="mt-2 text-sm text-steel">Market references are shown in CAD.</p>
+                <p className="mt-2 text-sm text-steel">
+                  {sourcePriceHistory.length
+                    ? `${priceHistorySourceLabel || "Source"} pricing is shown in CAD.`
+                    : "Market references are shown in CAD."}
+                </p>
               </div>
             </div>
 

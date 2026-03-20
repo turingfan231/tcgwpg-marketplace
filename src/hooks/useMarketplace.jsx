@@ -739,16 +739,7 @@ function toListingPayload(payload, seller) {
     admin_notes: payload.adminNotes || "",
     views: payload.views || 0,
     offers: payload.offers || 0,
-    price_history:
-      payload.priceHistory ||
-      [
-        {
-          id: `price-history-${Date.now()}`,
-          price,
-          label: "Listed",
-          createdAt: now,
-        },
-      ],
+    price_history: payload.priceHistory || [],
     edit_history: payload.editHistory || [],
     updated_at: now,
   };
@@ -2203,16 +2194,9 @@ export function MarketplaceProvider({ children }) {
     const nextQuantity =
       payload.quantity !== undefined ? Number(payload.quantity) || 1 : listing.quantity;
     const changes = [];
-    const priceHistory = [...(listing.priceHistory || [])];
 
     if (nextPrice !== listing.price) {
       changes.push({ field: "price", from: listing.price, to: nextPrice });
-      priceHistory.push({
-        id: `price-history-${Date.now()}`,
-        price: nextPrice,
-        label: "Updated",
-        createdAt: new Date().toISOString(),
-      });
     }
 
     if (nextCondition !== listing.condition) {
@@ -2239,7 +2223,7 @@ export function MarketplaceProvider({ children }) {
         condition: nextCondition,
         description: nextDescription,
         quantity: nextQuantity,
-        price_history: priceHistory,
+        price_history: listing.priceHistory || [],
         edit_history: changes.length
           ? [
               {

@@ -115,6 +115,11 @@ function normalizeGameName(game) {
   return rawValue.replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
+function normalizeLanguage(value) {
+  const rawValue = String(value || "").toLowerCase().trim();
+  return rawValue === "ja" || rawValue.includes("japanese") ? "japanese" : "english";
+}
+
 function parseNumber(value) {
   const numericValue = Number(value);
   return Number.isFinite(numericValue) ? numericValue : null;
@@ -293,6 +298,9 @@ async function searchPokemonBrowser(query, limit) {
         marketPriceCurrency: "CAD",
         originalMarketPriceUsd: chosenPrice.usdValue,
         originalMarketPriceCurrency: "USD",
+        priceHistory: [],
+        language: "English",
+        sourceUrl: card.tcgplayer?.url || "",
         printLabel: card.number ? `#${card.number}` : chosenPrice.label,
         description: [
           card.set?.name,
@@ -345,10 +353,15 @@ async function fetchScryfallSearch(searchQuery) {
   return response.json();
 }
 
-async function searchMagicBrowser(query, limit) {
+async function searchMagicBrowser(query, limit, language = "english") {
   const canonicalName = await resolveScryfallName(query);
+  const isJapanese = normalizeLanguage(language) === "japanese";
   const searchQueries = uniqueBy(
     [
+      isJapanese && canonicalName ? `!"${canonicalName}" lang:ja` : null,
+      isJapanese && canonicalName ? `"${canonicalName}" lang:ja` : null,
+      isJapanese ? `lang:ja ${query}` : null,
+      isJapanese ? `printed:${query} lang:ja` : null,
       canonicalName ? `!"${canonicalName}"` : null,
       canonicalName || null,
       query,
@@ -400,8 +413,8 @@ async function searchMagicBrowser(query, limit) {
       return {
         id: `scryfall-${card.id}`,
         provider: "scryfall",
-        providerLabel: "Scryfall Browser Fallback",
-        title: card.name,
+        providerLabel: isJapanese ? "Scryfall Japanese Browser Fallback" : "Scryfall Browser Fallback",
+        title: isJapanese ? card.printed_name || card.name : card.name,
         setName: card.set_name || "Unknown set",
         rarity: card.rarity
           ? card.rarity[0].toUpperCase() + card.rarity.slice(1)
@@ -411,6 +424,9 @@ async function searchMagicBrowser(query, limit) {
         marketPriceCurrency: "CAD",
         originalMarketPriceUsd: usdPrice,
         originalMarketPriceCurrency: "USD",
+        priceHistory: [],
+        language: card.lang === "ja" ? "Japanese" : "English",
+        sourceUrl: card.scryfall_uri || card.uri || "",
         printLabel: card.collector_number
           ? `${card.set?.toUpperCase()} #${card.collector_number}`
           : card.set?.toUpperCase(),
@@ -418,6 +434,9 @@ async function searchMagicBrowser(query, limit) {
           card.set_name,
           card.collector_number ? `#${card.collector_number}` : null,
           card.type_line,
+          isJapanese && card.printed_name && card.printed_name !== card.name
+            ? `Printed name: ${card.printed_name}`
+            : null,
         ]
           .filter(Boolean)
           .join(" | "),
@@ -590,6 +609,9 @@ async function searchOnePieceBrowser(query, limit) {
         marketPriceCurrency: "CAD",
         originalMarketPriceUsd: usdPrice,
         originalMarketPriceCurrency: "USD",
+        priceHistory: [],
+        language: "English",
+        sourceUrl: "",
         printLabel: card.card_image_id || card.card_set_id || card.card_type || "One Piece",
         description: [
           card.set_name,
@@ -605,9 +627,10 @@ async function searchOnePieceBrowser(query, limit) {
   };
 }
 
-async function searchViaProxy(game, query, limit) {
+async function searchViaProxy(game, query, limit, language = "english") {
   const [url] = buildLiveApiUrls(LIVE_SEARCH_PATH);
   url.searchParams.set("game", normalizeGameName(game));
+  url.searchParams.set("language", normalizeLanguage(language));
   url.searchParams.set("query", String(query || "").trim());
   url.searchParams.set("limit", String(limit));
 
@@ -646,11 +669,12 @@ export async function fetchLocalEvents() {
   );
 }
 
-export async function searchCardPrintings({ game, query, limit = 24 }) {
+export async function searchCardPrintings({ game, query, limit = 24, language = "english" }) {
   const normalizedGame = normalizeGameName(game);
+  const normalizedLanguage = normalizeLanguage(language);
 
   try {
-    const proxiedResult = await searchViaProxy(normalizedGame, query, limit);
+    const proxiedResult = await searchViaProxy(normalizedGame, query, limit, normalizedLanguage);
 
     if (normalizedGame === "one-piece" && !(proxiedResult.results || []).length) {
       const fallback = await searchOnePieceBrowser(query, limit);
@@ -659,6 +683,12 @@ export async function searchCardPrintings({ game, query, limit = 24 }) {
 
     return proxiedResult;
   } catch (proxyError) {
+    if (normalizedGame === "pokemon" && normalizedLanguage === "japanese") {
+      throw new Error(
+        `${proxyError.message} Japanese Pokemon autofill currently requires the live server search.`,
+      );
+    }
+
     if (normalizedGame === "pokemon") {
       const fallback = await searchPokemonBrowser(query, limit);
       return {
@@ -668,7 +698,7 @@ export async function searchCardPrintings({ game, query, limit = 24 }) {
     }
 
     if (normalizedGame === "magic") {
-      const fallback = await searchMagicBrowser(query, limit);
+      const fallback = await searchMagicBrowser(query, limit, normalizedLanguage);
       return {
         ...fallback,
         note: `${proxyError.message} ${fallback.note}`,
