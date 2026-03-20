@@ -59,6 +59,7 @@ export default function CreateListingModal({ onClose }) {
   const navigate = useNavigate();
   const {
     addListing,
+    authReady,
     clearListingDraft,
     createListingPreset,
     currentUser,
@@ -331,7 +332,7 @@ export default function CreateListingModal({ onClose }) {
       onClose={onClose}
     >
       <form
-        className="grid gap-0 bg-[linear-gradient(180deg,#fbf8f1_0%,#f5f1e8_100%)] 2xl:grid-cols-[minmax(360px,0.8fr)_minmax(0,1.2fr)]"
+        className="grid gap-0 bg-[linear-gradient(180deg,#fbf8f1_0%,#f5f1e8_100%)] pb-28 2xl:grid-cols-[minmax(360px,0.8fr)_minmax(0,1.2fr)] md:pb-32"
         onKeyDownCapture={(event) => {
           if (
             event.key === "Enter" &&
@@ -345,7 +346,7 @@ export default function CreateListingModal({ onClose }) {
         }}
         onSubmit={handleSubmit}
       >
-        <div className="order-2 space-y-4 border-b border-slate-200 p-4 sm:space-y-5 sm:p-6 lg:p-7 2xl:order-1 2xl:border-b-0 2xl:border-r">
+        <div className="order-1 space-y-4 border-b border-slate-200 p-4 sm:space-y-5 sm:p-6 lg:p-7 2xl:border-b-0 2xl:border-r">
           <section className="surface-card p-5 sm:p-6">
             <p className="section-kicker">Listing basics</p>
             <h3 className="mt-3 font-display text-[1.6rem] font-semibold tracking-[-0.04em] text-ink sm:text-[2rem]">
@@ -560,7 +561,7 @@ export default function CreateListingModal({ onClose }) {
           </section>
         </div>
 
-        <div className="order-1 space-y-4 bg-[linear-gradient(180deg,#f7f3eb_0%,#efe8dd_100%)] p-4 sm:space-y-5 sm:p-6 lg:p-7 2xl:order-2">
+        <div className="order-2 space-y-4 bg-[linear-gradient(180deg,#f7f3eb_0%,#efe8dd_100%)] p-4 sm:space-y-5 sm:p-6 lg:p-7">
           <section className="surface-card border-slate-200 p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
@@ -870,60 +871,67 @@ export default function CreateListingModal({ onClose }) {
             </section>
           </div>
 
-          <div className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-3 border-t border-slate-200 bg-[#efe8dd] px-4 pb-4 pt-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 md:flex-row md:flex-wrap md:justify-end">
-            <button
-              className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
-              type="button"
-              onClick={() => void saveDraft(false)}
-            >
-              Save draft
-            </button>
-            <button
-              className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
-              type="button"
-              onClick={() => void saveDraft(true)}
-            >
-              Save as new draft
-            </button>
-            {listingDraft ? (
-              <button
-                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
-                type="button"
-                onClick={async () => {
-                  setSubmitError("");
-                  const result = await clearListingDraft();
-                  if (!result?.ok) {
-                    setDraftMessage("");
-                    setSubmitError(result?.error || "Draft could not be cleared.");
-                    return;
-                  }
-                  setDraftMessage("Draft cleared.");
-                }}
-              >
-                Clear draft
-              </button>
-            ) : null}
-            <button
-              className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
-              type="button"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button
-              className="rounded-full bg-navy px-6 py-3 text-sm font-semibold text-white"
-              type="submit"
-            >
-              Post listing
-            </button>
-          </div>
-          <div className="space-y-2">
+        </div>
+
+        <div className="sticky bottom-0 z-20 col-span-full border-t border-slate-200 bg-[#efe8dd]/95 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 backdrop-blur sm:px-6 lg:px-8">
+          <div className="mx-auto flex max-w-[1600px] flex-col gap-3">
             {draftMessage ? (
               <p className="text-sm font-semibold text-emerald-700 md:text-right">{draftMessage}</p>
             ) : null}
             {submitError ? (
               <p className="text-sm font-semibold text-rose-700 md:text-right">{submitError}</p>
             ) : null}
+
+            <div className="grid gap-3 md:flex md:flex-wrap md:justify-end">
+              <button
+                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                disabled={!authReady}
+                type="button"
+                onClick={() => void saveDraft(false)}
+              >
+                Save draft
+              </button>
+              <button
+                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                disabled={!authReady}
+                type="button"
+                onClick={() => void saveDraft(true)}
+              >
+                Save as new draft
+              </button>
+              {listingDraft ? (
+                <button
+                  className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                  type="button"
+                  onClick={async () => {
+                    setSubmitError("");
+                    const result = await clearListingDraft();
+                    if (!result?.ok) {
+                      setDraftMessage("");
+                      setSubmitError(result?.error || "Draft could not be cleared.");
+                      return;
+                    }
+                    setDraftMessage("Draft cleared.");
+                  }}
+                >
+                  Clear draft
+                </button>
+              ) : null}
+              <button
+                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                type="button"
+                onClick={onClose}
+              >
+                Cancel
+              </button>
+              <button
+                className="rounded-full bg-navy px-6 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-400"
+                disabled={!authReady}
+                type="submit"
+              >
+                {authReady ? "Post listing" : "Loading account..."}
+              </button>
+            </div>
           </div>
         </div>
       </form>

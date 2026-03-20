@@ -2134,7 +2134,11 @@ export function MarketplaceProvider({ children }) {
   }
 
   async function addListing(payload) {
-    if (!currentUserRecord) {
+    if (!authReady) {
+      return { ok: false, error: "Your account is still loading. Try again in a second." };
+    }
+
+    if (!currentUserId || !currentUserRecord) {
       return { ok: false, error: "You must be logged in to post a listing." };
     }
 
@@ -2147,14 +2151,37 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: "Supabase is not configured." };
     }
 
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const sellerId = session?.user?.id || currentUserId;
+
+    if (!sellerId) {
+      return { ok: false, error: "Your login session is not ready yet. Reload and try again." };
+    }
+
+    const sellerRecord =
+      currentUserRecord.id === sellerId
+        ? currentUserRecord
+        : {
+            ...currentUserRecord,
+            id: sellerId,
+          };
+
     const { data, error } = await supabase
       .from("listings")
-      .insert(toListingPayload(payload, currentUserRecord))
+      .insert(toListingPayload(payload, sellerRecord))
       .select("*")
       .single();
 
     if (error) {
-      return { ok: false, error: error.message };
+      return {
+        ok: false,
+        error:
+          /row-level security/i.test(error.message)
+            ? "Listing post was blocked because your login session was not fully ready. Reload once, then try posting again."
+            : error.message,
+      };
     }
 
     if (payload.id) {
