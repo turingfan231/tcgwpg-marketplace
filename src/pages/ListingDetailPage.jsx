@@ -64,12 +64,14 @@ function parseListingSourceMetadata(listing) {
     ) || "";
   const sourceSection = String(listing?.description || "").split("Source:")[1] || "";
   const language = /japanese/i.test(sourceSection) ? "japanese" : "english";
+  const sourceProvider = sourceSection.split(".")[0]?.trim() || "";
 
   return {
     setName,
     printLabel,
     rarity,
     language,
+    sourceProvider,
   };
 }
 
@@ -177,12 +179,19 @@ export default function ListingDetailPage() {
   }, [listing]);
 
   const visibleSourceSales = sourceSalesLoaded ? sourceSales : [];
+  const sourceMetadata = useMemo(() => parseListingSourceMetadata(listing), [listing]);
   const recentSalesSourceLabel =
     visibleSourceSales[0]?.sourceLabel ||
     visibleSourceSales[0]?.source ||
     storedSourceSales[0]?.sourceLabel ||
     storedSourceSales[0]?.source ||
     "";
+  const canLookupSourceSales = Boolean(
+    storedSourceSales.length ||
+      sourceMetadata.sourceProvider ||
+      sourceMetadata.printLabel ||
+      sourceMetadata.setName,
+  );
 
   const isOwner = currentUser && listing && currentUser.id === listing.sellerId;
   const isAdmin = currentUser?.role === "admin";
@@ -221,14 +230,13 @@ export default function ListingDetailPage() {
     setSourceSalesError("");
 
     try {
-      const metadata = parseListingSourceMetadata(listing);
       const salesResult = await fetchSourceSalesForPrinting({
         game: listing.game,
-        language: metadata.language,
+        language: sourceMetadata.language,
         title: listing.title,
-        setName: metadata.setName,
-        printLabel: metadata.printLabel,
-        rarity: metadata.rarity,
+        setName: sourceMetadata.setName,
+        printLabel: sourceMetadata.printLabel,
+        rarity: sourceMetadata.rarity,
       });
       const recentSales = salesResult?.result?.priceHistory || [];
       setSourceSales(recentSales);
@@ -343,13 +351,18 @@ export default function ListingDetailPage() {
                   Last 3 solds
                 </h2>
                 <p className="mt-3 text-sm leading-7 text-steel">
-                  Load recent sold comps on demand from the autofill source. Results are shown in
-                  CAD and only appear when the source exposes recent sale data.
+                  Load recent sold comps on demand from the source match for this printing. Results
+                  are shown in CAD and only appear when the source exposes recent sale data.
                 </p>
+                {sourceMetadata.sourceProvider ? (
+                  <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                    Listing source: {sourceMetadata.sourceProvider}
+                  </p>
+                ) : null}
               </div>
               <button
                 className="rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white shadow-soft disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={loadingSourceSales}
+                disabled={loadingSourceSales || !canLookupSourceSales}
                 type="button"
                 onClick={() => void handleLoadSourceSales()}
               >
@@ -366,6 +379,13 @@ export default function ListingDetailPage() {
               </button>
             </div>
 
+            {!canLookupSourceSales ? (
+              <p className="mt-5 rounded-[20px] border border-slate-200 bg-[#fbf8f1] px-4 py-3 text-sm text-steel">
+                Last solds are only available for listings that were autofilled from a supported
+                source.
+              </p>
+            ) : null}
+
             {sourceSalesError && !visibleSourceSales.length ? (
               <p className="mt-5 rounded-[20px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                 {sourceSalesError}
@@ -373,10 +393,10 @@ export default function ListingDetailPage() {
             ) : null}
 
             {visibleSourceSales.length ? (
-            <div className="rounded-[36px] bg-white p-4 shadow-soft sm:p-6">
-              <div className="mt-5 space-y-3">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <p className="text-sm leading-7 text-steel">
+              <div className="mt-5 rounded-[28px] border border-slate-200 bg-[#fbf8f1] p-5">
+                <div className="mt-5 space-y-3">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <p className="text-sm leading-7 text-steel">
                     {recentSalesSourceLabel || "Source-backed"} sold comps are shown in CAD.
                   </p>
                   <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
