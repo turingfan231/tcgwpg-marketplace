@@ -382,18 +382,6 @@ export default function CreateListingModal({ onClose }) {
               </label>
 
               <label className="block">
-                <FieldLabel>Card language</FieldLabel>
-                <select
-                  className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  value={form.language}
-                  onChange={(event) => updateField("language", event.target.value)}
-                >
-                  <option>English</option>
-                  <option>Japanese</option>
-                </select>
-              </label>
-
-              <label className="block">
                 <FieldLabel>Listing type</FieldLabel>
                 <select
                   className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
@@ -592,6 +580,36 @@ export default function CreateListingModal({ onClose }) {
                   Printing selected
                 </span>
               ) : null}
+            </div>
+
+            <div className="mt-5">
+              <p className="mb-2 text-sm font-semibold text-steel">Search language</p>
+              <div className="grid gap-2 sm:inline-flex sm:flex-wrap">
+                {["English", "Japanese"].map((language) => (
+                  <button
+                    key={language}
+                    className={`rounded-full px-4 py-2.5 text-sm font-semibold transition ${
+                      form.language === language
+                        ? "bg-navy text-white shadow-soft"
+                        : "border border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
+                    }`}
+                    type="button"
+                    onClick={() => {
+                      updateField("language", language);
+                      setSelectedPrintingId("");
+                      setSearchResults([]);
+                      setSearchError("");
+                      setSearchNote(
+                        language === "Japanese"
+                          ? "Japanese search uses source-specific card data and only shows history when the source provides it."
+                          : "English search uses the live source for the selected game and only shows history when the source provides it.",
+                      );
+                    }}
+                  >
+                    {language}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="mt-6 grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto]">

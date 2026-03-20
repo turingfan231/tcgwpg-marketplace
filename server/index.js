@@ -1036,7 +1036,13 @@ function extractPriceChartingImageUrl(html) {
   );
 }
 
-function buildPriceChartingResult(pathname, html, query, usdToCadRate) {
+function buildPriceChartingResult(
+  pathname,
+  html,
+  query,
+  usdToCadRate,
+  { language = "Japanese", descriptionLabel = "PriceCharting card data", rarity = `${language} print` } = {},
+) {
   const headingHtml = html.match(/<h1[^>]*id="product_name"[^>]*>([\s\S]*?)<\/h1>/i)?.[1] || "";
   const headingText = stripHtml(headingHtml);
   const setName = stripHtml(
@@ -1062,25 +1068,43 @@ function buildPriceChartingResult(pathname, html, query, usdToCadRate) {
     providerLabel: "PriceCharting",
     title,
     setName: setName || "Unknown set",
-    rarity: "Japanese print",
+    rarity,
     imageUrl,
     marketPrice: toCad(usdPrice, usdToCadRate),
     marketPriceCurrency: "CAD",
     originalMarketPriceUsd: usdPrice,
     originalMarketPriceCurrency: "USD",
     priceHistory,
-    language: "Japanese",
+    language,
     sourceUrl: `https://www.pricecharting.com${normalizedPath}`,
-    printLabel: title.match(/#\S+/)?.[0] || "Japanese",
-    description: [setName, "PriceCharting Japanese card data"].filter(Boolean).join(" | "),
+    printLabel: title.match(/#\S+/)?.[0] || language,
+    description: [setName, descriptionLabel].filter(Boolean).join(" | "),
     score,
   };
 }
 
-async function searchJapanesePokemonCards(query, limit, usdToCadRate) {
+function extractPriceChartingProductPaths(html, prefix) {
+  const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const productRegex = new RegExp(`\\/game\\/${escapedPrefix}[^\\/'"\\s<]+\\/[^"'\\s<]+`, "g");
+  return uniqueBy(
+    (html.match(productRegex) || []).map((path) => decodeHtml(path)),
+    (item) => item,
+  );
+}
+
+async function searchPriceChartingProducts({
+  query,
+  limit,
+  usdToCadRate,
+  searchQuery,
+  pathPrefix,
+  language = "Japanese",
+  descriptionLabel,
+  rarity,
+}) {
   const searchUrl = new URL(PRICECHARTING_SEARCH_ENDPOINT);
   searchUrl.searchParams.set("type", "prices");
-  searchUrl.searchParams.set("q", /\bjapanese\b/i.test(query) ? query : `${query} japanese`);
+  searchUrl.searchParams.set("q", searchQuery);
 
   const response = await fetchWithTimeout(searchUrl, {
     headers: {
@@ -1094,13 +1118,13 @@ async function searchJapanesePokemonCards(query, limit, usdToCadRate) {
   }
 
   const html = await response.text();
-  const productPaths = uniqueBy(
-    (html.match(/\/game\/pokemon-japanese[^"'\\s<]+/g) || []).map((path) => decodeHtml(path)),
-    (item) => item,
-  ).slice(0, Math.min(limit, 10));
+  const productPaths = extractPriceChartingProductPaths(html, pathPrefix).slice(
+    0,
+    Math.min(limit * 3, 15),
+  );
 
   if (!productPaths.length) {
-    throw new Error("PriceCharting returned no Japanese Pokemon matches.");
+    throw new Error("PriceCharting returned no matches for this search.");
   }
 
   const products = (
@@ -1118,7 +1142,11 @@ async function searchJapanesePokemonCards(query, limit, usdToCadRate) {
         }
 
         const productHtml = await productResponse.text();
-        return buildPriceChartingResult(pathname, productHtml, query, usdToCadRate);
+        return buildPriceChartingResult(pathname, productHtml, query, usdToCadRate, {
+          language,
+          descriptionLabel,
+          rarity,
+        });
       }),
     )
   )
@@ -1126,10 +1154,38 @@ async function searchJapanesePokemonCards(query, limit, usdToCadRate) {
     .map((result) => result.value);
 
   if (!products.length) {
-    throw new Error("PriceCharting returned no usable Japanese Pokemon results.");
+    throw new Error("PriceCharting returned no usable results.");
   }
 
   return products.sort((left, right) => right.score - left.score).slice(0, limit);
+}
+
+async function searchJapanesePokemonCards(query, limit, usdToCadRate) {
+  return searchPriceChartingProducts({
+    query,
+    limit,
+    usdToCadRate,
+    searchQuery: /\bjapanese\b/i.test(query) ? `${query} pokemon` : `${query} pokemon japanese`,
+    pathPrefix: "pokemon-japanese-",
+    language: "Japanese",
+    descriptionLabel: "PriceCharting Japanese Pokemon data",
+    rarity: "Japanese print",
+  });
+}
+
+async function searchJapaneseOnePieceCards(query, limit, usdToCadRate) {
+  return searchPriceChartingProducts({
+    query,
+    limit,
+    usdToCadRate,
+    searchQuery: /\bjapanese\b/i.test(query)
+      ? `${query} one piece`
+      : `${query} one piece japanese`,
+    pathPrefix: "one-piece-japanese-",
+    language: "Japanese",
+    descriptionLabel: "PriceCharting Japanese One Piece data",
+    rarity: "Japanese print",
+  });
 }
 
 function decodeHtml(value) {
@@ -1738,13 +1794,13 @@ app.get("/api/live/search", async (req, res) => {
     } else if (game === "magic") {
       providerLabel = language === "japanese" ? "Scryfall (Japanese)" : "Scryfall";
       results = await searchMagicCards(query, limit, exchangeRate.usdToCadRate, language);
+    } else if (game === "one-piece" && language === "japanese") {
+      providerLabel = "PriceCharting";
+      results = await searchJapaneseOnePieceCards(query, limit, exchangeRate.usdToCadRate);
+      note = `Japanese One Piece results are sourced from PriceCharting and normalized to CAD using USD/CAD ${exchangeRate.usdToCadRate}.`;
     } else if (game === "one-piece") {
       providerLabel = "OPTCG API";
       results = await searchOnePieceCards(query, limit, exchangeRate.usdToCadRate);
-      if (language === "japanese") {
-        note =
-          "One Piece values are shown in CAD. The current source does not expose dedicated Japanese-language filtering yet, so results are best-effort.";
-      }
     } else {
       note = "Live search is currently implemented for Pokemon, Magic, and One Piece.";
     }

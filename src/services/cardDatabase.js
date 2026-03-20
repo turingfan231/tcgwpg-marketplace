@@ -689,6 +689,12 @@ export async function searchCardPrintings({ game, query, limit = 24, language = 
       );
     }
 
+    if (normalizedGame === "one-piece" && normalizedLanguage === "japanese") {
+      throw new Error(
+        `${proxyError.message} Japanese One Piece autofill currently requires the live server search.`,
+      );
+    }
+
     if (normalizedGame === "pokemon") {
       const fallback = await searchPokemonBrowser(query, limit);
       return {
