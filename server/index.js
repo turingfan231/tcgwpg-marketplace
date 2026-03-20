@@ -962,6 +962,7 @@ function extractPriceChartingRecentSales(html, usdToCadRate) {
     const title = stripHtml(titleHtml).replace(/\[eBay\]\s*$/i, "").trim();
     const usdPrice = parseNumber(String(usdPriceText || "").replace(/,/g, ""));
     const parsedDate = rawDate ? new Date(`${rawDate}T12:00:00Z`) : null;
+    const saleCondition = classifySaleCondition(title);
 
     if (!usdPrice || !title) {
       continue;
@@ -975,6 +976,8 @@ function extractPriceChartingRecentSales(html, usdToCadRate) {
       sourceLabel: "PriceCharting",
       label: rawDate || "Recent sold",
       title,
+      conditionLabel: saleCondition.label,
+      conditionType: saleCondition.type,
       sourceUrl: saleId ? `https://www.ebay.com/itm/${saleId}` : "",
       createdAt:
         parsedDate && Number.isFinite(parsedDate.getTime())
@@ -986,6 +989,40 @@ function extractPriceChartingRecentSales(html, usdToCadRate) {
   return sales
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
     .slice(0, 3);
+}
+
+function classifySaleCondition(title) {
+  const normalizedTitle = String(title || "").toUpperCase();
+  const gradedPatterns = [
+    /\bPSA\s*(10|9(?:\.5)?|8(?:\.5)?|7(?:\.5)?|6(?:\.5)?|5(?:\.5)?|4(?:\.5)?|3(?:\.5)?|2(?:\.5)?|1)\b/,
+    /\bBGS\s*(10|9(?:\.5)?|8(?:\.5)?|7(?:\.5)?|6(?:\.5)?|5(?:\.5)?|4(?:\.5)?|3(?:\.5)?|2(?:\.5)?|1)\b/,
+    /\bCGC\s*(10|9(?:\.5)?|8(?:\.5)?|7(?:\.5)?|6(?:\.5)?|5(?:\.5)?|4(?:\.5)?|3(?:\.5)?|2(?:\.5)?|1)\b/,
+    /\bSGC\s*(10|9(?:\.5)?|8(?:\.5)?|7(?:\.5)?|6(?:\.5)?|5(?:\.5)?|4(?:\.5)?|3(?:\.5)?|2(?:\.5)?|1)\b/,
+    /\bTAG\s*(10|9(?:\.5)?|8(?:\.5)?|7(?:\.5)?|6(?:\.5)?|5(?:\.5)?|4(?:\.5)?|3(?:\.5)?|2(?:\.5)?|1)\b/,
+    /\bACE\s*(10|9(?:\.5)?|8(?:\.5)?|7(?:\.5)?|6(?:\.5)?|5(?:\.5)?|4(?:\.5)?|3(?:\.5)?|2(?:\.5)?|1)\b/,
+  ];
+
+  for (const pattern of gradedPatterns) {
+    const match = normalizedTitle.match(pattern);
+    if (match) {
+      return {
+        type: "graded",
+        label: match[0].replace(/\s+/g, " ").trim(),
+      };
+    }
+  }
+
+  if (/\bGRADED\b|\bSLABBED\b/.test(normalizedTitle)) {
+    return {
+      type: "graded",
+      label: "Graded",
+    };
+  }
+
+  return {
+    type: "raw",
+    label: "Raw",
+  };
 }
 
 function extractPriceChartingCurrentUsdPrice(html) {

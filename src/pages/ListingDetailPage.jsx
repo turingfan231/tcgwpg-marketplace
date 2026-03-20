@@ -421,9 +421,20 @@ export default function ListingDetailPage() {
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                            Sold {sale.label}
-                          </p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                              Sold {sale.label}
+                            </p>
+                            <span
+                              className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                                sale.conditionType === "graded"
+                                  ? "bg-orange/10 text-orange"
+                                  : "bg-slate-100 text-slate-700"
+                              }`}
+                            >
+                              {sale.conditionLabel || "Raw"}
+                            </span>
+                          </div>
                           <p className="mt-2 text-sm leading-7 text-ink">
                             {sale.title || "Recent sold listing"}
                           </p>
