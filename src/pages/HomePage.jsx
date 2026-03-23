@@ -38,6 +38,11 @@ function normalizeGameKey(value) {
   return normalized || null;
 }
 
+const CURATED_HERO_ART = {
+  pokemon: "https://images.pokemontcg.io/sv8/238_hires.png",
+  magic: "https://cards.scryfall.io/art_crop/front/b/d/bd8fa327-dd41-4737-8f19-2cf5eb1f7cdd.jpg?1614638838",
+};
+
 function QuickActionButton({ children, tone = "light", ...props }) {
   return (
     <button
@@ -136,6 +141,13 @@ function BannerCard({
   const listingGallery = slide.kind === "listing" ? slide.payload.gallery || [] : [];
   const backgroundImage =
     slide.payload.backgroundImage || listingGallery[0] || slide.payload.imageUrl || null;
+  const heroGameKey =
+    slide.kind === "event"
+      ? normalizeGameKey(slide.payload.game)
+      : slide.kind === "game"
+        ? normalizeGameKey(slide.payload.slug)
+        : normalizeGameKey(slide.payload.game);
+  const heroArt = slide.payload.heroArt || CURATED_HERO_ART[heroGameKey] || backgroundImage || null;
 
   return (
     <article
@@ -145,22 +157,13 @@ function BannerCard({
           : "pointer-events-none translate-y-4 opacity-0"
       }`}
     >
-      <div
-        className="relative h-full overflow-hidden rounded-[36px] border border-white/10 bg-[#09131d] p-8 text-white shadow-[0_32px_90px_-48px_rgba(6,18,27,0.62)] sm:p-10 lg:p-12"
-      >
-        {backgroundImage ? (
-          <img
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 h-full w-full object-cover object-right"
-            src={backgroundImage}
-          />
-        ) : null}
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,13,20,0.96)_0%,rgba(7,18,27,0.92)_28%,rgba(10,24,35,0.64)_56%,rgba(10,24,35,0.18)_100%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.08),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(255,153,0,0.14),transparent_16%)]" />
+      <div className="relative h-full overflow-hidden rounded-[36px] border border-white/10 bg-[#09131d] p-8 text-white shadow-[0_32px_90px_-48px_rgba(6,18,27,0.62)] sm:p-10 lg:p-12">
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,#09131d_0%,#0c1c29_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.06),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(255,153,0,0.12),transparent_16%)]" />
 
-        <div className="relative z-10 flex h-full flex-col justify-between gap-8">
-          <div className="max-w-2xl">
+        <div className="relative z-10 grid h-full gap-8 lg:grid-cols-[minmax(0,1.1fr)_26rem] lg:items-stretch">
+          <div className="flex h-full flex-col justify-between gap-8">
+            <div className="max-w-2xl">
             <span className="inline-flex rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
               {slide.kicker}
             </span>
@@ -205,9 +208,54 @@ function BannerCard({
             </div>
           </div>
 
-          <div className="flex items-end justify-between gap-6">
+            <div className="flex flex-wrap gap-3">
+              <div className="rounded-[26px] border border-white/12 bg-white/8 px-5 py-4 backdrop-blur">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/58">
+                  {slide.kind === "listing"
+                    ? "Current ask"
+                    : slide.kind === "event"
+                      ? "Store and date"
+                      : "Market pulse"}
+                </p>
+                {slide.kind === "listing" ? (
+                  <>
+                    <p className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.05em] text-white">
+                      {formatCadPrice(slide.payload.price, slide.payload.priceCurrency || "CAD")}
+                    </p>
+                    <p className="mt-2 text-sm text-white/74">
+                      {slide.payload.game} | {slide.payload.neighborhood}
+                    </p>
+                  </>
+                ) : null}
+                {slide.kind === "event" ? (
+                  <>
+                    <p className="mt-3 font-display text-[1.45rem] font-semibold tracking-[-0.05em] text-white">
+                      {slide.payload.store}
+                    </p>
+                    <p className="mt-2 text-sm text-white/74">
+                      {slide.payload.dateStr} | {slide.payload.time}
+                    </p>
+                  </>
+                ) : null}
+                {slide.kind === "game" ? (
+                  <>
+                    <p className="mt-3 font-display text-[1.45rem] font-semibold tracking-[-0.05em] text-white">
+                      {slide.payload.shortName}
+                    </p>
+                    <p className="mt-2 text-sm text-white/74">
+                      {slide.payload.count} active listings across {slide.payload.neighborhoodCount} neighborhoods
+                    </p>
+                  </>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex h-full items-center justify-center lg:justify-end">
+            <div className="relative flex h-full min-h-[14rem] w-full max-w-[26rem] items-center justify-center overflow-hidden rounded-[30px] border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04))] p-6 backdrop-blur">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.08),transparent_20%),radial-gradient(circle_at_70%_80%,rgba(255,153,0,0.08),transparent_18%)]" />
             {slide.kind === "listing" ? (
-              <div className="hidden items-end gap-4 lg:flex">
+              <div className="relative z-10 hidden items-end gap-4 lg:flex">
                 {listingGallery[1] ? (
                   <div className="w-[7rem] rotate-[-7deg] rounded-[22px] border border-white/16 bg-white/10 p-2 backdrop-blur">
                     <CardArtwork
@@ -240,108 +288,50 @@ function BannerCard({
             ) : null}
 
             {slide.kind === "event" ? (
-              <div className="ml-auto grid w-full max-w-[22rem] gap-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-[24px] border border-white/16 bg-white/10 p-4 backdrop-blur">
-                    <Clock3 size={18} className="text-orange" />
-                    <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-white/62">
-                      Time
-                    </p>
-                    <p className="mt-2 font-display text-[1.3rem] font-semibold tracking-[-0.04em] text-white">
-                      {slide.payload.time}
-                    </p>
-                  </div>
-                  <div className="rounded-[24px] border border-white/16 bg-white/10 p-4 backdrop-blur">
-                    <Store size={18} className="text-orange" />
-                    <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-white/62">
-                      Store
-                    </p>
-                    <p className="mt-2 line-clamp-2 font-display text-[1.1rem] font-semibold tracking-[-0.04em] text-white">
-                      {slide.payload.store}
-                    </p>
-                  </div>
-                </div>
+              <div className="relative z-10 flex h-full w-full items-center justify-center">
+                {heroArt ? (
+                  <img
+                    alt=""
+                    aria-hidden="true"
+                    className="max-h-[18rem] w-auto max-w-full object-contain drop-shadow-[0_24px_40px_rgba(0,0,0,0.35)]"
+                    src={heroArt}
+                  />
+                ) : (
+                  <CalendarRange className="text-white/60" size={88} />
+                )}
               </div>
             ) : null}
 
             {slide.kind === "game" ? (
-              <div className="ml-auto w-full max-w-[24rem] space-y-4">
-                <div className="grid grid-cols-3 gap-3">
-                  {(slide.payload.gallery || []).slice(0, 3).map((src, index) => (
-                    <div
-                      key={`${slide.payload.slug}-${index}`}
-                      className={`rounded-[22px] border border-white/16 bg-white/8 p-2 backdrop-blur ${
-                        index === 1 ? "translate-y-5" : ""
-                      }`}
-                    >
-                      <CardArtwork
-                        className="aspect-[63/88] w-full rounded-[18px] object-cover"
-                        game={slide.payload.name}
-                        src={src}
-                        title={`${slide.payload.name} spotlight ${index + 1}`}
-                      />
-                    </div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-[22px] border border-white/16 bg-white/8 px-4 py-4 backdrop-blur">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/58">
-                      Active listings
-                    </p>
-                    <p className="mt-2 font-display text-[1.55rem] font-semibold tracking-[-0.04em] text-white">
-                      {slide.payload.count}
-                    </p>
+              <div className="relative z-10 flex h-full w-full items-center justify-center">
+                {heroArt ? (
+                  <img
+                    alt=""
+                    aria-hidden="true"
+                    className="max-h-[19rem] w-auto max-w-full object-contain drop-shadow-[0_26px_44px_rgba(0,0,0,0.36)]"
+                    src={heroArt}
+                  />
+                ) : (
+                  <div className="grid grid-cols-3 gap-3">
+                    {(slide.payload.gallery || []).slice(0, 3).map((src, index) => (
+                      <div
+                        key={`${slide.payload.slug}-${index}`}
+                        className={`rounded-[22px] border border-white/16 bg-white/8 p-2 backdrop-blur ${
+                          index === 1 ? "translate-y-5" : ""
+                        }`}
+                      >
+                        <CardArtwork
+                          className="aspect-[63/88] w-full rounded-[18px] object-cover"
+                          game={slide.payload.name}
+                          src={src}
+                          title={`${slide.payload.name} spotlight ${index + 1}`}
+                        />
+                      </div>
+                    ))}
                   </div>
-                  <div className="rounded-[22px] border border-white/16 bg-white/8 px-4 py-4 backdrop-blur">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/58">
-                      Neighborhoods
-                    </p>
-                    <p className="mt-2 font-display text-[1.55rem] font-semibold tracking-[-0.04em] text-white">
-                      {slide.payload.neighborhoodCount}
-                    </p>
-                  </div>
-                </div>
+                )}
               </div>
             ) : null}
-
-            <div className="ml-auto w-full max-w-[22rem] rounded-[26px] border border-white/16 bg-white/10 p-5 backdrop-blur">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/58">
-                {slide.kind === "listing"
-                  ? "Current ask"
-                  : slide.kind === "event"
-                    ? "Store and date"
-                    : "Market pulse"}
-              </p>
-              {slide.kind === "listing" ? (
-                <>
-                  <p className="mt-4 font-display text-[2rem] font-semibold tracking-[-0.05em] text-white">
-                    {formatCadPrice(slide.payload.price, slide.payload.priceCurrency || "CAD")}
-                  </p>
-                  <p className="mt-2 text-sm text-white/74">
-                    {slide.payload.game} | {slide.payload.neighborhood}
-                  </p>
-                </>
-              ) : null}
-              {slide.kind === "event" ? (
-                <>
-                  <p className="mt-4 font-display text-[1.45rem] font-semibold tracking-[-0.05em] text-white">
-                    {slide.payload.store}
-                  </p>
-                  <p className="mt-2 text-sm text-white/74">
-                    {slide.payload.dateStr} | {slide.payload.time}
-                  </p>
-                </>
-              ) : null}
-              {slide.kind === "game" ? (
-                <>
-                  <p className="mt-4 font-display text-[1.45rem] font-semibold tracking-[-0.05em] text-white">
-                    {slide.payload.shortName}
-                  </p>
-                  <p className="mt-2 text-sm text-white/74">
-                    {slide.payload.count} active listings across {slide.payload.neighborhoodCount} neighborhoods
-                  </p>
-                </>
-              ) : null}
             </div>
           </div>
         </div>
@@ -527,16 +517,6 @@ export default function HomePage() {
     return map;
   }, [safeListings]);
 
-  const sellerArtworkById = useMemo(() => {
-    const map = {};
-    safeListings.forEach((listing) => {
-      if (listing?.sellerId && !map[listing.sellerId] && listing?.imageUrl) {
-        map[listing.sellerId] = listing.imageUrl;
-      }
-    });
-    return map;
-  }, [safeListings]);
-
   const gameShelves = useMemo(
     () =>
       categorySummaries.map((game) => ({
@@ -630,7 +610,6 @@ export default function HomePage() {
         payload: {
           ...featuredListing,
           gallery,
-          backgroundImage: featuredListing.imageUrl,
         },
       });
     }
@@ -648,10 +627,7 @@ export default function HomePage() {
         cta: "View events",
         payload: {
           ...nextEvent,
-          backgroundImage:
-            artworkByGame[eventGameKey] ||
-            featuredListing?.imageUrl ||
-            null,
+          heroArt: CURATED_HERO_ART[eventGameKey] || artworkByGame[eventGameKey] || null,
         },
       });
     }
@@ -670,7 +646,10 @@ export default function HomePage() {
           featuredGame.shortName,
         ],
         cta: "Browse game",
-        payload: featuredGame,
+        payload: {
+          ...featuredGame,
+          heroArt: CURATED_HERO_ART[normalizeGameKey(featuredGame.slug)] || artworkByGame[normalizeGameKey(featuredGame.slug)] || null,
+        },
       });
     }
 
