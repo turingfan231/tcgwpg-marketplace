@@ -4,6 +4,7 @@ import {
   CalendarCog,
   ExternalLink,
   Flag,
+  LayoutTemplate,
   ShieldCheck,
   Trash2,
   Users,
@@ -16,6 +17,26 @@ import { useMarketplace } from "../hooks/useMarketplace";
 const badgeIds = ["fast", "trusted", "verified", "community", "power", "judge", "beta"];
 const storeOptions = ["Fusion Gaming", "Galaxy Comics", "A Muse N Games", "Arctic Rift Cards", "Other"];
 const gameOptions = ["Magic", "Pokemon", "One Piece"];
+const landingConcepts = [
+  {
+    id: "premium-app",
+    name: "Premium App",
+    note: "Listing-first, compact, and product-driven. Best if you want the homepage to feel like a polished mobile/desktop app instead of a marketing site.",
+    recommendation: "Strongest direction if you want the cleanest balance of utility, motion, and premium product feel.",
+  },
+  {
+    id: "local-community",
+    name: "Local Community",
+    note: "Puts Winnipeg, events, neighborhoods, and trusted sellers front and center. Feels more local and differentiated.",
+    recommendation: "Best if the local identity should be the first thing people feel when they land.",
+  },
+  {
+    id: "luxury-collector",
+    name: "Luxury Collector",
+    note: "More editorial and dramatic. Higher-end visual hierarchy with less utility in the first screen and more collector energy.",
+    recommendation: "Best if you want the most premium visual impression and do not mind a slightly less utilitarian landing page.",
+  },
+];
 
 function formatEventDate(dateStr) {
   try {
@@ -56,6 +77,208 @@ function SectionButton({ active, count, label, onClick }) {
 
 function EmptyAdminState({ children }) {
   return <p className="text-sm leading-7 text-steel">{children}</p>;
+}
+
+function PreviewChip({ children, tone = "light" }) {
+  return (
+    <span
+      className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
+        tone === "dark"
+          ? "bg-white/12 text-white/78"
+          : tone === "navy"
+            ? "bg-navy/10 text-navy"
+            : "bg-[#f6f2ea] text-steel"
+      }`}
+    >
+      {children}
+    </span>
+  );
+}
+
+function PreviewBlock({ className = "", children }) {
+  return (
+    <div className={`rounded-[22px] border border-slate-200/80 bg-white ${className}`}>{children}</div>
+  );
+}
+
+function LandingDirectionPreview({ conceptId }) {
+  if (conceptId === "premium-app") {
+    return (
+      <div className="space-y-4">
+        <PreviewBlock className="overflow-hidden bg-[linear-gradient(160deg,#17394a_0%,#1a5b78_62%,#2a6782_100%)] p-5 text-white">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-white/58">
+                Spotlight rail
+              </p>
+              <h3 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em]">
+                Real listings first
+              </h3>
+            </div>
+            <PreviewChip tone="dark">Live market</PreviewChip>
+          </div>
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            {[1, 2, 3].map((item) => (
+              <div key={item} className="rounded-[20px] bg-white/10 p-3 backdrop-blur">
+                <div className="rounded-[16px] bg-white/14 p-3">
+                  <div className="aspect-[63/88] rounded-[14px] bg-[linear-gradient(160deg,rgba(255,255,255,0.35),rgba(255,255,255,0.08))]" />
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <div className="h-3 w-20 rounded-full bg-white/20" />
+                  <div className="h-3 w-12 rounded-full bg-orange/70" />
+                </div>
+                <div className="mt-2 h-4 w-4/5 rounded-full bg-white/18" />
+              </div>
+            ))}
+          </div>
+        </PreviewBlock>
+
+        <div className="grid gap-4 xl:grid-cols-[1fr_19rem]">
+          <PreviewBlock className="p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="section-kicker">Game shelves</p>
+                <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-ink">
+                  Browse by game
+                </p>
+              </div>
+              <PreviewChip tone="navy">Pokemon / Magic / One Piece</PreviewChip>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {["Pokemon", "Magic", "One Piece"].map((game) => (
+                <div key={game} className="rounded-[18px] bg-[#faf7f1] p-4">
+                  <div className="h-4 w-24 rounded-full bg-slate-200" />
+                  <div className="mt-4 space-y-2">
+                    <div className="h-16 rounded-[16px] bg-white" />
+                    <div className="h-16 rounded-[16px] bg-white" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </PreviewBlock>
+
+          <PreviewBlock className="p-4">
+            <p className="section-kicker">Fresh feed</p>
+            <div className="mt-4 space-y-3">
+              {[1, 2, 3].map((item) => (
+                <div key={item} className="rounded-[18px] bg-[#faf7f1] p-3">
+                  <div className="h-4 w-28 rounded-full bg-slate-200" />
+                  <div className="mt-2 h-3 w-20 rounded-full bg-slate-100" />
+                </div>
+              ))}
+            </div>
+          </PreviewBlock>
+        </div>
+      </div>
+    );
+  }
+
+  if (conceptId === "local-community") {
+    return (
+      <div className="space-y-4">
+        <PreviewBlock className="p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="section-kicker">Tonight in Winnipeg</p>
+              <h3 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em] text-ink">
+                Local first, then the market
+              </h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {["Maples", "St. Vital", "Downtown", "North End"].map((chip) => (
+                <PreviewChip key={chip}>{chip}</PreviewChip>
+              ))}
+            </div>
+          </div>
+          <div className="mt-5 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+            <div className="rounded-[22px] bg-[#17394a] p-4 text-white">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-white/60">
+                Upcoming events
+              </p>
+              <div className="mt-4 space-y-3">
+                {[1, 2, 3].map((item) => (
+                  <div key={item} className="rounded-[18px] bg-white/10 p-3">
+                    <div className="h-4 w-40 rounded-full bg-white/20" />
+                    <div className="mt-2 h-3 w-24 rounded-full bg-white/12" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-3">
+              {[1, 2, 3].map((item) => (
+                <div key={item} className="rounded-[20px] bg-[#faf7f1] p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="h-4 w-32 rounded-full bg-slate-200" />
+                    <div className="h-4 w-14 rounded-full bg-slate-100" />
+                  </div>
+                  <div className="mt-3 h-14 rounded-[16px] bg-white" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </PreviewBlock>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          {["Trusted sellers", "Neighborhoods", "Fresh listings"].map((label) => (
+            <PreviewBlock key={label} className="p-4">
+              <p className="section-kicker">{label}</p>
+              <div className="mt-4 h-28 rounded-[18px] bg-[#faf7f1]" />
+            </PreviewBlock>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <PreviewBlock className="overflow-hidden bg-[linear-gradient(160deg,#112734_0%,#17394a_55%,#24485c_100%)] p-5 text-white">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-white/55">
+              Collector spotlight
+            </p>
+            <h3 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em]">
+              Curated, dramatic, premium
+            </h3>
+          </div>
+          <PreviewChip tone="dark">High-end first</PreviewChip>
+        </div>
+        <div className="mt-5 grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+          <div className="rounded-[24px] border border-white/10 bg-white/6 p-4">
+            <div className="aspect-[4/5] rounded-[20px] bg-[linear-gradient(180deg,rgba(255,255,255,0.22),rgba(255,255,255,0.04))]" />
+          </div>
+          <div className="space-y-3">
+            <div className="h-5 w-24 rounded-full bg-white/18" />
+            <div className="h-5 w-4/5 rounded-full bg-white/16" />
+            <div className="h-5 w-3/5 rounded-full bg-white/16" />
+            <div className="mt-5 flex flex-wrap gap-2">
+              <PreviewChip tone="dark">Featured cards</PreviewChip>
+              <PreviewChip tone="dark">Collector notes</PreviewChip>
+              <PreviewChip tone="dark">Recent solds</PreviewChip>
+            </div>
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              {[1, 2].map((item) => (
+                <div key={item} className="rounded-[18px] bg-white/8 p-3">
+                  <div className="h-4 w-24 rounded-full bg-white/18" />
+                  <div className="mt-3 h-20 rounded-[16px] bg-white/10" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </PreviewBlock>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {["Newest drops", "Trusted sellers", "Calendar"].map((label) => (
+          <PreviewBlock key={label} className="p-4">
+            <p className="section-kicker">{label}</p>
+            <div className="mt-4 h-24 rounded-[18px] bg-[#faf7f1]" />
+          </PreviewBlock>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function AdminPage() {
@@ -196,6 +419,7 @@ export default function AdminPage() {
     { id: "listings", label: "Listings", count: sortedListings.length },
     { id: "users", label: "Users", count: sortedUsers.length },
     { id: "events", label: "Events", count: manualEvents.length },
+    { id: "landing-lab", label: "Landing Lab" },
   ];
 
   function handleAddEvent(event) {
@@ -418,6 +642,10 @@ export default function AdminPage() {
               <button className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-slate-300" type="button" onClick={() => setActiveSection("events")}>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">Events</p>
                 <p className="mt-2 font-semibold text-ink">Calendar overrides</p>
+              </button>
+              <button className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-slate-300" type="button" onClick={() => setActiveSection("landing-lab")}>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">Storefront</p>
+                <p className="mt-2 font-semibold text-ink">Compare landing directions</p>
               </button>
             </div>
           </section>
@@ -1072,6 +1300,57 @@ export default function AdminPage() {
             )}
           </div>
         </section>
+      ) : null}
+
+      {activeSection === "landing-lab" ? (
+        <div className="space-y-8">
+          <section className="surface-card p-6">
+            <div className="flex items-center gap-3">
+              <LayoutTemplate className="text-orange" size={20} />
+              <div>
+                <p className="section-kicker">Storefront Lab</p>
+                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                  Landing page directions
+                </h2>
+              </div>
+            </div>
+            <p className="mt-4 max-w-4xl text-sm leading-7 text-steel">
+              Compare three full homepage directions before rebuilding the live storefront.
+              Each option is meant to answer a different question: should the site feel like
+              a polished app, a local community board, or a premium collector marketplace?
+            </p>
+          </section>
+
+          <section className="grid gap-6">
+            {landingConcepts.map((concept) => (
+              <article key={concept.id} className="surface-card p-6">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="max-w-3xl">
+                    <p className="section-kicker">Direction</p>
+                    <h3 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                      {concept.name}
+                    </h3>
+                    <p className="mt-3 text-sm leading-7 text-steel">{concept.note}</p>
+                  </div>
+                  <span className="rounded-full bg-[#f8f5ee] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-steel">
+                    {concept.id}
+                  </span>
+                </div>
+
+                <div className="mt-5">
+                  <LandingDirectionPreview conceptId={concept.id} />
+                </div>
+
+                <div className="mt-5 rounded-[22px] border border-slate-200 bg-[#fbf8f1] px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                    Recommendation
+                  </p>
+                  <p className="mt-2 text-sm leading-7 text-steel">{concept.recommendation}</p>
+                </div>
+              </article>
+            ))}
+          </section>
+        </div>
       ) : null}
     </div>
   );
