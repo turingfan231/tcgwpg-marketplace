@@ -156,7 +156,14 @@ function BannerCard({
     seller: "bg-white/12 text-white",
   };
   const listingGallery = slide.kind === "listing" ? slide.payload.gallery || [] : [];
-  const backgroundImage = slide.payload.backgroundImage || slide.payload.imageUrl || null;
+  const accentMap = {
+    listing:
+      "bg-[radial-gradient(circle_at_18%_22%,rgba(255,255,255,0.12),transparent_16%),radial-gradient(circle_at_78%_20%,rgba(255,153,0,0.18),transparent_14%),linear-gradient(135deg,rgba(255,255,255,0.06),transparent_42%),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.07)_1px,transparent_1px)] bg-[length:auto,auto,auto,38px_38px,38px_38px]",
+    event:
+      "bg-[radial-gradient(circle_at_18%_22%,rgba(255,255,255,0.1),transparent_16%),radial-gradient(circle_at_82%_18%,rgba(94,127,147,0.2),transparent_14%),radial-gradient(circle_at_70%_75%,rgba(255,153,0,0.14),transparent_18%),linear-gradient(120deg,rgba(255,255,255,0.05),transparent_44%),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:auto,auto,auto,auto,42px_42px,42px_42px]",
+    seller:
+      "bg-[radial-gradient(circle_at_20%_22%,rgba(255,255,255,0.1),transparent_16%),radial-gradient(circle_at_82%_18%,rgba(255,153,0,0.16),transparent_14%),radial-gradient(circle_at_78%_74%,rgba(94,127,147,0.18),transparent_18%),linear-gradient(125deg,rgba(255,255,255,0.05),transparent_42%),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:auto,auto,auto,auto,40px_40px,40px_40px]",
+  };
 
   return (
     <article
@@ -169,18 +176,8 @@ function BannerCard({
       <div
         className={`relative h-full overflow-hidden rounded-[36px] border border-white/18 bg-gradient-to-br p-6 shadow-[0_30px_80px_-46px_rgba(20,54,74,0.52)] sm:p-8 lg:p-10 ${paletteMap[slide.kind]}`}
       >
-        {backgroundImage ? (
-          <div className="absolute inset-0">
-            <img
-              alt=""
-              aria-hidden="true"
-              className="h-full w-full scale-110 object-cover opacity-40 blur-[2px]"
-              src={backgroundImage}
-            />
-            <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(7,18,27,0.88),rgba(14,38,56,0.72)_44%,rgba(7,18,27,0.8))]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,153,0,0.16),transparent_18%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.08),transparent_24%)]" />
-          </div>
-        ) : null}
+        <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(7,18,27,0.9),rgba(14,38,56,0.8)_44%,rgba(7,18,27,0.86))]" />
+        <div className={`absolute inset-0 ${accentMap[slide.kind]}`} />
 
         <div className="pointer-events-none absolute inset-y-0 right-0 w-[38%] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08),transparent_68%)]" />
 
