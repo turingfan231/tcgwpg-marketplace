@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AppShell from "./components/layout/AppShell";
 import AppErrorBoundary from "./components/ui/AppErrorBoundary";
-import PageSkeleton from "./components/ui/PageSkeleton";
+import AppLaunchScreen from "./components/ui/AppLaunchScreen";
 import ProtectedRoute from "./components/ui/ProtectedRoute";
 import { MarketplaceProvider } from "./hooks/useMarketplace";
 
@@ -27,7 +27,7 @@ export default function App() {
     <AppErrorBoundary>
       <MarketplaceProvider>
         <BrowserRouter>
-          <Suspense fallback={<div className="page-shell py-8 pb-24 lg:py-10"><PageSkeleton cards={3} /></div>}>
+          <Suspense fallback={<AppLaunchScreen compact />}>
             <Routes>
               <Route element={<AppShell />}>
                 <Route path="/" element={<HomePage />} />

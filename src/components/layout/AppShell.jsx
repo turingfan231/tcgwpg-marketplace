@@ -1,8 +1,9 @@
 import { AlertTriangle, Clock3, MapPin, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { useMarketplace } from "../../hooks/useMarketplace";
 import CreateListingModal from "../modals/CreateListingModal";
+import AppLaunchScreen from "../ui/AppLaunchScreen";
 import InstallPrompt from "../ui/InstallPrompt";
 import ToastStack from "../ui/ToastStack";
 import Header from "./Header";
@@ -11,15 +12,19 @@ import MobileTabBar from "./MobileTabBar";
 const INSTALL_DISMISS_KEY = "tcgwpg.installPromptDismissed";
 
 export default function AppShell() {
+  const location = useLocation();
   const {
+    authReady,
     closeCreateListing,
     dismissToast,
     isCreateListingOpen,
     isSuspended,
+    loading,
     toastItems,
   } = useMarketplace();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [installVisible, setInstallVisible] = useState(false);
+  const [appBooted, setAppBooted] = useState(false);
 
   const isStandalone = useMemo(() => {
     if (typeof window === "undefined") {
@@ -106,8 +111,28 @@ export default function AppShell() {
     };
   }, [deferredPrompt, installVisible, isStandalone]);
 
+  useEffect(() => {
+    if (authReady && !loading) {
+      const timeout = window.setTimeout(() => setAppBooted(true), 180);
+      return () => window.clearTimeout(timeout);
+    }
+
+    return undefined;
+  }, [authReady, loading]);
+
+  const showLaunchScreen = !appBooted && (!authReady || loading);
+  const showTopProgress = appBooted && loading;
+
   return (
     <div className="min-h-screen bg-[#f5f1ea]">
+      {showLaunchScreen ? <AppLaunchScreen /> : null}
+      {showTopProgress ? (
+        <div className="pointer-events-none fixed inset-x-0 top-0 z-[70] h-[3px] bg-transparent">
+          <div className="h-full w-full overflow-hidden">
+            <div className="app-top-loader" />
+          </div>
+        </div>
+      ) : null}
       <Header />
       {isSuspended ? (
         <div className="border-b border-rose-200 bg-rose-50">
@@ -127,7 +152,9 @@ export default function AppShell() {
         </div>
       ) : null}
       <main className="page-shell py-5 pb-[calc(7.75rem+env(safe-area-inset-bottom))] sm:py-6 lg:py-10 lg:pb-24">
-        <Outlet />
+        <div key={location.pathname} className="app-page-transition">
+          <Outlet />
+        </div>
       </main>
 
       <footer className="hidden border-t border-slate-200/80 bg-[#f8f4ec] md:block">
