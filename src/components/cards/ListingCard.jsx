@@ -21,10 +21,10 @@ export default function ListingCard({ listing }) {
 
   return (
     <Link
-      className="group block overflow-hidden rounded-[30px] border border-slate-200/85 bg-white shadow-soft transition duration-300 hover:-translate-y-1 hover:border-navy/20 hover:shadow-lift"
+      className="group block overflow-hidden rounded-[32px] border border-[rgba(203,220,231,0.92)] bg-[linear-gradient(180deg,rgba(250,253,255,0.94),rgba(232,240,245,0.88))] shadow-soft transition duration-300 hover:-translate-y-1 hover:border-navy/20 hover:shadow-lift"
       to={`/listing/${listing.id}`}
     >
-      <div className="relative border-b border-slate-200/70 bg-[linear-gradient(180deg,#faf7f0_0%,#f3efe7_100%)] px-4 pb-4 pt-4">
+      <div className="relative border-b border-[rgba(203,220,231,0.78)] bg-[linear-gradient(180deg,#f7fbfe_0%,#e4eef4_100%)] px-4 pb-4 pt-4">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <span
@@ -65,7 +65,7 @@ export default function ListingCard({ listing }) {
           </button>
         </div>
 
-        <div className="flex min-h-[14.5rem] items-center justify-center rounded-[22px] border border-slate-200/75 bg-white/80 p-3">
+        <div className="flex min-h-[13.5rem] items-center justify-center rounded-[24px] border border-[rgba(203,220,231,0.82)] bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(236,244,248,0.82))] p-3">
           <CardArtwork
             className="aspect-[63/88] w-[9.75rem] max-w-full rounded-[20px] object-cover shadow-soft"
             game={listing.game}
@@ -106,7 +106,7 @@ export default function ListingCard({ listing }) {
           >
             {listing.condition}
           </span>
-          <span className="flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 font-semibold text-slate-600">
+          <span className="flex items-center gap-1 rounded-full bg-white/78 px-3 py-1 font-semibold text-slate-600">
             <MapPin size={12} />
             {listing.neighborhood}
           </span>
@@ -117,7 +117,7 @@ export default function ListingCard({ listing }) {
           ) : null}
         </div>
 
-        <div className="flex items-end justify-between gap-4 border-t border-slate-100 pt-3">
+        <div className="flex items-end justify-between gap-4 border-t border-[rgba(203,220,231,0.75)] pt-3">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               {hasSalePrice ? (

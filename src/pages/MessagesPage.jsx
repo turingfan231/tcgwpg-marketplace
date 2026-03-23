@@ -186,7 +186,7 @@ export default function MessagesPage() {
   return (
     <div className="grid gap-4 lg:grid-cols-[24rem_minmax(0,1fr)]">
       <section
-        className={`overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-soft lg:rounded-[30px] ${
+        className={`overflow-hidden rounded-[24px] border border-[rgba(203,220,231,0.92)] bg-[linear-gradient(180deg,rgba(250,253,255,0.94),rgba(232,240,245,0.88))] shadow-soft lg:rounded-[30px] ${
           showMobileThread ? "hidden lg:block" : "block"
         }`}
       >
@@ -195,7 +195,7 @@ export default function MessagesPage() {
           <h1 className="mt-2 font-display text-[2.2rem] font-semibold tracking-[-0.04em] text-ink">
             Inbox
           </h1>
-          <div className="mt-4 rounded-[18px] border border-slate-200 bg-[#f8f5ee] px-4 py-3">
+          <div className="mt-4 rounded-[18px] border border-[rgba(203,220,231,0.92)] bg-[rgba(249,252,255,0.84)] px-4 py-3">
             <div className="flex items-center gap-3">
               <Search size={16} className="text-steel" />
               <input
@@ -286,7 +286,7 @@ export default function MessagesPage() {
       </section>
 
       <section
-        className={`overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-soft lg:rounded-[30px] ${
+        className={`overflow-hidden rounded-[24px] border border-[rgba(203,220,231,0.92)] bg-[linear-gradient(180deg,rgba(250,253,255,0.94),rgba(232,240,245,0.88))] shadow-soft lg:rounded-[30px] ${
           !showMobileThread ? "hidden lg:block" : "block"
         }`}
       >
@@ -549,7 +549,7 @@ export default function MessagesPage() {
               </div>
             ) : null}
 
-            <div className="flex max-h-[calc(100dvh-22rem)] flex-col gap-3 overflow-y-auto bg-[#fcfaf4] px-4 py-4 sm:max-h-[50vh] sm:px-6 sm:py-5">
+            <div className="flex max-h-[calc(100dvh-22rem)] flex-col gap-3 overflow-y-auto bg-[linear-gradient(180deg,#f7fbfe_0%,#edf4f8_100%)] px-4 py-4 sm:max-h-[50vh] sm:px-6 sm:py-5">
               {activeThread.messages.map((message) => {
                 const mine = message.senderId === currentUserId;
                 const isSystemSupportThread =

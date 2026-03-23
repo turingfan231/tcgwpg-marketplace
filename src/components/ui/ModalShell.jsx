@@ -35,11 +35,11 @@ export default function ModalShell({
         onClick={onClose}
       />
       <div
-        className={`relative h-[100dvh] w-full overflow-hidden rounded-none border border-white/15 bg-[#fcfaf5] shadow-lift sm:max-h-[94vh] sm:h-auto sm:rounded-[34px] ${
+        className={`relative h-[100dvh] w-full overflow-hidden rounded-none border border-[rgba(204,220,231,0.92)] bg-[linear-gradient(180deg,#f5fafc_0%,#dde9f0_100%)] shadow-lift sm:max-h-[94vh] sm:h-auto sm:rounded-[34px] ${
           wide ? "sm:max-w-[1600px]" : "sm:max-w-2xl"
         }`}
       >
-        <div className="sticky top-0 z-10 flex items-start justify-between border-b border-slate-200 bg-[#fcfaf5]/95 px-4 py-4 backdrop-blur sm:px-6 sm:py-5 lg:px-8">
+        <div className="sticky top-0 z-10 flex items-start justify-between border-b border-[rgba(204,220,231,0.92)] bg-[rgba(245,250,252,0.95)] px-4 py-4 backdrop-blur sm:px-6 sm:py-5 lg:px-8">
           <div>
             <p className="section-kicker">Marketplace Flow</p>
             <h2 className="mt-2 font-display text-[1.65rem] font-bold uppercase tracking-[0.08em] text-ink sm:text-3xl">

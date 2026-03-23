@@ -226,7 +226,7 @@ export default function EventsPage() {
 
   return (
     <div className="space-y-7">
-      <section className="surface-card p-6 sm:p-7">
+      <section className="console-shell p-6 sm:p-7">
         <p className="section-kicker">Local Events</p>
         <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-ink sm:text-[3.25rem]">
           Winnipeg tournaments, leagues, and local nights
@@ -236,7 +236,7 @@ export default function EventsPage() {
         </p>
       </section>
 
-      <section className="surface-card space-y-5 p-5 sm:p-6">
+      <section className="console-panel space-y-5 p-5 sm:p-6">
         <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-steel">
           <Filter size={14} />
           Filters
@@ -246,7 +246,7 @@ export default function EventsPage() {
           <label className="block">
             <span className="mb-2 block text-sm font-semibold text-steel">Store</span>
             <select
-              className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              className="w-full rounded-[20px] border border-[rgba(203,220,231,0.92)] bg-[rgba(249,252,255,0.84)] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
               value={selectedStore}
               onChange={(event) => setSelectedStore(event.target.value)}
             >
@@ -259,7 +259,7 @@ export default function EventsPage() {
           <label className="block">
             <span className="mb-2 block text-sm font-semibold text-steel">Game</span>
             <select
-              className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              className="w-full rounded-[20px] border border-[rgba(203,220,231,0.92)] bg-[rgba(249,252,255,0.84)] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
               value={selectedGame}
               onChange={(event) => setSelectedGame(event.target.value)}
             >
@@ -270,7 +270,7 @@ export default function EventsPage() {
           </label>
 
           <div className="flex items-end gap-2">
-            <div className="inline-flex rounded-full bg-[#f4f0e8] p-1">
+            <div className="inline-flex rounded-full bg-[rgba(255,255,255,0.56)] p-1">
               {rangeOptions.map((option) => (
                 <button
                   key={option.id}
@@ -289,7 +289,7 @@ export default function EventsPage() {
       </section>
 
       <section className="grid gap-7 xl:grid-cols-[1.05fr_0.95fr]">
-        <article className="surface-card hidden p-6 md:block">
+        <article className="console-panel hidden p-6 md:block">
           {rangeMode === "month" ? (
             <>
               <div className="flex flex-wrap items-center justify-between gap-4">
@@ -417,7 +417,7 @@ export default function EventsPage() {
           )}
         </article>
 
-        <article className="surface-card p-5 sm:p-6">
+        <article className="console-panel p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Upcoming list</p>

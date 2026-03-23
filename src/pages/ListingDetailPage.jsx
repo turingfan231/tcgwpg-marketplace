@@ -266,7 +266,7 @@ export default function ListingDetailPage() {
     <div className="space-y-10">
       <section className="grid gap-6 xl:grid-cols-[1.06fr_0.94fr]">
         <div className="space-y-5">
-          <div className="rounded-[36px] bg-white p-4 shadow-soft sm:p-6">
+          <div className="console-shell p-4 sm:p-6">
             <div className="grid gap-5 lg:grid-cols-[minmax(290px,380px)_minmax(0,1fr)]">
               <div className="mx-auto w-full max-w-[380px]">
                 <button
@@ -343,7 +343,7 @@ export default function ListingDetailPage() {
             </div>
           </div>
 
-          <div className="rounded-[36px] bg-white p-4 shadow-soft sm:p-6">
+          <div className="console-panel p-4 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="section-kicker">Recent Source Sales</p>
@@ -393,7 +393,7 @@ export default function ListingDetailPage() {
             ) : null}
 
             {visibleSourceSales.length ? (
-              <div className="mt-5 rounded-[28px] border border-slate-200 bg-[#fbf8f1] p-5">
+              <div className="mt-5 rounded-[28px] border border-[rgba(203,220,231,0.92)] bg-[linear-gradient(180deg,rgba(250,253,255,0.94),rgba(233,241,246,0.88))] p-5">
                 <div className="mt-5 space-y-3">
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <p className="text-sm leading-7 text-steel">
@@ -460,7 +460,7 @@ export default function ListingDetailPage() {
         </div>
 
         <div className="space-y-5">
-          <div className="rounded-[36px] bg-white p-5 shadow-soft sm:p-7">
+          <div className="console-shell p-5 sm:p-7">
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${getListingTypeClasses(
@@ -754,7 +754,7 @@ export default function ListingDetailPage() {
           ) : null}
 
           <Link
-            className="block rounded-[36px] bg-white p-5 shadow-soft transition hover:-translate-y-1 hover:shadow-lift sm:p-6"
+            className="console-panel block p-5 transition hover:-translate-y-1 hover:shadow-lift sm:p-6"
             to={`/seller/${listing.seller.id}`}
           >
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
@@ -800,7 +800,7 @@ export default function ListingDetailPage() {
           </Link>
 
           {(isOwner || listingOffers.length) && (
-            <div className="rounded-[36px] bg-white p-5 shadow-soft sm:p-6">
+            <div className="console-panel p-5 sm:p-6">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="section-kicker">Offer Activity</p>
@@ -883,7 +883,7 @@ export default function ListingDetailPage() {
           )}
 
           {listing.editHistory?.length ? (
-            <div className="rounded-[36px] bg-white p-5 shadow-soft sm:p-6">
+            <div className="console-panel p-5 sm:p-6">
               <p className="section-kicker">Edit History</p>
               <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
                 Listing changes

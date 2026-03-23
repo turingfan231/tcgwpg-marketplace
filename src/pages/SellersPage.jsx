@@ -60,7 +60,7 @@ export default function SellersPage() {
 
   return (
     <div className="space-y-6">
-      <section className="surface-card p-6">
+      <section className="console-shell p-6">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <p className="section-kicker">Browse sellers</p>
@@ -73,7 +73,7 @@ export default function SellersPage() {
           </div>
 
           <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_13rem] xl:min-w-[34rem]">
-            <label className="rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3">
+            <label className="console-well px-4 py-3">
               <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-steel">
                 <Search size={15} />
                 Search
@@ -85,7 +85,7 @@ export default function SellersPage() {
                 onChange={(event) => setQuery(event.target.value)}
               />
             </label>
-            <label className="rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3">
+            <label className="console-well px-4 py-3">
               <span className="mb-2 block text-sm font-semibold text-steel">Sort by</span>
               <select
                 className="w-full bg-transparent text-sm outline-none"
@@ -104,7 +104,7 @@ export default function SellersPage() {
         {filteredSellers.map((seller) => (
           <Link
             key={seller.id}
-            className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-soft transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lift"
+            className="console-panel p-4 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lift"
             to={`/seller/${seller.id}`}
           >
             <div className="flex items-start justify-between gap-3">
@@ -135,7 +135,7 @@ export default function SellersPage() {
               {(seller.favoriteGames || []).slice(0, 3).map((game) => (
                 <span
                   key={`${seller.id}-${game}`}
-                  className="rounded-full bg-[#f8f5ee] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700"
+                  className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700"
                 >
                   {game}
                 </span>
@@ -151,7 +151,7 @@ export default function SellersPage() {
             </div>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[18px] bg-[#f8f5ee] px-4 py-3">
+                <div className="console-well px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-steel">
                   Deals
                 </p>
@@ -160,7 +160,7 @@ export default function SellersPage() {
                   {seller.completedDeals}
                 </p>
               </div>
-              <div className="rounded-[18px] bg-[#f8f5ee] px-4 py-3">
+                <div className="console-well px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-steel">
                   Rating
                 </p>

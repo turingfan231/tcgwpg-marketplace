@@ -168,8 +168,9 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/94 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-[rgba(195,215,228,0.75)] bg-[rgba(238,246,250,0.86)] backdrop-blur-2xl">
         <div className="page-shell py-3 sm:py-4">
+          <div className="console-panel px-3 py-3 sm:px-4 sm:py-4">
           <div className="flex items-center justify-between gap-3">
             <Link className="flex min-w-0 items-center gap-3" to="/">
               <div className="brand-pill shrink-0">
@@ -189,7 +190,7 @@ export default function Header() {
 
             <div className="flex items-center gap-2">
               <Link
-                className="relative inline-flex items-center justify-center rounded-full border border-slate-200 bg-white p-3 text-steel transition hover:border-slate-300 hover:text-ink md:px-4 md:py-2.5"
+                className="relative inline-flex items-center justify-center rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 p-3 text-steel transition hover:border-slate-300 hover:text-ink md:px-4 md:py-2.5"
                 to="/messages"
               >
                 <MessageCircle size={18} />
@@ -212,7 +213,7 @@ export default function Header() {
 
               <button
                 aria-label="Open navigation menu"
-                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white p-3 text-steel transition hover:border-slate-300 hover:text-ink lg:hidden"
+                className="inline-flex items-center justify-center rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 p-3 text-steel transition hover:border-slate-300 hover:text-ink lg:hidden"
                 type="button"
                 onClick={() => setMobileDrawerOpen(true)}
               >
@@ -224,7 +225,7 @@ export default function Header() {
                   <div className="relative" ref={accountMenuRef}>
                     <button
                       aria-expanded={menuOpen}
-                      className="relative inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-slate-300"
+                      className="relative inline-flex items-center gap-2 rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-slate-300"
                       type="button"
                       onClick={() => setMenuOpen((current) => !current)}
                     >
@@ -239,7 +240,7 @@ export default function Header() {
                     </button>
 
                     {menuOpen ? (
-                      <div className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[18rem] rounded-[24px] border border-slate-200 bg-white p-2 shadow-[0_18px_44px_-22px_rgba(15,23,42,0.28)]">
+                      <div className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[18rem] rounded-[24px] border border-[rgba(203,220,231,0.92)] bg-[rgba(248,252,255,0.96)] p-2 shadow-[0_18px_44px_-22px_rgba(15,23,42,0.28)] backdrop-blur-xl">
                         <div className="border-b border-slate-100 px-4 py-3">
                           <div className="flex items-center gap-3">
                             <UserAvatar className="h-11 w-11 text-sm" user={currentUser} />
@@ -288,7 +289,7 @@ export default function Header() {
                   </div>
                 ) : (
                   <Link
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                    className="inline-flex items-center gap-2 rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 px-4 py-2.5 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
                     to="/auth"
                   >
                     Login / Sign Up
@@ -304,14 +305,14 @@ export default function Header() {
               size={18}
             />
             <input
-              className="w-full rounded-[20px] border border-slate-200 bg-[#f7f3ec] py-3 pl-12 pr-4 text-sm text-ink outline-none transition focus:border-navy focus:bg-white sm:rounded-[22px] sm:py-3.5"
+              className="w-full rounded-[22px] border border-[rgba(203,220,231,0.92)] bg-[rgba(250,253,255,0.8)] py-3 pl-12 pr-4 text-sm text-ink outline-none transition focus:border-navy focus:bg-white sm:py-3.5"
               placeholder="Search cards, set codes, variants, or sellers"
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
             />
           </form>
 
-          <div className="mt-4 hidden flex-col gap-3 border-t border-slate-200/80 pt-4 sm:flex lg:flex-row lg:items-center lg:justify-between">
+          <div className="mt-4 hidden flex-col gap-3 border-t border-[rgba(195,215,228,0.82)] pt-4 sm:flex lg:flex-row lg:items-center lg:justify-between">
             <div className="header-chip-scroll flex items-center gap-2 overflow-x-auto">
               {browseLinks.map((link) => (
                 <NavLink
@@ -320,7 +321,7 @@ export default function Header() {
                     `whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
                       isActive
                         ? "bg-navy text-white"
-                        : "text-steel hover:bg-slate-100 hover:text-ink"
+                        : "border border-transparent bg-white/55 text-steel hover:border-[rgba(203,220,231,0.92)] hover:bg-white/82 hover:text-ink"
                     }`
                   }
                   onClick={() => handleBrowseLink(link)}
@@ -347,6 +348,7 @@ export default function Header() {
               ))}
             </div>
           </div>
+          </div>
         </div>
       </header>
 
@@ -360,7 +362,7 @@ export default function Header() {
           />
           <div
             ref={mobileDrawerRef}
-            className="absolute right-0 top-0 flex h-full w-full max-w-[22rem] flex-col bg-white shadow-lift"
+            className="absolute right-0 top-0 flex h-full w-full max-w-[22rem] flex-col bg-[linear-gradient(180deg,#f4f9fc_0%,#dce9f0_100%)] shadow-lift"
           >
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
               <div>

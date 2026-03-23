@@ -11,6 +11,7 @@ export default function InstallPrompt({ installState, onDismiss, onInstall }) {
   const isIosFallback = installState.mode === "ios";
   const isManualFallback = installState.mode === "manual";
   const isFallbackMode = isIosFallback || isManualFallback;
+  const isMobile = installState.mobile !== false;
 
   const guideSteps = isIosFallback
     ? [
@@ -26,8 +27,14 @@ export default function InstallPrompt({ installState, onDismiss, onInstall }) {
 
   return (
     <>
-      <div className="fixed inset-x-3 bottom-[calc(6.25rem+env(safe-area-inset-bottom))] z-40 lg:hidden">
-        <div className="mx-auto max-w-xl rounded-[26px] border border-slate-200 bg-white px-4 py-4 shadow-[0_22px_44px_-24px_rgba(15,23,42,0.3)]">
+      <div
+        className={`fixed z-40 ${
+          isMobile
+            ? "inset-x-3 bottom-[calc(6.25rem+env(safe-area-inset-bottom))] lg:hidden"
+            : "bottom-6 right-6 left-auto hidden w-[24rem] lg:block"
+        }`}
+      >
+        <div className="mx-auto max-w-xl rounded-[26px] border border-[rgba(203,220,231,0.9)] bg-[rgba(248,252,255,0.96)] px-4 py-4 shadow-[0_22px_44px_-24px_rgba(15,23,42,0.3)] backdrop-blur-xl">
           <div className="flex items-start gap-3">
             <div className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-navy text-white">
               <Download size={18} />
@@ -40,8 +47,12 @@ export default function InstallPrompt({ installState, onDismiss, onInstall }) {
                 {isIosFallback
                   ? "Install TCGWPG from Safari so it launches full-screen like an app."
                   : isManualFallback
-                    ? "Use your browser's install or Add to Home Screen action to pin TCGWPG to your phone."
-                    : "Install TCGWPG on your phone for faster launches, a cleaner full-screen view, and app-like navigation."}
+                    ? isMobile
+                      ? "Use your browser's install or Add to Home Screen action to pin TCGWPG to your phone."
+                      : "Use your browser's install action to pin TCGWPG to your desktop like a standalone app."
+                    : isMobile
+                      ? "Install TCGWPG on your phone for faster launches, a cleaner full-screen view, and app-like navigation."
+                      : "Install TCGWPG on this PC for a cleaner standalone window and a more native desktop feel."}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <button
@@ -72,8 +83,14 @@ export default function InstallPrompt({ installState, onDismiss, onInstall }) {
         </div>
       </div>
       {showGuide ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 px-3 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-6 backdrop-blur-sm lg:hidden">
-          <div className="w-full max-w-xl rounded-[28px] border border-slate-200 bg-white px-5 py-5 shadow-[0_24px_48px_-24px_rgba(15,23,42,0.35)]">
+        <div
+          className={`fixed inset-0 z-50 flex justify-center bg-slate-950/45 px-3 pt-6 backdrop-blur-sm ${
+            isMobile
+              ? "items-end pb-[calc(1rem+env(safe-area-inset-bottom))] lg:hidden"
+              : "items-center pb-6"
+          }`}
+        >
+          <div className="w-full max-w-xl rounded-[28px] border border-[rgba(203,220,231,0.9)] bg-[rgba(248,252,255,0.97)] px-5 py-5 shadow-[0_24px_48px_-24px_rgba(15,23,42,0.35)]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.18em] text-navy/65">

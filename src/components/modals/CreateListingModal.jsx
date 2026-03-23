@@ -332,7 +332,7 @@ export default function CreateListingModal({ onClose }) {
       onClose={onClose}
     >
       <form
-        className="grid gap-0 bg-[linear-gradient(180deg,#fbf8f1_0%,#f5f1e8_100%)] pb-28 2xl:grid-cols-[minmax(360px,0.8fr)_minmax(0,1.2fr)] md:pb-32"
+        className="grid gap-0 bg-[linear-gradient(180deg,#f6fbfe_0%,#e1ebf1_100%)] pb-28 2xl:grid-cols-[minmax(360px,0.8fr)_minmax(0,1.2fr)] md:pb-32"
         onKeyDownCapture={(event) => {
           if (
             event.key === "Enter" &&
@@ -347,7 +347,7 @@ export default function CreateListingModal({ onClose }) {
         onSubmit={handleSubmit}
       >
         <div className="order-1 space-y-4 border-b border-slate-200 p-4 sm:space-y-5 sm:p-6 lg:p-7 2xl:border-b-0 2xl:border-r">
-          <section className="surface-card p-5 sm:p-6">
+          <section className="console-panel p-5 sm:p-6">
             <p className="section-kicker">Listing basics</p>
             <h3 className="mt-3 font-display text-[1.6rem] font-semibold tracking-[-0.04em] text-ink sm:text-[2rem]">
               Card details
@@ -498,7 +498,7 @@ export default function CreateListingModal({ onClose }) {
             </div>
           </section>
 
-          <section className="surface-card p-5 sm:p-6">
+          <section className="console-panel p-5 sm:p-6">
             <p className="section-kicker">Photos and notes</p>
             <div className="mt-4 space-y-4">
               <label className="block">
@@ -561,8 +561,8 @@ export default function CreateListingModal({ onClose }) {
           </section>
         </div>
 
-        <div className="order-2 space-y-4 bg-[linear-gradient(180deg,#f7f3eb_0%,#efe8dd_100%)] p-4 sm:space-y-5 sm:p-6 lg:p-7">
-          <section className="surface-card border-slate-200 p-5 sm:p-6">
+        <div className="order-2 space-y-4 bg-[linear-gradient(180deg,#eef5f9_0%,#dce8ef_100%)] p-4 sm:space-y-5 sm:p-6 lg:p-7">
+          <section className="console-shell border-[rgba(203,220,231,0.92)] p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="section-kicker">Live print search</p>
@@ -677,7 +677,7 @@ export default function CreateListingModal({ onClose }) {
           </section>
 
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)]">
-            <section className="surface-card p-4 sm:p-5">
+            <section className="console-panel p-4 sm:p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-steel">Listing summary</p>
@@ -764,7 +764,7 @@ export default function CreateListingModal({ onClose }) {
               </div>
             </section>
 
-            <section className="surface-card p-4 sm:p-5">
+            <section className="console-panel p-4 sm:p-5">
               <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-steel">Matching printings</p>
@@ -873,7 +873,7 @@ export default function CreateListingModal({ onClose }) {
 
         </div>
 
-        <div className="sticky bottom-0 z-20 col-span-full border-t border-slate-200 bg-[#efe8dd]/95 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 backdrop-blur sm:px-6 lg:px-8">
+        <div className="sticky bottom-0 z-20 col-span-full border-t border-[rgba(203,220,231,0.92)] bg-[rgba(233,241,246,0.96)] px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 backdrop-blur sm:px-6 lg:px-8">
           <div className="mx-auto flex max-w-[1600px] flex-col gap-3">
             {draftMessage ? (
               <p className="text-sm font-semibold text-emerald-700 md:text-right">{draftMessage}</p>

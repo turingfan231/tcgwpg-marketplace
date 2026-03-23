@@ -75,7 +75,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="surface-card p-6">
+      <section className="console-shell p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="section-kicker">Notifications</p>
@@ -113,8 +113,8 @@ export default function NotificationsPage() {
             key={notification.id}
             className={`block rounded-[28px] border p-5 shadow-soft transition hover:-translate-y-0.5 ${
               notification.read
-                ? "border-slate-200 bg-white"
-                : "border-orange/30 bg-orange/5"
+                ? "border-[rgba(203,220,231,0.92)] bg-[linear-gradient(180deg,rgba(250,253,255,0.94),rgba(232,240,245,0.88))]"
+                : "border-orange/30 bg-[linear-gradient(180deg,rgba(255,248,236,0.96),rgba(255,240,214,0.84))]"
             }`}
           >
             <div className="flex items-start justify-between gap-4">

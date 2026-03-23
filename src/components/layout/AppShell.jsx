@@ -41,7 +41,6 @@ export default function AppShell() {
       return undefined;
     }
 
-    const isMobile = window.matchMedia("(max-width: 1023px)").matches;
     const dismissed = window.localStorage.getItem(INSTALL_DISMISS_KEY) === "1";
     const userAgent = window.navigator.userAgent || "";
     const isIos =
@@ -51,7 +50,7 @@ export default function AppShell() {
     const handleBeforeInstallPrompt = (event) => {
       event.preventDefault();
       setDeferredPrompt(event);
-      if (!dismissed && isMobile && !isStandalone) {
+      if (!dismissed && !isStandalone) {
         setInstallVisible(true);
       }
     };
@@ -65,7 +64,7 @@ export default function AppShell() {
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     window.addEventListener("appinstalled", handleAppInstalled);
 
-    if (!dismissed && isMobile && !isStandalone) {
+    if (!dismissed && !isStandalone) {
       setInstallVisible(true);
     }
 
@@ -96,16 +95,18 @@ export default function AppShell() {
 
   const installState = useMemo(() => {
     if (!installVisible || typeof window === "undefined" || isStandalone) {
-      return { visible: false, mode: "native" };
+      return { visible: false, mode: "native", mobile: false };
     }
 
     const userAgent = window.navigator.userAgent || "";
     const isIos =
       /iPad|iPhone|iPod/.test(userAgent) ||
       (window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1);
+    const mobile = window.matchMedia("(max-width: 1023px)").matches;
 
     return {
       visible: true,
+      mobile,
       mode: deferredPrompt ? "native" : isIos ? "ios" : "manual",
     };
   }, [deferredPrompt, installVisible, isStandalone]);
@@ -127,7 +128,7 @@ export default function AppShell() {
   const showLaunchScreen = !appBooted;
 
   return (
-    <div className="min-h-screen bg-[#f5f1ea]">
+    <div className="min-h-screen bg-transparent">
       {showLaunchScreen ? <AppLaunchScreen /> : null}
       <Header />
       {isSuspended ? (
@@ -153,9 +154,9 @@ export default function AppShell() {
         </div>
       </main>
 
-      <footer className="hidden border-t border-slate-200/80 bg-[#f8f4ec] md:block">
+      <footer className="hidden border-t border-[rgba(195,215,228,0.75)] bg-transparent md:block">
         <div className="page-shell py-10">
-          <div className="rounded-[30px] border border-slate-200/80 bg-white px-6 py-7 shadow-soft sm:px-8">
+          <div className="console-shell px-6 py-7 sm:px-8">
             <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr_0.8fr]">
               <div>
                 <p className="section-kicker">TCGWPG</p>
@@ -194,7 +195,7 @@ export default function AppShell() {
               </div>
 
               <div className="grid gap-3">
-                <div className="rounded-[22px] bg-[#f8f5ee] px-4 py-4">
+                <div className="console-well px-4 py-4">
                   <div className="inline-flex items-center gap-2 text-sm font-semibold text-ink">
                     <MapPin size={16} className="text-navy" />
                     Winnipeg-first
@@ -203,7 +204,7 @@ export default function AppShell() {
                     Neighborhood filters and postal areas keep meetups practical.
                   </p>
                 </div>
-                <div className="rounded-[22px] bg-[#f8f5ee] px-4 py-4">
+                <div className="console-well px-4 py-4">
                   <div className="inline-flex items-center gap-2 text-sm font-semibold text-ink">
                     <Clock3 size={16} className="text-orange" />
                     Faster deals
@@ -212,7 +213,7 @@ export default function AppShell() {
                     Messages, offers, and follow-up stay attached to the listing.
                   </p>
                 </div>
-                <div className="rounded-[22px] bg-[#f8f5ee] px-4 py-4">
+                <div className="console-well px-4 py-4">
                   <div className="inline-flex items-center gap-2 text-sm font-semibold text-ink">
                     <ShieldCheck size={16} className="text-navy" />
                     Trust tools
@@ -227,7 +228,7 @@ export default function AppShell() {
         </div>
       </footer>
 
-      <div className="border-t border-slate-200/70 bg-white/90 px-4 py-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-steel md:hidden">
+      <div className="border-t border-[rgba(195,215,228,0.8)] bg-[rgba(244,249,252,0.92)] px-4 py-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-steel md:hidden">
         TCGWPG | Local cards, faster meetups
       </div>
 
