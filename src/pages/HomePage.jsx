@@ -131,29 +131,34 @@ function BannerCard({
   onOpenListing,
   onOpenEvent,
   onOpenSeller,
+  onOpenGame,
 }) {
   const paletteMap = {
     listing: "from-[#102739]/95 via-[#17384c]/92 to-[#0b1d2a]/95 text-white",
     event: "from-[#0f2637]/96 via-[#17384c]/94 to-[#102739]/96 text-white",
     seller: "from-[#122b3d]/96 via-[#17384c]/94 to-[#0b1d2a]/96 text-white",
+    game: "from-[#102739]/95 via-[#163247]/93 to-[#0b1d2a]/95 text-white",
   };
 
   const buttonMap = {
     listing: "bg-white text-navy",
     event: "bg-orange text-white",
     seller: "bg-white text-navy",
+    game: "bg-white text-navy",
   };
 
   const secondaryMap = {
     listing: "text-white/74",
     event: "text-white/76",
     seller: "text-white/74",
+    game: "text-white/74",
   };
 
   const badgeMap = {
     listing: "bg-white/12 text-white",
     event: "bg-white/12 text-white",
     seller: "bg-white/12 text-white",
+    game: "bg-white/12 text-white",
   };
   const listingGallery = slide.kind === "listing" ? slide.payload.gallery || [] : [];
   const accentMap = {
@@ -163,6 +168,8 @@ function BannerCard({
       "bg-[radial-gradient(circle_at_18%_22%,rgba(255,255,255,0.1),transparent_16%),radial-gradient(circle_at_82%_18%,rgba(94,127,147,0.2),transparent_14%),radial-gradient(circle_at_70%_75%,rgba(255,153,0,0.14),transparent_18%),linear-gradient(120deg,rgba(255,255,255,0.05),transparent_44%),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:auto,auto,auto,auto,42px_42px,42px_42px]",
     seller:
       "bg-[radial-gradient(circle_at_20%_22%,rgba(255,255,255,0.1),transparent_16%),radial-gradient(circle_at_82%_18%,rgba(255,153,0,0.16),transparent_14%),radial-gradient(circle_at_78%_74%,rgba(94,127,147,0.18),transparent_18%),linear-gradient(125deg,rgba(255,255,255,0.05),transparent_42%),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:auto,auto,auto,auto,40px_40px,40px_40px]",
+    game:
+      "bg-[radial-gradient(circle_at_16%_22%,rgba(255,255,255,0.12),transparent_16%),radial-gradient(circle_at_82%_18%,rgba(255,153,0,0.14),transparent_14%),radial-gradient(circle_at_76%_76%,rgba(94,127,147,0.18),transparent_18%),linear-gradient(125deg,rgba(255,255,255,0.06),transparent_42%),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:auto,auto,auto,auto,40px_40px,40px_40px]",
   };
 
   return (
@@ -219,6 +226,8 @@ function BannerCard({
                     onOpenListing(slide.payload.id);
                   } else if (slide.kind === "event") {
                     onOpenEvent();
+                  } else if (slide.kind === "game") {
+                    onOpenGame(slide.payload.slug);
                   } else {
                     onOpenSeller(slide.payload.id);
                   }
@@ -355,6 +364,46 @@ function BannerCard({
                 </div>
               </div>
             ) : null}
+
+            {slide.kind === "game" ? (
+              <div className="w-full max-w-[24rem] space-y-4">
+                <div className="grid grid-cols-3 gap-3">
+                  {(slide.payload.gallery || []).slice(0, 3).map((src, index) => (
+                    <div
+                      key={`${slide.payload.slug}-${index}`}
+                      className={`rounded-[22px] border border-white/16 bg-white/8 p-2 backdrop-blur ${
+                        index === 1 ? "translate-y-5" : ""
+                      }`}
+                    >
+                      <CardArtwork
+                        className="aspect-[63/88] w-full rounded-[18px] object-cover"
+                        game={slide.payload.name}
+                        src={src}
+                        title={`${slide.payload.name} spotlight ${index + 1}`}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-[22px] border border-white/16 bg-white/8 px-4 py-4 backdrop-blur">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/58">
+                      Active listings
+                    </p>
+                    <p className="mt-2 font-display text-[1.55rem] font-semibold tracking-[-0.04em] text-white">
+                      {slide.payload.count}
+                    </p>
+                  </div>
+                  <div className="rounded-[22px] border border-white/16 bg-white/8 px-4 py-4 backdrop-blur">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/58">
+                      Neighborhoods
+                    </p>
+                    <p className="mt-2 font-display text-[1.55rem] font-semibold tracking-[-0.04em] text-white">
+                      {slide.payload.neighborhoodCount}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -445,7 +494,26 @@ export default function HomePage() {
       return Number(right.overallRating || 0) - Number(left.overallRating || 0);
     })
     .slice(0, 4);
-  const featuredSeller = topSellers[0] || null;
+  const featuredGame = useMemo(() => {
+    const rankedGames = categorySummaries
+      .map((game) => {
+        const listings = safeListings.filter((listing) => listing?.gameSlug === game.slug).slice(0, 3);
+        const neighborhoods = new Set(
+          safeListings
+            .filter((listing) => listing?.gameSlug === game.slug && listing?.neighborhood)
+            .map((listing) => listing.neighborhood),
+        );
+        return {
+          ...game,
+          count: listings.length ? safeListings.filter((listing) => listing?.gameSlug === game.slug).length : 0,
+          neighborhoodCount: neighborhoods.size,
+          gallery: listings.map((listing) => listing.imageUrl).filter(Boolean),
+        };
+      })
+      .sort((left, right) => right.count - left.count);
+
+    return rankedGames[0] || null;
+  }, [categorySummaries, safeListings]);
 
   const mergedEvents = useMemo(
     () =>
@@ -517,29 +585,26 @@ export default function HomePage() {
       });
     }
 
-    if (featuredSeller) {
+    if (featuredGame) {
       slides.push({
-        id: `seller-${featuredSeller.id}`,
-        kind: "seller",
-        kicker: "Seller spotlight",
-        title: `${featuredSeller.publicName || featuredSeller.firstName || featuredSeller.name} is active in the market`,
+        id: `game-${featuredGame.slug}`,
+        kind: "game",
+        kicker: "Market channel",
+        title: `${featuredGame.name} is moving fastest in the market`,
         description:
-          "Trusted local storefronts make the market feel alive. Browse sellers by completed deals, rating, and favorite games.",
+          "Jump straight into the busiest game channel to see what is actually getting posted locally right now.",
         meta: [
-          `${featuredSeller.completedDeals || 0} deals`,
-          featuredSeller.overallRating ? `${featuredSeller.overallRating.toFixed(1)} rating` : "New seller",
-          featuredSeller.neighborhood || "Winnipeg",
+          `${featuredGame.count} listings`,
+          `${featuredGame.neighborhoodCount || 1} neighborhoods`,
+          featuredGame.shortName,
         ],
-        cta: "View seller",
-        payload: {
-          ...featuredSeller,
-          backgroundImage: sellerArtworkById[featuredSeller.id] || featuredListing?.imageUrl || null,
-        },
+        cta: "Browse game",
+        payload: featuredGame,
       });
     }
 
     return slides;
-  }, [artworkByGame, featuredListing, featuredSeller, nextEvent, sellerArtworkById]);
+  }, [artworkByGame, featuredGame, featuredListing, nextEvent]);
 
   const marketPulse = [
     { label: "Live listings", value: formatNumber(safeListings.length) },
@@ -615,6 +680,10 @@ export default function HomePage() {
                   active={activeBannerIndex === index}
                   formatCadPrice={formatCadPrice}
                   onOpenEvent={() => navigate("/events")}
+                  onOpenGame={(slug) => {
+                    setGlobalSearch("");
+                    navigate(`/market/${slug}`);
+                  }}
                   onOpenListing={openListing}
                   onOpenSeller={(sellerId) => navigate(`/seller/${sellerId}`)}
                   slide={slide}
