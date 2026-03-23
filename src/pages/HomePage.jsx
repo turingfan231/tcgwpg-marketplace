@@ -1,6 +1,7 @@
 import {
   ArrowRight,
   CalendarRange,
+  Clock3,
   Heart,
   MapPin,
   MessageCircleMore,
@@ -143,6 +144,7 @@ function BannerCard({
     event: "bg-white/15 text-white",
     seller: "bg-white/70 text-orange",
   };
+  const listingGallery = slide.kind === "listing" ? slide.payload.gallery || [] : [];
 
   return (
     <article
@@ -155,7 +157,7 @@ function BannerCard({
       <div
         className={`h-full rounded-[36px] border border-white/55 bg-gradient-to-br p-6 shadow-[0_26px_70px_-46px_rgba(26,91,120,0.45)] sm:p-8 lg:p-10 ${paletteMap[slide.kind]}`}
       >
-        <div className="grid h-full gap-8 lg:grid-cols-[minmax(0,1.1fr)_20rem] lg:items-center">
+        <div className="grid h-full gap-8 lg:grid-cols-[minmax(0,1.05fr)_24rem] lg:items-center">
           <div className="max-w-3xl">
             <span
               className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${badgeMap[slide.kind]}`}
@@ -210,63 +212,122 @@ function BannerCard({
 
           <div className="flex items-center justify-center">
             {slide.kind === "listing" ? (
-              <div className="rounded-[30px] border border-white/55 bg-white/58 p-4 backdrop-blur">
-                <div className="mx-auto w-[11rem] sm:w-[13rem]">
-                  <CardArtwork
-                    className="aspect-[63/88] w-full rounded-[24px] object-cover shadow-soft"
-                    game={slide.payload.game}
-                    src={slide.payload.imageUrl}
-                    title={slide.payload.title}
-                  />
+              <div className="relative w-full max-w-[22rem]">
+                {listingGallery[1] ? (
+                  <div className="absolute -left-2 top-10 hidden w-[7rem] rotate-[-8deg] rounded-[22px] border border-white/50 bg-white/42 p-2 shadow-soft backdrop-blur sm:block">
+                    <CardArtwork
+                      className="aspect-[63/88] w-full rounded-[16px] object-cover"
+                      game={slide.payload.game}
+                      src={listingGallery[1]}
+                      title={`${slide.payload.title} alt 1`}
+                    />
+                  </div>
+                ) : null}
+                {listingGallery[2] ? (
+                  <div className="absolute -right-1 bottom-10 hidden w-[7rem] rotate-[9deg] rounded-[22px] border border-white/50 bg-white/42 p-2 shadow-soft backdrop-blur sm:block">
+                    <CardArtwork
+                      className="aspect-[63/88] w-full rounded-[16px] object-cover"
+                      game={slide.payload.game}
+                      src={listingGallery[2]}
+                      title={`${slide.payload.title} alt 2`}
+                    />
+                  </div>
+                ) : null}
+                <div className="relative z-10 rounded-[30px] border border-white/55 bg-white/58 p-4 backdrop-blur">
+                  <div className="mx-auto w-[11rem] sm:w-[13rem]">
+                    <CardArtwork
+                      className="aspect-[63/88] w-full rounded-[24px] object-cover shadow-soft"
+                      game={slide.payload.game}
+                      src={slide.payload.imageUrl}
+                      title={slide.payload.title}
+                    />
+                  </div>
                 </div>
               </div>
             ) : null}
 
             {slide.kind === "event" ? (
-              <div className="w-full max-w-[20rem] rounded-[30px] border border-white/18 bg-white/10 p-5 backdrop-blur">
-                <div className="inline-flex items-center gap-2 text-sm font-semibold text-white/78">
-                  <CalendarRange size={16} />
-                  Upcoming local night
-                </div>
-                <p className="mt-4 font-display text-[1.8rem] font-semibold tracking-[-0.04em] text-white">
-                  {slide.payload.title}
-                </p>
-                <div className="mt-4 space-y-2 text-sm text-white/78">
-                  <p>{slide.payload.store}</p>
-                  <p>
-                    {slide.payload.dateStr} | {slide.payload.time}
+              <div className="grid w-full max-w-[22rem] gap-3">
+                <div className="rounded-[30px] border border-white/18 bg-white/10 p-5 backdrop-blur">
+                  <div className="inline-flex items-center gap-2 text-sm font-semibold text-white/78">
+                    <CalendarRange size={16} />
+                    Upcoming local night
+                  </div>
+                  <p className="mt-4 font-display text-[1.8rem] font-semibold tracking-[-0.04em] text-white">
+                    {slide.payload.title}
                   </p>
-                  {slide.payload.neighborhood ? <p>{slide.payload.neighborhood}</p> : null}
+                  <div className="mt-4 space-y-2 text-sm text-white/78">
+                    <p>{slide.payload.store}</p>
+                    <p>
+                      {slide.payload.dateStr} | {slide.payload.time}
+                    </p>
+                    {slide.payload.neighborhood ? <p>{slide.payload.neighborhood}</p> : null}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-[24px] border border-white/16 bg-white/10 p-4 backdrop-blur">
+                    <Clock3 size={18} className="text-orange" />
+                    <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-white/62">
+                      Time
+                    </p>
+                    <p className="mt-2 font-display text-[1.3rem] font-semibold tracking-[-0.04em] text-white">
+                      {slide.payload.time}
+                    </p>
+                  </div>
+                  <div className="rounded-[24px] border border-white/16 bg-white/10 p-4 backdrop-blur">
+                    <Store size={18} className="text-orange" />
+                    <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-white/62">
+                      Store
+                    </p>
+                    <p className="mt-2 line-clamp-2 font-display text-[1.1rem] font-semibold tracking-[-0.04em] text-white">
+                      {slide.payload.store}
+                    </p>
+                  </div>
                 </div>
               </div>
             ) : null}
 
             {slide.kind === "seller" ? (
-              <div className="w-full max-w-[20rem] rounded-[30px] border border-white/60 bg-white/72 p-5 backdrop-blur">
-                <div className="flex items-center gap-4">
-                  <UserAvatar className="h-16 w-16 text-lg font-bold" user={slide.payload} />
-                  <div className="min-w-0">
-                    <p className="truncate font-display text-[1.5rem] font-semibold tracking-[-0.04em] text-ink">
-                      {slide.payload.publicName || slide.payload.firstName || slide.payload.name}
-                    </p>
-                    <p className="mt-1 text-sm text-steel">{slide.payload.neighborhood}</p>
+              <div className="w-full max-w-[22rem] space-y-3">
+                <div className="rounded-[30px] border border-white/60 bg-white/72 p-5 backdrop-blur">
+                  <div className="flex items-center gap-4">
+                    <UserAvatar className="h-16 w-16 text-lg font-bold" user={slide.payload} />
+                    <div className="min-w-0">
+                      <p className="truncate font-display text-[1.5rem] font-semibold tracking-[-0.04em] text-ink">
+                        {slide.payload.publicName || slide.payload.firstName || slide.payload.name}
+                      </p>
+                      <p className="mt-1 text-sm text-steel">{slide.payload.neighborhood}</p>
+                    </div>
+                  </div>
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <div className="console-well px-3 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-steel">
+                        Deals
+                      </p>
+                      <p className="mt-2 font-semibold text-ink">{slide.payload.completedDeals || 0}</p>
+                    </div>
+                    <div className="console-well px-3 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-steel">
+                        Rating
+                      </p>
+                      <p className="mt-2 font-semibold text-ink">
+                        {slide.payload.overallRating ? slide.payload.overallRating.toFixed(1) : "New"}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="mt-5 grid grid-cols-2 gap-3">
-                  <div className="console-well px-3 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-steel">
-                      Deals
-                    </p>
-                    <p className="mt-2 font-semibold text-ink">{slide.payload.completedDeals || 0}</p>
-                  </div>
-                  <div className="console-well px-3 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-steel">
-                      Rating
-                    </p>
-                    <p className="mt-2 font-semibold text-ink">
-                      {slide.payload.overallRating ? slide.payload.overallRating.toFixed(1) : "New"}
-                    </p>
-                  </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {(slide.payload.favoriteGames || []).slice(0, 3).map((game) => (
+                    <div
+                      key={`${slide.payload.id}-${game}`}
+                      className="rounded-[22px] border border-white/55 bg-white/62 px-3 py-4 text-center backdrop-blur"
+                    >
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-orange/80">
+                        Game
+                      </p>
+                      <p className="mt-2 line-clamp-2 text-sm font-semibold text-ink">{game}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             ) : null}
@@ -365,6 +426,10 @@ export default function HomePage() {
     const slides = [];
 
     if (featuredListing) {
+      const gallery = [
+        featuredListing.imageUrl,
+        ...(featuredListing.conditionImages || []),
+      ].filter(Boolean);
       slides.push({
         id: `listing-${featuredListing.id}`,
         kind: "listing",
@@ -378,7 +443,10 @@ export default function HomePage() {
           `${featuredListing.views || 0} views`,
         ],
         cta: "Open listing",
-        payload: featuredListing,
+        payload: {
+          ...featuredListing,
+          gallery,
+        },
       });
     }
 
@@ -479,9 +547,49 @@ export default function HomePage() {
     return <PageSkeleton cards={4} titleWidth="w-80" />;
   }
 
-  return (
+    return (
     <div className="stagger-stack space-y-10 lg:space-y-14">
       <section className="drop-in-item console-shell overflow-hidden px-5 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+        <div className="mb-6">
+          {bannerSlides.length ? (
+            <div className="relative min-h-[34rem] overflow-hidden rounded-[36px] sm:min-h-[38rem] lg:min-h-[30rem]">
+              {bannerSlides.map((slide, index) => (
+                <BannerCard
+                  key={slide.id}
+                  active={activeBannerIndex === index}
+                  formatCadPrice={formatCadPrice}
+                  onOpenEvent={() => navigate("/events")}
+                  onOpenListing={openListing}
+                  onOpenSeller={(sellerId) => navigate(`/seller/${sellerId}`)}
+                  slide={slide}
+                />
+              ))}
+
+              {bannerSlides.length > 1 ? (
+                <div className="absolute bottom-5 left-5 z-10 flex gap-2">
+                  {bannerSlides.map((slide, index) => (
+                    <button
+                      key={slide.id}
+                      aria-label={`Show banner ${index + 1}`}
+                      className={`h-2.5 rounded-full transition-all ${
+                        activeBannerIndex === index
+                          ? "w-10 bg-white shadow-sm"
+                          : "w-2.5 bg-white/45"
+                      }`}
+                      type="button"
+                      onClick={() => setActiveBannerIndex(index)}
+                    />
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <div className="rounded-[30px] border border-dashed border-[rgba(203,220,231,0.92)] bg-white/70 px-6 py-12 text-sm leading-7 text-steel">
+              Banner content will appear as soon as there are active listings and upcoming events.
+            </div>
+          )}
+        </div>
+
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-3xl">
             <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-navy/62">
@@ -519,46 +627,6 @@ export default function HomePage() {
           {marketPulse.map((item) => (
             <PulseTile key={item.label} detail={item.detail} label={item.label} value={item.value} />
           ))}
-        </div>
-
-        <div className="mt-6">
-          {bannerSlides.length ? (
-            <div className="relative min-h-[31rem] overflow-hidden rounded-[36px] sm:min-h-[34rem] lg:min-h-[28rem]">
-              {bannerSlides.map((slide, index) => (
-                <BannerCard
-                  key={slide.id}
-                  active={activeBannerIndex === index}
-                  formatCadPrice={formatCadPrice}
-                  onOpenEvent={() => navigate("/events")}
-                  onOpenListing={openListing}
-                  onOpenSeller={(sellerId) => navigate(`/seller/${sellerId}`)}
-                  slide={slide}
-                />
-              ))}
-
-              {bannerSlides.length > 1 ? (
-                <div className="absolute bottom-5 left-5 z-10 flex gap-2">
-                  {bannerSlides.map((slide, index) => (
-                    <button
-                      key={slide.id}
-                      aria-label={`Show banner ${index + 1}`}
-                      className={`h-2.5 rounded-full transition-all ${
-                        activeBannerIndex === index
-                          ? "w-10 bg-white shadow-sm"
-                          : "w-2.5 bg-white/45"
-                      }`}
-                      type="button"
-                      onClick={() => setActiveBannerIndex(index)}
-                    />
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            <div className="rounded-[30px] border border-dashed border-[rgba(203,220,231,0.92)] bg-white/70 px-6 py-12 text-sm leading-7 text-steel">
-              Banner content will appear as soon as there are active listings and upcoming events.
-            </div>
-          )}
         </div>
       </section>
 
