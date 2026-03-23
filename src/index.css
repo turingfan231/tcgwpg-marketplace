@@ -205,6 +205,28 @@ a {
   backdrop-filter: blur(18px);
 }
 
+.handheld-shell {
+  border: 1px solid rgba(195, 215, 228, 0.95);
+  border-radius: 2rem;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.82), transparent 28%),
+    linear-gradient(180deg, rgba(228, 240, 248, 0.9), rgba(202, 223, 236, 0.82));
+  box-shadow:
+    0 26px 70px -46px rgba(26, 91, 120, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.handheld-module {
+  border: 1px solid rgba(205, 221, 232, 0.95);
+  border-radius: 1.8rem;
+  background:
+    linear-gradient(180deg, rgba(249, 252, 255, 0.88), rgba(235, 243, 248, 0.78));
+  box-shadow:
+    0 22px 52px -42px rgba(26, 91, 120, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(18px);
+}
+
 .shelf-divider {
   background: linear-gradient(90deg, rgba(15, 23, 42, 0.08), rgba(15, 23, 42, 0));
 }

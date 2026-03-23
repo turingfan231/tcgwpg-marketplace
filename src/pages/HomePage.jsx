@@ -1,17 +1,14 @@
 import {
   ArrowRight,
   CalendarRange,
-  ChevronLeft,
-  ChevronRight,
   Heart,
   MapPin,
   MessageCircleMore,
   Shield,
   Store,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import ListingCard from "../components/cards/ListingCard";
 import CardArtwork from "../components/shared/CardArtwork";
 import UserAvatar from "../components/shared/UserAvatar";
 import PageSkeleton from "../components/ui/PageSkeleton";
@@ -22,6 +19,136 @@ import { formatNumber } from "../utils/formatters";
 function sortByUpcomingDate(events) {
   return [...events].sort(
     (left, right) => new Date(left.dateStr).getTime() - new Date(right.dateStr).getTime(),
+  );
+}
+
+function QuickActionButton({ children, tone = "light", ...props }) {
+  return (
+    <button
+      className={`rounded-[18px] px-4 py-3 text-sm font-semibold transition ${
+        tone === "primary"
+          ? "bg-navy text-white shadow-soft"
+          : tone === "orange"
+            ? "bg-orange text-white shadow-soft"
+            : "border border-slate-200 bg-white/80 text-ink hover:border-slate-300"
+      }`}
+      type="button"
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+function PulseTile({ label, value }) {
+  return (
+    <div className="rounded-[20px] border border-white/40 bg-white/60 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] backdrop-blur">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy/65">{label}</p>
+      <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-ink">{value}</p>
+    </div>
+  );
+}
+
+function FeedRow({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
+  return (
+    <div className="flex items-start gap-3 rounded-[20px] border border-[#d7e4ed] bg-white/78 px-4 py-4 shadow-[0_14px_32px_-28px_rgba(26,91,120,0.55)]">
+      <button className="min-w-0 flex-1 text-left" type="button" onClick={() => onOpen(listing.id)}>
+        <p className="truncate font-semibold text-ink">{listing.title}</p>
+        <p className="mt-1 text-sm text-steel">
+          {listing.game} | {listing.neighborhood}
+        </p>
+      </button>
+      <div className="text-right">
+        <p className="font-semibold text-ink">
+          {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
+        </p>
+        <p className="mt-1 text-xs uppercase tracking-[0.16em] text-steel">{listing.timeAgo}</p>
+      </div>
+      <button
+        aria-label={listing.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+        className={`inline-flex items-center justify-center rounded-full p-2 ${
+          listing.wishlisted ? "bg-orange/15 text-orange" : "bg-[#eef5f9] text-steel"
+        }`}
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          onToggleWishlist(listing.id);
+        }}
+      >
+        <Heart fill={listing.wishlisted ? "currentColor" : "none"} size={15} />
+      </button>
+    </div>
+  );
+}
+
+function SpotlightCard({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
+  return (
+    <article className="min-w-[16rem] max-w-[16rem] rounded-[26px] border border-[#d7e4ed] bg-white/85 p-4 shadow-[0_20px_44px_-34px_rgba(26,91,120,0.55)] backdrop-blur">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          <span className="rounded-full bg-[#eef5f9] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-navy">
+            {listing.game}
+          </span>
+          <span className="rounded-full bg-orange/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-orange">
+            {listing.type}
+          </span>
+        </div>
+        <button
+          aria-label={listing.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+          className={`inline-flex items-center justify-center rounded-full p-2 ${
+            listing.wishlisted ? "bg-orange/15 text-orange" : "bg-[#eef5f9] text-steel"
+          }`}
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onToggleWishlist(listing.id);
+          }}
+        >
+          <Heart fill={listing.wishlisted ? "currentColor" : "none"} size={14} />
+        </button>
+      </div>
+
+      <button className="mt-4 block w-full text-left" type="button" onClick={() => onOpen(listing.id)}>
+        <div className="rounded-[22px] border border-[#d7e4ed] bg-[linear-gradient(180deg,#f6fbff_0%,#e8f1f7_100%)] p-3">
+          <div className="mx-auto w-[8.8rem]">
+            <CardArtwork
+              className="aspect-[63/88] w-full rounded-[18px] object-cover shadow-soft"
+              game={listing.game}
+              src={listing.imageUrl}
+              title={listing.title}
+            />
+          </div>
+        </div>
+        <h3 className="mt-4 line-clamp-2 font-display text-[1.2rem] font-semibold leading-tight tracking-[-0.04em] text-ink">
+          {listing.title}
+        </h3>
+        <div className="mt-3 flex items-center gap-2">
+          <UserAvatar className="h-8 w-8 text-[0.72rem] font-bold" user={listing.seller} />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-ink">
+              {listing.seller?.publicName || listing.seller?.name}
+            </p>
+            <p className="truncate text-xs text-steel">
+              {listing.neighborhood} | {listing.timeAgo}
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 flex items-end justify-between gap-3">
+          <div>
+            <p className="font-display text-[1.7rem] font-semibold tracking-[-0.04em] text-ink">
+              {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
+            </p>
+            <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-steel">
+              {listing.views} views
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-1 text-sm font-semibold text-navy">
+            Open
+            <ArrowRight size={14} />
+          </span>
+        </div>
+      </button>
+    </article>
   );
 }
 
@@ -41,7 +168,6 @@ export default function HomePage() {
     toggleWishlist,
   } = useMarketplace();
   const [remoteEvents, setRemoteEvents] = useState([]);
-  const spotlightRailRef = useRef(null);
 
   const safeListings = Array.isArray(activeListings) ? activeListings.filter(Boolean) : [];
   const safeHotListings = Array.isArray(hotListings) ? hotListings.filter(Boolean) : [];
@@ -50,6 +176,7 @@ export default function HomePage() {
   const featuredCategories = (Array.isArray(gameCatalog) ? gameCatalog : []).filter(
     (game) => game?.slug && game.slug !== "all",
   );
+
   const categorySummaries = useMemo(
     () =>
       featuredCategories.map((game) => ({
@@ -58,6 +185,7 @@ export default function HomePage() {
       })),
     [featuredCategories, safeListings],
   );
+
   const gameShelves = useMemo(
     () =>
       categorySummaries.map((game) => ({
@@ -74,34 +202,9 @@ export default function HomePage() {
     [categorySummaries, safeListings],
   );
 
-  const freshListings = safeHotListings.slice(0, 6);
+  const freshListings = safeHotListings.slice(0, 5);
   const spotlightListings = safeHotListings.slice(0, 5);
   const verifiedSellerCount = safeSellers.filter((seller) => seller?.verified).length;
-  const onboardingItems = useMemo(
-    () =>
-      currentUser
-        ? [
-            {
-              label: "Set a username",
-              done: Boolean(currentUser.username),
-            },
-            {
-              label: "Pick your default game",
-              done: Boolean(currentUser.defaultListingGame),
-            },
-            {
-              label: "Add a neighborhood",
-              done: Boolean(currentUser.neighborhood),
-            },
-            {
-              label: "Upload a profile photo",
-              done: Boolean(currentUser.avatarUrl),
-            },
-          ]
-        : [],
-    [currentUser],
-  );
-  const incompleteOnboardingCount = onboardingItems.filter((item) => !item.done).length;
   const topSellers = [...safeSellers]
     .sort((left, right) => {
       const dealsDiff = Number(right.completedDeals || 0) - Number(left.completedDeals || 0);
@@ -111,6 +214,21 @@ export default function HomePage() {
       return Number(right.overallRating || 0) - Number(left.overallRating || 0);
     })
     .slice(0, 4);
+
+  const onboardingItems = useMemo(
+    () =>
+      currentUser
+        ? [
+            { label: "Set username", done: Boolean(currentUser.username) },
+            { label: "Pick default game", done: Boolean(currentUser.defaultListingGame) },
+            { label: "Add neighborhood", done: Boolean(currentUser.neighborhood) },
+            { label: "Upload photo", done: Boolean(currentUser.avatarUrl) },
+          ]
+        : [],
+    [currentUser],
+  );
+  const incompleteOnboardingCount = onboardingItems.filter((item) => !item.done).length;
+
   const mergedEvents = useMemo(
     () =>
       sortByUpcomingDate(
@@ -129,30 +247,27 @@ export default function HomePage() {
     [remoteEvents, safeManualEvents],
   );
   const upcomingEvents = mergedEvents.slice(0, 4);
+  const nextEvent = upcomingEvents[0] || null;
   const marketPulse = [
     { label: "Live listings", value: formatNumber(safeListings.length) },
     { label: "Verified sellers", value: formatNumber(verifiedSellerCount) },
-    { label: "Games supported", value: "3" },
-    {
-      label: "Next meetup",
-      value: upcomingEvents[0]?.store || "See events",
-    },
+    { label: "Games", value: "3" },
+    { label: "Next meetup", value: nextEvent?.store || "Events" },
   ];
 
-  function scrollSpotlights(direction) {
-    if (!spotlightRailRef.current) {
-      return;
-    }
-
-    spotlightRailRef.current.scrollBy({
-      left: direction * Math.max(320, spotlightRailRef.current.clientWidth - 120),
-      behavior: "smooth",
-    });
+  function handleToggleWishlist(listingId) {
+    void toggleWishlist(listingId);
   }
 
-  function handleWishlistClick(event, listingId) {
-    event.stopPropagation();
-    void toggleWishlist(listingId);
+  function openListing(listingId) {
+    navigate(`/listing/${listingId}`);
+  }
+
+  function openPreset(type, fallbackPath) {
+    const opened = openCreateListing({ type });
+    if (!opened) {
+      navigate("/auth", { state: { from: fallbackPath } });
+    }
   }
 
   useEffect(() => {
@@ -171,7 +286,7 @@ export default function HomePage() {
       }
     }
 
-    loadHomeEvents();
+    void loadHomeEvents();
 
     return () => {
       cancelled = true;
@@ -183,559 +298,218 @@ export default function HomePage() {
   }
 
   return (
-    <div className="stagger-stack space-y-12 lg:space-y-16">
-      <section className="drop-in-cluster space-y-3 sm:hidden">
-        <article className="drop-in-item overflow-hidden rounded-[28px] bg-[linear-gradient(145deg,#17394a_0%,#1a5b78_64%,#215d79_100%)] px-4 py-4 text-white shadow-soft">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-white/60">
-            Market spotlight
-          </p>
-          <h1 className="mt-3 max-w-[15rem] font-display text-[1.95rem] font-semibold leading-[0.98] tracking-[-0.05em]">
-            Start with what Winnipeg buyers are opening first.
-          </h1>
-          <p className="mt-3 text-sm leading-6 text-white/78">
-            Browse local standouts, keep pricing in CAD, and jump straight into the market.
-          </p>
+    <div className="stagger-stack space-y-10 lg:space-y-14">
+      <section className="drop-in-cluster grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_23rem]">
+        <article className="drop-in-item handheld-shell overflow-hidden px-5 py-5 sm:px-6 sm:py-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="max-w-2xl">
+              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-navy/62">
+                Handheld home
+              </p>
+              <h1 className="mt-3 font-display text-[2.2rem] font-semibold leading-[0.96] tracking-[-0.06em] text-ink sm:text-[3.6rem]">
+                Buy, sell, and trade locally like it is built into your console.
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-steel sm:text-base">
+                Real listings first, neighborhood-aware meetups, and soft app-style browsing for
+                Pokemon, Magic, and One Piece in Winnipeg.
+              </p>
+            </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <button
-              className="rounded-full bg-white px-4 py-3 text-sm font-semibold text-ink"
-              type="button"
-              onClick={() => {
+            <div className="grid w-full gap-2 sm:flex sm:w-auto sm:flex-wrap">
+              <QuickActionButton tone="primary" onClick={() => {
                 setGlobalSearch("");
                 navigate("/market");
-              }}
-            >
-              Browse
-            </button>
-            <button
-              className="rounded-full border border-white/18 bg-white/10 px-4 py-3 text-sm font-semibold text-white"
-              type="button"
-              onClick={() => {
-                const opened = openCreateListing({ type: "WTS" });
-                if (!opened) {
-                  navigate("/auth", { state: { from: "/" } });
-                }
-              }}
-            >
-              List card
-            </button>
-            <button
-              className="col-span-2 rounded-full border border-white/18 bg-white/10 px-4 py-3 text-sm font-semibold text-white"
-              type="button"
-              onClick={() => {
-                const opened = openCreateListing({ type: "WTB" });
-                if (!opened) {
-                  navigate("/auth", { state: { from: "/wtb" } });
-                }
-              }}
-            >
-              Post a WTB
-            </button>
+              }}>
+                Browse market
+              </QuickActionButton>
+              <QuickActionButton onClick={() => openPreset("WTS", "/dashboard")}>
+                List a card
+              </QuickActionButton>
+              <QuickActionButton tone="orange" onClick={() => openPreset("WTB", "/wtb")}>
+                Post a WTB
+              </QuickActionButton>
+            </div>
           </div>
 
-          <div className="header-chip-scroll mt-4 flex gap-2 overflow-x-auto pb-1">
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {marketPulse.map((item) => (
-              <div
-                key={item.label}
-                className="min-w-[8.5rem] rounded-[18px] border border-white/12 bg-white/10 px-3 py-3"
-              >
-                <p className="text-lg font-semibold text-white">{item.value}</p>
-                <p className="mt-1 text-[11px] uppercase tracking-[0.16em] text-white/58">
-                  {item.label}
-                </p>
-              </div>
+              <PulseTile key={item.label} label={item.label} value={item.value} />
             ))}
           </div>
 
-          {spotlightListings.length ? (
-            <div
-              ref={spotlightRailRef}
-              className="header-chip-scroll mt-4 flex snap-x gap-3 overflow-x-auto pb-1"
-            >
-              {spotlightListings.map((listing) => (
-                <article
-                  key={listing.id}
-                  className="min-w-[15.5rem] snap-start rounded-[24px] bg-white/96 p-3 text-left text-ink"
-                >
-                  <div className="flex gap-3">
-                    <div className="w-[5.1rem] shrink-0">
-                      <CardArtwork
-                        className="aspect-[63/88] w-full rounded-[14px] object-cover"
-                        game={listing.game}
-                        src={listing.imageUrl}
-                        title={listing.title}
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-[#f4f1ea] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-700">
-                          {listing.game}
-                        </span>
-                        <span className="rounded-full bg-navy/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-navy">
-                          {listing.type}
-                        </span>
-                      </div>
-                      <p className="mt-2 line-clamp-2 font-display text-[1.05rem] font-semibold leading-tight tracking-[-0.03em]">
-                        {listing.title}
-                      </p>
-                      <div className="mt-2 flex items-center gap-2">
-                        <UserAvatar className="h-7 w-7 text-[0.65rem] font-bold" user={listing.seller} />
-                        <div className="min-w-0">
-                          <p className="truncate text-xs font-semibold text-ink">
-                            {listing.seller?.publicName || listing.seller?.name}
-                          </p>
-                          <p className="truncate text-[11px] text-steel">
-                            {listing.neighborhood}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="mt-3 flex items-end justify-between gap-2">
-                        <div>
-                          <p className="font-display text-[1.45rem] font-semibold tracking-[-0.03em] text-ink">
-                            {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
-                          </p>
-                          <p className="text-[10px] uppercase tracking-[0.14em] text-steel">
-                            {listing.timeAgo}
-                          </p>
-                        </div>
-                        <button
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-navy"
-                          type="button"
-                          onClick={() => navigate(`/listing/${listing.id}`)}
-                        >
-                          Open
-                          <ArrowRight size={13} />
-                        </button>
-                      </div>
-                      <button
-                        aria-label={listing.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-                        className={`mt-3 inline-flex items-center gap-2 rounded-full px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] ${
-                          listing.wishlisted
-                            ? "bg-orange/10 text-orange"
-                            : "bg-[#f4f1ea] text-steel"
-                        }`}
-                        type="button"
-                        onClick={(event) => handleWishlistClick(event, listing.id)}
-                      >
-                        <Heart size={13} fill={listing.wishlisted ? "currentColor" : "none"} />
-                        {listing.wishlisted ? "Saved" : "Save"}
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : null}
-        </article>
-
-        <article className="drop-in-item surface-card px-4 py-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="section-kicker">Right now</p>
-              <h2 className="mt-2 font-display text-[1.6rem] font-semibold tracking-[-0.04em] text-ink">
-                Fresh from the feed
-              </h2>
-            </div>
-            <Store className="mt-1 text-navy" size={18} />
-          </div>
-
-          <div className="mt-4 space-y-2">
-            {freshListings.slice(0, 2).map((listing) => (
-              <div
-                key={listing.id}
-                className="flex w-full items-start justify-between gap-3 rounded-[18px] border border-slate-200 bg-[#faf7f1] px-3 py-3 text-left"
-              >
-                <button
-                  className="min-w-0 flex-1 text-left"
-                  type="button"
-                  onClick={() => navigate(`/listing/${listing.id}`)}
-                >
-                  <p className="truncate text-sm font-semibold text-ink">{listing.title}</p>
-                  <p className="mt-1 text-xs text-steel">
-                    {listing.game} | {listing.neighborhood}
+          <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_21rem]">
+            <div className="rounded-[28px] border border-white/55 bg-white/68 p-4 shadow-[0_24px_60px_-40px_rgba(26,91,120,0.5)] backdrop-blur">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="section-kicker">Spotlight rail</p>
+                  <p className="mt-2 font-display text-[1.7rem] font-semibold tracking-[-0.04em] text-ink">
+                    Featured local picks
                   </p>
-                </button>
-                <span className="whitespace-nowrap text-sm font-semibold text-ink">
-                  {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
+                </div>
+                <span className="rounded-full bg-[#eef5f9] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">
+                  Swipeable
                 </span>
-                <button
-                  aria-label={listing.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-                  className={`ml-2 inline-flex items-center justify-center rounded-full p-2 ${
-                    listing.wishlisted ? "bg-orange/10 text-orange" : "bg-white text-steel"
-                  }`}
-                  type="button"
-                  onClick={(event) => handleWishlistClick(event, listing.id)}
-                >
-                  <Heart size={14} fill={listing.wishlisted ? "currentColor" : "none"} />
-                </button>
               </div>
-            ))}
-          </div>
+              {spotlightListings.length ? (
+                <div className="header-chip-scroll mt-5 flex gap-4 overflow-x-auto pb-2">
+                  {spotlightListings.map((listing) => (
+                    <SpotlightCard
+                      key={listing.id}
+                      formatCadPrice={formatCadPrice}
+                      listing={listing}
+                      onOpen={openListing}
+                      onToggleWishlist={handleToggleWishlist}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-5 rounded-[24px] border border-dashed border-[#d7e4ed] bg-white/70 px-5 py-8 text-sm leading-7 text-steel">
+                  Spotlight listings will appear here as soon as more local cards go live.
+                </div>
+              )}
+            </div>
 
-          <div className="mt-4 rounded-[20px] bg-[#17394a] px-4 py-4 text-white">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/60">
-              Next event
-            </p>
-            <p className="mt-2 font-display text-[1.3rem] font-semibold tracking-[-0.03em]">
-              {upcomingEvents[0]?.title || "More local events coming in"}
-            </p>
-            {upcomingEvents[0] ? (
-              <>
-                <p className="mt-3 text-sm text-white/80">
-                  {upcomingEvents[0].store} | {upcomingEvents[0].time}
-                </p>
+            <aside className="handheld-module p-4 sm:p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="section-kicker">Fresh feed</p>
+                  <p className="mt-2 font-display text-[1.7rem] font-semibold tracking-[-0.04em] text-ink">
+                    Just posted
+                  </p>
+                </div>
+                <Store className="text-navy" size={18} />
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {freshListings.slice(0, 3).map((listing) => (
+                  <FeedRow
+                    key={listing.id}
+                    formatCadPrice={formatCadPrice}
+                    listing={listing}
+                    onOpen={openListing}
+                    onToggleWishlist={handleToggleWishlist}
+                  />
+                ))}
+              </div>
+
+              <div className="mt-4 rounded-[22px] bg-[linear-gradient(180deg,#17394a_0%,#205871_100%)] px-4 py-4 text-white">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/58">
+                      Next event
+                    </p>
+                    <p className="mt-2 font-display text-[1.35rem] font-semibold tracking-[-0.03em]">
+                      {nextEvent?.title || "More local events coming in"}
+                    </p>
+                  </div>
+                  <CalendarRange className="text-orange" size={18} />
+                </div>
+                {nextEvent ? (
+                  <div className="mt-4 space-y-2 text-sm text-white/82">
+                    <p>
+                      {nextEvent.store} | {nextEvent.dateStr}
+                    </p>
+                    <p>{nextEvent.time}</p>
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-white/82">
+                    Check the events page for the latest local calendar.
+                  </p>
+                )}
                 <Link
-                  className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-white"
+                  className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-white"
                   to="/events"
                 >
                   View events
                   <ArrowRight size={14} />
                 </Link>
-              </>
-            ) : (
-              <p className="mt-3 text-sm text-white/80">
-                Check the events page for upcoming local nights and tournaments.
-              </p>
-            )}
+              </div>
+            </aside>
           </div>
         </article>
-      </section>
 
-      <section className="drop-in-cluster hidden grid gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_21rem] sm:grid">
-        <article className="drop-in-item surface-card px-4 py-4 sm:px-6 sm:py-6">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div className="max-w-2xl">
-              <p className="section-kicker">Market spotlight</p>
-              <h1 className="mt-3 font-display text-[1.75rem] font-semibold leading-[1.02] tracking-[-0.05em] text-ink sm:text-[2.7rem]">
-                Start with the cards local buyers are actually clicking on.
-              </h1>
-              <p className="mt-3 text-sm leading-6 text-steel sm:mt-4 sm:text-base sm:leading-7">
-                Scroll through featured local listings, jump straight into the market,
-                and keep everything in CAD with neighborhood-first browsing.
-              </p>
-            </div>
-
-            <div className="grid gap-2 sm:flex sm:flex-wrap">
-              <button
-                className="rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white shadow-soft"
-                type="button"
-                onClick={() => {
-                  setGlobalSearch("");
-                  navigate("/market");
-                }}
-              >
-                Browse listings
-              </button>
-              <button
-                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-ink transition hover:border-slate-300"
-                type="button"
-                onClick={() => {
-                  const opened = openCreateListing({ type: "WTS" });
-                  if (!opened) {
-                    navigate("/auth", { state: { from: "/" } });
-                  }
-                }}
-              >
-                List a card
-              </button>
-              <button
-                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-ink transition hover:border-slate-300"
-                type="button"
-                onClick={() => {
-                  const opened = openCreateListing({ type: "WTB" });
-                  if (!opened) {
-                    navigate("/auth", { state: { from: "/wtb" } });
-                  }
-                }}
-              >
-                Post a WTB
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:flex sm:flex-wrap sm:items-center">
-            {marketPulse.map((item) => (
-              <div
-                key={item.label}
-                className="rounded-[18px] border border-slate-200 bg-[#faf7f1] px-3 py-2 text-xs sm:rounded-full sm:px-4 sm:text-sm"
-              >
-                <span className="block font-semibold text-ink sm:inline">{item.value}</span>
-                <span className="text-steel sm:ml-2">{item.label}</span>
-              </div>
-            ))}
-            <div className="ml-auto hidden items-center gap-2 sm:flex">
-              <button
-                aria-label="Scroll left through spotlight listings"
-                className="rounded-full border border-slate-200 bg-white p-2.5 text-steel transition hover:border-slate-300 hover:text-ink"
-                type="button"
-                onClick={() => scrollSpotlights(-1)}
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <button
-                aria-label="Scroll right through spotlight listings"
-                className="rounded-full border border-slate-200 bg-white p-2.5 text-steel transition hover:border-slate-300 hover:text-ink"
-                type="button"
-                onClick={() => scrollSpotlights(1)}
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
-
-          {spotlightListings.length ? (
-            <div
-              ref={spotlightRailRef}
-              className="header-chip-scroll mt-4 flex snap-x gap-3 overflow-x-auto pb-2 sm:mt-5 sm:gap-4"
-            >
-              {spotlightListings.map((listing) => (
-                <article
-                  key={listing.id}
-                  className="group min-w-[15.75rem] snap-start rounded-[24px] border border-slate-200 bg-[#fbf8f1] p-3 text-left transition hover:border-slate-300 hover:bg-white sm:min-w-[22rem] sm:rounded-[30px] sm:p-4 xl:min-w-[23.5rem]"
+        <aside className="drop-in-item space-y-4">
+          <article className="handheld-module p-4 sm:p-5">
+            <p className="section-kicker">Browse switchboard</p>
+            <div className="mt-4 grid gap-3">
+              {categorySummaries.map((game) => (
+                <button
+                  key={game.slug}
+                  className="rounded-[20px] border border-[#d7e4ed] bg-white/75 px-4 py-4 text-left transition hover:-translate-y-0.5 hover:border-navy/25"
+                  type="button"
+                  onClick={() => {
+                    setGlobalSearch("");
+                    navigate(`/market/${game.slug}`);
+                  }}
                 >
-                  <div className="flex gap-3 sm:gap-4">
-                    <div className="w-[4.9rem] shrink-0 sm:w-[7rem]">
-                      <CardArtwork
-                        className="aspect-[63/88] w-full rounded-[16px] object-cover shadow-soft sm:rounded-[20px]"
-                        game={listing.game}
-                        src={listing.imageUrl}
-                        title={listing.title}
-                      />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-700">
-                          {listing.game}
-                        </span>
-                        <span className="rounded-full bg-navy/8 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-navy">
-                          {listing.type}
-                        </span>
-                      </div>
-
-                      <h3 className="mt-2 line-clamp-2 font-display text-[1.15rem] font-semibold leading-tight tracking-[-0.04em] text-ink sm:mt-3 sm:text-[1.55rem]">
-                        {listing.title}
-                      </h3>
-
-                      <div className="mt-2 flex items-center gap-2 sm:mt-3 sm:gap-3">
-                        <UserAvatar className="h-8 w-8 text-[0.7rem] font-bold sm:h-9 sm:w-9 sm:text-sm" user={listing.seller} />
-                        <div className="min-w-0">
-                          <p className="truncate text-xs font-semibold text-ink sm:text-sm">
-                            {listing.seller?.publicName || listing.seller?.name}
-                          </p>
-                          <p className="truncate text-[11px] text-steel sm:text-xs">
-                            {listing.neighborhood} | {listing.timeAgo}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 flex items-end justify-between gap-3 sm:mt-4">
-                        <div>
-                          <p className="font-display text-[1.6rem] font-semibold tracking-[-0.04em] text-ink sm:text-3xl">
-                            {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
-                          </p>
-                          <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-steel sm:text-xs">
-                            {listing.views} views | {listing.offers} offers
-                          </p>
-                        </div>
-                        <button
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-navy sm:gap-2 sm:text-sm"
-                          type="button"
-                          onClick={() => navigate(`/listing/${listing.id}`)}
-                        >
-                          Open
-                          <ArrowRight size={15} />
-                        </button>
-                      </div>
-                      <button
-                        aria-label={listing.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-                        className={`mt-3 inline-flex items-center gap-2 rounded-full px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] ${
-                          listing.wishlisted
-                            ? "bg-orange/10 text-orange"
-                            : "bg-white text-steel"
-                        }`}
-                        type="button"
-                        onClick={(event) => handleWishlistClick(event, listing.id)}
-                      >
-                        <Heart size={13} fill={listing.wishlisted ? "currentColor" : "none"} />
-                        {listing.wishlisted ? "Saved" : "Save"}
-                      </button>
-                    </div>
-                  </div>
-                </article>
+                  <p className="font-display text-[1.25rem] font-semibold tracking-[-0.03em] text-ink">
+                    {game.name}
+                  </p>
+                  <p className="mt-1 text-sm text-steel">{game.count} active listings</p>
+                </button>
               ))}
             </div>
-          ) : (
-            <div className="mt-5 rounded-[26px] border border-dashed border-slate-200 bg-[#faf7f1] px-5 py-8 text-sm leading-7 text-steel">
-              Fresh spotlight listings will land here as soon as more local cards go live.
-            </div>
-          )}
-        </article>
+          </article>
 
-        <aside className="drop-in-item surface-card px-4 py-4 sm:px-6 sm:py-6">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="section-kicker">Right now</p>
-              <h2 className="mt-2 font-display text-[1.5rem] font-semibold tracking-[-0.04em] text-ink sm:text-[2rem]">
-                Fresh from the feed
-              </h2>
-            </div>
-            <Store className="text-navy" size={20} />
-          </div>
-
-          <div className="mt-4 space-y-2 sm:mt-6 sm:space-y-3">
-            {freshListings.slice(0, 3).map((listing, index) => (
-              <div
-                key={listing.id}
-                className={`w-full items-start justify-between gap-4 rounded-[18px] border border-slate-200 bg-[#faf7f1] px-3 py-3 text-left transition hover:border-slate-300 hover:bg-white sm:flex sm:rounded-[22px] sm:px-4 sm:py-4 ${
-                  index > 1 ? "hidden sm:flex" : "flex"
-                }`}
-              >
-                <button
-                  className="min-w-0 flex-1 text-left"
-                  type="button"
-                  onClick={() => navigate(`/listing/${listing.id}`)}
-                >
-                  <p className="truncate text-sm font-semibold text-ink sm:text-base">{listing.title}</p>
-                  <p className="mt-1 text-xs text-steel sm:text-sm">
-                    {listing.game} | {listing.neighborhood}
-                  </p>
-                </button>
-                <span className="whitespace-nowrap text-sm font-semibold text-ink sm:text-base">
-                  {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
-                </span>
-                <button
-                  aria-label={listing.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-                  className={`ml-2 inline-flex items-center justify-center rounded-full p-2 ${
-                    listing.wishlisted ? "bg-orange/10 text-orange" : "bg-white text-steel"
-                  }`}
-                  type="button"
-                  onClick={(event) => handleWishlistClick(event, listing.id)}
-                >
-                  <Heart size={14} fill={listing.wishlisted ? "currentColor" : "none"} />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 rounded-[20px] border border-slate-200 bg-[#17394a] px-4 py-4 text-white sm:mt-6 sm:rounded-[24px] sm:px-5 sm:py-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/60">
-                  Next event
-                </p>
-                <p className="mt-2 font-display text-[1.45rem] font-semibold tracking-[-0.03em] sm:text-2xl">
-                  {upcomingEvents[0]?.title || "More local events coming in"}
-                </p>
-              </div>
-              <CalendarRange className="text-orange" size={20} />
-            </div>
-            {upcomingEvents[0] ? (
-              <div className="mt-4 space-y-2 text-sm text-white/82">
-                <p>
-                  {upcomingEvents[0].store} | {upcomingEvents[0].dateStr}
-                </p>
-                <p>{upcomingEvents[0].time}</p>
-                <Link
-                  className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-white"
-                  to="/events"
-                >
-                  View events
-                  <ArrowRight size={15} />
-                </Link>
-              </div>
-            ) : (
-              <p className="mt-4 text-sm text-white/82">
-                Check the events page for upcoming tournaments, league nights, and store
-                meetups.
+          {currentUser && incompleteOnboardingCount ? (
+            <article className="handheld-module p-4 sm:p-5">
+              <p className="section-kicker">Profile setup</p>
+              <p className="mt-2 font-display text-[1.55rem] font-semibold tracking-[-0.04em] text-ink">
+                Finish your account
               </p>
-            )}
-          </div>
+              <div className="mt-4 grid gap-2">
+                {onboardingItems.map((item) => (
+                  <div
+                    key={item.label}
+                    className={`rounded-[18px] px-3 py-3 text-sm ${
+                      item.done
+                        ? "bg-emerald-50 text-emerald-800"
+                        : "border border-[#d7e4ed] bg-white/75 text-steel"
+                    }`}
+                  >
+                    <span className="font-semibold text-ink">{item.label}</span>
+                    <span className="ml-2 text-xs uppercase tracking-[0.16em]">
+                      {item.done ? "Done" : "Needed"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <Link
+                className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-navy"
+                to="/account"
+              >
+                Open settings
+                <ArrowRight size={14} />
+              </Link>
+            </article>
+          ) : null}
         </aside>
       </section>
 
-      {currentUser && incompleteOnboardingCount ? (
-        <section className="surface-card drop-in-item border border-navy/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8f5ee_100%)] px-5 py-5 sm:px-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="section-kicker">Finish your setup</p>
-              <h2 className="mt-2 font-display text-[1.9rem] font-semibold tracking-[-0.04em] text-ink">
-                A few account details still need to be filled in.
-              </h2>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-steel">
-                Complete your seller profile once so new listings, messages, and public pages feel consistent.
-              </p>
-            </div>
-            <Link
-              className="inline-flex items-center gap-2 rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
-              to="/account"
-            >
-              Finish setup
-              <ArrowRight size={15} />
-            </Link>
-          </div>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {onboardingItems.map((item) => (
-              <div
-                key={item.label}
-                className={`rounded-[22px] border px-4 py-4 ${
-                  item.done
-                    ? "border-emerald-200 bg-emerald-50/80"
-                    : "border-slate-200 bg-white"
-                }`}
-              >
-                <p className="text-sm font-semibold text-ink">{item.label}</p>
-                <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                  {item.done ? "Done" : "Still needed"}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      <section className="drop-in-item space-y-5">
+      <section className="drop-in-item handheld-module p-5 sm:p-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="section-kicker">Browse by game</p>
-            <h2 className="mt-2 font-display text-[2.15rem] font-semibold tracking-[-0.04em] text-ink">
+            <p className="section-kicker">Game channels</p>
+            <h2 className="mt-2 font-display text-[2rem] font-semibold tracking-[-0.05em] text-ink">
               Jump into the active shelves
             </h2>
           </div>
-          <Link
-            className="inline-flex items-center gap-2 text-sm font-semibold text-navy"
-            to="/market"
-          >
+          <Link className="inline-flex items-center gap-2 text-sm font-semibold text-navy" to="/market">
             Open full market
-            <ArrowRight size={15} />
+            <ArrowRight size={14} />
           </Link>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {categorySummaries.map((game) => (
-            <button
-              key={game.slug}
-              className="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-slate-300 hover:bg-[#faf7f1]"
-              type="button"
-              onClick={() => {
-                setGlobalSearch("");
-                navigate(`/market/${game.slug}`);
-              }}
-            >
-              {game.name}
-              <span className="ml-2 text-steel">{game.count}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="grid gap-5 xl:grid-cols-3">
+        <div className="mt-5 grid gap-4 xl:grid-cols-3">
           {gameShelves.map((game) => (
-            <article key={game.slug} className="surface-card overflow-hidden">
-              <div className="border-b border-slate-200 bg-[#fbf7ef] px-5 py-5">
+            <article
+              key={game.slug}
+              className="overflow-hidden rounded-[24px] border border-[#d7e4ed] bg-white/76"
+            >
+              <div className="border-b border-[#d7e4ed] bg-[linear-gradient(180deg,#edf4f9_0%,#deebf3_100%)] px-5 py-5">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-navy/65">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-navy/60">
                       {game.shortName}
                     </p>
                     <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-ink">
@@ -751,23 +525,23 @@ export default function HomePage() {
                     }}
                   >
                     Browse
-                    <ChevronRight size={15} />
+                    <ArrowRight size={14} />
                   </button>
                 </div>
                 <p className="mt-3 text-sm leading-7 text-steel">{game.description}</p>
               </div>
 
-              <div className="space-y-3 p-5">
+              <div className="space-y-3 p-4">
                 {game.listings.length ? (
                   game.listings.map((listing) => (
                     <button
                       key={listing.id}
-                      className="flex w-full items-center gap-4 rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-slate-300 hover:bg-[#fcfaf4]"
+                      className="flex w-full items-center gap-3 rounded-[20px] border border-[#d7e4ed] bg-white px-4 py-4 text-left transition hover:border-navy/20"
                       type="button"
-                      onClick={() => navigate(`/listing/${listing.id}`)}
+                      onClick={() => openListing(listing.id)}
                     >
                       <CardArtwork
-                        className="aspect-[63/88] w-[4.75rem] rounded-[16px] object-cover"
+                        className="aspect-[63/88] w-[4.4rem] rounded-[15px] object-cover"
                         game={listing.game}
                         src={listing.imageUrl}
                         title={listing.title}
@@ -778,18 +552,13 @@ export default function HomePage() {
                           {listing.neighborhood} | {listing.seller?.publicName || listing.seller?.name}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-ink">
-                          {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
-                        </p>
-                        <p className="mt-1 text-xs uppercase tracking-[0.16em] text-steel">
-                          {listing.timeAgo}
-                        </p>
-                      </div>
+                      <p className="font-semibold text-ink">
+                        {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
+                      </p>
                     </button>
                   ))
                 ) : (
-                  <div className="rounded-[22px] border border-dashed border-slate-200 bg-[#faf7f1] px-4 py-6 text-sm leading-7 text-steel">
+                  <div className="rounded-[20px] border border-dashed border-[#d7e4ed] bg-white/68 px-4 py-6 text-sm text-steel">
                     No active {game.shortName} listings yet.
                   </div>
                 )}
@@ -799,51 +568,23 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="drop-in-item space-y-5">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="section-kicker">Newest listings</p>
-            <h2 className="mt-2 font-display text-[2.15rem] font-semibold tracking-[-0.04em] text-ink">
-              Fresh cards from local sellers
-            </h2>
-          </div>
-          <button
-            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
-            type="button"
-            onClick={() => {
-              setGlobalSearch("");
-              navigate("/market");
-            }}
-          >
-            See all listings
-          </button>
-        </div>
-
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-          {freshListings.slice(0, 4).map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
-          ))}
-        </div>
-      </section>
-
       <section className="drop-in-cluster grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <article className="drop-in-item surface-card px-5 py-6 sm:px-6 sm:py-7">
+        <article className="drop-in-item handheld-module p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Upcoming events</p>
-              <h2 className="mt-2 font-display text-[2.15rem] font-semibold tracking-[-0.04em] text-ink">
-                Where local players are meeting
+              <h2 className="mt-2 font-display text-[1.95rem] font-semibold tracking-[-0.05em] text-ink">
+                Calendar channel
               </h2>
             </div>
             <CalendarRange className="text-orange" size={20} />
           </div>
-
-          <div className="mt-6 space-y-3">
+          <div className="mt-5 space-y-3">
             {upcomingEvents.length ? (
               upcomingEvents.map((event) => (
                 <div
                   key={event.id}
-                  className="flex items-start justify-between gap-4 rounded-[22px] border border-slate-200 bg-[#faf7f1] px-4 py-4"
+                  className="flex items-start justify-between gap-4 rounded-[20px] border border-[#d7e4ed] bg-white/78 px-4 py-4"
                 >
                   <div>
                     <p className="font-semibold text-ink">{event.title}</p>
@@ -851,39 +592,34 @@ export default function HomePage() {
                       {event.store} | {event.dateStr} | {event.time}
                     </p>
                   </div>
-                  <Link
-                    className="whitespace-nowrap text-sm font-semibold text-navy"
-                    to="/events"
-                  >
+                  <Link className="whitespace-nowrap text-sm font-semibold text-navy" to="/events">
                     Details
                   </Link>
                 </div>
               ))
             ) : (
-              <div className="rounded-[22px] border border-dashed border-slate-200 bg-[#faf7f1] px-4 py-6 text-sm text-steel">
-                Event listings are being refreshed. Check back on the events page for the
-                latest store calendar.
+              <div className="rounded-[20px] border border-dashed border-[#d7e4ed] bg-white/70 px-4 py-6 text-sm text-steel">
+                Event listings are still being refreshed.
               </div>
             )}
           </div>
         </article>
 
-        <article className="drop-in-item surface-card px-5 py-6 sm:px-6 sm:py-7">
+        <article className="drop-in-item handheld-module p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="section-kicker">Local sellers</p>
-              <h2 className="mt-2 font-display text-[2.15rem] font-semibold tracking-[-0.04em] text-ink">
-                Trusted accounts to browse
+              <p className="section-kicker">Trusted sellers</p>
+              <h2 className="mt-2 font-display text-[1.95rem] font-semibold tracking-[-0.05em] text-ink">
+                Local accounts to browse
               </h2>
             </div>
             <Shield className="text-navy" size={20} />
           </div>
-
-          <div className="mt-6 space-y-3">
+          <div className="mt-5 space-y-3">
             {topSellers.map((seller) => (
               <button
                 key={seller.id}
-                className="flex w-full items-center justify-between gap-4 rounded-[22px] border border-slate-200 bg-[#faf7f1] px-4 py-4 text-left transition hover:border-slate-300 hover:bg-white"
+                className="flex w-full items-center justify-between gap-4 rounded-[20px] border border-[#d7e4ed] bg-white/78 px-4 py-4 text-left transition hover:border-navy/20"
                 type="button"
                 onClick={() => navigate(`/seller/${seller.id}`)}
               >
@@ -894,32 +630,32 @@ export default function HomePage() {
                       {seller.publicName || seller.firstName || seller.name}
                     </p>
                     <p className="mt-1 text-sm text-steel">
-                      {seller.completedDeals || 0} completed deals
+                      {seller.completedDeals || 0} deals
                       {seller.overallRating ? ` | ${seller.overallRating.toFixed(1)} rating` : ""}
                     </p>
                   </div>
                 </div>
                 <span className="inline-flex items-center gap-2 text-sm font-semibold text-navy">
                   View
-                  <ChevronRight size={15} />
+                  <ArrowRight size={14} />
                 </span>
               </button>
             ))}
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-[22px] bg-[#faf7f1] p-4">
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-[20px] border border-[#d7e4ed] bg-white/75 p-4">
               <MessageCircleMore className="text-orange" size={18} />
-              <p className="mt-3 font-semibold text-ink">In-app messaging</p>
+              <p className="mt-3 font-semibold text-ink">In-app offers</p>
               <p className="mt-1 text-sm leading-7 text-steel">
-                Keep offers, questions, and meetup details attached to the listing.
+                Keep cash, trade, and meetup details attached to the listing thread.
               </p>
             </div>
-            <div className="rounded-[22px] bg-[#faf7f1] p-4">
+            <div className="rounded-[20px] border border-[#d7e4ed] bg-white/75 p-4">
               <MapPin className="text-navy" size={18} />
               <p className="mt-3 font-semibold text-ink">Neighborhood filters</p>
               <p className="mt-1 text-sm leading-7 text-steel">
-                Narrow listings by where you are actually willing to meet up.
+                Browse by where you actually want to meet instead of the whole city at once.
               </p>
             </div>
           </div>
