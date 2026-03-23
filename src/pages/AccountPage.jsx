@@ -268,7 +268,7 @@ export default function AccountPage() {
                 <input
                   required
                   maxLength={24}
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   placeholder="localcardguy"
                   value={profileForm.username}
                   onChange={(event) =>
@@ -278,7 +278,7 @@ export default function AccountPage() {
               </label>
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-steel">Profile photo</span>
-                <div className="rounded-[22px] border border-slate-200 bg-[#f8f5ee] p-4">
+                <div className="rounded-[22px] border border-slate-200 bg-[#edf3f7] p-4">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                     <UserAvatar
                       className="h-20 w-20"
@@ -346,7 +346,7 @@ export default function AccountPage() {
                   Default listing game
                 </span>
                 <select
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={profileForm.defaultListingGame}
                   onChange={(event) =>
                     updateProfileFormField("defaultListingGame", event.target.value)
@@ -361,7 +361,7 @@ export default function AccountPage() {
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-steel">Neighborhood</span>
                 <select
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={profileForm.neighborhood}
                   onChange={(event) =>
                     updateProfileFormField("neighborhood", event.target.value)
@@ -378,7 +378,7 @@ export default function AccountPage() {
                 </span>
                 <input
                   maxLength={3}
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   placeholder="R2P"
                   value={profileForm.postalCode}
                   onChange={(event) =>
@@ -420,7 +420,7 @@ export default function AccountPage() {
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-steel">Banner style</span>
                 <select
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={profileForm.bannerStyle}
                   onChange={(event) =>
                     updateProfileFormField("bannerStyle", event.target.value)
@@ -436,7 +436,7 @@ export default function AccountPage() {
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-steel">Response time</span>
                 <select
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={profileForm.responseTime}
                   onChange={(event) =>
                     updateProfileFormField("responseTime", event.target.value)
@@ -452,7 +452,7 @@ export default function AccountPage() {
               <label className="block sm:col-span-2">
                 <span className="mb-2 block text-sm font-semibold text-steel">Meetup preferences</span>
                 <textarea
-                  className="min-h-24 w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="min-h-24 w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={profileForm.meetupPreferences}
                   onChange={(event) =>
                     updateProfileFormField("meetupPreferences", event.target.value)
@@ -463,7 +463,7 @@ export default function AccountPage() {
               <label className="block sm:col-span-2">
                 <span className="mb-2 block text-sm font-semibold text-steel">Seller bio</span>
                 <textarea
-                  className="min-h-28 w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="min-h-28 w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={profileForm.bio}
                   onChange={(event) =>
                     updateProfileFormField("bio", event.target.value)
@@ -510,7 +510,7 @@ export default function AccountPage() {
                 <span className="mb-2 block text-sm font-semibold text-steel">Current password</span>
                 <input
                   required
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   type="password"
                   value={passwordForm.currentPassword}
                   onChange={(event) =>
@@ -525,7 +525,7 @@ export default function AccountPage() {
                 <span className="mb-2 block text-sm font-semibold text-steel">New password</span>
                 <input
                   required
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   type="password"
                   value={passwordForm.newPassword}
                   onChange={(event) =>
@@ -540,7 +540,7 @@ export default function AccountPage() {
                 <span className="mb-2 block text-sm font-semibold text-steel">Confirm new password</span>
                 <input
                   required
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   type="password"
                   value={passwordForm.confirmPassword}
                   onChange={(event) =>
@@ -591,7 +591,7 @@ export default function AccountPage() {
                   <span className="mb-2 block text-sm font-semibold text-steel">Appeal message</span>
                   <textarea
                     required
-                    className="min-h-28 w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                    className="min-h-28 w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                     placeholder="Add your context, what happened, and anything an admin should review."
                     value={appealBody}
                     onChange={(event) => setAppealBody(event.target.value)}
@@ -661,3 +661,4 @@ export default function AccountPage() {
     </div>
   );
 }
+

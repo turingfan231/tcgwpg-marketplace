@@ -131,7 +131,7 @@ export default function BugReportsPage() {
             </p>
           </div>
 
-          <div className="rounded-[24px] bg-[#f8f5ee] px-5 py-4">
+          <div className="rounded-[24px] bg-[#edf3f7] px-5 py-4">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
               Access
             </p>
@@ -160,7 +160,7 @@ export default function BugReportsPage() {
             <span className="mb-2 block text-sm font-semibold text-steel">Bug title</span>
             <input
               required
-              className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
               placeholder="Unread message badge stays after opening thread"
               value={form.title}
               onChange={(event) => updateField("title", event.target.value)}
@@ -170,7 +170,7 @@ export default function BugReportsPage() {
           <label className="block">
             <span className="mb-2 block text-sm font-semibold text-steel">Area</span>
             <select
-              className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
               value={form.area}
               onChange={(event) => updateField("area", event.target.value)}
             >
@@ -185,7 +185,7 @@ export default function BugReportsPage() {
           <label className="block">
             <span className="mb-2 block text-sm font-semibold text-steel">Severity</span>
             <select
-              className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
               value={form.severity}
               onChange={(event) => updateField("severity", event.target.value)}
             >
@@ -200,7 +200,7 @@ export default function BugReportsPage() {
           <label className="block">
             <span className="mb-2 block text-sm font-semibold text-steel">Page / route</span>
             <input
-              className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
               placeholder="/messages"
               value={form.pagePath}
               onChange={(event) => updateField("pagePath", event.target.value)}
@@ -212,7 +212,7 @@ export default function BugReportsPage() {
               Screenshot URL
             </span>
             <input
-              className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
               placeholder="https://..."
               value={form.screenshotUrl}
               onChange={(event) => updateField("screenshotUrl", event.target.value)}
@@ -223,7 +223,7 @@ export default function BugReportsPage() {
             <span className="mb-2 block text-sm font-semibold text-steel">Actual behavior</span>
             <textarea
               required
-              className="min-h-28 w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              className="min-h-28 w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
               placeholder="What happened instead?"
               value={form.actualBehavior}
               onChange={(event) => updateField("actualBehavior", event.target.value)}
@@ -233,7 +233,7 @@ export default function BugReportsPage() {
           <label className="block lg:col-span-2">
             <span className="mb-2 block text-sm font-semibold text-steel">Expected behavior</span>
             <textarea
-              className="min-h-24 w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              className="min-h-24 w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
               placeholder="What should have happened?"
               value={form.expectedBehavior}
               onChange={(event) => updateField("expectedBehavior", event.target.value)}
@@ -246,7 +246,7 @@ export default function BugReportsPage() {
             </span>
             <textarea
               required
-              className="min-h-32 w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              className="min-h-32 w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
               placeholder="1. Open messages  2. Reply to thread  3. Refresh  4. Unread badge returns"
               value={form.reproductionSteps}
               onChange={(event) => updateField("reproductionSteps", event.target.value)}
@@ -258,7 +258,7 @@ export default function BugReportsPage() {
               Environment details
             </span>
             <textarea
-              className="min-h-24 w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              className="min-h-24 w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
               value={form.environmentLabel}
               onChange={(event) => updateField("environmentLabel", event.target.value)}
             />
@@ -348,3 +348,4 @@ export default function BugReportsPage() {
     </div>
   );
 }
+

@@ -4,14 +4,14 @@ export default {
   theme: {
     extend: {
       colors: {
-        navy: "#1a5b78",
+        navy: "#14364a",
         orange: "#ff9900",
-        mist: "#ecf2f5",
-        ink: "#163445",
-        steel: "#5e7785",
-        sand: "#f4f0e8",
-        paper: "#fbf8f1",
-        slatepaper: "#f2efe7",
+        mist: "#e6eef4",
+        ink: "#112738",
+        steel: "#617989",
+        sand: "#e8eef3",
+        paper: "#f4f8fb",
+        slatepaper: "#edf3f7",
       },
       fontFamily: {
         display: ['"Space Grotesk"', "sans-serif"],
@@ -23,9 +23,9 @@ export default {
       },
       backgroundImage: {
         "market-grid":
-          "linear-gradient(rgba(26,91,120,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(26,91,120,0.08) 1px, transparent 1px)",
+          "linear-gradient(rgba(20,54,74,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(20,54,74,0.08) 1px, transparent 1px)",
         "hero-glow":
-          "radial-gradient(circle at top left, rgba(255,153,0,0.18), transparent 24%), radial-gradient(circle at bottom right, rgba(255,255,255,0.14), transparent 30%)",
+          "radial-gradient(circle at top left, rgba(255,153,0,0.16), transparent 22%), radial-gradient(circle at bottom right, rgba(20,54,74,0.22), transparent 28%)",
       },
     },
   },

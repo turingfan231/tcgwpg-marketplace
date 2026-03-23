@@ -323,7 +323,7 @@ export default function ListingDetailPage() {
                 </div>
 
                 {listing.bundleItems?.length ? (
-                  <div className="rounded-[24px] border border-slate-200 bg-[#f8f5ee] p-4">
+                  <div className="rounded-[24px] border border-slate-200 bg-[#edf3f7] p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
                       Bundle contents
                     </p>
@@ -958,3 +958,4 @@ export default function ListingDetailPage() {
     </div>
   );
 }
+

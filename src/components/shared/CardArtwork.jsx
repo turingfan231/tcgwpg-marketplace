@@ -24,7 +24,7 @@ export default function CardArtwork({ src, title, game, className = "" }) {
 
   return (
     <div
-      className={`relative overflow-hidden bg-[linear-gradient(160deg,#214a5f_0%,#1a5b78_48%,#113042_100%)] ${className}`}
+      className={`relative overflow-hidden bg-[linear-gradient(160deg,#1b4258_0%,#14364a_48%,#113042_100%)] ${className}`}
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,153,0,0.38),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.12),transparent_32%)]" />
       <div className="absolute inset-4 rounded-[20px] border border-white/15 bg-white/5" />
@@ -42,3 +42,4 @@ export default function CardArtwork({ src, title, game, className = "" }) {
     </div>
   );
 }
+

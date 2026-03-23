@@ -10,11 +10,11 @@ import RatingStars from "../components/ui/RatingStars";
 import { useMarketplace } from "../hooks/useMarketplace";
 
 const bannerToneMap = {
-  neutral: "from-[#1e3f4f] via-[#214a5f] to-[#102734]",
-  admin: "from-[#17394a] via-[#1a5b78] to-[#102734]",
-  pokemon: "from-[#17495e] via-[#1a5b78] to-[#ff9900]",
-  magic: "from-[#132e3d] via-[#1a5b78] to-[#6e7b85]",
-  "one-piece": "from-[#17394a] via-[#245f7d] to-[#5db4e5]",
+  neutral: "from-[#102739]/96 via-[#17384c]/94 to-[#0b1d2a]/96",
+  admin: "from-[#0f2637]/96 via-[#17384c]/94 to-[#091825]/96",
+  pokemon: "from-[#102739]/96 via-[#17384c]/94 to-[#1b4460]/96",
+  magic: "from-[#102739]/96 via-[#142f42]/94 to-[#091825]/96",
+  "one-piece": "from-[#102739]/96 via-[#183f56]/94 to-[#0c2130]/96",
 };
 
 export default function SellerProfilePage() {
@@ -42,6 +42,8 @@ export default function SellerProfilePage() {
     () => activeListings.filter((listing) => listing.sellerId === sellerId),
     [activeListings, sellerId],
   );
+  const sellerHeroImage =
+    sellerListings.find((listing) => listing?.imageUrl)?.imageUrl || seller?.avatarUrl || "";
   const isOwnProfile = String(currentUser?.id || "") === String(sellerId || "");
   const isAdmin = currentUser?.role === "admin";
 
@@ -60,90 +62,105 @@ export default function SellerProfilePage() {
 
   return (
     <div className="space-y-8">
-      <section className="overflow-hidden rounded-[34px] bg-white shadow-soft">
+      <section className="console-panel overflow-hidden">
         <div
-          className={`bg-gradient-to-r ${bannerToneMap[seller.bannerStyle] || bannerToneMap.neutral} p-8 text-white`}
+          className={`relative overflow-hidden bg-gradient-to-r ${bannerToneMap[seller.bannerStyle] || bannerToneMap.neutral} p-8 text-white`}
         >
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="flex items-start gap-5">
-              <UserAvatar
-                className="h-24 w-24 border border-white/15 bg-white/10 text-3xl"
-                imageClassName="border border-white/15"
-                textClassName="text-3xl font-bold"
-                user={seller}
+          {sellerHeroImage ? (
+            <div className="absolute inset-0">
+              <img
+                alt=""
+                aria-hidden="true"
+                className="h-full w-full scale-110 object-cover opacity-35 blur-[2px]"
+                src={sellerHeroImage}
               />
-              <div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <h1 className="font-display text-4xl font-semibold tracking-[-0.05em]">
-                    {seller.publicName || seller.name}
-                  </h1>
-                  {seller.verified ? (
-                    <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white">
-                      <ShieldCheck size={14} />
-                      Verified seller
+              <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(6,17,27,0.9),rgba(16,39,57,0.72)_44%,rgba(6,17,27,0.82))]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,153,0,0.18),transparent_18%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.08),transparent_24%)]" />
+            </div>
+          ) : null}
+
+          <div className="relative z-10">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div className="flex items-start gap-5">
+                <UserAvatar
+                  className="h-24 w-24 border border-white/15 bg-white/10 text-3xl"
+                  imageClassName="border border-white/15"
+                  textClassName="text-3xl font-bold"
+                  user={seller}
+                />
+                <div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h1 className="font-display text-4xl font-semibold tracking-[-0.05em]">
+                      {seller.publicName || seller.name}
+                    </h1>
+                    {seller.verified ? (
+                      <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white">
+                        <ShieldCheck size={14} />
+                        Verified seller
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-3 max-w-3xl text-base leading-8 text-white/82">{seller.bio}</p>
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <RatingStars size={18} value={seller.overallRating} />
+                    <span className="text-sm text-white/80">
+                      {seller.overallRating.toFixed(1)} overall from {seller.reviewCount} reviews
                     </span>
-                  ) : null}
-                </div>
-                <p className="mt-3 max-w-3xl text-base leading-8 text-white/82">{seller.bio}</p>
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <RatingStars size={18} value={seller.overallRating} />
-                  <span className="text-sm text-white/80">
-                    {seller.overallRating.toFixed(1)} overall from {seller.reviewCount} reviews
-                  </span>
-                  <span className="text-sm text-white/80">
-                    {seller.neighborhood}
-                    {seller.postalCode ? ` | ${seller.postalCode}` : ""}
-                  </span>
+                    <span className="text-sm text-white/80">
+                      {seller.neighborhood}
+                      {seller.postalCode ? ` | ${seller.postalCode}` : ""}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex flex-wrap gap-3">
-              {isOwnProfile ? (
-                <div className="rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white/78">
-                  Reviews from other local buyers only
-                </div>
-              ) : (
-                <>
-                  <button
-                    className={`inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold ${
-                      seller.followedByCurrentUser
-                        ? "border border-white/20 bg-white/10 text-white"
-                        : "bg-white text-ink"
-                    }`}
-                    type="button"
-                    onClick={async () => {
-                      const result = await toggleSellerFollow(seller.id);
-                      setFollowMessage(
-                        result?.warning ||
-                          result?.error ||
-                          (result?.followed
-                            ? "You will get alerts when this seller posts new listings."
-                            : "Seller notifications turned off."),
-                      );
-                    }}
-                  >
-                    <BellRing size={15} />
-                    {seller.followedByCurrentUser ? "Following seller" : "Follow seller"}
-                  </button>
-                  <button
-                    className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-ink"
-                    type="button"
-                    onClick={() => setReviewModalOpen(true)}
-                  >
-                    Leave review
-                  </button>
-                </>
-              )}
+              <div className="flex flex-wrap gap-3">
+                {isOwnProfile ? (
+                  <div className="rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white/78">
+                    Reviews from other local buyers only
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      className={`inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold ${
+                        seller.followedByCurrentUser
+                          ? "border border-white/20 bg-white/10 text-white"
+                          : "bg-white text-ink"
+                      }`}
+                      type="button"
+                      onClick={async () => {
+                        const result = await toggleSellerFollow(seller.id);
+                        setFollowMessage(
+                          result?.warning ||
+                            result?.error ||
+                            (result?.followed
+                              ? "You will get alerts when this seller posts new listings."
+                              : "Seller notifications turned off."),
+                        );
+                      }}
+                    >
+                      <BellRing size={15} />
+                      {seller.followedByCurrentUser ? "Following seller" : "Follow seller"}
+                    </button>
+                    <button
+                      className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-ink"
+                      type="button"
+                      onClick={() => setReviewModalOpen(true)}
+                    >
+                      Leave review
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
+            {followMessage ? (
+              <div className="mt-5 text-sm font-semibold text-white/82">{followMessage}</div>
+            ) : null}
           </div>
         </div>
-        {followMessage ? (
-          <div className="px-8 pb-2 text-sm font-semibold text-white/82">{followMessage}</div>
-        ) : null}
 
         <div className="grid gap-4 p-6 lg:grid-cols-4">
-          <div className="rounded-[24px] bg-[#f8f5ee] p-5">
+          <div className="console-well p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
               Favorite games
             </p>
@@ -151,13 +168,13 @@ export default function SellerProfilePage() {
               {seller.favoriteGames.join(", ") || "Not set"}
             </p>
           </div>
-          <div className="rounded-[24px] bg-[#f8f5ee] p-5">
+          <div className="console-well p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
               Meetup style
             </p>
             <p className="mt-2 text-sm leading-7 text-steel">{seller.meetupPreferences}</p>
           </div>
-          <div className="rounded-[24px] bg-[#f8f5ee] p-5">
+          <div className="console-well p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
               Response time
             </p>
@@ -166,7 +183,7 @@ export default function SellerProfilePage() {
               {seller.responseTime}
             </p>
           </div>
-          <div className="rounded-[24px] bg-[#f8f5ee] p-5">
+          <div className="console-well p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
               Completed deals
             </p>
@@ -182,7 +199,7 @@ export default function SellerProfilePage() {
             {seller.badges.map((badge) => (
               <span
                 key={badge}
-                className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700"
+                className="inline-flex items-center gap-2 rounded-full border border-[rgba(203,220,231,0.88)] bg-[rgba(235,242,247,0.92)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-ink"
               >
                 <BadgeCheck size={14} />
                 {reviewBadgeCatalog[badge]?.label || badge}

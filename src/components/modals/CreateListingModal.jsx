@@ -362,7 +362,7 @@ export default function CreateListingModal({ onClose }) {
                 <FieldLabel>Listing title</FieldLabel>
                 <input
                   required
-                  className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   placeholder="Card title or bundle name"
                   value={form.title}
                   onChange={(event) => updateField("title", event.target.value)}
@@ -372,7 +372,7 @@ export default function CreateListingModal({ onClose }) {
               <label className="block">
                 <FieldLabel>Game</FieldLabel>
                 <select
-                  className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={form.game}
                   onChange={(event) => updateField("game", event.target.value)}
                 >
@@ -385,7 +385,7 @@ export default function CreateListingModal({ onClose }) {
               <label className="block">
                 <FieldLabel>Listing type</FieldLabel>
                 <select
-                  className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={form.type}
                   onChange={(event) => updateField("type", event.target.value)}
                 >
@@ -398,7 +398,7 @@ export default function CreateListingModal({ onClose }) {
               <label className="block">
                 <FieldLabel>Format</FieldLabel>
                 <select
-                  className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={form.listingFormat}
                   onChange={(event) => updateField("listingFormat", event.target.value)}
                 >
@@ -414,7 +414,7 @@ export default function CreateListingModal({ onClose }) {
               <label className="block">
                 <FieldLabel>Condition</FieldLabel>
                 <select
-                  className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={form.condition}
                   onChange={(event) => updateField("condition", event.target.value)}
                 >
@@ -432,7 +432,7 @@ export default function CreateListingModal({ onClose }) {
                   min="0"
                   step="0.01"
                   type="number"
-                  className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={form.price}
                   onChange={(event) => updateField("price", event.target.value)}
                 />
@@ -444,7 +444,7 @@ export default function CreateListingModal({ onClose }) {
                   min="1"
                   step="1"
                   type="number"
-                  className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={form.quantity}
                   onChange={(event) => updateField("quantity", Math.max(1, Number(event.target.value) || 1))}
                 />
@@ -453,7 +453,7 @@ export default function CreateListingModal({ onClose }) {
               <label className="block md:col-span-2">
                 <FieldLabel>Neighborhood</FieldLabel>
                 <select
-                  className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={form.neighborhood}
                   onChange={(event) => updateField("neighborhood", event.target.value)}
                 >
@@ -467,7 +467,7 @@ export default function CreateListingModal({ onClose }) {
                 <FieldLabel>Postal code area</FieldLabel>
                 <input
                   maxLength={3}
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3.5 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3.5 outline-none transition focus:border-navy focus:bg-white"
                   placeholder="Optional FSA, like R2P"
                   value={form.postalCode}
                   onChange={(event) => updateField("postalCode", event.target.value)}
@@ -478,7 +478,7 @@ export default function CreateListingModal({ onClose }) {
                 <label className="block md:col-span-2">
                   <FieldLabel>Bundle contents</FieldLabel>
                   <textarea
-                  className="min-h-24 w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="min-h-24 w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                     placeholder="One item or note per line. Example: 4x Charizard ex&#10;Sleeved deck core&#10;Matching tokens"
                     value={form.bundleItems}
                     onChange={(event) => updateField("bundleItems", event.target.value)}
@@ -486,7 +486,7 @@ export default function CreateListingModal({ onClose }) {
                 </label>
               ) : null}
 
-              <label className="flex items-center gap-3 rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3.5 md:col-span-2">
+              <label className="flex items-center gap-3 rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3.5 md:col-span-2">
                 <input
                   checked={form.acceptsTrade}
                   className="h-4 w-4 accent-navy"
@@ -505,7 +505,7 @@ export default function CreateListingModal({ onClose }) {
                 <FieldLabel>Description</FieldLabel>
                 <textarea
                   required
-                  className="min-h-32 w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="min-h-32 w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   placeholder="Call out set, rarity, defects, meetup range, and trade interests."
                   value={form.description}
                   onChange={(event) => updateField("description", event.target.value)}
@@ -514,7 +514,7 @@ export default function CreateListingModal({ onClose }) {
 
               <div className="block">
                 <FieldLabel>Primary card image</FieldLabel>
-                <label className="flex cursor-pointer items-center gap-3 rounded-[20px] border border-dashed border-slate-300 bg-[#f8f5ee] px-4 py-4 text-steel transition hover:border-navy hover:text-ink">
+                <label className="flex cursor-pointer items-center gap-3 rounded-[20px] border border-dashed border-slate-300 bg-[#edf3f7] px-4 py-4 text-steel transition hover:border-navy hover:text-ink">
                   <ImagePlus size={18} />
                   <span className="text-sm font-semibold">
                     Upload the front-facing card image or let live search fill it in
@@ -530,7 +530,7 @@ export default function CreateListingModal({ onClose }) {
 
               <div className="block">
                 <FieldLabel>Condition photos</FieldLabel>
-                <label className="flex cursor-pointer items-center gap-3 rounded-[20px] border border-dashed border-slate-300 bg-[#f8f5ee] px-4 py-4 text-steel transition hover:border-navy hover:text-ink">
+                <label className="flex cursor-pointer items-center gap-3 rounded-[20px] border border-dashed border-slate-300 bg-[#edf3f7] px-4 py-4 text-steel transition hover:border-navy hover:text-ink">
                   <ImagePlus size={18} />
                   <span className="text-sm font-semibold">
                     Upload close-ups of corners, edges, back, or surface wear
@@ -614,7 +614,7 @@ export default function CreateListingModal({ onClose }) {
             </div>
 
             <div className="mt-6 grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto]">
-              <div className="flex items-center gap-2 rounded-[20px] border border-slate-200 bg-[#f8f5ee] p-2.5">
+              <div className="flex items-center gap-2 rounded-[20px] border border-slate-200 bg-[#edf3f7] p-2.5">
                 <Search className="ml-2 text-steel" size={16} />
                 <input
                   className="flex-1 border-0 bg-transparent px-1 py-2 text-sm text-ink outline-none placeholder:text-slate-400"
@@ -649,7 +649,7 @@ export default function CreateListingModal({ onClose }) {
               </button>
             </div>
 
-            <div className="mt-4 rounded-[20px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 text-sm text-steel">
+            <div className="mt-4 rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 text-sm text-steel">
               <span className="font-semibold text-ink">{providerLabel}</span>
               <span className="mx-2 text-slate-300">|</span>
               {liveSearchSupported
@@ -703,7 +703,7 @@ export default function CreateListingModal({ onClose }) {
                       title={form.title || "Selected card"}
                     />
                   ) : (
-                    <div className="flex aspect-[63/88] w-full max-w-[120px] items-center justify-center rounded-[20px] border border-dashed border-slate-300 bg-[#f8f5ee] px-4 text-center text-xs font-semibold uppercase tracking-[0.16em] text-steel">
+                    <div className="flex aspect-[63/88] w-full max-w-[120px] items-center justify-center rounded-[20px] border border-dashed border-slate-300 bg-[#edf3f7] px-4 text-center text-xs font-semibold uppercase tracking-[0.16em] text-steel">
                       No image yet
                     </div>
                   )}
@@ -737,7 +737,7 @@ export default function CreateListingModal({ onClose }) {
                   </p>
                 </div>
 
-                <div className="rounded-[22px] border border-slate-200 bg-[#f8f5ee] p-4">
+                <div className="rounded-[22px] border border-slate-200 bg-[#edf3f7] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
                       Price context
@@ -864,7 +864,7 @@ export default function CreateListingModal({ onClose }) {
               </div>
 
               {!searchResults.length && !loadingSearch ? (
-                <div className="mt-4 rounded-[24px] border border-dashed border-slate-200 bg-[#f8f5ee] px-5 py-12 text-center text-sm leading-7 text-steel">
+                <div className="mt-4 rounded-[24px] border border-dashed border-slate-200 bg-[#edf3f7] px-5 py-12 text-center text-sm leading-7 text-steel">
                   Search a card name, code, or variant above to load live printings here.
                 </div>
               ) : null}
@@ -938,3 +938,4 @@ export default function CreateListingModal({ onClose }) {
     </ModalShell>
   );
 }
+

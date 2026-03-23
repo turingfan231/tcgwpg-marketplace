@@ -62,7 +62,7 @@ export default function ReportModal({ listing, onClose }) {
           <span className="mb-2 block text-sm font-semibold text-steel">Details</span>
           <textarea
             required
-            className="min-h-36 w-full rounded-[22px] border border-slate-200 bg-[#f8f5ee] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+            className="min-h-36 w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
             placeholder="Add context for admin review. Mention image mismatch, condition issue, meetup problem, or message behavior."
             value={details}
             onChange={(event) => setDetails(event.target.value)}
@@ -94,3 +94,4 @@ export default function ReportModal({ listing, onClose }) {
     </ModalShell>
   );
 }
+

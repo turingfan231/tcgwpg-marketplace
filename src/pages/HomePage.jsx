@@ -24,6 +24,20 @@ function sortByUpcomingDate(events) {
   );
 }
 
+function normalizeGameKey(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized.includes("one piece")) {
+    return "one-piece";
+  }
+  if (normalized.includes("pokemon")) {
+    return "pokemon";
+  }
+  if (normalized.includes("magic")) {
+    return "magic";
+  }
+  return normalized || null;
+}
+
 function QuickActionButton({ children, tone = "light", ...props }) {
   return (
     <button
@@ -119,32 +133,30 @@ function BannerCard({
   onOpenSeller,
 }) {
   const paletteMap = {
-    listing:
-      "from-[#f7fbfe] via-[#e4eef5] to-[#d8e8f1] text-ink",
-    event:
-      "from-[#17394a] via-[#205871] to-[#2e6f8d] text-white",
-    seller:
-      "from-[#fff7e8] via-[#f6ebd2] to-[#e8dfc9] text-ink",
+    listing: "from-[#102739]/95 via-[#17384c]/92 to-[#0b1d2a]/95 text-white",
+    event: "from-[#0f2637]/96 via-[#17384c]/94 to-[#102739]/96 text-white",
+    seller: "from-[#122b3d]/96 via-[#17384c]/94 to-[#0b1d2a]/96 text-white",
   };
 
   const buttonMap = {
-    listing: "bg-navy text-white",
-    event: "bg-white text-navy",
-    seller: "bg-orange text-white",
+    listing: "bg-white text-navy",
+    event: "bg-orange text-white",
+    seller: "bg-white text-navy",
   };
 
   const secondaryMap = {
-    listing: "text-steel",
-    event: "text-white/78",
-    seller: "text-[#665c49]",
+    listing: "text-white/74",
+    event: "text-white/76",
+    seller: "text-white/74",
   };
 
   const badgeMap = {
-    listing: "bg-white/70 text-navy",
-    event: "bg-white/15 text-white",
-    seller: "bg-white/70 text-orange",
+    listing: "bg-white/12 text-white",
+    event: "bg-white/12 text-white",
+    seller: "bg-white/12 text-white",
   };
   const listingGallery = slide.kind === "listing" ? slide.payload.gallery || [] : [];
+  const backgroundImage = slide.payload.backgroundImage || slide.payload.imageUrl || null;
 
   return (
     <article
@@ -155,9 +167,24 @@ function BannerCard({
       }`}
     >
       <div
-        className={`h-full rounded-[36px] border border-white/55 bg-gradient-to-br p-6 shadow-[0_26px_70px_-46px_rgba(26,91,120,0.45)] sm:p-8 lg:p-10 ${paletteMap[slide.kind]}`}
+        className={`relative h-full overflow-hidden rounded-[36px] border border-white/18 bg-gradient-to-br p-6 shadow-[0_30px_80px_-46px_rgba(20,54,74,0.52)] sm:p-8 lg:p-10 ${paletteMap[slide.kind]}`}
       >
-        <div className="grid h-full gap-8 lg:grid-cols-[minmax(0,1.05fr)_24rem] lg:items-center">
+        {backgroundImage ? (
+          <div className="absolute inset-0">
+            <img
+              alt=""
+              aria-hidden="true"
+              className="h-full w-full scale-110 object-cover opacity-40 blur-[2px]"
+              src={backgroundImage}
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(7,18,27,0.88),rgba(14,38,56,0.72)_44%,rgba(7,18,27,0.8))]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,153,0,0.16),transparent_18%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.08),transparent_24%)]" />
+          </div>
+        ) : null}
+
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-[38%] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08),transparent_68%)]" />
+
+        <div className="relative z-10 grid h-full gap-8 lg:grid-cols-[minmax(0,1.05fr)_24rem] lg:items-center">
           <div className="max-w-3xl">
             <span
               className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${badgeMap[slide.kind]}`}
@@ -203,7 +230,7 @@ function BannerCard({
                 {slide.cta}
               </button>
               {slide.kind === "listing" ? (
-                <div className="rounded-full bg-white/66 px-4 py-3 text-sm font-semibold text-ink">
+                <div className="rounded-full bg-white/12 px-4 py-3 text-sm font-semibold text-white">
                   {formatCadPrice(slide.payload.price, slide.payload.priceCurrency || "CAD")}
                 </div>
               ) : null}
@@ -214,7 +241,7 @@ function BannerCard({
             {slide.kind === "listing" ? (
               <div className="relative w-full max-w-[22rem]">
                 {listingGallery[1] ? (
-                  <div className="absolute -left-2 top-10 hidden w-[7rem] rotate-[-8deg] rounded-[22px] border border-white/50 bg-white/42 p-2 shadow-soft backdrop-blur sm:block">
+                  <div className="absolute -left-2 top-10 hidden w-[7rem] rotate-[-8deg] rounded-[22px] border border-white/20 bg-white/8 p-2 shadow-soft backdrop-blur sm:block">
                     <CardArtwork
                       className="aspect-[63/88] w-full rounded-[16px] object-cover"
                       game={slide.payload.game}
@@ -224,7 +251,7 @@ function BannerCard({
                   </div>
                 ) : null}
                 {listingGallery[2] ? (
-                  <div className="absolute -right-1 bottom-10 hidden w-[7rem] rotate-[9deg] rounded-[22px] border border-white/50 bg-white/42 p-2 shadow-soft backdrop-blur sm:block">
+                  <div className="absolute -right-1 bottom-10 hidden w-[7rem] rotate-[9deg] rounded-[22px] border border-white/20 bg-white/8 p-2 shadow-soft backdrop-blur sm:block">
                     <CardArtwork
                       className="aspect-[63/88] w-full rounded-[16px] object-cover"
                       game={slide.payload.game}
@@ -233,7 +260,7 @@ function BannerCard({
                     />
                   </div>
                 ) : null}
-                <div className="relative z-10 rounded-[30px] border border-white/55 bg-white/58 p-4 backdrop-blur">
+                <div className="relative z-10 rounded-[30px] border border-white/18 bg-white/10 p-4 backdrop-blur">
                   <div className="mx-auto w-[11rem] sm:w-[13rem]">
                     <CardArtwork
                       className="aspect-[63/88] w-full rounded-[24px] object-cover shadow-soft"
@@ -248,7 +275,7 @@ function BannerCard({
 
             {slide.kind === "event" ? (
               <div className="grid w-full max-w-[22rem] gap-3">
-                <div className="rounded-[30px] border border-white/18 bg-white/10 p-5 backdrop-blur">
+                <div className="rounded-[30px] border border-white/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.05))] p-5 backdrop-blur">
                   <div className="inline-flex items-center gap-2 text-sm font-semibold text-white/78">
                     <CalendarRange size={16} />
                     Upcoming local night
@@ -289,28 +316,28 @@ function BannerCard({
 
             {slide.kind === "seller" ? (
               <div className="w-full max-w-[22rem] space-y-3">
-                <div className="rounded-[30px] border border-white/60 bg-white/72 p-5 backdrop-blur">
+                <div className="rounded-[30px] border border-white/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.08))] p-5 backdrop-blur">
                   <div className="flex items-center gap-4">
                     <UserAvatar className="h-16 w-16 text-lg font-bold" user={slide.payload} />
                     <div className="min-w-0">
-                      <p className="truncate font-display text-[1.5rem] font-semibold tracking-[-0.04em] text-ink">
+                      <p className="truncate font-display text-[1.5rem] font-semibold tracking-[-0.04em] text-white">
                         {slide.payload.publicName || slide.payload.firstName || slide.payload.name}
                       </p>
-                      <p className="mt-1 text-sm text-steel">{slide.payload.neighborhood}</p>
+                      <p className="mt-1 text-sm text-white/72">{slide.payload.neighborhood}</p>
                     </div>
                   </div>
                   <div className="mt-5 grid grid-cols-2 gap-3">
-                    <div className="console-well px-3 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-steel">
+                    <div className="rounded-[22px] border border-white/16 bg-white/8 px-3 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/58">
                         Deals
                       </p>
-                      <p className="mt-2 font-semibold text-ink">{slide.payload.completedDeals || 0}</p>
+                      <p className="mt-2 font-semibold text-white">{slide.payload.completedDeals || 0}</p>
                     </div>
-                    <div className="console-well px-3 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-steel">
+                    <div className="rounded-[22px] border border-white/16 bg-white/8 px-3 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/58">
                         Rating
                       </p>
-                      <p className="mt-2 font-semibold text-ink">
+                      <p className="mt-2 font-semibold text-white">
                         {slide.payload.overallRating ? slide.payload.overallRating.toFixed(1) : "New"}
                       </p>
                     </div>
@@ -320,12 +347,12 @@ function BannerCard({
                   {(slide.payload.favoriteGames || []).slice(0, 3).map((game) => (
                     <div
                       key={`${slide.payload.id}-${game}`}
-                      className="rounded-[22px] border border-white/55 bg-white/62 px-3 py-4 text-center backdrop-blur"
+                      className="rounded-[22px] border border-white/16 bg-white/10 px-3 py-4 text-center backdrop-blur"
                     >
                       <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-orange/80">
                         Game
                       </p>
-                      <p className="mt-2 line-clamp-2 text-sm font-semibold text-ink">{game}</p>
+                      <p className="mt-2 line-clamp-2 text-sm font-semibold text-white">{game}</p>
                     </div>
                   ))}
                 </div>
@@ -371,6 +398,27 @@ export default function HomePage() {
       })),
     [featuredCategories, safeListings],
   );
+
+  const artworkByGame = useMemo(() => {
+    const map = {};
+    safeListings.forEach((listing) => {
+      const gameKey = normalizeGameKey(listing?.gameSlug || listing?.game);
+      if (gameKey && !map[gameKey] && listing?.imageUrl) {
+        map[gameKey] = listing.imageUrl;
+      }
+    });
+    return map;
+  }, [safeListings]);
+
+  const sellerArtworkById = useMemo(() => {
+    const map = {};
+    safeListings.forEach((listing) => {
+      if (listing?.sellerId && !map[listing.sellerId] && listing?.imageUrl) {
+        map[listing.sellerId] = listing.imageUrl;
+      }
+    });
+    return map;
+  }, [safeListings]);
 
   const gameShelves = useMemo(
     () =>
@@ -446,11 +494,13 @@ export default function HomePage() {
         payload: {
           ...featuredListing,
           gallery,
+          backgroundImage: featuredListing.imageUrl,
         },
       });
     }
 
     if (nextEvent) {
+      const eventGameKey = normalizeGameKey(nextEvent.game);
       slides.push({
         id: `event-${nextEvent.id}`,
         kind: "event",
@@ -460,7 +510,13 @@ export default function HomePage() {
           "Use the events calendar to line up store nights, prereleases, and local tournaments with what is happening in the market.",
         meta: [nextEvent.store, nextEvent.game, nextEvent.time],
         cta: "View events",
-        payload: nextEvent,
+        payload: {
+          ...nextEvent,
+          backgroundImage:
+            artworkByGame[eventGameKey] ||
+            featuredListing?.imageUrl ||
+            null,
+        },
       });
     }
 
@@ -478,12 +534,15 @@ export default function HomePage() {
           featuredSeller.neighborhood || "Winnipeg",
         ],
         cta: "View seller",
-        payload: featuredSeller,
+        payload: {
+          ...featuredSeller,
+          backgroundImage: sellerArtworkById[featuredSeller.id] || featuredListing?.imageUrl || null,
+        },
       });
     }
 
     return slides;
-  }, [featuredListing, featuredSeller, nextEvent]);
+  }, [artworkByGame, featuredListing, featuredSeller, nextEvent, sellerArtworkById]);
 
   const marketPulse = [
     { label: "Live listings", value: formatNumber(safeListings.length) },

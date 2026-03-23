@@ -27,7 +27,7 @@ export default function Sparkline({
   points = [],
   width = 280,
   height = 80,
-  stroke = "#1a5b78",
+  stroke = "#14364a",
   fill = "rgba(26,91,120,0.08)",
   className = "",
 }) {
@@ -66,3 +66,4 @@ export default function Sparkline({
     </svg>
   );
 }
+
