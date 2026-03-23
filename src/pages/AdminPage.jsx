@@ -4,7 +4,6 @@ import {
   CalendarCog,
   ExternalLink,
   Flag,
-  PenTool,
   ShieldCheck,
   Trash2,
   Users,
@@ -17,38 +16,6 @@ import { useMarketplace } from "../hooks/useMarketplace";
 const badgeIds = ["fast", "trusted", "verified", "community", "power", "judge", "beta"];
 const storeOptions = ["Fusion Gaming", "Galaxy Comics", "A Muse N Games", "Arctic Rift Cards", "Other"];
 const gameOptions = ["Magic", "Pokemon", "One Piece"];
-const logoConcepts = [
-  {
-    id: "tilt",
-    name: "Tilted Monogram",
-    note: "Closest to the current identity, but sharper and more premium.",
-    recommendation: "Best fit if you want to keep TCGWPG recognizable.",
-  },
-  {
-    id: "shield",
-    name: "Shield Crest",
-    note: "Feels more trustworthy and store-like, with less startup energy.",
-    recommendation: "Best fit if you want a more established LGS feel.",
-  },
-  {
-    id: "stack",
-    name: "Card Stack",
-    note: "Leans into the trading-card category immediately.",
-    recommendation: "Best fit if discoverability matters more than minimalism.",
-  },
-  {
-    id: "pin",
-    name: "Local Pin",
-    note: "Builds the Winnipeg/local pickup concept directly into the mark.",
-    recommendation: "Best fit if you want the brand to feel hyper-local.",
-  },
-  {
-    id: "wordmark",
-    name: "Wordmark Bar",
-    note: "Most modern and clean, with a stronger app-product vibe.",
-    recommendation: "Best fit if you want the least noisy header presence.",
-  },
-];
 
 function formatEventDate(dateStr) {
   try {
@@ -89,93 +56,6 @@ function SectionButton({ active, count, label, onClick }) {
 
 function EmptyAdminState({ children }) {
   return <p className="text-sm leading-7 text-steel">{children}</p>;
-}
-
-function LogoMock({ conceptId, tone = "light" }) {
-  const dark = tone === "dark";
-  const panelClass = dark ? "bg-[#17394a] text-white" : "bg-white text-ink";
-
-  if (conceptId === "shield") {
-    return (
-      <div className={`inline-flex items-center gap-3 rounded-[22px] px-4 py-3 ${panelClass}`}>
-        <div className="relative grid h-12 w-12 place-items-center overflow-hidden rounded-[16px] bg-[#1a5b78] text-white shadow-soft">
-          <div className="absolute inset-1 rounded-[12px] border border-[#ff9900]/80" />
-          <span className="relative font-display text-xl font-semibold italic">W</span>
-        </div>
-        <div>
-          <p className="font-display text-xl font-semibold tracking-[-0.04em]">TCGWPG</p>
-          <p className={`text-xs ${dark ? "text-white/70" : "text-steel"}`}>Marketplace</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (conceptId === "stack") {
-    return (
-      <div className={`inline-flex items-center gap-3 rounded-[22px] px-4 py-3 ${panelClass}`}>
-        <div className="relative h-12 w-14">
-          <div className="absolute left-1 top-1 h-10 w-8 rounded-[10px] border border-[#ff9900]/70 bg-[#ffd39b]" />
-          <div className="absolute left-4 top-0 h-10 w-8 rounded-[10px] border border-slate-200 bg-white" />
-          <div className="absolute left-6 top-2 grid h-10 w-8 place-items-center rounded-[10px] bg-[#1a5b78] text-sm font-bold text-white shadow-soft">
-            W
-          </div>
-        </div>
-        <div>
-          <p className="font-display text-xl font-semibold tracking-[-0.04em]">TCGWPG</p>
-          <p className={`text-xs ${dark ? "text-white/70" : "text-steel"}`}>Local cards</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (conceptId === "pin") {
-    return (
-      <div className={`inline-flex items-center gap-3 rounded-[22px] px-4 py-3 ${panelClass}`}>
-        <div className="relative grid h-12 w-12 place-items-center rounded-full bg-[#1a5b78] text-white shadow-soft">
-          <div className="absolute bottom-[-5px] h-4 w-4 rotate-45 bg-[#1a5b78]" />
-          <div className="absolute inset-[7px] grid place-items-center rounded-full border border-[#ff9900]/80 bg-[#143d50]">
-            <span className="font-display text-lg font-semibold italic">W</span>
-          </div>
-        </div>
-        <div>
-          <p className="font-display text-xl font-semibold tracking-[-0.04em]">TCGWPG</p>
-          <p className={`text-xs ${dark ? "text-white/70" : "text-steel"}`}>Winnipeg pickups</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (conceptId === "wordmark") {
-    return (
-      <div className={`inline-flex items-center gap-3 rounded-[22px] px-4 py-3 ${panelClass}`}>
-        <div className="flex h-12 items-center rounded-[14px] bg-[#1a5b78] pl-3 pr-2 shadow-soft">
-          <span className="font-display text-xl font-semibold italic text-white">TCG</span>
-          <span className="ml-2 rounded-[10px] bg-[#ff9900] px-2 py-1 text-xs font-bold uppercase tracking-[0.16em] text-[#17394a]">
-            WPG
-          </span>
-        </div>
-        <div>
-          <p className="font-display text-xl font-semibold tracking-[-0.04em]">Marketplace</p>
-          <p className={`text-xs ${dark ? "text-white/70" : "text-steel"}`}>Local TCG hub</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={`inline-flex items-center gap-3 rounded-[22px] px-4 py-3 ${panelClass}`}>
-      <div className="relative h-12 w-12 rotate-[-8deg] rounded-[15px] bg-[#1a5b78] shadow-soft">
-        <div className="absolute inset-[-4px] rounded-[18px] border-[3px] border-[#ff9900]" />
-        <div className="absolute inset-0 grid rotate-[8deg] place-items-center font-display text-xl font-semibold italic text-white">
-          W
-        </div>
-      </div>
-      <div>
-        <p className="font-display text-xl font-semibold tracking-[-0.04em]">TCGWPG</p>
-        <p className={`text-xs ${dark ? "text-white/70" : "text-steel"}`}>Winnipeg card market</p>
-      </div>
-    </div>
-  );
 }
 
 export default function AdminPage() {
@@ -316,7 +196,6 @@ export default function AdminPage() {
     { id: "listings", label: "Listings", count: sortedListings.length },
     { id: "users", label: "Users", count: sortedUsers.length },
     { id: "events", label: "Events", count: manualEvents.length },
-    { id: "logo-lab", label: "Logo Lab" },
   ];
 
   function handleAddEvent(event) {
@@ -540,10 +419,6 @@ export default function AdminPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">Events</p>
                 <p className="mt-2 font-semibold text-ink">Calendar overrides</p>
               </button>
-              <button className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-slate-300" type="button" onClick={() => setActiveSection("logo-lab")}>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">Brand</p>
-                <p className="mt-2 font-semibold text-ink">Compare logo directions</p>
-              </button>
             </div>
           </section>
         </section>
@@ -745,91 +620,6 @@ export default function AdminPage() {
                 <EmptyAdminState>No beta bug reports yet.</EmptyAdminState>
               )}
             </div>
-          </section>
-        </div>
-      ) : null}
-
-      {activeSection === "logo-lab" ? (
-        <div className="space-y-8">
-          <section className="surface-card p-6">
-            <div className="flex items-center gap-3">
-              <PenTool className="text-orange" size={20} />
-              <div>
-                <p className="section-kicker">Brand Lab</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                  Logo mockups
-                </h2>
-              </div>
-            </div>
-            <p className="mt-4 max-w-4xl text-sm leading-7 text-steel">
-              Compare these directions in the contexts that matter most: the header, dark promo
-              surfaces, and the app icon. This stays admin-only so you can iterate before exposing
-              a final brand direction publicly.
-            </p>
-          </section>
-
-          <section className="grid gap-6 xl:grid-cols-2">
-            {logoConcepts.map((concept) => (
-              <article key={concept.id} className="surface-card p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="section-kicker">Option</p>
-                    <h3 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                      {concept.name}
-                    </h3>
-                    <p className="mt-3 text-sm leading-7 text-steel">{concept.note}</p>
-                  </div>
-                  <span className="rounded-full bg-[#f8f5ee] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-steel">
-                    {concept.id}
-                  </span>
-                </div>
-
-                <div className="mt-5 space-y-4">
-                  <div className="rounded-[24px] border border-slate-200 bg-[#f8f5ee] p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                      Header preview
-                    </p>
-                    <div className="mt-4 flex items-center justify-between rounded-[20px] border border-slate-200 bg-white px-4 py-4">
-                      <LogoMock conceptId={concept.id} />
-                      <div className="hidden items-center gap-3 sm:flex">
-                        <span className="rounded-full bg-[#f8f5ee] px-3 py-2 text-xs font-semibold text-steel">
-                          Search
-                        </span>
-                        <span className="rounded-full bg-orange px-3 py-2 text-xs font-semibold text-white">
-                          Sell
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_13rem]">
-                    <div className="rounded-[24px] bg-[#17394a] p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/65">
-                        Dark surface
-                      </p>
-                      <div className="mt-4">
-                        <LogoMock conceptId={concept.id} tone="dark" />
-                      </div>
-                    </div>
-                    <div className="rounded-[24px] border border-slate-200 bg-[#f8f5ee] p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                        App icon
-                      </p>
-                      <div className="mt-4 grid min-h-[8rem] place-items-center rounded-[22px] bg-white">
-                        <LogoMock conceptId={concept.id} />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-[22px] border border-slate-200 bg-white px-4 py-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                      Recommendation
-                    </p>
-                    <p className="mt-2 text-sm leading-7 text-steel">{concept.recommendation}</p>
-                  </div>
-                </div>
-              </article>
-            ))}
           </section>
         </div>
       ) : null}

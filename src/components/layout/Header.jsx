@@ -172,16 +172,17 @@ export default function Header() {
         <div className="page-shell py-3 sm:py-4">
           <div className="flex items-center justify-between gap-3">
             <Link className="flex min-w-0 items-center gap-3" to="/">
-              <div className="logo-mark shrink-0">
-                <span>W</span>
+              <div className="brand-pill shrink-0">
+                <span className="brand-pill-mark">TCG</span>
+                <span className="brand-pill-tag">WPG</span>
               </div>
               <div className="min-w-0">
                 <p className="truncate font-display text-[1.2rem] font-semibold tracking-[-0.04em] text-ink sm:text-[1.7rem]">
-                  TCGWPG
+                  Marketplace
                 </p>
-                <p className="hidden text-sm text-steel sm:block">Winnipeg card marketplace</p>
+                <p className="hidden text-sm text-steel sm:block">Local TCG hub</p>
                 <p className="text-[11px] uppercase tracking-[0.18em] text-steel sm:hidden">
-                  Local market
+                  Local TCG hub
                 </p>
               </div>
             </Link>
