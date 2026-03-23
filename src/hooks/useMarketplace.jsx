@@ -1972,10 +1972,6 @@ export function MarketplaceProvider({ children }) {
       .eq("id", currentUserId);
     const missingAvatarColumn =
       Boolean(updateResult.error) && isMissingColumnError(updateResult.error, "avatar_url");
-    const missingDefaultListingGameColumn =
-      Boolean(updateResult.error) &&
-      isMissingColumnError(updateResult.error, "default_listing_game");
-
     if (
       updateResult.error &&
       (isMissingColumnError(updateResult.error, "username") ||
@@ -2003,13 +1999,6 @@ export function MarketplaceProvider({ children }) {
           warning:
             "Username and profile settings were saved, but profile photos need the avatar_url column added to your Supabase profiles table.",
         }
-      : missingDefaultListingGameColumn
-        ? {
-            ok: true,
-            avatarUrl: nextAvatarUrl,
-            warning:
-              "Profile settings were saved, but the profiles table is still missing the default_listing_game column in Supabase.",
-          }
       : {
           ok: true,
           avatarUrl: nextAvatarUrl,

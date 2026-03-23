@@ -3,6 +3,7 @@ import {
   CalendarRange,
   ChevronLeft,
   ChevronRight,
+  Heart,
   MapPin,
   MessageCircleMore,
   Shield,
@@ -37,6 +38,7 @@ export default function HomePage() {
     openCreateListing,
     sellers,
     setGlobalSearch,
+    toggleWishlist,
   } = useMarketplace();
   const [remoteEvents, setRemoteEvents] = useState([]);
   const spotlightRailRef = useRef(null);
@@ -148,6 +150,11 @@ export default function HomePage() {
     });
   }
 
+  function handleWishlistClick(event, listingId) {
+    event.stopPropagation();
+    void toggleWishlist(listingId);
+  }
+
   useEffect(() => {
     let cancelled = false;
 
@@ -246,11 +253,9 @@ export default function HomePage() {
               className="header-chip-scroll mt-4 flex snap-x gap-3 overflow-x-auto pb-1"
             >
               {spotlightListings.map((listing) => (
-                <button
+                <article
                   key={listing.id}
                   className="min-w-[15.5rem] snap-start rounded-[24px] bg-white/96 p-3 text-left text-ink"
-                  type="button"
-                  onClick={() => navigate(`/listing/${listing.id}`)}
                 >
                   <div className="flex gap-3">
                     <div className="w-[5.1rem] shrink-0">
@@ -293,14 +298,31 @@ export default function HomePage() {
                             {listing.timeAgo}
                           </p>
                         </div>
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-navy">
+                        <button
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-navy"
+                          type="button"
+                          onClick={() => navigate(`/listing/${listing.id}`)}
+                        >
                           Open
                           <ArrowRight size={13} />
-                        </span>
+                        </button>
                       </div>
+                      <button
+                        aria-label={listing.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                        className={`mt-3 inline-flex items-center gap-2 rounded-full px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] ${
+                          listing.wishlisted
+                            ? "bg-orange/10 text-orange"
+                            : "bg-[#f4f1ea] text-steel"
+                        }`}
+                        type="button"
+                        onClick={(event) => handleWishlistClick(event, listing.id)}
+                      >
+                        <Heart size={13} fill={listing.wishlisted ? "currentColor" : "none"} />
+                        {listing.wishlisted ? "Saved" : "Save"}
+                      </button>
                     </div>
                   </div>
-                </button>
+                </article>
               ))}
             </div>
           ) : null}
@@ -319,22 +341,34 @@ export default function HomePage() {
 
           <div className="mt-4 space-y-2">
             {freshListings.slice(0, 2).map((listing) => (
-              <button
+              <div
                 key={listing.id}
                 className="flex w-full items-start justify-between gap-3 rounded-[18px] border border-slate-200 bg-[#faf7f1] px-3 py-3 text-left"
-                type="button"
-                onClick={() => navigate(`/listing/${listing.id}`)}
               >
-                <div className="min-w-0">
+                <button
+                  className="min-w-0 flex-1 text-left"
+                  type="button"
+                  onClick={() => navigate(`/listing/${listing.id}`)}
+                >
                   <p className="truncate text-sm font-semibold text-ink">{listing.title}</p>
                   <p className="mt-1 text-xs text-steel">
                     {listing.game} | {listing.neighborhood}
                   </p>
-                </div>
+                </button>
                 <span className="whitespace-nowrap text-sm font-semibold text-ink">
                   {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
                 </span>
-              </button>
+                <button
+                  aria-label={listing.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                  className={`ml-2 inline-flex items-center justify-center rounded-full p-2 ${
+                    listing.wishlisted ? "bg-orange/10 text-orange" : "bg-white text-steel"
+                  }`}
+                  type="button"
+                  onClick={(event) => handleWishlistClick(event, listing.id)}
+                >
+                  <Heart size={14} fill={listing.wishlisted ? "currentColor" : "none"} />
+                </button>
+              </div>
             ))}
           </div>
 
@@ -455,11 +489,9 @@ export default function HomePage() {
               className="header-chip-scroll mt-4 flex snap-x gap-3 overflow-x-auto pb-2 sm:mt-5 sm:gap-4"
             >
               {spotlightListings.map((listing) => (
-                <button
+                <article
                   key={listing.id}
                   className="group min-w-[15.75rem] snap-start rounded-[24px] border border-slate-200 bg-[#fbf8f1] p-3 text-left transition hover:border-slate-300 hover:bg-white sm:min-w-[22rem] sm:rounded-[30px] sm:p-4 xl:min-w-[23.5rem]"
-                  type="button"
-                  onClick={() => navigate(`/listing/${listing.id}`)}
                 >
                   <div className="flex gap-3 sm:gap-4">
                     <div className="w-[4.9rem] shrink-0 sm:w-[7rem]">
@@ -506,14 +538,31 @@ export default function HomePage() {
                             {listing.views} views | {listing.offers} offers
                           </p>
                         </div>
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-navy sm:gap-2 sm:text-sm">
+                        <button
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-navy sm:gap-2 sm:text-sm"
+                          type="button"
+                          onClick={() => navigate(`/listing/${listing.id}`)}
+                        >
                           Open
                           <ArrowRight size={15} />
-                        </span>
+                        </button>
                       </div>
+                      <button
+                        aria-label={listing.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                        className={`mt-3 inline-flex items-center gap-2 rounded-full px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] ${
+                          listing.wishlisted
+                            ? "bg-orange/10 text-orange"
+                            : "bg-white text-steel"
+                        }`}
+                        type="button"
+                        onClick={(event) => handleWishlistClick(event, listing.id)}
+                      >
+                        <Heart size={13} fill={listing.wishlisted ? "currentColor" : "none"} />
+                        {listing.wishlisted ? "Saved" : "Save"}
+                      </button>
                     </div>
                   </div>
-                </button>
+                </article>
               ))}
             </div>
           ) : (
@@ -536,24 +585,36 @@ export default function HomePage() {
 
           <div className="mt-4 space-y-2 sm:mt-6 sm:space-y-3">
             {freshListings.slice(0, 3).map((listing, index) => (
-              <button
+              <div
                 key={listing.id}
                 className={`w-full items-start justify-between gap-4 rounded-[18px] border border-slate-200 bg-[#faf7f1] px-3 py-3 text-left transition hover:border-slate-300 hover:bg-white sm:flex sm:rounded-[22px] sm:px-4 sm:py-4 ${
                   index > 1 ? "hidden sm:flex" : "flex"
                 }`}
-                type="button"
-                onClick={() => navigate(`/listing/${listing.id}`)}
               >
-                <div className="min-w-0">
+                <button
+                  className="min-w-0 flex-1 text-left"
+                  type="button"
+                  onClick={() => navigate(`/listing/${listing.id}`)}
+                >
                   <p className="truncate text-sm font-semibold text-ink sm:text-base">{listing.title}</p>
                   <p className="mt-1 text-xs text-steel sm:text-sm">
                     {listing.game} | {listing.neighborhood}
                   </p>
-                </div>
+                </button>
                 <span className="whitespace-nowrap text-sm font-semibold text-ink sm:text-base">
                   {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
                 </span>
-              </button>
+                <button
+                  aria-label={listing.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                  className={`ml-2 inline-flex items-center justify-center rounded-full p-2 ${
+                    listing.wishlisted ? "bg-orange/10 text-orange" : "bg-white text-steel"
+                  }`}
+                  type="button"
+                  onClick={(event) => handleWishlistClick(event, listing.id)}
+                >
+                  <Heart size={14} fill={listing.wishlisted ? "currentColor" : "none"} />
+                </button>
+              </div>
             ))}
           </div>
 

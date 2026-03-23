@@ -47,7 +47,7 @@ export default function App() {
                   <Route path="/messages" element={<MessagesPage />} />
                   <Route path="/messages/:threadId" element={<MessagesPage />} />
                 </Route>
-                <Route element={<ProtectedRoute requireBadge="beta" />}>
+                <Route element={<ProtectedRoute />}>
                   <Route path="/beta/bugs" element={<BugReportsPage />} />
                 </Route>
                 <Route element={<ProtectedRoute requireAdmin />}>

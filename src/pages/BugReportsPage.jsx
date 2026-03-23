@@ -42,6 +42,8 @@ export default function BugReportsPage() {
   const {
     bugReportsForCurrentUser,
     currentUser,
+    isAdmin,
+    isBetaTester,
     loading,
     submitBugReport,
   } = useMarketplace();
@@ -104,6 +106,15 @@ export default function BugReportsPage() {
     return <PageSkeleton cards={3} rows={1} titleWidth="w-56" />;
   }
 
+  if (!isAdmin && !isBetaTester) {
+    return (
+      <EmptyState
+        description="Ask an admin to grant the Beta Tester badge if you need access to the shared bug tracker."
+        title="Bug tracker access required"
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <section className="surface-card p-6">
@@ -126,7 +137,7 @@ export default function BugReportsPage() {
             </p>
             <p className="mt-2 inline-flex items-center gap-2 font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
               <ShieldCheck size={18} className="text-orange" />
-              {currentUser?.badges?.includes("beta") ? "Beta tester" : "Admin"}
+              {isAdmin ? "Admin" : "Beta tester"}
             </p>
             <p className="mt-2 text-sm text-steel">{bugCountLabel}</p>
           </div>
