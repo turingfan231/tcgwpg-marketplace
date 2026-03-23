@@ -65,7 +65,7 @@ export default function MarketPage() {
   } = useMarketplace();
   const [marketSearch, setMarketSearch] = useState(globalSearch);
   const [selectedNeighborhood, setSelectedNeighborhood] = useState("All Winnipeg");
-  const [sortBy, setSortBy] = useState("recent");
+  const [sortBy, setSortBy] = useState("newest");
   const [savedFilters, setSavedFilters] = useState(readSavedFilters);
   const deferredSearch = useDeferredValue(marketSearch.trim().toLowerCase());
 
@@ -116,6 +116,8 @@ export default function MarketPage() {
       results.sort((left, right) => left.priceCad - right.priceCad);
     } else if (sortBy === "price-high") {
       results.sort((left, right) => right.priceCad - left.priceCad);
+    } else if (sortBy === "oldest") {
+      results.sort((left, right) => left.sortTimestamp - right.sortTimestamp);
     } else {
       results.sort((left, right) => right.sortTimestamp - left.sortTimestamp);
     }
@@ -130,7 +132,7 @@ export default function MarketPage() {
 
   function clearFilters() {
     setSelectedNeighborhood("All Winnipeg");
-    setSortBy("recent");
+    setSortBy("newest");
     handleSearchChange("");
   }
 
@@ -166,10 +168,12 @@ export default function MarketPage() {
     selectedGame?.slug !== "all" ? selectedGame?.name : null,
     deferredSearch ? `Search: ${marketSearch.trim()}` : null,
     selectedNeighborhood !== "All Winnipeg" ? selectedNeighborhood : null,
-    sortBy !== "recent"
+      sortBy !== "newest"
       ? sortBy === "price-low"
         ? "Price low to high"
-        : "Price high to low"
+        : sortBy === "price-high"
+          ? "Price high to low"
+          : "Oldest to newest"
       : null,
   ].filter(Boolean);
 
@@ -258,7 +262,8 @@ export default function MarketPage() {
               value={sortBy}
               onChange={(event) => setSortBy(event.target.value)}
             >
-              <option value="recent">Most recent</option>
+              <option value="newest">Newest to oldest</option>
+              <option value="oldest">Oldest to newest</option>
               <option value="price-low">Price low to high</option>
               <option value="price-high">Price high to low</option>
             </select>

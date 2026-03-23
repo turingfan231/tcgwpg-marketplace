@@ -15,6 +15,7 @@ create table public.profiles (
   account_status text not null default 'active' check (account_status in ('active', 'suspended')),
   banner_style text not null default 'neutral',
   favorite_games text[] not null default '{}',
+  followed_seller_ids uuid[] not null default '{}',
   meetup_preferences text not null default '',
   response_time text not null default '~ 1 hour',
   completed_deals integer not null default 0,
@@ -116,6 +117,7 @@ create table public.reviews (
 alter table public.profiles add column if not exists username text;
 create unique index if not exists profiles_username_key on public.profiles (username);
 alter table public.profiles add column if not exists avatar_url text;
+alter table public.profiles add column if not exists followed_seller_ids uuid[] not null default '{}';
 alter table public.reviews add column if not exists image_url text;
 
 create table public.reports (

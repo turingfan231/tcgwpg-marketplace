@@ -1,4 +1,4 @@
-import { BadgeCheck, Clock3, ShieldCheck, Store, Trash2 } from "lucide-react";
+import { BadgeCheck, BellRing, Clock3, ShieldCheck, Store, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import ListingCard from "../components/cards/ListingCard";
@@ -19,10 +19,19 @@ const bannerToneMap = {
 
 export default function SellerProfilePage() {
   const { sellerId } = useParams();
-  const { activeListings, currentUser, deleteReview, loading, reviewBadgeCatalog, reviews, sellerMap } =
-    useMarketplace();
+  const {
+    activeListings,
+    currentUser,
+    deleteReview,
+    loading,
+    reviewBadgeCatalog,
+    reviews,
+    sellerMap,
+    toggleSellerFollow,
+  } = useMarketplace();
   const [isReviewModalOpen, setReviewModalOpen] = useState(false);
   const [deleteReviewError, setDeleteReviewError] = useState("");
+  const [followMessage, setFollowMessage] = useState("");
 
   const seller = sellerMap[sellerId];
   const sellerReviews = useMemo(
@@ -89,21 +98,49 @@ export default function SellerProfilePage() {
               </div>
             </div>
 
-            {isOwnProfile ? (
-              <div className="rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white/78">
-                Reviews from other local buyers only
-              </div>
-            ) : (
-              <button
-                className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-ink"
-                type="button"
-                onClick={() => setReviewModalOpen(true)}
-              >
-                Leave review
-              </button>
-            )}
+            <div className="flex flex-wrap gap-3">
+              {isOwnProfile ? (
+                <div className="rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white/78">
+                  Reviews from other local buyers only
+                </div>
+              ) : (
+                <>
+                  <button
+                    className={`inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold ${
+                      seller.followedByCurrentUser
+                        ? "border border-white/20 bg-white/10 text-white"
+                        : "bg-white text-ink"
+                    }`}
+                    type="button"
+                    onClick={async () => {
+                      const result = await toggleSellerFollow(seller.id);
+                      setFollowMessage(
+                        result?.warning ||
+                          result?.error ||
+                          (result?.followed
+                            ? "You will get alerts when this seller posts new listings."
+                            : "Seller notifications turned off."),
+                      );
+                    }}
+                  >
+                    <BellRing size={15} />
+                    {seller.followedByCurrentUser ? "Following seller" : "Follow seller"}
+                  </button>
+                  <button
+                    className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-ink"
+                    type="button"
+                    onClick={() => setReviewModalOpen(true)}
+                  >
+                    Leave review
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
+        {followMessage ? (
+          <div className="px-8 pb-2 text-sm font-semibold text-white/82">{followMessage}</div>
+        ) : null}
 
         <div className="grid gap-4 p-6 lg:grid-cols-4">
           <div className="rounded-[24px] bg-[#f8f5ee] p-5">

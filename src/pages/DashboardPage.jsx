@@ -1,5 +1,5 @@
-import { BarChart3, Eye, FileText, RefreshCcw, Tag } from "lucide-react";
-import { useState } from "react";
+import { ArrowUpDown, BarChart3, Eye, FileText, RefreshCcw, Tag } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import CardArtwork from "../components/shared/CardArtwork";
 import { useMarketplace } from "../hooks/useMarketplace";
@@ -30,6 +30,7 @@ export default function DashboardPage() {
     selectListingDraft,
   } = useMarketplace();
   const [editingId, setEditingId] = useState("");
+  const [listingSort, setListingSort] = useState("active-first");
   const [editForm, setEditForm] = useState({
     price: "",
     condition: "NM",
@@ -52,6 +53,36 @@ export default function DashboardPage() {
   const sellerOffers = offersForCurrentUser.filter(
     (offer) => offer.sellerId === currentUser.id,
   );
+  const sortedSellerListings = useMemo(() => {
+    const items = [...currentUserListings];
+
+    if (listingSort === "price-low") {
+      return items.sort((left, right) => left.priceCad - right.priceCad);
+    }
+
+    if (listingSort === "price-high") {
+      return items.sort((left, right) => right.priceCad - left.priceCad);
+    }
+
+    if (listingSort === "oldest") {
+      return items.sort((left, right) => left.sortTimestamp - right.sortTimestamp);
+    }
+
+    return items.sort((left, right) => {
+      if (listingSort === "active-first") {
+        const leftRank = left.status === "sold" ? 1 : 0;
+        const rightRank = right.status === "sold" ? 1 : 0;
+
+        if (leftRank !== rightRank) {
+          return leftRank - rightRank;
+        }
+      }
+
+      return right.sortTimestamp - left.sortTimestamp;
+    });
+  }, [currentUserListings, listingSort]);
+  const dashboardActiveListings = sortedSellerListings.filter((listing) => listing.status !== "sold");
+  const soldListings = sortedSellerListings.filter((listing) => listing.status === "sold");
 
   function openEditor(listing) {
     setEditingId(listing.id);
@@ -211,6 +242,228 @@ export default function DashboardPage() {
                 </div>
               );
             })}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="section-kicker">Listings</p>
+            <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+              Active listings first
+            </h2>
+          </div>
+          <label className="block min-w-[15rem]">
+            <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-steel">
+              <ArrowUpDown size={16} />
+              Sort listings
+            </span>
+            <select
+              className="w-full rounded-[18px] border border-slate-200 bg-[#fbf8f1] px-4 py-3 text-sm font-semibold text-ink outline-none transition focus:border-navy"
+              value={listingSort}
+              onChange={(event) => setListingSort(event.target.value)}
+            >
+              <option value="active-first">Active first, newest to oldest</option>
+              <option value="newest">Newest to oldest</option>
+              <option value="oldest">Oldest to newest</option>
+              <option value="price-low">Price low to high</option>
+              <option value="price-high">Price high to low</option>
+            </select>
+          </label>
+        </div>
+
+        <div className="mt-5 space-y-4">
+          {dashboardActiveListings.length ? (
+            dashboardActiveListings.map((listing) => (
+              <div
+                key={listing.id}
+                className={`grid gap-4 rounded-[28px] border border-slate-200 bg-[#fbf8f1] p-5 lg:grid-cols-[10rem_minmax(0,1fr)_auto] ${listing.status === "sold" ? "opacity-70" : ""}`}
+              >
+                <CardArtwork
+                  alt={listing.title}
+                  className="aspect-[2.5/3.5] h-full max-h-56 w-full rounded-[22px] border border-slate-200 bg-white"
+                  imageClassName="object-contain p-2"
+                  src={listing.imageUrl}
+                />
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-navy/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-navy">
+                      {listing.type}
+                    </span>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                      {listing.condition}
+                    </span>
+                    {listing.status === "sold" ? (
+                      <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white">
+                        Sold
+                      </span>
+                    ) : null}
+                  </div>
+                  <div>
+                    <h3 className="font-display text-2xl font-semibold tracking-[-0.04em] text-ink">
+                      {listing.title}
+                    </h3>
+                    <p className="mt-2 text-sm text-steel">
+                      {listing.game} | {listing.neighborhood} | {listing.quantity || 1}x
+                    </p>
+                  </div>
+                  {editingId === listing.id ? (
+                    <div className="grid gap-3 lg:grid-cols-2">
+                      <label className="block">
+                        <span className="mb-2 block text-sm font-semibold text-steel">Price</span>
+                        <input
+                          className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 outline-none"
+                          type="number"
+                          value={editForm.price}
+                          onChange={(event) =>
+                            setEditForm((current) => ({ ...current, price: event.target.value }))
+                          }
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="mb-2 block text-sm font-semibold text-steel">Condition</span>
+                        <select
+                          className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 outline-none"
+                          value={editForm.condition}
+                          onChange={(event) =>
+                            setEditForm((current) => ({ ...current, condition: event.target.value }))
+                          }
+                        >
+                          {["NM", "LP", "MP", "HP", "DMG"].map((condition) => (
+                            <option key={condition} value={condition}>
+                              {condition}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block">
+                        <span className="mb-2 block text-sm font-semibold text-steel">Quantity</span>
+                        <input
+                          className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 outline-none"
+                          min="1"
+                          type="number"
+                          value={editForm.quantity}
+                          onChange={(event) =>
+                            setEditForm((current) => ({ ...current, quantity: event.target.value }))
+                          }
+                        />
+                      </label>
+                      <label className="block lg:col-span-2">
+                        <span className="mb-2 block text-sm font-semibold text-steel">Description</span>
+                        <textarea
+                          className="min-h-28 w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 outline-none"
+                          value={editForm.description}
+                          onChange={(event) =>
+                            setEditForm((current) => ({ ...current, description: event.target.value }))
+                          }
+                        />
+                      </label>
+                      <div className="flex flex-wrap gap-2 lg:col-span-2">
+                        <button
+                          className="rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white"
+                          type="button"
+                          onClick={async () => {
+                            const updated = await editListing(listing.id, editForm);
+                            if (updated) {
+                              setEditingId("");
+                            }
+                          }}
+                        >
+                          Save changes
+                        </button>
+                        <button
+                          className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
+                          type="button"
+                          onClick={() => setEditingId("")}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm leading-7 text-steel">{listing.description}</p>
+                  )}
+                </div>
+                <div className="flex flex-col justify-between gap-4 lg:items-end">
+                  <div className="space-y-2 text-right">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                      Asking price
+                    </p>
+                    <p className="font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                      {formatCadPrice(listing.priceCad, "CAD")}
+                    </p>
+                    <p className="text-sm text-steel">
+                      {formatNumber(listing.views)} views | {formatNumber(listing.offers)} offers
+                    </p>
+                  </div>
+                  {editingId === listing.id ? null : (
+                    <div className="flex flex-wrap gap-2 lg:justify-end">
+                      <button
+                        className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
+                        type="button"
+                        onClick={() => openEditor(listing)}
+                      >
+                        Edit
+                      </button>
+                      {listing.status !== "sold" ? (
+                        <>
+                          <button
+                            className="rounded-full border border-navy bg-navy/5 px-4 py-2 text-sm font-semibold text-navy"
+                            type="button"
+                            onClick={() => bumpListing(listing.id)}
+                          >
+                            <RefreshCcw size={15} className="mr-2 inline-flex" />
+                            Bump
+                          </button>
+                          <button
+                            className="rounded-full bg-slate-800 px-4 py-2 text-sm font-semibold text-white"
+                            type="button"
+                            onClick={() => markListingSold(listing.id)}
+                          >
+                            Mark as sold
+                          </button>
+                        </>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm leading-7 text-steel">No active listings right now.</p>
+          )}
+        </div>
+      </section>
+
+      {soldListings.length ? (
+        <section className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
+          <p className="section-kicker">Sales history</p>
+          <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+            Sold listings
+          </h2>
+          <div className="mt-5 space-y-3">
+            {soldListings.map((listing) => (
+              <div
+                key={listing.id}
+                className="flex flex-wrap items-center justify-between gap-4 rounded-[24px] border border-slate-200 bg-[#fbf8f1] p-4"
+              >
+                <div>
+                  <p className="font-semibold text-ink">{listing.title}</p>
+                  <p className="mt-2 text-sm text-steel">
+                    {listing.game} | {listing.neighborhood} | Sold {listing.timeAgo}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
+                    {formatCadPrice(listing.priceCad, "CAD")}
+                  </p>
+                  <p className="mt-1 text-sm text-steel">
+                    {formatNumber(listing.views)} views | {formatNumber(listing.offers)} offers
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       ) : null}

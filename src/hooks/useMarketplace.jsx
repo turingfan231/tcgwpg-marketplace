@@ -120,6 +120,10 @@ function buildMarketplaceCacheSnapshot(snapshot) {
       responseTime: user.responseTime,
       completedDeals: user.completedDeals,
       avatarUrl: user.avatarUrl || "",
+      defaultListingGame: user.defaultListingGame || "",
+      followedSellerIds: Array.isArray(user.followedSellerIds)
+        ? user.followedSellerIds.slice(0, 200)
+        : [],
       publicName: user.publicName,
       firstName: user.firstName,
       initials: user.initials,
@@ -234,6 +238,10 @@ function omitMissingProfileColumns(payload, error) {
 
   if (isMissingColumnError(error, "default_listing_game")) {
     delete nextPayload.default_listing_game;
+  }
+
+  if (isMissingColumnError(error, "followed_seller_ids")) {
+    delete nextPayload.followed_seller_ids;
   }
 
   return nextPayload;
@@ -407,6 +415,7 @@ function normalizeUserRecord(user) {
   const username = normalizeUsername(user.username || "");
   const publicName = username || user.publicName || getPublicName(user.name);
   const favoriteGames = Array.isArray(user.favoriteGames) ? user.favoriteGames : [];
+  const followedSellerIds = Array.isArray(user.followedSellerIds) ? user.followedSellerIds : [];
   const defaultListingGame = user.defaultListingGame || favoriteGames[0] || "Pokemon";
 
   return {
@@ -423,6 +432,7 @@ function normalizeUserRecord(user) {
     email: normalizeEmail(user.email),
     postalCode: normalizePostalCode(user.postalCode),
     favoriteGames,
+    followedSellerIds,
     defaultListingGame,
     username,
     firstName: getFirstName(user.name),
@@ -506,6 +516,7 @@ function normalizeBugReportRecord(report) {
 function normalizeNotificationRecord(notification) {
   return {
     read: false,
+    archived: false,
     ...notification,
   };
 }
@@ -536,6 +547,7 @@ function fromProfileRow(row) {
     accountStatus: row.account_status,
     bannerStyle: row.banner_style,
     favoriteGames: row.favorite_games || [],
+    followedSellerIds: row.followed_seller_ids || [],
     meetupPreferences: row.meetup_preferences,
     responseTime: row.response_time,
     completedDeals: row.completed_deals || 0,
@@ -703,6 +715,8 @@ function mergeAuthedProfileMetadata(profileRow, authUser) {
       profileRow.postal_code ||
       normalizePostalCode(authUser?.user_metadata?.postal_code) ||
       "",
+    followed_seller_ids:
+      profileRow.followed_seller_ids || authUser?.user_metadata?.followed_seller_ids || [],
   };
 }
 
@@ -853,6 +867,7 @@ export function MarketplaceProvider({ children }) {
   const isBetaTester = Boolean(
     currentUserRecord?.badges?.includes("beta") || currentUserRecord?.role === "admin",
   );
+  const followedSellerIds = currentUserRecord?.followedSellerIds || [];
   const listingDraft = useMemo(
     () =>
       activeDraftId
@@ -868,6 +883,7 @@ export function MarketplaceProvider({ children }) {
       ),
     [listingDrafts],
   );
+  const followedSellerSet = useMemo(() => new Set(followedSellerIds), [followedSellerIds]);
 
   const reviewBadgeCatalog = sellerBadgeCatalog;
 
@@ -882,13 +898,14 @@ export function MarketplaceProvider({ children }) {
       map[user.id] = {
         ...sanitizeUser(user),
         activeListingCount: listingCount,
+        followedByCurrentUser: followedSellerSet.has(user.id),
         reviewCount: sellerReviews.length,
         overallRating: average(sellerReviews.map((review) => review.rating)),
       };
     });
 
     return map;
-  }, [listings, reviews, users]);
+  }, [followedSellerSet, listings, reviews, users]);
   const normalizedWishlist = useMemo(
     () =>
       wishlist.filter((listingId) =>
@@ -1295,6 +1312,7 @@ export function MarketplaceProvider({ children }) {
       bio: payload.bio || "New local seller on TCGWPG.",
       banner_style: "neutral",
       favorite_games: payload.favoriteGames || [],
+      followed_seller_ids: payload.followedSellerIds || [],
       meetup_preferences: payload.meetupPreferences || "Flexible local meetup.",
       response_time: payload.responseTime || "~ 1 hour",
       completed_deals: 0,
@@ -2196,6 +2214,31 @@ export function MarketplaceProvider({ children }) {
         entityId: data.id,
       }),
     );
+
+    try {
+      const { data: followerRows, error: followerError } = await supabase
+        .from("profiles")
+        .select("id")
+        .contains("followed_seller_ids", [currentUserRecord.id])
+        .neq("id", currentUserRecord.id);
+
+      if (!followerError && Array.isArray(followerRows) && followerRows.length) {
+        await Promise.all(
+          followerRows.map((follower) =>
+            pushNotification({
+              userId: follower.id,
+              type: "seller-posted",
+              title: `New listing from ${currentUserRecord.publicName || currentUserRecord.name}`,
+              body: `${payload.title} was just posted.`,
+              entityId: data.id,
+            }),
+          ),
+        );
+      }
+    } catch {
+      // Ignore missing followed_seller_ids support until the migration is applied.
+    }
+
     await refreshMarketplaceData(currentUserId);
     return { ok: true, listing: fromListingRow(data) };
   }
@@ -2415,6 +2458,86 @@ export function MarketplaceProvider({ children }) {
     );
 
     return { ok: true };
+  }
+
+  async function toggleSellerFollow(sellerId) {
+    if (!currentUserId || !currentUserRecord) {
+      return { ok: false, error: "You must be logged in to follow a seller." };
+    }
+
+    if (String(sellerId || "") === String(currentUserId || "")) {
+      return { ok: false, error: "You cannot follow your own seller page." };
+    }
+
+    const access = ensureAccountActive(
+      "This account is suspended. Browsing is still available, but follow alerts are disabled.",
+    );
+    if (!access.ok) {
+      return access;
+    }
+
+    const alreadyFollowing = followedSellerSet.has(sellerId);
+    const nextFollowedSellerIds = alreadyFollowing
+      ? followedSellerIds.filter((id) => id !== sellerId)
+      : [...followedSellerIds, sellerId];
+
+    setUsers((current) =>
+      current.map((user) =>
+        user.id === currentUserId
+          ? normalizeUserRecord({ ...user, followedSellerIds: nextFollowedSellerIds })
+          : user,
+      ),
+    );
+
+    if (!isSupabaseConfigured) {
+      return { ok: true, followed: !alreadyFollowing };
+    }
+
+    const authUpdateResult = await supabase.auth.updateUser({
+      data: {
+        followed_seller_ids: nextFollowedSellerIds,
+      },
+    });
+
+    if (authUpdateResult.error) {
+      return { ok: false, error: authUpdateResult.error.message };
+    }
+
+    const profilePayload = {
+      followed_seller_ids: nextFollowedSellerIds,
+      updated_at: new Date().toISOString(),
+    };
+
+    let updateResult = await supabase
+      .from("profiles")
+      .update(profilePayload)
+      .eq("id", currentUserId);
+
+    const missingFollowedSellersColumn =
+      Boolean(updateResult.error) && isMissingColumnError(updateResult.error, "followed_seller_ids");
+
+    if (updateResult.error && missingFollowedSellersColumn) {
+      const legacyProfilePayload = omitMissingProfileColumns(profilePayload, updateResult.error);
+      updateResult = await supabase
+        .from("profiles")
+        .update(legacyProfilePayload)
+        .eq("id", currentUserId);
+    }
+
+    if (updateResult.error) {
+      return { ok: false, error: updateResult.error.message };
+    }
+
+    if (missingFollowedSellersColumn) {
+      return {
+        ok: true,
+        followed: !alreadyFollowing,
+        warning:
+          "Followed sellers were saved for this session, but the profiles table is still missing the followed_seller_ids column in Supabase.",
+      };
+    }
+
+    return { ok: true, followed: !alreadyFollowing };
   }
 
   async function addReview(payload) {
@@ -3511,6 +3634,63 @@ export function MarketplaceProvider({ children }) {
     return error ? { ok: false, error: error.message } : { ok: true };
   }
 
+  async function deleteNotification(notificationId) {
+    if (!currentUserId) {
+      return { ok: false, error: "You must be logged in." };
+    }
+
+    setNotifications((current) =>
+      current.filter(
+        (notification) =>
+          !(notification.id === notificationId && notification.userId === currentUserId),
+      ),
+    );
+    seenNotificationIdsRef.current.delete(notificationId);
+    writeToastSeenStorage(currentUserId, seenNotificationIdsRef.current);
+
+    if (!isSupabaseConfigured) {
+      return { ok: true };
+    }
+
+    const { error } = await supabase
+      .from("notifications")
+      .delete()
+      .eq("id", notificationId)
+      .eq("user_id", currentUserId);
+
+    return error ? { ok: false, error: error.message } : { ok: true };
+  }
+
+  async function clearReadNotifications() {
+    if (!currentUserId) {
+      return { ok: false, error: "You must be logged in." };
+    }
+
+    const readIds = notificationsForCurrentUser
+      .filter((notification) => notification.read)
+      .map((notification) => notification.id);
+
+    setNotifications((current) =>
+      current.filter(
+        (notification) => !(notification.userId === currentUserId && notification.read),
+      ),
+    );
+    readIds.forEach((notificationId) => seenNotificationIdsRef.current.delete(notificationId));
+    writeToastSeenStorage(currentUserId, seenNotificationIdsRef.current);
+
+    if (!isSupabaseConfigured) {
+      return { ok: true };
+    }
+
+    const { error } = await supabase
+      .from("notifications")
+      .delete()
+      .eq("user_id", currentUserId)
+      .eq("read", true);
+
+    return error ? { ok: false, error: error.message } : { ok: true };
+  }
+
   async function toggleListingFlag(listingId) {
     const listing = listings.find((item) => item.id === listingId);
     if (!listing) {
@@ -3940,7 +4120,9 @@ export function MarketplaceProvider({ children }) {
     currentUserDrafts,
     currentUserId,
     currentUserListings,
+    clearReadNotifications,
     deleteReview,
+    deleteNotification,
     deleteCurrentUserAccount,
     deleteUserAccount,
     dismissToast,
@@ -4005,6 +4187,7 @@ export function MarketplaceProvider({ children }) {
     toggleListingFlag,
     toggleListingRemoved,
     toggleManualEventPublished,
+    toggleSellerFollow,
     toggleUserAdmin,
     toggleUserBadge,
     toggleUserSuspended,
@@ -4019,6 +4202,7 @@ export function MarketplaceProvider({ children }) {
     wishlist: normalizedWishlist,
     wishlistedListings,
     toggleWishlist,
+    followedSellerIds,
   };
 
   return <MarketplaceContext.Provider value={value}>{children}</MarketplaceContext.Provider>;

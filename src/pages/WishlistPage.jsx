@@ -1,3 +1,5 @@
+import { Search } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ListingCard from "../components/cards/ListingCard";
 import EmptyState from "../components/ui/EmptyState";
@@ -5,7 +7,30 @@ import { useMarketplace } from "../hooks/useMarketplace";
 
 export default function WishlistPage() {
   const navigate = useNavigate();
+  const [query, setQuery] = useState("");
   const { openCreateListing, wishlistedListings } = useMarketplace();
+  const filteredListings = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return wishlistedListings;
+    }
+
+    return wishlistedListings.filter((listing) =>
+      [
+        listing.title,
+        listing.game,
+        listing.description,
+        listing.condition,
+        listing.neighborhood,
+        listing.seller?.publicName,
+        listing.seller?.username,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedQuery),
+    );
+  }, [query, wishlistedListings]);
 
   if (!wishlistedListings.length) {
     return (
@@ -41,13 +66,32 @@ export default function WishlistPage() {
           Keep an eye on high-priority pickups, trade targets, and local prices
           worth revisiting.
         </p>
+        <div className="relative mt-5 max-w-xl">
+          <Search
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-steel"
+            size={16}
+          />
+          <input
+            className="w-full rounded-[20px] border border-slate-200 bg-[#f8f5ee] py-3 pl-11 pr-4 outline-none transition focus:border-navy focus:bg-white"
+            placeholder="Search saved listings"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {wishlistedListings.map((listing) => (
-          <ListingCard key={listing.id} listing={listing} />
-        ))}
-      </section>
+      {filteredListings.length ? (
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {filteredListings.map((listing) => (
+            <ListingCard key={listing.id} listing={listing} />
+          ))}
+        </section>
+      ) : (
+        <EmptyState
+          description="Try a different card name, seller, or neighborhood."
+          title="No wishlist matches"
+        />
+      )}
     </div>
   );
 }

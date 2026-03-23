@@ -1,4 +1,4 @@
-import { BellRing, CheckCheck } from "lucide-react";
+import { BellRing, CheckCheck, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import EmptyState from "../components/ui/EmptyState";
 import PageSkeleton from "../components/ui/PageSkeleton";
@@ -52,6 +52,8 @@ function formatNotificationDate(dateString) {
 
 export default function NotificationsPage() {
   const {
+    clearReadNotifications,
+    deleteNotification,
     loading,
     markAllNotificationsRead,
     markNotificationRead,
@@ -84,28 +86,36 @@ export default function NotificationsPage() {
               New offers, unread messages, moderation actions, and reviews all land here.
             </p>
           </div>
-          <button
-            className="inline-flex items-center gap-2 rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
-            type="button"
-            onClick={markAllNotificationsRead}
-          >
-            <CheckCheck size={16} />
-            Mark all read
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              className="inline-flex items-center gap-2 rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
+              type="button"
+              onClick={markAllNotificationsRead}
+            >
+              <CheckCheck size={16} />
+              Mark all read
+            </button>
+            <button
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel"
+              type="button"
+              onClick={clearReadNotifications}
+            >
+              <Trash2 size={16} />
+              Clear read
+            </button>
+          </div>
         </div>
       </section>
 
       <section className="space-y-4">
         {notificationsForCurrentUser.map((notification) => (
-          <Link
+          <div
             key={notification.id}
             className={`block rounded-[28px] border p-5 shadow-soft transition hover:-translate-y-0.5 ${
               notification.read
                 ? "border-slate-200 bg-white"
                 : "border-orange/30 bg-orange/5"
             }`}
-            to={buildTargetLink(notification)}
-            onClick={() => markNotificationRead(notification.id)}
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-4">
@@ -113,15 +123,31 @@ export default function NotificationsPage() {
                   <BellRing size={18} />
                 </span>
                 <div>
-                  <p className="font-semibold text-ink">{notification.title}</p>
+                  <Link
+                    className="font-semibold text-ink hover:text-navy"
+                    onClick={() => markNotificationRead(notification.id)}
+                    to={buildTargetLink(notification)}
+                  >
+                    {notification.title}
+                  </Link>
                   <p className="mt-2 text-sm leading-7 text-steel">{notification.body}</p>
                 </div>
               </div>
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                {formatNotificationDate(notification.createdAt)}
-              </span>
+              <div className="flex flex-col items-end gap-3">
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                  {formatNotificationDate(notification.createdAt)}
+                </span>
+                <button
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-steel"
+                  type="button"
+                  onClick={() => deleteNotification(notification.id)}
+                >
+                  <Trash2 size={12} />
+                  Delete
+                </button>
+              </div>
             </div>
-          </Link>
+          </div>
         ))}
       </section>
     </div>
