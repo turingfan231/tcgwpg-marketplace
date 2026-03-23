@@ -155,13 +155,6 @@ function BannerCard({
     null;
   const backgroundImage =
     slide.payload.backgroundImage || listingGallery[0] || slide.payload.imageUrl || null;
-  const heroGameKey =
-    slide.kind === "event"
-      ? normalizeGameKey(slide.payload.game)
-      : slide.kind === "game"
-        ? normalizeGameKey(slide.payload.slug)
-        : normalizeGameKey(slide.payload.game);
-  const heroArt = slide.payload.heroArt || CURATED_HERO_ART[heroGameKey] || backgroundImage || null;
 
   return (
     <article
@@ -183,8 +176,8 @@ function BannerCard({
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,13,20,0.94)_0%,rgba(7,18,27,0.92)_32%,rgba(10,24,35,0.66)_58%,rgba(10,24,35,0.34)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.06),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(255,153,0,0.12),transparent_16%)]" />
 
-        <div className="relative z-10 grid h-full gap-8 lg:grid-cols-[minmax(0,1.1fr)_24rem] lg:items-center">
-          <div className="flex h-full flex-col justify-center gap-8 py-2 lg:py-4">
+        <div className="relative z-10 flex h-full flex-col justify-between gap-6">
+          <div className="max-w-2xl">
             <div className="max-w-2xl">
             <span className="inline-flex rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
               {slide.kicker}
@@ -230,6 +223,7 @@ function BannerCard({
             </div>
           </div>
 
+          <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="flex flex-wrap gap-3">
               <div className="rounded-[26px] border border-white/12 bg-white/8 px-5 py-4 backdrop-blur">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/58">
@@ -271,89 +265,6 @@ function BannerCard({
                 ) : null}
               </div>
             </div>
-          </div>
-
-          <div className="flex h-full items-center justify-center lg:justify-end">
-            <div className="relative flex min-h-[16rem] w-full max-w-[24rem] items-center justify-center overflow-hidden rounded-[30px] border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04))] p-6 backdrop-blur">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.08),transparent_20%),radial-gradient(circle_at_70%_80%,rgba(255,153,0,0.08),transparent_18%)]" />
-            {slide.kind === "listing" ? (
-              <div className="relative z-10 hidden items-end gap-4 lg:flex">
-                {listingGallery[1] ? (
-                  <div className="w-[6.75rem] rotate-[-7deg] rounded-[22px] border border-white/16 bg-white/10 p-2 backdrop-blur">
-                    <CardArtwork
-                      className="aspect-[63/88] w-full rounded-[16px] object-cover"
-                      game={slide.payload.game}
-                      src={listingGallery[1]}
-                      title={`${slide.payload.title} alt 1`}
-                    />
-                  </div>
-                ) : null}
-                <div className="w-[8.25rem] rounded-[26px] border border-white/16 bg-white/10 p-2.5 backdrop-blur">
-                  <CardArtwork
-                    className="aspect-[63/88] w-full rounded-[20px] object-cover"
-                    game={slide.payload.game}
-                    src={listingGallery[0]}
-                    title={slide.payload.title}
-                  />
-                </div>
-                {listingGallery[2] ? (
-                  <div className="w-[6.75rem] rotate-[8deg] rounded-[22px] border border-white/16 bg-white/10 p-2 backdrop-blur">
-                    <CardArtwork
-                      className="aspect-[63/88] w-full rounded-[16px] object-cover"
-                      game={slide.payload.game}
-                      src={listingGallery[2]}
-                      title={`${slide.payload.title} alt 2`}
-                    />
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-
-            {slide.kind === "event" ? (
-              <div className="relative z-10 flex h-full w-full items-center justify-center">
-                {heroArt ? (
-                  <img
-                    alt=""
-                    aria-hidden="true"
-                    className="max-h-[15.5rem] w-auto max-w-full object-contain drop-shadow-[0_24px_40px_rgba(0,0,0,0.35)]"
-                    src={heroArt}
-                  />
-                ) : (
-                  <CalendarRange className="text-white/60" size={88} />
-                )}
-              </div>
-            ) : null}
-
-            {slide.kind === "game" ? (
-              <div className="relative z-10 flex h-full w-full items-center justify-center">
-                {heroArt ? (
-                  <img
-                    alt=""
-                    aria-hidden="true"
-                    className="max-h-[15.75rem] w-auto max-w-full object-contain drop-shadow-[0_26px_44px_rgba(0,0,0,0.36)]"
-                    src={heroArt}
-                  />
-                ) : (
-                  <div className="grid grid-cols-3 gap-3">
-                    {(slide.payload.gallery || []).slice(0, 3).map((src, index) => (
-                      <div
-                        key={`${slide.payload.slug}-${index}`}
-                        className={`rounded-[22px] border border-white/16 bg-white/8 p-2 backdrop-blur ${
-                          index === 1 ? "translate-y-5" : ""
-                        }`}
-                      >
-                        <CardArtwork
-                          className="aspect-[63/88] w-full rounded-[18px] object-cover"
-                          game={slide.payload.name}
-                          src={src}
-                          title={`${slide.payload.name} spotlight ${index + 1}`}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : null}
             </div>
           </div>
         </div>
