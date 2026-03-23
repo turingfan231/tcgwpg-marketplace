@@ -133,44 +133,9 @@ function BannerCard({
   onOpenSeller,
   onOpenGame,
 }) {
-  const paletteMap = {
-    listing: "from-[#102739]/95 via-[#17384c]/92 to-[#0b1d2a]/95 text-white",
-    event: "from-[#0f2637]/96 via-[#17384c]/94 to-[#102739]/96 text-white",
-    seller: "from-[#122b3d]/96 via-[#17384c]/94 to-[#0b1d2a]/96 text-white",
-    game: "from-[#102739]/95 via-[#163247]/93 to-[#0b1d2a]/95 text-white",
-  };
-
-  const buttonMap = {
-    listing: "bg-white text-navy",
-    event: "bg-orange text-white",
-    seller: "bg-white text-navy",
-    game: "bg-white text-navy",
-  };
-
-  const secondaryMap = {
-    listing: "text-white/74",
-    event: "text-white/76",
-    seller: "text-white/74",
-    game: "text-white/74",
-  };
-
-  const badgeMap = {
-    listing: "bg-white/12 text-white",
-    event: "bg-white/12 text-white",
-    seller: "bg-white/12 text-white",
-    game: "bg-white/12 text-white",
-  };
   const listingGallery = slide.kind === "listing" ? slide.payload.gallery || [] : [];
-  const accentMap = {
-    listing:
-      "bg-[radial-gradient(circle_at_18%_22%,rgba(255,255,255,0.12),transparent_16%),radial-gradient(circle_at_78%_20%,rgba(255,153,0,0.18),transparent_14%),linear-gradient(135deg,rgba(255,255,255,0.06),transparent_42%),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.07)_1px,transparent_1px)] bg-[length:auto,auto,auto,38px_38px,38px_38px]",
-    event:
-      "bg-[radial-gradient(circle_at_18%_22%,rgba(255,255,255,0.1),transparent_16%),radial-gradient(circle_at_82%_18%,rgba(94,127,147,0.2),transparent_14%),radial-gradient(circle_at_70%_75%,rgba(255,153,0,0.14),transparent_18%),linear-gradient(120deg,rgba(255,255,255,0.05),transparent_44%),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:auto,auto,auto,auto,42px_42px,42px_42px]",
-    seller:
-      "bg-[radial-gradient(circle_at_20%_22%,rgba(255,255,255,0.1),transparent_16%),radial-gradient(circle_at_82%_18%,rgba(255,153,0,0.16),transparent_14%),radial-gradient(circle_at_78%_74%,rgba(94,127,147,0.18),transparent_18%),linear-gradient(125deg,rgba(255,255,255,0.05),transparent_42%),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:auto,auto,auto,auto,40px_40px,40px_40px]",
-    game:
-      "bg-[radial-gradient(circle_at_16%_22%,rgba(255,255,255,0.12),transparent_16%),radial-gradient(circle_at_82%_18%,rgba(255,153,0,0.14),transparent_14%),radial-gradient(circle_at_76%_76%,rgba(94,127,147,0.18),transparent_18%),linear-gradient(125deg,rgba(255,255,255,0.06),transparent_42%),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:auto,auto,auto,auto,40px_40px,40px_40px]",
-  };
+  const backgroundImage =
+    slide.payload.backgroundImage || listingGallery[0] || slide.payload.imageUrl || null;
 
   return (
     <article
@@ -181,24 +146,28 @@ function BannerCard({
       }`}
     >
       <div
-        className={`relative h-full overflow-hidden rounded-[36px] border border-white/18 bg-gradient-to-br p-6 shadow-[0_30px_80px_-46px_rgba(20,54,74,0.52)] sm:p-8 lg:p-10 ${paletteMap[slide.kind]}`}
+        className="relative h-full overflow-hidden rounded-[36px] border border-white/10 bg-[#09131d] p-8 text-white shadow-[0_32px_90px_-48px_rgba(6,18,27,0.62)] sm:p-10 lg:p-12"
       >
-        <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(7,18,27,0.9),rgba(14,38,56,0.8)_44%,rgba(7,18,27,0.86))]" />
-        <div className={`absolute inset-0 ${accentMap[slide.kind]}`} />
+        {backgroundImage ? (
+          <img
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover object-right"
+            src={backgroundImage}
+          />
+        ) : null}
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,13,20,0.96)_0%,rgba(7,18,27,0.92)_28%,rgba(10,24,35,0.64)_56%,rgba(10,24,35,0.18)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.08),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(255,153,0,0.14),transparent_16%)]" />
 
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-[38%] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08),transparent_68%)]" />
-
-        <div className="relative z-10 grid h-full gap-8 lg:grid-cols-[minmax(0,1.05fr)_24rem] lg:items-center">
-          <div className="max-w-3xl">
-            <span
-              className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${badgeMap[slide.kind]}`}
-            >
+        <div className="relative z-10 flex h-full flex-col justify-between gap-8">
+          <div className="max-w-2xl">
+            <span className="inline-flex rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
               {slide.kicker}
             </span>
             <h1 className="mt-5 max-w-3xl font-display text-[2.65rem] font-semibold leading-[0.92] tracking-[-0.07em] sm:text-[4rem]">
               {slide.title}
             </h1>
-            <p className={`mt-4 max-w-2xl text-sm leading-7 sm:text-base ${secondaryMap[slide.kind]}`}>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-white/76 sm:text-base">
               {slide.description}
             </p>
 
@@ -206,11 +175,7 @@ function BannerCard({
               {slide.meta.map((item) => (
                 <span
                   key={item}
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] ${
-                    slide.kind === "event"
-                      ? "bg-white/12 text-white"
-                      : "bg-white/66 text-steel"
-                  }`}
+                  className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-white/74"
                 >
                   {item}
                 </span>
@@ -219,7 +184,9 @@ function BannerCard({
 
             <div className="mt-8 flex flex-wrap gap-3">
               <button
-                className={`rounded-full px-5 py-3 text-sm font-semibold shadow-soft ${buttonMap[slide.kind]}`}
+                className={`rounded-full px-5 py-3 text-sm font-semibold shadow-soft ${
+                  slide.kind === "event" ? "bg-orange text-white" : "bg-white text-navy"
+                }`}
                 type="button"
                 onClick={() => {
                   if (slide.kind === "listing") {
@@ -235,19 +202,14 @@ function BannerCard({
               >
                 {slide.cta}
               </button>
-              {slide.kind === "listing" ? (
-                <div className="rounded-full bg-white/12 px-4 py-3 text-sm font-semibold text-white">
-                  {formatCadPrice(slide.payload.price, slide.payload.priceCurrency || "CAD")}
-                </div>
-              ) : null}
             </div>
           </div>
 
-          <div className="flex items-center justify-center">
+          <div className="flex items-end justify-between gap-6">
             {slide.kind === "listing" ? (
-              <div className="relative w-full max-w-[22rem]">
+              <div className="hidden items-end gap-4 lg:flex">
                 {listingGallery[1] ? (
-                  <div className="absolute -left-2 top-10 hidden w-[7rem] rotate-[-8deg] rounded-[22px] border border-white/20 bg-white/8 p-2 shadow-soft backdrop-blur sm:block">
+                  <div className="w-[7rem] rotate-[-7deg] rounded-[22px] border border-white/16 bg-white/10 p-2 backdrop-blur">
                     <CardArtwork
                       className="aspect-[63/88] w-full rounded-[16px] object-cover"
                       game={slide.payload.game}
@@ -256,8 +218,16 @@ function BannerCard({
                     />
                   </div>
                 ) : null}
+                <div className="w-[8.75rem] rounded-[26px] border border-white/16 bg-white/10 p-2.5 backdrop-blur">
+                  <CardArtwork
+                    className="aspect-[63/88] w-full rounded-[20px] object-cover"
+                    game={slide.payload.game}
+                    src={listingGallery[0]}
+                    title={slide.payload.title}
+                  />
+                </div>
                 {listingGallery[2] ? (
-                  <div className="absolute -right-1 bottom-10 hidden w-[7rem] rotate-[9deg] rounded-[22px] border border-white/20 bg-white/8 p-2 shadow-soft backdrop-blur sm:block">
+                  <div className="w-[7rem] rotate-[8deg] rounded-[22px] border border-white/16 bg-white/10 p-2 backdrop-blur">
                     <CardArtwork
                       className="aspect-[63/88] w-full rounded-[16px] object-cover"
                       game={slide.payload.game}
@@ -266,37 +236,11 @@ function BannerCard({
                     />
                   </div>
                 ) : null}
-                <div className="relative z-10 rounded-[30px] border border-white/18 bg-white/10 p-4 backdrop-blur">
-                  <div className="mx-auto w-[11rem] sm:w-[13rem]">
-                    <CardArtwork
-                      className="aspect-[63/88] w-full rounded-[24px] object-cover shadow-soft"
-                      game={slide.payload.game}
-                      src={slide.payload.imageUrl}
-                      title={slide.payload.title}
-                    />
-                  </div>
-                </div>
               </div>
             ) : null}
 
             {slide.kind === "event" ? (
-              <div className="grid w-full max-w-[22rem] gap-3">
-                <div className="rounded-[30px] border border-white/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.05))] p-5 backdrop-blur">
-                  <div className="inline-flex items-center gap-2 text-sm font-semibold text-white/78">
-                    <CalendarRange size={16} />
-                    Upcoming local night
-                  </div>
-                  <p className="mt-4 font-display text-[1.8rem] font-semibold tracking-[-0.04em] text-white">
-                    {slide.payload.title}
-                  </p>
-                  <div className="mt-4 space-y-2 text-sm text-white/78">
-                    <p>{slide.payload.store}</p>
-                    <p>
-                      {slide.payload.dateStr} | {slide.payload.time}
-                    </p>
-                    {slide.payload.neighborhood ? <p>{slide.payload.neighborhood}</p> : null}
-                  </div>
-                </div>
+              <div className="ml-auto grid w-full max-w-[22rem] gap-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-[24px] border border-white/16 bg-white/10 p-4 backdrop-blur">
                     <Clock3 size={18} className="text-orange" />
@@ -320,53 +264,8 @@ function BannerCard({
               </div>
             ) : null}
 
-            {slide.kind === "seller" ? (
-              <div className="w-full max-w-[22rem] space-y-3">
-                <div className="rounded-[30px] border border-white/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.08))] p-5 backdrop-blur">
-                  <div className="flex items-center gap-4">
-                    <UserAvatar className="h-16 w-16 text-lg font-bold" user={slide.payload} />
-                    <div className="min-w-0">
-                      <p className="truncate font-display text-[1.5rem] font-semibold tracking-[-0.04em] text-white">
-                        {slide.payload.publicName || slide.payload.firstName || slide.payload.name}
-                      </p>
-                      <p className="mt-1 text-sm text-white/72">{slide.payload.neighborhood}</p>
-                    </div>
-                  </div>
-                  <div className="mt-5 grid grid-cols-2 gap-3">
-                    <div className="rounded-[22px] border border-white/16 bg-white/8 px-3 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/58">
-                        Deals
-                      </p>
-                      <p className="mt-2 font-semibold text-white">{slide.payload.completedDeals || 0}</p>
-                    </div>
-                    <div className="rounded-[22px] border border-white/16 bg-white/8 px-3 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/58">
-                        Rating
-                      </p>
-                      <p className="mt-2 font-semibold text-white">
-                        {slide.payload.overallRating ? slide.payload.overallRating.toFixed(1) : "New"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {(slide.payload.favoriteGames || []).slice(0, 3).map((game) => (
-                    <div
-                      key={`${slide.payload.id}-${game}`}
-                      className="rounded-[22px] border border-white/16 bg-white/10 px-3 py-4 text-center backdrop-blur"
-                    >
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-orange/80">
-                        Game
-                      </p>
-                      <p className="mt-2 line-clamp-2 text-sm font-semibold text-white">{game}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
             {slide.kind === "game" ? (
-              <div className="w-full max-w-[24rem] space-y-4">
+              <div className="ml-auto w-full max-w-[24rem] space-y-4">
                 <div className="grid grid-cols-3 gap-3">
                   {(slide.payload.gallery || []).slice(0, 3).map((src, index) => (
                     <div
@@ -404,10 +303,182 @@ function BannerCard({
                 </div>
               </div>
             ) : null}
+
+            <div className="ml-auto w-full max-w-[22rem] rounded-[26px] border border-white/16 bg-white/10 p-5 backdrop-blur">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/58">
+                {slide.kind === "listing"
+                  ? "Current ask"
+                  : slide.kind === "event"
+                    ? "Store and date"
+                    : "Market pulse"}
+              </p>
+              {slide.kind === "listing" ? (
+                <>
+                  <p className="mt-4 font-display text-[2rem] font-semibold tracking-[-0.05em] text-white">
+                    {formatCadPrice(slide.payload.price, slide.payload.priceCurrency || "CAD")}
+                  </p>
+                  <p className="mt-2 text-sm text-white/74">
+                    {slide.payload.game} | {slide.payload.neighborhood}
+                  </p>
+                </>
+              ) : null}
+              {slide.kind === "event" ? (
+                <>
+                  <p className="mt-4 font-display text-[1.45rem] font-semibold tracking-[-0.05em] text-white">
+                    {slide.payload.store}
+                  </p>
+                  <p className="mt-2 text-sm text-white/74">
+                    {slide.payload.dateStr} | {slide.payload.time}
+                  </p>
+                </>
+              ) : null}
+              {slide.kind === "game" ? (
+                <>
+                  <p className="mt-4 font-display text-[1.45rem] font-semibold tracking-[-0.05em] text-white">
+                    {slide.payload.shortName}
+                  </p>
+                  <p className="mt-2 text-sm text-white/74">
+                    {slide.payload.count} active listings across {slide.payload.neighborhoodCount} neighborhoods
+                  </p>
+                </>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
     </article>
+  );
+}
+
+function BestSellerCard({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
+  return (
+    <article className="overflow-hidden rounded-[26px] border border-[rgba(205,220,231,0.88)] bg-white shadow-soft">
+      <button className="block w-full text-left" type="button" onClick={() => onOpen(listing.id)}>
+        <div className="flex aspect-[4/3] items-center justify-center bg-[linear-gradient(180deg,#edf4f8_0%,#dce7ef_100%)] p-4">
+          <CardArtwork
+            className="aspect-[63/88] h-full max-h-[220px] rounded-[18px] object-cover shadow-soft"
+            game={listing.game}
+            src={listing.imageUrl}
+            title={listing.title}
+          />
+        </div>
+      </button>
+      <div className="space-y-4 p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="line-clamp-2 font-semibold text-ink">{listing.title}</p>
+            <p className="mt-1 text-sm text-steel">
+              {listing.game} | {listing.neighborhood}
+            </p>
+          </div>
+          <button
+            aria-label={listing.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+            className={`inline-flex items-center justify-center rounded-full p-2 ${
+              listing.wishlisted ? "bg-orange/15 text-orange" : "bg-[#edf3f7] text-steel"
+            }`}
+            type="button"
+            onClick={() => onToggleWishlist(listing.id)}
+          >
+            <Heart fill={listing.wishlisted ? "currentColor" : "none"} size={15} />
+          </button>
+        </div>
+        <div className="flex items-center justify-between">
+          <p className="font-display text-[1.6rem] font-semibold tracking-[-0.05em] text-ink">
+            {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
+          </p>
+          <button className="text-sm font-semibold text-navy" type="button" onClick={() => onOpen(listing.id)}>
+            View
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function SecondaryPromo({ feature, formatCadPrice, onOpenListing, onOpenEvent, onOpenGame }) {
+  if (!feature) {
+    return null;
+  }
+
+  return (
+    <section className="overflow-hidden rounded-[30px] border border-[rgba(201,216,228,0.9)] bg-[linear-gradient(120deg,#123246_0%,#16384c_56%,#0b2231_100%)] text-white shadow-[0_28px_80px_-48px_rgba(6,18,27,0.58)]">
+      <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)_14rem] lg:items-center">
+        <div className="flex justify-center px-6 pt-6 lg:pt-0">
+          <div className="flex items-end gap-3">
+            {(feature.gallery || []).slice(0, 2).map((src, index) => (
+              <div
+                key={`${feature.id || feature.slug}-${index}`}
+                className={`rounded-[22px] border border-white/18 bg-white/10 p-2 backdrop-blur ${
+                  index === 1 ? "translate-y-6" : ""
+                }`}
+              >
+                <CardArtwork
+                  className="aspect-[63/88] w-[7.6rem] rounded-[16px] object-cover"
+                  game={feature.game || feature.name}
+                  src={src}
+                  title={`${feature.title || feature.name} ${index + 1}`}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="px-6 pb-6 pt-2 lg:px-0 lg:py-8">
+          <span className="inline-flex rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white">
+            {feature.kicker}
+          </span>
+          <h2 className="mt-4 max-w-3xl font-display text-[2rem] font-semibold tracking-[-0.05em] text-white sm:text-[2.45rem]">
+            {feature.title}
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-white/76 sm:text-base">
+            {feature.description}
+          </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {feature.meta.map((item) => (
+              <span
+                key={item}
+                className="rounded-full border border-white/12 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-white/78"
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+          <button
+            className="mt-6 rounded-full bg-white px-5 py-3 text-sm font-semibold text-navy"
+            type="button"
+            onClick={() => {
+              if (feature.kind === "listing") {
+                onOpenListing(feature.id);
+              } else if (feature.kind === "event") {
+                onOpenEvent();
+              } else {
+                onOpenGame(feature.slug);
+              }
+            }}
+          >
+            {feature.cta}
+          </button>
+        </div>
+        <div className="hidden h-full border-l border-white/10 px-6 py-8 lg:block">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/58">
+            {feature.kind === "listing" ? "Market price" : feature.kind === "event" ? "Calendar" : "Channel"}
+          </p>
+          <p className="mt-4 font-display text-[1.85rem] font-semibold tracking-[-0.05em] text-white">
+            {feature.kind === "listing"
+              ? formatCadPrice(feature.price, feature.priceCurrency || "CAD")
+              : feature.kind === "event"
+                ? feature.time
+                : `${feature.count} live`}
+          </p>
+          <p className="mt-2 text-sm text-white/72">
+            {feature.kind === "listing"
+              ? `${feature.game} | ${feature.neighborhood}`
+              : feature.kind === "event"
+                ? feature.store
+                : `${feature.neighborhoodCount} meetup areas`}
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -612,6 +683,54 @@ export default function HomePage() {
     { label: "Games", value: "3", detail: "Pokemon, Magic, One Piece" },
     { label: "Next meetup", value: nextEvent?.store || "Events", detail: nextEvent?.dateStr || "Calendar ready" },
   ];
+  const promoFeature = useMemo(() => {
+    if (featuredGame) {
+      return {
+        kind: "game",
+        ...featuredGame,
+        kicker: "Featured channel",
+        title: `Browse ${featuredGame.name} like a live storefront`,
+        description:
+          "See the busiest game channel first, then jump into the rest of the market when you want more depth.",
+        meta: [
+          `${featuredGame.count} listings`,
+          `${featuredGame.neighborhoodCount || 1} neighborhoods`,
+          featuredGame.shortName,
+        ],
+        cta: "Browse game",
+      };
+    }
+
+    if (nextEvent) {
+      const eventGameKey = normalizeGameKey(nextEvent.game);
+      return {
+        kind: "event",
+        ...nextEvent,
+        kicker: "Upcoming event",
+        title: nextEvent.title,
+        description:
+          "Use the event calendar to line up store nights, prereleases, and tournament weekends with what is moving in the market.",
+        meta: [nextEvent.store, nextEvent.game, nextEvent.time],
+        gallery: [artworkByGame[eventGameKey], featuredListing?.imageUrl].filter(Boolean),
+        cta: "View events",
+      };
+    }
+
+    if (featuredListing) {
+      return {
+        kind: "listing",
+        ...featuredListing,
+        kicker: "Featured listing",
+        description:
+          "A highlighted local listing with pricing, in-app offers, and meetup planning built into the page.",
+        meta: [featuredListing.game, featuredListing.neighborhood, `${featuredListing.views || 0} views`],
+        gallery: [featuredListing.imageUrl, ...(featuredListing.conditionImages || [])].filter(Boolean),
+        cta: "Open listing",
+      };
+    }
+
+    return null;
+  }, [artworkByGame, featuredGame, featuredListing, nextEvent]);
 
   useEffect(() => {
     let cancelled = false;
@@ -668,12 +787,12 @@ export default function HomePage() {
     return <PageSkeleton cards={4} titleWidth="w-80" />;
   }
 
-    return (
+  return (
     <div className="stagger-stack space-y-10 lg:space-y-14">
-      <section className="drop-in-item console-shell overflow-hidden px-5 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-        <div className="mb-6">
+      <section className="drop-in-item space-y-6">
+        <div>
           {bannerSlides.length ? (
-            <div className="relative min-h-[34rem] overflow-hidden rounded-[36px] sm:min-h-[38rem] lg:min-h-[30rem]">
+            <div className="relative min-h-[29rem] overflow-hidden rounded-[36px] sm:min-h-[33rem] lg:min-h-[31rem]">
               {bannerSlides.map((slide, index) => (
                 <BannerCard
                   key={slide.id}
@@ -715,17 +834,16 @@ export default function HomePage() {
           )}
         </div>
 
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="max-w-3xl">
-            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-navy/62">
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-navy/62">
               Winnipeg TCG marketplace
             </p>
-            <h1 className="mt-3 font-display text-[2.2rem] font-semibold leading-[0.96] tracking-[-0.06em] text-ink sm:text-[3.2rem] lg:text-[4rem]">
-              A cleaner local market for cards, meetups, and store nights.
+            <h1 className="mt-3 font-display text-[2.15rem] font-semibold leading-[0.96] tracking-[-0.06em] text-ink sm:text-[3rem] lg:text-[3.55rem]">
+              A local card market that feels more like a storefront than a classifieds page.
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-steel sm:text-base">
-              Real listings, live local events, and in-app offers for Pokemon, Magic, and One Piece
-              in Winnipeg.
+              Browse by game, catch store events, and keep offers attached to the listing without the site feeling cluttered.
             </p>
           </div>
 
@@ -748,9 +866,47 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {marketPulse.map((item) => (
             <PulseTile key={item.label} detail={item.detail} label={item.label} value={item.value} />
+          ))}
+        </div>
+      </section>
+
+      <SecondaryPromo
+        feature={promoFeature}
+        formatCadPrice={formatCadPrice}
+        onOpenEvent={() => navigate("/events")}
+        onOpenGame={(slug) => {
+          setGlobalSearch("");
+          navigate(`/market/${slug}`);
+        }}
+        onOpenListing={openListing}
+      />
+
+      <section className="drop-in-item space-y-5">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="section-kicker">Best sellers</p>
+            <h2 className="mt-2 font-display text-[2rem] font-semibold tracking-[-0.05em] text-ink">
+              Hot listings right now
+            </h2>
+            <p className="mt-2 text-sm text-steel">A cleaner top shelf of live cards from the local market.</p>
+          </div>
+          <Link className="inline-flex items-center gap-2 text-sm font-semibold text-navy" to="/market">
+            Open full market
+            <ArrowRight size={14} />
+          </Link>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          {safeHotListings.slice(0, 5).map((listing) => (
+            <BestSellerCard
+              key={listing.id}
+              formatCadPrice={formatCadPrice}
+              listing={listing}
+              onOpen={openListing}
+              onToggleWishlist={handleToggleWishlist}
+            />
           ))}
         </div>
       </section>
