@@ -213,6 +213,39 @@ a {
   animation: page-enter 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.stagger-stack > .drop-in-item,
+.stagger-stack > .drop-in-cluster > .drop-in-item {
+  opacity: 0;
+  transform: translateY(22px) scale(0.988);
+  animation: drop-in-settle 760ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.stagger-stack > .drop-in-item:nth-child(1),
+.stagger-stack > .drop-in-cluster:nth-child(1) > .drop-in-item:nth-child(1) {
+  animation-delay: 80ms;
+}
+
+.stagger-stack > .drop-in-item:nth-child(2),
+.stagger-stack > .drop-in-cluster:nth-child(1) > .drop-in-item:nth-child(2) {
+  animation-delay: 150ms;
+}
+
+.stagger-stack > .drop-in-item:nth-child(3),
+.stagger-stack > .drop-in-cluster:nth-child(2) > .drop-in-item:nth-child(1) {
+  animation-delay: 220ms;
+}
+
+.stagger-stack > .drop-in-item:nth-child(4),
+.stagger-stack > .drop-in-cluster:nth-child(3) > .drop-in-item:nth-child(1) {
+  animation-delay: 290ms;
+}
+
+.stagger-stack > .drop-in-item:nth-child(5),
+.stagger-stack > .drop-in-cluster:nth-child(4) > .drop-in-item:nth-child(1),
+.stagger-stack > .drop-in-cluster:nth-child(4) > .drop-in-item:nth-child(2) {
+  animation-delay: 360ms;
+}
+
 .skeleton-shimmer {
   position: relative;
   overflow: hidden;
@@ -326,6 +359,26 @@ a {
   }
 }
 
+@keyframes drop-in-settle {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.986);
+    filter: blur(6px);
+  }
+
+  65% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1.002);
+    filter: blur(0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
 @keyframes loader-glide {
   0% {
     transform: translateX(-125%);
@@ -349,6 +402,8 @@ a {
 
 @media (prefers-reduced-motion: reduce) {
   .app-page-transition,
+  .stagger-stack > .drop-in-item,
+  .stagger-stack > .drop-in-cluster > .drop-in-item,
   .skeleton-shimmer::after,
   .launch-meter-bar,
   .launch-orb,

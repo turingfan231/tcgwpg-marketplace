@@ -183,9 +183,9 @@ export default function HomePage() {
   }
 
   return (
-    <div className="space-y-12 lg:space-y-16">
-      <section className="space-y-3 sm:hidden">
-        <article className="overflow-hidden rounded-[28px] bg-[linear-gradient(145deg,#17394a_0%,#1a5b78_64%,#215d79_100%)] px-4 py-4 text-white shadow-soft">
+    <div className="stagger-stack space-y-12 lg:space-y-16">
+      <section className="drop-in-cluster space-y-3 sm:hidden">
+        <article className="drop-in-item overflow-hidden rounded-[28px] bg-[linear-gradient(145deg,#17394a_0%,#1a5b78_64%,#215d79_100%)] px-4 py-4 text-white shadow-soft">
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-white/60">
             Market spotlight
           </p>
@@ -328,7 +328,7 @@ export default function HomePage() {
           ) : null}
         </article>
 
-        <article className="surface-card px-4 py-4">
+        <article className="drop-in-item surface-card px-4 py-4">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="section-kicker">Right now</p>
@@ -401,8 +401,8 @@ export default function HomePage() {
         </article>
       </section>
 
-      <section className="hidden grid gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_21rem] sm:grid">
-        <article className="surface-card px-4 py-4 sm:px-6 sm:py-6">
+      <section className="drop-in-cluster hidden grid gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_21rem] sm:grid">
+        <article className="drop-in-item surface-card px-4 py-4 sm:px-6 sm:py-6">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div className="max-w-2xl">
               <p className="section-kicker">Market spotlight</p>
@@ -572,7 +572,7 @@ export default function HomePage() {
           )}
         </article>
 
-        <aside className="surface-card px-4 py-4 sm:px-6 sm:py-6">
+        <aside className="drop-in-item surface-card px-4 py-4 sm:px-6 sm:py-6">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="section-kicker">Right now</p>
@@ -655,7 +655,7 @@ export default function HomePage() {
       </section>
 
       {currentUser && incompleteOnboardingCount ? (
-        <section className="surface-card border border-navy/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8f5ee_100%)] px-5 py-5 sm:px-6">
+        <section className="surface-card drop-in-item border border-navy/10 bg-[linear-gradient(180deg,#ffffff_0%,#f8f5ee_100%)] px-5 py-5 sm:px-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="section-kicker">Finish your setup</p>
@@ -695,7 +695,7 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      <section className="space-y-5">
+      <section className="drop-in-item space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="section-kicker">Browse by game</p>
@@ -799,7 +799,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="space-y-5">
+      <section className="drop-in-item space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="section-kicker">Newest listings</p>
@@ -826,8 +826,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <article className="surface-card px-5 py-6 sm:px-6 sm:py-7">
+      <section className="drop-in-cluster grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <article className="drop-in-item surface-card px-5 py-6 sm:px-6 sm:py-7">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Upcoming events</p>
@@ -868,7 +868,7 @@ export default function HomePage() {
           </div>
         </article>
 
-        <article className="surface-card px-5 py-6 sm:px-6 sm:py-7">
+        <article className="drop-in-item surface-card px-5 py-6 sm:px-6 sm:py-7">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Local sellers</p>
