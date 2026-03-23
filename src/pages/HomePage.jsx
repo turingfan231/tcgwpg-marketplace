@@ -39,8 +39,12 @@ function normalizeGameKey(value) {
 }
 
 const CURATED_HERO_ART = {
-  pokemon: "https://images.pokemontcg.io/sv8/238_hires.png",
-  magic: "https://cards.scryfall.io/art_crop/front/b/d/bd8fa327-dd41-4737-8f19-2cf5eb1f7cdd.jpg?1614638838",
+  pokemon:
+    "https://bouncycastlenetwork-res.cloudinary.com/image/upload/f_auto,q_auto,c_limit,w_1000/ff36cb86b0aefad50ddd401ff138fde5",
+  "one-piece":
+    "https://www.toei-animation.com/wp-content/uploads/2019/02/collage-1920x595.png",
+  magic:
+    "https://shikdartrading.com/cdn/shop/files/MTG_Banner_2.jpg?v=1730184513&width=3840",
 };
 
 function QuickActionButton({ children, tone = "light", ...props }) {
@@ -139,6 +143,16 @@ function BannerCard({
   onOpenGame,
 }) {
   const listingGallery = slide.kind === "listing" ? slide.payload.gallery || [] : [];
+  const heroBackdrop =
+    slide.payload.heroBackdrop ||
+    CURATED_HERO_ART[
+      slide.kind === "event"
+        ? normalizeGameKey(slide.payload.game)
+        : slide.kind === "game"
+          ? normalizeGameKey(slide.payload.slug)
+          : normalizeGameKey(slide.payload.game)
+    ] ||
+    null;
   const backgroundImage =
     slide.payload.backgroundImage || listingGallery[0] || slide.payload.imageUrl || null;
   const heroGameKey =
@@ -158,11 +172,19 @@ function BannerCard({
       }`}
     >
       <div className="relative h-full overflow-hidden rounded-[36px] border border-white/10 bg-[#09131d] p-8 text-white shadow-[0_32px_90px_-48px_rgba(6,18,27,0.62)] sm:p-10 lg:p-12">
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,#09131d_0%,#0c1c29_100%)]" />
+        {heroBackdrop ? (
+          <img
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover"
+            src={heroBackdrop}
+          />
+        ) : null}
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,13,20,0.94)_0%,rgba(7,18,27,0.92)_32%,rgba(10,24,35,0.66)_58%,rgba(10,24,35,0.34)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.06),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(255,153,0,0.12),transparent_16%)]" />
 
-        <div className="relative z-10 grid h-full gap-8 lg:grid-cols-[minmax(0,1.1fr)_26rem] lg:items-stretch">
-          <div className="flex h-full flex-col justify-between gap-8">
+        <div className="relative z-10 grid h-full gap-8 lg:grid-cols-[minmax(0,1.1fr)_24rem] lg:items-center">
+          <div className="flex h-full flex-col justify-center gap-8 py-2 lg:py-4">
             <div className="max-w-2xl">
             <span className="inline-flex rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
               {slide.kicker}
@@ -252,12 +274,12 @@ function BannerCard({
           </div>
 
           <div className="flex h-full items-center justify-center lg:justify-end">
-            <div className="relative flex h-full min-h-[14rem] w-full max-w-[26rem] items-center justify-center overflow-hidden rounded-[30px] border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04))] p-6 backdrop-blur">
+            <div className="relative flex min-h-[16rem] w-full max-w-[24rem] items-center justify-center overflow-hidden rounded-[30px] border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04))] p-6 backdrop-blur">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.08),transparent_20%),radial-gradient(circle_at_70%_80%,rgba(255,153,0,0.08),transparent_18%)]" />
             {slide.kind === "listing" ? (
               <div className="relative z-10 hidden items-end gap-4 lg:flex">
                 {listingGallery[1] ? (
-                  <div className="w-[7rem] rotate-[-7deg] rounded-[22px] border border-white/16 bg-white/10 p-2 backdrop-blur">
+                  <div className="w-[6.75rem] rotate-[-7deg] rounded-[22px] border border-white/16 bg-white/10 p-2 backdrop-blur">
                     <CardArtwork
                       className="aspect-[63/88] w-full rounded-[16px] object-cover"
                       game={slide.payload.game}
@@ -266,7 +288,7 @@ function BannerCard({
                     />
                   </div>
                 ) : null}
-                <div className="w-[8.75rem] rounded-[26px] border border-white/16 bg-white/10 p-2.5 backdrop-blur">
+                <div className="w-[8.25rem] rounded-[26px] border border-white/16 bg-white/10 p-2.5 backdrop-blur">
                   <CardArtwork
                     className="aspect-[63/88] w-full rounded-[20px] object-cover"
                     game={slide.payload.game}
@@ -275,7 +297,7 @@ function BannerCard({
                   />
                 </div>
                 {listingGallery[2] ? (
-                  <div className="w-[7rem] rotate-[8deg] rounded-[22px] border border-white/16 bg-white/10 p-2 backdrop-blur">
+                  <div className="w-[6.75rem] rotate-[8deg] rounded-[22px] border border-white/16 bg-white/10 p-2 backdrop-blur">
                     <CardArtwork
                       className="aspect-[63/88] w-full rounded-[16px] object-cover"
                       game={slide.payload.game}
@@ -293,7 +315,7 @@ function BannerCard({
                   <img
                     alt=""
                     aria-hidden="true"
-                    className="max-h-[18rem] w-auto max-w-full object-contain drop-shadow-[0_24px_40px_rgba(0,0,0,0.35)]"
+                    className="max-h-[15.5rem] w-auto max-w-full object-contain drop-shadow-[0_24px_40px_rgba(0,0,0,0.35)]"
                     src={heroArt}
                   />
                 ) : (
@@ -308,7 +330,7 @@ function BannerCard({
                   <img
                     alt=""
                     aria-hidden="true"
-                    className="max-h-[19rem] w-auto max-w-full object-contain drop-shadow-[0_26px_44px_rgba(0,0,0,0.36)]"
+                    className="max-h-[15.75rem] w-auto max-w-full object-contain drop-shadow-[0_26px_44px_rgba(0,0,0,0.36)]"
                     src={heroArt}
                   />
                 ) : (
@@ -627,6 +649,7 @@ export default function HomePage() {
         cta: "View events",
         payload: {
           ...nextEvent,
+          heroBackdrop: CURATED_HERO_ART[eventGameKey] || null,
           heroArt: CURATED_HERO_ART[eventGameKey] || artworkByGame[eventGameKey] || null,
         },
       });
@@ -648,6 +671,7 @@ export default function HomePage() {
         cta: "Browse game",
         payload: {
           ...featuredGame,
+          heroBackdrop: CURATED_HERO_ART[normalizeGameKey(featuredGame.slug)] || null,
           heroArt: CURATED_HERO_ART[normalizeGameKey(featuredGame.slug)] || artworkByGame[normalizeGameKey(featuredGame.slug)] || null,
         },
       });
@@ -789,7 +813,7 @@ export default function HomePage() {
               ))}
 
               {bannerSlides.length > 1 ? (
-                <div className="absolute bottom-5 left-5 z-10 flex gap-2">
+                <div className="absolute bottom-6 right-6 z-10 flex gap-2">
                   {bannerSlides.map((slide, index) => (
                     <button
                       key={slide.id}
