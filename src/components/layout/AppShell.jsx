@@ -112,16 +112,21 @@ export default function AppShell() {
   }, [deferredPrompt, installVisible, isStandalone]);
 
   useEffect(() => {
-    if (authReady && !loading) {
+    const timeout = window.setTimeout(() => setAppBooted(true), 1400);
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    if (!appBooted && authReady) {
       const timeout = window.setTimeout(() => setAppBooted(true), 180);
       return () => window.clearTimeout(timeout);
     }
 
     return undefined;
-  }, [authReady, loading]);
+  }, [appBooted, authReady]);
 
-  const showLaunchScreen = !appBooted && (!authReady || loading);
-  const showTopProgress = appBooted && loading;
+  const showLaunchScreen = !appBooted;
+  const showTopProgress = appBooted && (!authReady || loading);
 
   return (
     <div className="min-h-screen bg-[#f5f1ea]">
