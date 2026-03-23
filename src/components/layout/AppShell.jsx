@@ -19,7 +19,6 @@ export default function AppShell() {
     dismissToast,
     isCreateListingOpen,
     isSuspended,
-    loading,
     toastItems,
   } = useMarketplace();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -126,7 +125,7 @@ export default function AppShell() {
   }, [appBooted, authReady]);
 
   const showLaunchScreen = !appBooted;
-  const showTopProgress = appBooted && (!authReady || loading);
+  const showTopProgress = appBooted && !authReady;
 
   return (
     <div className="min-h-screen bg-[#f5f1ea]">
