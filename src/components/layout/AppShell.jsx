@@ -125,18 +125,10 @@ export default function AppShell() {
   }, [appBooted, authReady]);
 
   const showLaunchScreen = !appBooted;
-  const showTopProgress = appBooted && !authReady;
 
   return (
     <div className="min-h-screen bg-[#f5f1ea]">
       {showLaunchScreen ? <AppLaunchScreen /> : null}
-      {showTopProgress ? (
-        <div className="pointer-events-none fixed inset-x-0 top-0 z-[70] h-[3px] bg-transparent">
-          <div className="h-full w-full overflow-hidden">
-            <div className="app-top-loader" />
-          </div>
-        </div>
-      ) : null}
       <Header />
       {isSuspended ? (
         <div className="border-b border-rose-200 bg-rose-50">
