@@ -19,22 +19,22 @@ const storeOptions = ["Fusion Gaming", "Galaxy Comics", "A Muse N Games", "Arcti
 const gameOptions = ["Magic", "Pokemon", "One Piece"];
 const landingConcepts = [
   {
-    id: "premium-app",
-    name: "Premium App",
-    note: "Listing-first, compact, and product-driven. Best if you want the homepage to feel like a polished mobile/desktop app instead of a marketing site.",
-    recommendation: "Strongest direction if you want the cleanest balance of utility, motion, and premium product feel.",
+    id: "retro-catalog",
+    name: "Retro Catalog",
+    note: "Feels like an old price guide, binder index, or printed collector catalog. Structured, nostalgic, and collector-heavy without feeling messy.",
+    recommendation: "Best if you want a nostalgic collector vibe with the cleanest desktop presentation.",
   },
   {
-    id: "local-community",
-    name: "Local Community",
-    note: "Puts Winnipeg, events, neighborhoods, and trusted sellers front and center. Feels more local and differentiated.",
-    recommendation: "Best if the local identity should be the first thing people feel when they land.",
+    id: "handheld-app",
+    name: "Handheld App",
+    note: "Inspired by DS / PSP era interfaces with soft gradients, rounded modules, and a playful app feel.",
+    recommendation: "Best if you want nostalgia without losing the polished app-product vibe.",
   },
   {
-    id: "luxury-collector",
-    name: "Luxury Collector",
-    note: "More editorial and dramatic. Higher-end visual hierarchy with less utility in the first screen and more collector energy.",
-    recommendation: "Best if you want the most premium visual impression and do not mind a slightly less utilitarian landing page.",
+    id: "lgs-board",
+    name: "LGS Board",
+    note: "Feels like a local shop bulletin wall with posted events, pinned cards, and community-first energy.",
+    recommendation: "Best if you want the most Winnipeg/local personality and the warmest nostalgic feel.",
   },
 ];
 
@@ -102,116 +102,89 @@ function PreviewBlock({ className = "", children }) {
 }
 
 function LandingDirectionPreview({ conceptId }) {
-  if (conceptId === "premium-app") {
+  if (conceptId === "retro-catalog") {
     return (
       <div className="space-y-4">
-        <PreviewBlock className="overflow-hidden bg-[linear-gradient(160deg,#17394a_0%,#1a5b78_62%,#2a6782_100%)] p-5 text-white">
-          <div className="flex items-center justify-between gap-4">
+        <PreviewBlock className="overflow-hidden border-[#d9ccb0] bg-[linear-gradient(180deg,#f7edd6_0%,#f0e1bf_100%)] p-5">
+          <div className="flex items-center justify-between gap-4 border-b border-[#d7c8a9] pb-4">
             <div>
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-white/58">
-                Spotlight rail
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[#7b5a2f]">
+                Collector issue no. 01
               </p>
-              <h3 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em]">
-                Real listings first
+              <h3 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em] text-[#2d2418]">
+                A price guide front page
               </h3>
             </div>
-            <PreviewChip tone="dark">Live market</PreviewChip>
+            <PreviewChip>March issue</PreviewChip>
           </div>
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="rounded-[20px] bg-white/10 p-3 backdrop-blur">
-                <div className="rounded-[16px] bg-white/14 p-3">
-                  <div className="aspect-[63/88] rounded-[14px] bg-[linear-gradient(160deg,rgba(255,255,255,0.35),rgba(255,255,255,0.08))]" />
+          <div className="mt-5 grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
+            <div className="rounded-[24px] border border-[#d7c8a9] bg-[#fbf3df] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
+              <div className="aspect-[4/5] rounded-[20px] border border-[#c9b48a] bg-[linear-gradient(180deg,#ead8b0,#f8efd8)]" />
+              <div className="mt-4 h-4 w-28 rounded-full bg-[#d4c09a]" />
+              <div className="mt-2 h-3 w-16 rounded-full bg-[#e4d3b1]" />
+            </div>
+            <div className="space-y-3">
+              <div className="rounded-[20px] border border-[#d7c8a9] bg-[#fbf3df] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="h-4 w-36 rounded-full bg-[#d4c09a]" />
+                  <div className="h-4 w-16 rounded-full bg-[#e8dabd]" />
                 </div>
-                <div className="mt-3 flex items-center justify-between gap-2">
-                  <div className="h-3 w-20 rounded-full bg-white/20" />
-                  <div className="h-3 w-12 rounded-full bg-orange/70" />
+                <div className="mt-3 grid gap-2">
+                  <div className="h-12 rounded-[14px] bg-[#fff8eb]" />
+                  <div className="h-12 rounded-[14px] bg-[#fff8eb]" />
+                  <div className="h-12 rounded-[14px] bg-[#fff8eb]" />
                 </div>
-                <div className="mt-2 h-4 w-4/5 rounded-full bg-white/18" />
               </div>
-            ))}
-          </div>
-        </PreviewBlock>
-
-        <div className="grid gap-4 xl:grid-cols-[1fr_19rem]">
-          <PreviewBlock className="p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="section-kicker">Game shelves</p>
-                <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-ink">
-                  Browse by game
-                </p>
+              <div className="rounded-[20px] border border-[#d7c8a9] bg-[#fbf3df] p-4">
+                <div className="flex flex-wrap gap-2">
+                  {["Pokemon", "Magic", "One Piece", "Freshly listed"].map((chip) => (
+                    <PreviewChip key={chip}>{chip}</PreviewChip>
+                  ))}
+                </div>
+                <div className="mt-4 h-20 rounded-[16px] bg-[#fff8eb]" />
               </div>
-              <PreviewChip tone="navy">Pokemon / Magic / One Piece</PreviewChip>
             </div>
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
-              {["Pokemon", "Magic", "One Piece"].map((game) => (
-                <div key={game} className="rounded-[18px] bg-[#faf7f1] p-4">
-                  <div className="h-4 w-24 rounded-full bg-slate-200" />
-                  <div className="mt-4 space-y-2">
-                    <div className="h-16 rounded-[16px] bg-white" />
-                    <div className="h-16 rounded-[16px] bg-white" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </PreviewBlock>
-
-          <PreviewBlock className="p-4">
-            <p className="section-kicker">Fresh feed</p>
-            <div className="mt-4 space-y-3">
-              {[1, 2, 3].map((item) => (
-                <div key={item} className="rounded-[18px] bg-[#faf7f1] p-3">
-                  <div className="h-4 w-28 rounded-full bg-slate-200" />
-                  <div className="mt-2 h-3 w-20 rounded-full bg-slate-100" />
-                </div>
-              ))}
-            </div>
-          </PreviewBlock>
         </div>
+        </PreviewBlock>
       </div>
     );
   }
 
-  if (conceptId === "local-community") {
+  if (conceptId === "handheld-app") {
     return (
       <div className="space-y-4">
-        <PreviewBlock className="p-5">
+        <PreviewBlock className="overflow-hidden bg-[linear-gradient(180deg,#dce9f3_0%,#c5daea_100%)] p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="section-kicker">Tonight in Winnipeg</p>
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-navy/55">
+                Handheld home
+              </p>
               <h3 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em] text-ink">
-                Local first, then the market
+                Soft modules and cartridge-era energy
               </h3>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {["Maples", "St. Vital", "Downtown", "North End"].map((chip) => (
-                <PreviewChip key={chip}>{chip}</PreviewChip>
-              ))}
-            </div>
+            <PreviewChip tone="navy">Touch-first</PreviewChip>
           </div>
-          <div className="mt-5 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-            <div className="rounded-[22px] bg-[#17394a] p-4 text-white">
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-white/60">
-                Upcoming events
-              </p>
-              <div className="mt-4 space-y-3">
+          <div className="mt-5 grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+            <div className="rounded-[26px] border border-white/45 bg-white/62 p-4 shadow-[0_18px_44px_-30px_rgba(26,91,120,0.45)]">
+              <div className="flex items-center justify-between gap-3">
+                <div className="h-4 w-28 rounded-full bg-slate-200" />
+                <div className="h-9 w-9 rounded-full bg-orange/80" />
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-3">
                 {[1, 2, 3].map((item) => (
-                  <div key={item} className="rounded-[18px] bg-white/10 p-3">
-                    <div className="h-4 w-40 rounded-full bg-white/20" />
-                    <div className="mt-2 h-3 w-24 rounded-full bg-white/12" />
+                  <div key={item} className="rounded-[18px] bg-white/90 p-3">
+                    <div className="aspect-[63/88] rounded-[14px] bg-[linear-gradient(180deg,#d8e8f4,#f5fbff)]" />
+                    <div className="mt-3 h-4 w-4/5 rounded-full bg-slate-200" />
                   </div>
                 ))}
               </div>
             </div>
-            <div className="space-y-3">
+            <div className="grid gap-3">
               {[1, 2, 3].map((item) => (
-                <div key={item} className="rounded-[20px] bg-[#faf7f1] p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="h-4 w-32 rounded-full bg-slate-200" />
-                    <div className="h-4 w-14 rounded-full bg-slate-100" />
-                  </div>
-                  <div className="mt-3 h-14 rounded-[16px] bg-white" />
+                <div key={item} className="rounded-[22px] border border-white/50 bg-white/72 p-4">
+                  <div className="h-4 w-32 rounded-full bg-slate-200" />
+                  <div className="mt-3 h-12 rounded-[16px] bg-[#edf4f9]" />
                 </div>
               ))}
             </div>
@@ -219,10 +192,10 @@ function LandingDirectionPreview({ conceptId }) {
         </PreviewBlock>
 
         <div className="grid gap-4 md:grid-cols-3">
-          {["Trusted sellers", "Neighborhoods", "Fresh listings"].map((label) => (
+          {["Quick browse", "Inbox pulse", "Tonight's events"].map((label) => (
             <PreviewBlock key={label} className="p-4">
               <p className="section-kicker">{label}</p>
-              <div className="mt-4 h-28 rounded-[18px] bg-[#faf7f1]" />
+              <div className="mt-4 h-28 rounded-[20px] bg-[linear-gradient(180deg,#edf4f9,#dbe9f3)]" />
             </PreviewBlock>
           ))}
         </div>
@@ -232,48 +205,48 @@ function LandingDirectionPreview({ conceptId }) {
 
   return (
     <div className="space-y-4">
-      <PreviewBlock className="overflow-hidden bg-[linear-gradient(160deg,#112734_0%,#17394a_55%,#24485c_100%)] p-5 text-white">
-        <div className="flex items-center justify-between gap-4">
+      <PreviewBlock className="overflow-hidden border-[#d4c2a3] bg-[linear-gradient(180deg,#f8f1e6_0%,#efe2ca_100%)] p-5">
+        <div className="flex items-center justify-between gap-4 border-b border-[#d8c5a1] pb-4">
           <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-white/55">
-              Collector spotlight
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[#7b5f34]">
+              Shop bulletin
             </p>
-            <h3 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em]">
-              Curated, dramatic, premium
+            <h3 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em] text-[#2d2418]">
+              Pinned cards and posted events
             </h3>
           </div>
-          <PreviewChip tone="dark">High-end first</PreviewChip>
+          <PreviewChip>Community-led</PreviewChip>
         </div>
-        <div className="mt-5 grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-          <div className="rounded-[24px] border border-white/10 bg-white/6 p-4">
-            <div className="aspect-[4/5] rounded-[20px] bg-[linear-gradient(180deg,rgba(255,255,255,0.22),rgba(255,255,255,0.04))]" />
-          </div>
-          <div className="space-y-3">
-            <div className="h-5 w-24 rounded-full bg-white/18" />
-            <div className="h-5 w-4/5 rounded-full bg-white/16" />
-            <div className="h-5 w-3/5 rounded-full bg-white/16" />
-            <div className="mt-5 flex flex-wrap gap-2">
-              <PreviewChip tone="dark">Featured cards</PreviewChip>
-              <PreviewChip tone="dark">Collector notes</PreviewChip>
-              <PreviewChip tone="dark">Recent solds</PreviewChip>
-            </div>
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
+        <div className="mt-5 grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+          <div className="rounded-[24px] border border-[#d9c8ab] bg-[#fff8ec] p-4 shadow-[0_16px_34px_-28px_rgba(77,54,18,0.38)]">
+            <div className="grid gap-3 md:grid-cols-2">
               {[1, 2].map((item) => (
-                <div key={item} className="rounded-[18px] bg-white/8 p-3">
-                  <div className="h-4 w-24 rounded-full bg-white/18" />
-                  <div className="mt-3 h-20 rounded-[16px] bg-white/10" />
+                <div key={item} className="rounded-[18px] border border-[#dbcdb1] bg-white p-3">
+                  <div className="aspect-[63/88] rounded-[14px] bg-[linear-gradient(180deg,#f7ead4,#fef8ef)]" />
+                  <div className="mt-3 h-4 w-3/4 rounded-full bg-[#d4c09b]" />
                 </div>
               ))}
             </div>
+          </div>
+          <div className="space-y-3">
+            {[1, 2, 3].map((item) => (
+              <div key={item} className="rounded-[20px] border border-[#d9c8ab] bg-[#fff8ec] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="h-4 w-32 rounded-full bg-[#d4c09b]" />
+                  <div className="h-4 w-14 rounded-full bg-[#eadbbe]" />
+                </div>
+                <div className="mt-3 h-14 rounded-[16px] bg-white" />
+              </div>
+            ))}
           </div>
         </div>
       </PreviewBlock>
 
       <div className="grid gap-4 md:grid-cols-3">
-        {["Newest drops", "Trusted sellers", "Calendar"].map((label) => (
+        {["Pinned events", "Meetup notes", "Featured sellers"].map((label) => (
           <PreviewBlock key={label} className="p-4">
             <p className="section-kicker">{label}</p>
-            <div className="mt-4 h-24 rounded-[18px] bg-[#faf7f1]" />
+            <div className="mt-4 h-24 rounded-[18px] bg-[#faf3e4]" />
           </PreviewBlock>
         ))}
       </div>
