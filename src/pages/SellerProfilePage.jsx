@@ -69,7 +69,7 @@ export default function SellerProfilePage() {
           className={`relative overflow-hidden bg-gradient-to-r ${bannerToneMap[seller.bannerStyle] || bannerToneMap.neutral} p-8 text-white`}
         >
           <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(6,17,27,0.9),rgba(16,39,57,0.78)_44%,rgba(6,17,27,0.84))]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.1),transparent_16%),radial-gradient(circle_at_82%_20%,rgba(255,153,0,0.16),transparent_14%),radial-gradient(circle_at_75%_78%,rgba(94,127,147,0.16),transparent_18%),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:auto,auto,auto,42px_42px,42px_42px]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.1),transparent_16%),radial-gradient(circle_at_82%_20%,rgba(216,164,90,0.16),transparent_14%),radial-gradient(circle_at_75%_78%,rgba(94,127,147,0.16),transparent_18%),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:auto,auto,auto,42px_42px,42px_42px]" />
 
           <div className="relative z-10">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">

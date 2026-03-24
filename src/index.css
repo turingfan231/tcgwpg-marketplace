@@ -110,7 +110,7 @@ a {
   height: 1.4rem;
   padding: 0 0.45rem;
   border-radius: 0.65rem;
-  background: #ff9900;
+  background: #d8a45a;
   color: #112738;
   font-size: 0.68rem;
   font-weight: 800;
@@ -378,7 +378,7 @@ a {
   border-radius: 999px;
   background:
     radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.95), transparent 36%),
-    radial-gradient(circle at 68% 68%, rgba(255, 153, 0, 0.28), transparent 32%),
+    radial-gradient(circle at 68% 68%, rgba(216, 164, 90, 0.28), transparent 32%),
     linear-gradient(180deg, rgba(20, 54, 74, 0.24), rgba(255, 255, 255, 0.02));
   filter: blur(10px);
   opacity: 0.9;
@@ -399,7 +399,7 @@ a {
   width: 42%;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #14364a, #49687c 55%, #ff9900);
+  background: linear-gradient(90deg, #14364a, #49687c 55%, #d8a45a);
   animation: loader-glide 1.2s cubic-bezier(0.76, 0, 0.24, 1) infinite;
 }
 
@@ -407,7 +407,7 @@ a {
   width: 32%;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #14364a, #527287 60%, #ff9900);
+  background: linear-gradient(90deg, #14364a, #527287 60%, #d8a45a);
   animation: loader-glide 1.15s cubic-bezier(0.76, 0, 0.24, 1) infinite;
 }
 

@@ -197,7 +197,7 @@ function BannerCard({
           />
         ) : null}
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(4,10,16,0.97)_0%,rgba(6,15,23,0.95)_32%,rgba(9,20,31,0.74)_58%,rgba(9,20,31,0.4)_100%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.06),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(255,153,0,0.12),transparent_16%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.06),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(216,164,90,0.12),transparent_16%)]" />
         {slide.kind === "listing" && backgroundImage ? (
           <div className="pointer-events-none absolute bottom-10 right-10 z-[1] hidden lg:flex h-[18.5rem] w-[13.25rem] items-center justify-center rounded-[30px] border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] p-4 shadow-[0_28px_60px_-34px_rgba(0,0,0,0.65)] backdrop-blur-md">
             <CardArtwork
