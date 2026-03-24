@@ -389,7 +389,7 @@ export default function AccountPage() {
                 />
               </label>
 
-              <label className="block sm:col-span-2">
+              <div className="block sm:col-span-2">
                 <span className="mb-2 block text-sm font-semibold text-steel">Favorite games</span>
                 <div className="flex flex-wrap gap-2">
                   {["Magic", "Pokemon", "One Piece"].map((game) => {
@@ -417,7 +417,7 @@ export default function AccountPage() {
                     );
                   })}
                 </div>
-              </label>
+              </div>
 
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-steel">Banner style</span>
@@ -451,7 +451,7 @@ export default function AccountPage() {
                 </select>
               </label>
 
-              <label className="block sm:col-span-2">
+              <div className="block sm:col-span-2">
                 <span className="mb-2 block text-sm font-semibold text-steel">Trusted meetup spots</span>
                 <div className="flex flex-wrap gap-2">
                   {approvedMeetupSpots.map((spot) => {
@@ -479,7 +479,7 @@ export default function AccountPage() {
                     );
                   })}
                 </div>
-              </label>
+              </div>
 
               <label className="block sm:col-span-2">
                 <span className="mb-2 block text-sm font-semibold text-steel">Meetup preferences</span>
