@@ -185,11 +185,13 @@ export default function AppShell() {
   }, [location.pathname, location.search]);
 
   const showLaunchScreen = !appBooted;
+  const allowBlockingOnboarding = /^\/(account|dashboard)(\/|$)/.test(location.pathname);
   const showOnboarding =
     authReady &&
     !showLaunchScreen &&
     Boolean(currentUser) &&
     !Boolean(currentUser?.onboardingComplete) &&
+    allowBlockingOnboarding &&
     !onboardingDismissed;
 
   function handleCloseOnboarding() {
