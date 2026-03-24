@@ -421,6 +421,7 @@ export default function MessagesPage() {
   const [mobileDetailPanel, setMobileDetailPanel] = useState(null);
   const [pendingPhotos, setPendingPhotos] = useState([]);
   const seenMessageKeysRef = useRef(new Set());
+  const messagesScrollRef = useRef(null);
   const photoInputRef = useRef(null);
   const [isDesktop, setIsDesktop] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(min-width: 1024px)").matches : true,
@@ -509,6 +510,19 @@ export default function MessagesPage() {
   useEffect(() => {
     setMobileDetailPanel(null);
   }, [threadId]);
+
+  useEffect(() => {
+    if (!activeThread?.id || !messagesScrollRef.current) {
+      return;
+    }
+
+    const target = messagesScrollRef.current;
+    const frame = window.requestAnimationFrame(() => {
+      target.scrollTop = target.scrollHeight;
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeThread?.id, activeThread?.messages?.length]);
 
   useEffect(
     () => () => {
@@ -946,7 +960,10 @@ export default function MessagesPage() {
               />
             ) : null}
 
-            <div className="relative flex-1 overflow-y-auto px-3 py-3 sm:px-6 sm:py-5">
+            <div
+              ref={messagesScrollRef}
+              className="relative flex-1 overflow-y-auto px-3 py-3 sm:px-6 sm:py-5"
+            >
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(240,55,55,0.07),transparent_18%),radial-gradient(circle_at_bottom_right,rgba(17,39,56,0.08),transparent_24%)]" />
               <div className="pointer-events-none absolute inset-x-3 inset-y-4 rounded-[22px] border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.28),rgba(255,255,255,0.08))] sm:inset-x-6 sm:inset-y-5 sm:rounded-[30px]" />
               <div className="relative flex min-h-full flex-col justify-end gap-2">

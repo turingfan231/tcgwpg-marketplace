@@ -21,111 +21,109 @@ export default function ListingCard({ listing }) {
 
   return (
     <Link
-      className="group block overflow-hidden rounded-[32px] border border-[rgba(203,220,231,0.92)] bg-[linear-gradient(180deg,rgba(250,253,255,0.94),rgba(241,243,245,0.88))] shadow-soft transition duration-300 hover:-translate-y-1 hover:border-navy/20 hover:shadow-lift"
+      className="group block overflow-hidden rounded-[24px] border border-[rgba(203,220,231,0.92)] bg-[linear-gradient(180deg,rgba(250,253,255,0.94),rgba(241,243,245,0.88))] shadow-soft transition duration-300 hover:-translate-y-1 hover:border-navy/20 hover:shadow-lift sm:rounded-[32px]"
       to={`/listing/${listing.id}`}
     >
-      <div className="relative border-b border-[rgba(203,220,231,0.78)] bg-[linear-gradient(180deg,#f7fbfe_0%,#e4eef4_100%)] px-4 pb-4 pt-4">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${getListingTypeClasses(
-                listing.type,
-              )}`}
-            >
-              {listing.type}
-            </span>
-            <span
-              className={`rounded-full px-3 py-1 text-[11px] font-semibold ${getGameClasses(
-                listing.game,
-              )}`}
-            >
-              {listing.game}
-            </span>
-            {listing.listingFormat && listing.listingFormat !== "single" ? (
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-700">
-                {listing.listingFormat}
-              </span>
-            ) : null}
-          </div>
-
-          <button
-            aria-label="Toggle wishlist"
-            className="rounded-full bg-white/90 p-2 text-steel shadow-sm transition hover:text-orange"
-            type="button"
-            onClick={(event) => {
-              event.preventDefault();
-              toggleWishlist(listing.id);
-            }}
-          >
-            <Heart
-              className={listing.wishlisted ? "text-orange" : ""}
-              fill={listing.wishlisted ? "currentColor" : "none"}
-              size={18}
-            />
-          </button>
-        </div>
-
-        <div className="flex min-h-[13.5rem] items-center justify-center rounded-[24px] border border-[rgba(203,220,231,0.82)] bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(236,244,248,0.82))] p-3">
+      <div className="flex gap-3 p-3 sm:block sm:p-0">
+        <div className="relative flex w-[6.1rem] shrink-0 items-center justify-center rounded-[18px] border border-[rgba(203,220,231,0.82)] bg-[linear-gradient(180deg,#f7fbfe_0%,#e4eef4_100%)] p-2 sm:w-auto sm:rounded-none sm:border-0 sm:border-b sm:border-[rgba(203,220,231,0.78)] sm:px-4 sm:pb-4 sm:pt-4">
           <CardArtwork
-            className="aspect-[63/88] w-[9.75rem] max-w-full rounded-[20px] object-cover shadow-soft"
+            className="aspect-[63/88] w-full rounded-[14px] object-cover shadow-sm sm:w-[9.75rem] sm:max-w-full sm:rounded-[20px] sm:shadow-soft"
             game={listing.game}
             src={listing.imageUrl}
             title={listing.title}
           />
         </div>
 
-        {listing.acceptsTrade ? (
-          <div className="absolute bottom-3 left-4 inline-flex items-center gap-2 rounded-full bg-navy px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-white">
-            <Repeat2 size={13} />
-            Trades accepted
-          </div>
-        ) : null}
-      </div>
+        <div className="min-w-0 flex-1 space-y-2.5 sm:space-y-4 sm:p-4">
+          <div className="flex items-start justify-between gap-2 sm:gap-3">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <span
+              className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] sm:px-3 sm:text-[11px] sm:tracking-[0.16em] ${getListingTypeClasses(
+                listing.type,
+              )}`}
+            >
+              {listing.type}
+            </span>
+            <span
+              className={`rounded-full px-2.5 py-1 text-[10px] font-semibold sm:px-3 sm:text-[11px] ${getGameClasses(
+                listing.game,
+              )}`}
+            >
+              {listing.game}
+            </span>
+            {listing.listingFormat && listing.listingFormat !== "single" ? (
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-700 sm:px-3 sm:text-[11px] sm:tracking-[0.16em]">
+                {listing.listingFormat}
+              </span>
+            ) : null}
+            </div>
 
-      <div className="space-y-4 p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-2">
-            <h3 className="line-clamp-2 font-display text-[1.35rem] font-semibold leading-tight tracking-[-0.03em] text-ink">
+            <button
+              aria-label="Toggle wishlist"
+              className="rounded-full bg-white/90 p-2 text-steel shadow-sm transition hover:text-orange"
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                toggleWishlist(listing.id);
+              }}
+            >
+              <Heart
+                className={listing.wishlisted ? "text-orange" : ""}
+                fill={listing.wishlisted ? "currentColor" : "none"}
+                size={17}
+              />
+            </button>
+          </div>
+
+          <div className="flex items-start justify-between gap-2 sm:gap-3">
+            <div className="min-w-0 space-y-1.5 sm:space-y-2">
+            <h3 className="line-clamp-2 font-display text-[1.02rem] font-semibold leading-tight tracking-[-0.03em] text-ink sm:text-[1.35rem]">
               {listing.title}
             </h3>
-            <div className="flex items-center gap-2 text-sm text-steel">
-              <UserAvatar className="h-7 w-7 text-[0.7rem] font-bold" user={listing.seller} />
+            <div className="flex items-center gap-2 text-[0.82rem] text-steel sm:text-sm">
+              <UserAvatar className="h-6 w-6 text-[0.62rem] font-bold sm:h-7 sm:w-7 sm:text-[0.7rem]" user={listing.seller} />
               <span className="truncate">
                 {listing.seller?.publicName || listing.seller?.name} | {listing.timeAgo}
               </span>
             </div>
           </div>
-          <ArrowUpRight className="mt-1 text-slate-300 transition group-hover:text-navy" />
-        </div>
+            <ArrowUpRight className="mt-0.5 h-4 w-4 text-slate-300 transition group-hover:text-navy sm:mt-1 sm:h-5 sm:w-5" />
+          </div>
 
-        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <div className="flex flex-wrap items-center gap-1.5 text-[10px] sm:gap-2 sm:text-xs">
           <span
-            className={`rounded-full px-3 py-1 font-semibold uppercase tracking-[0.16em] ${getConditionClasses(
+            className={`rounded-full px-2.5 py-1 font-semibold uppercase tracking-[0.14em] sm:px-3 sm:tracking-[0.16em] ${getConditionClasses(
               listing.condition,
             )}`}
           >
             {listing.condition}
           </span>
-          <span className="flex items-center gap-1 rounded-full bg-white/78 px-3 py-1 font-semibold text-slate-600">
+          <span className="flex items-center gap-1 rounded-full bg-white/78 px-2.5 py-1 font-semibold text-slate-600 sm:px-3">
             <MapPin size={12} />
             {listing.neighborhood}
           </span>
+          {listing.acceptsTrade ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-navy px-2.5 py-1 font-semibold uppercase tracking-[0.14em] text-white sm:px-3 sm:tracking-[0.16em]">
+              <Repeat2 size={11} />
+              Trades
+            </span>
+          ) : null}
           {listing.quantity > 1 ? (
-            <span className="rounded-full bg-orange/10 px-3 py-1 font-semibold text-orange">
+            <span className="rounded-full bg-orange/10 px-2.5 py-1 font-semibold text-orange sm:px-3">
               {listing.quantity}x available
             </span>
           ) : null}
-        </div>
+          </div>
 
-        <div className="flex items-end justify-between gap-4 border-t border-[rgba(203,220,231,0.75)] pt-3">
-          <div className="space-y-1">
+          <div className="flex items-end justify-between gap-3 border-t border-[rgba(203,220,231,0.75)] pt-2.5 sm:gap-4 sm:pt-3">
+            <div className="space-y-0.5 sm:space-y-1">
             <div className="flex items-center gap-2">
               {hasSalePrice ? (
-                <span className="text-lg font-semibold text-slate-400 line-through">
+                <span className="text-sm font-semibold text-slate-400 line-through sm:text-lg">
                   {formatCadPrice(listing.previousPrice, listing.priceCurrency || "CAD")}
                 </span>
               ) : null}
-              <span className="font-display text-[2rem] font-semibold tracking-[-0.03em] text-ink">
+              <span className="font-display text-[1.35rem] font-semibold tracking-[-0.03em] text-ink sm:text-[2rem]">
                 {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
               </span>
               {listing.marketPrice ? (
@@ -145,9 +143,10 @@ export default function ListingCard({ listing }) {
                 </div>
               ) : null}
             </div>
-            <p className="text-sm text-steel">
+            <p className="text-[0.75rem] text-steel sm:text-sm">
               {listing.views} views | {listing.offers} offers
             </p>
+          </div>
           </div>
         </div>
       </div>
