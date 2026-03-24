@@ -191,6 +191,8 @@ export default function AppShell() {
     }
   }
 
+  const isMobileThreadRoute = /^\/messages\/[^/]+/.test(location.pathname);
+
   return (
     <div
       className="min-h-screen bg-transparent"
@@ -198,7 +200,7 @@ export default function AppShell() {
       style={themeStyle}
     >
       {showLaunchScreen ? <AppLaunchScreen /> : null}
-      <Header />
+      {isMobileThreadRoute ? <div className="hidden lg:block"><Header /></div> : <Header />}
       {isSuspended ? (
         <div className="border-b border-rose-200 bg-rose-50">
           <div className="page-shell flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
@@ -233,7 +235,13 @@ export default function AppShell() {
           </div>
         </div>
       ) : null}
-      <main className="page-shell py-4 pb-[calc(7.15rem+env(safe-area-inset-bottom))] sm:py-6 lg:py-10 lg:pb-24">
+      <main
+        className={`page-shell ${
+          isMobileThreadRoute
+            ? "px-0 py-0 pb-[env(safe-area-inset-bottom)] sm:px-6 sm:py-6 lg:px-8 lg:py-10 lg:pb-24 xl:px-10"
+            : "py-4 pb-[calc(7.15rem+env(safe-area-inset-bottom))] sm:py-6 lg:py-10 lg:pb-24"
+        }`}
+      >
         <div key={location.pathname} className="app-page-transition">
           <Outlet />
         </div>
@@ -313,7 +321,7 @@ export default function AppShell() {
         </div>
       </footer>
 
-      <div className="border-t border-[rgba(145,38,43,0.12)] bg-[rgba(251,248,248,0.96)] px-4 py-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-steel md:hidden">
+      <div className={`${isMobileThreadRoute ? "hidden" : "block"} border-t border-[rgba(145,38,43,0.12)] bg-[rgba(251,248,248,0.96)] px-4 py-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-steel md:hidden`}>
         WPG Marketplace | Local cards, faster deals
       </div>
 
@@ -326,7 +334,7 @@ export default function AppShell() {
         onDismiss={dismissInstallPrompt}
         onInstall={handleInstall}
       />
-      <MobileTabBar />
+      {isMobileThreadRoute ? null : <MobileTabBar />}
       <ToastStack items={toastItems} onDismiss={dismissToast} />
     </div>
   );

@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import CardArtwork from "../components/shared/CardArtwork";
 import UserAvatar from "../components/shared/UserAvatar";
 import EmptyState from "../components/ui/EmptyState";
@@ -396,6 +396,7 @@ function OfferTimeline({
 }
 
 export default function MessagesPage() {
+  const location = useLocation();
   const navigate = useNavigate();
   const { threadId } = useParams();
   const {
@@ -484,6 +485,7 @@ export default function MessagesPage() {
 
   const activeThread = useMemo(() => getThreadById(threadId) || null, [getThreadById, threadId]);
   const showMobileThread = Boolean(threadId && activeThread);
+  const immersiveMobileThread = !isDesktop && /^\/messages\/[^/]+/.test(location.pathname);
 
   useEffect(() => {
     if (!activeThread?.id) {
@@ -789,7 +791,7 @@ export default function MessagesPage() {
       </section>
 
       <section
-        className={`flex h-[calc(100dvh-8.6rem)] flex-col overflow-hidden rounded-[22px] border border-[rgba(203,220,231,0.9)] bg-[linear-gradient(180deg,rgba(251,253,255,0.97),rgba(241,243,245,0.92))] shadow-soft sm:rounded-[30px] sm:min-h-[calc(100dvh-9.6rem)] sm:h-auto lg:h-full lg:min-h-0 ${
+        className={`flex ${immersiveMobileThread ? "h-[100dvh] rounded-none border-0 shadow-none" : "h-[calc(100dvh-8.6rem)] rounded-[22px] border border-[rgba(203,220,231,0.9)] shadow-soft"} flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(251,253,255,0.97),rgba(241,243,245,0.92))] sm:rounded-[30px] sm:min-h-[calc(100dvh-9.6rem)] sm:h-auto lg:h-full lg:min-h-0 ${
           !showMobileThread ? "hidden lg:flex" : "flex"
         }`}
       >
