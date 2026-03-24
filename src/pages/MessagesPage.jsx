@@ -601,9 +601,9 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[23rem_minmax(0,1fr)]">
+    <div className="grid gap-5 lg:h-[calc(100dvh-12.5rem)] lg:grid-cols-[23rem_minmax(0,1fr)]">
       <section
-        className={`overflow-hidden rounded-[30px] border border-[rgba(203,220,231,0.9)] bg-[linear-gradient(180deg,rgba(251,253,255,0.96),rgba(232,240,245,0.9))] shadow-soft ${
+        className={`overflow-hidden rounded-[30px] border border-[rgba(203,220,231,0.9)] bg-[linear-gradient(180deg,rgba(251,253,255,0.96),rgba(232,240,245,0.9))] shadow-soft lg:h-full ${
           showMobileThread ? "hidden lg:block" : "block"
         }`}
       >
@@ -648,7 +648,7 @@ export default function MessagesPage() {
           </div>
         </div>
 
-        <div className="max-h-[calc(100dvh-16rem)] overflow-y-auto px-4 py-4 lg:max-h-[76vh]">
+        <div className="overflow-y-auto px-4 py-4 lg:h-[calc(100%-9.75rem)]">
           {filteredThreads.length ? (
             <div className="space-y-3">
               {filteredThreads.map((thread) => (
@@ -670,7 +670,7 @@ export default function MessagesPage() {
       </section>
 
       <section
-        className={`flex min-h-[72vh] flex-col overflow-hidden rounded-[30px] border border-[rgba(203,220,231,0.9)] bg-[linear-gradient(180deg,rgba(251,253,255,0.97),rgba(232,240,245,0.92))] shadow-soft ${
+        className={`flex min-h-[72vh] flex-col overflow-hidden rounded-[30px] border border-[rgba(203,220,231,0.9)] bg-[linear-gradient(180deg,rgba(251,253,255,0.97),rgba(232,240,245,0.92))] shadow-soft lg:h-full lg:min-h-0 ${
           !showMobileThread ? "hidden lg:flex" : "flex"
         }`}
       >
