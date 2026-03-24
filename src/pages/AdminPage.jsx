@@ -6,12 +6,14 @@ import {
   Flag,
   Home,
   ShieldCheck,
+  SwatchBook,
   Trash2,
   Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { neighborhoods } from "../data/mockData";
+import { themePresets } from "../data/themePresets";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { fetchLocalEvents } from "../services/cardDatabase";
 
@@ -57,6 +59,85 @@ function SectionButton({ active, count, label, onClick }) {
 
 function EmptyAdminState({ children }) {
   return <p className="text-sm leading-7 text-steel">{children}</p>;
+}
+
+function ThemePreviewCard({ active, onApply, preset }) {
+  return (
+    <button
+      className={`rounded-[26px] border p-4 text-left transition ${
+        active
+          ? "border-navy bg-white shadow-soft"
+          : "border-slate-200 bg-white/90 hover:border-slate-300 hover:shadow-soft"
+      }`}
+      style={{
+        "--theme-primary": preset.primary,
+        "--theme-primary-rgb": preset.primaryRgb,
+        "--theme-accent": preset.accent,
+        "--theme-accent-rgb": preset.accentRgb,
+      }}
+      type="button"
+      onClick={onApply}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-display text-xl font-semibold tracking-[-0.03em] text-ink">
+            {preset.name}
+          </p>
+          <p className="mt-2 text-sm leading-6 text-steel">{preset.description}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="h-4 w-4 rounded-full bg-navy" />
+          <span className="h-4 w-4 rounded-full bg-orange" />
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-[22px] border border-slate-200 bg-[#f7f7f8] p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="brand-pill">
+            <span className="brand-pill-mark">TCG</span>
+            <span className="brand-pill-tag">WPG</span>
+          </div>
+          <div className="flex gap-2">
+            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-steel">
+              Search
+            </span>
+            <span className="rounded-full bg-orange px-3 py-1 text-[11px] font-semibold text-white">
+              Sell
+            </span>
+          </div>
+        </div>
+        <div className="mt-4 rounded-[18px] bg-navy/10 p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy/65">
+            Hero preview
+          </p>
+          <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
+            Local TCG hub
+          </p>
+          <div className="mt-3 flex gap-2">
+            <span className="rounded-full bg-navy px-3 py-1 text-[11px] font-semibold text-white">
+              Primary
+            </span>
+            <span className="rounded-full bg-orange/15 px-3 py-1 text-[11px] font-semibold text-orange">
+              Accent
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+          {active ? "Active theme" : "Apply theme"}
+        </p>
+        <span
+          className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
+            active ? "bg-navy text-white" : "bg-slate-100 text-slate-600"
+          }`}
+        >
+          {active ? "Live" : "Preview"}
+        </span>
+      </div>
+    </button>
+  );
 }
 
 export default function AdminPage() {
@@ -265,6 +346,7 @@ export default function AdminPage() {
     { id: "listings", label: "Listings", count: sortedListings.length },
     { id: "users", label: "Users", count: sortedUsers.length },
     { id: "events", label: "Events", count: manualEvents.length },
+    { id: "theme", label: "Theme Lab", count: themePresets.length },
     { id: "storefront", label: "Storefront" },
   ];
 
@@ -1144,6 +1226,36 @@ export default function AdminPage() {
             ) : (
               <EmptyAdminState>No manual event overrides yet.</EmptyAdminState>
             )}
+          </div>
+        </section>
+      ) : null}
+
+      {activeSection === "theme" ? (
+        <section className="surface-card p-6">
+          <div className="flex items-center gap-3">
+            <SwatchBook className="text-orange" size={20} />
+            <div>
+              <p className="section-kicker">Theme Lab</p>
+              <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                Site-wide color schemes
+              </h2>
+            </div>
+          </div>
+          <p className="mt-4 max-w-4xl text-sm leading-7 text-steel">
+            Compare live-ready presets for the full app. Clicking a card applies that palette
+            immediately through the shared storefront settings, so the header, buttons, cards,
+            and hero surfaces all update together.
+          </p>
+
+          <div className="mt-6 grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+            {themePresets.map((preset) => (
+              <ThemePreviewCard
+                key={preset.id}
+                active={siteSettings?.themePreset === preset.id}
+                preset={preset}
+                onApply={() => void updateStorefrontSettings({ themePreset: preset.id })}
+              />
+            ))}
           </div>
         </section>
       ) : null}

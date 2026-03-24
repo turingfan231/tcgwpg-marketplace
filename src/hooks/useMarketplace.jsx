@@ -32,6 +32,7 @@ const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "").trim().repl
 const MEDIA_BUCKET = "listing-media";
 const FOREGROUND_REFRESH_MS = 12000;
 const DEFAULT_SITE_SETTINGS = {
+  themePreset: "ember-signal",
   homeHero: {
     featuredListingId: null,
     pinnedEventId: null,
@@ -152,6 +153,7 @@ function normalizeSiteSettings(settings) {
   const homeHero = settings?.homeHero || {};
   const homeSections = settings?.homeSections || {};
   return {
+    themePreset: String(settings?.themePreset || DEFAULT_SITE_SETTINGS.themePreset),
     homeHero: {
       featuredListingId: homeHero.featuredListingId || null,
       pinnedEventId: homeHero.pinnedEventId || null,

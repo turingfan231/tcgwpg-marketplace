@@ -1,6 +1,7 @@
 import { AlertTriangle, Clock3, MapPin, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
+import { resolveThemePreset } from "../../data/themePresets";
 import { useMarketplace } from "../../hooks/useMarketplace";
 import CreateListingModal from "../modals/CreateListingModal";
 import OnboardingModal from "../modals/OnboardingModal";
@@ -22,6 +23,7 @@ export default function AppShell() {
     dismissToast,
     isCreateListingOpen,
     isSuspended,
+    siteSettings,
     toastItems,
   } = useMarketplace();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -115,6 +117,35 @@ export default function AppShell() {
     };
   }, [deferredPrompt, installVisible, isStandalone]);
 
+  const activeTheme = useMemo(
+    () => resolveThemePreset(siteSettings?.themePreset),
+    [siteSettings?.themePreset],
+  );
+
+  const themeStyle = useMemo(
+    () => ({
+      "--theme-primary": activeTheme.primary,
+      "--theme-primary-rgb": activeTheme.primaryRgb,
+      "--theme-accent": activeTheme.accent,
+      "--theme-accent-rgb": activeTheme.accentRgb,
+    }),
+    [activeTheme],
+  );
+
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return undefined;
+    }
+
+    const root = document.documentElement;
+    root.style.setProperty("--theme-primary", activeTheme.primary);
+    root.style.setProperty("--theme-primary-rgb", activeTheme.primaryRgb);
+    root.style.setProperty("--theme-accent", activeTheme.accent);
+    root.style.setProperty("--theme-accent-rgb", activeTheme.accentRgb);
+
+    return undefined;
+  }, [activeTheme]);
+
   useEffect(() => {
     const timeout = window.setTimeout(() => setAppBooted(true), 1400);
     return () => window.clearTimeout(timeout);
@@ -154,7 +185,11 @@ export default function AppShell() {
   }
 
   return (
-    <div className="min-h-screen bg-transparent">
+    <div
+      className="min-h-screen bg-transparent"
+      data-theme-preset={activeTheme.id}
+      style={themeStyle}
+    >
       {showLaunchScreen ? <AppLaunchScreen /> : null}
       <Header />
       {isSuspended ? (
