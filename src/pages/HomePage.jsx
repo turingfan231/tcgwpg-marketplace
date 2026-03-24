@@ -49,6 +49,25 @@ const CURATED_HERO_ART = {
     "https://shikdartrading.com/cdn/shop/files/MTG_Banner_2.jpg?v=1730184513&width=3840",
 };
 
+const HERO_BACKDROP_POSITION = {
+  pokemon: {
+    mobile: "object-[56%_center]",
+    desktop: "object-center",
+  },
+  "one-piece": {
+    mobile: "object-[60%_center]",
+    desktop: "object-center",
+  },
+  magic: {
+    mobile: "object-[62%_center]",
+    desktop: "object-center",
+  },
+  default: {
+    mobile: "object-center",
+    desktop: "object-center",
+  },
+};
+
 const GAME_SHELF_THEMES = {
   pokemon: {
     header:
@@ -166,18 +185,19 @@ function BannerCard({
   onOpenGame,
 }) {
   const listingGallery = slide.kind === "listing" ? slide.payload.gallery || [] : [];
+  const heroGameKey =
+    slide.kind === "event"
+      ? normalizeGameKey(slide.payload.game)
+      : slide.kind === "game"
+        ? normalizeGameKey(slide.payload.slug)
+        : normalizeGameKey(slide.payload.game);
   const heroBackdrop =
     slide.payload.heroBackdrop ||
-    CURATED_HERO_ART[
-      slide.kind === "event"
-        ? normalizeGameKey(slide.payload.game)
-        : slide.kind === "game"
-          ? normalizeGameKey(slide.payload.slug)
-          : normalizeGameKey(slide.payload.game)
-    ] ||
+    CURATED_HERO_ART[heroGameKey] ||
     null;
   const backgroundImage =
     slide.payload.backgroundImage || listingGallery[0] || slide.payload.imageUrl || null;
+  const heroBackdropPosition = HERO_BACKDROP_POSITION[heroGameKey] || HERO_BACKDROP_POSITION.default;
 
   return (
     <article
@@ -193,19 +213,13 @@ function BannerCard({
             <img
               alt=""
               aria-hidden="true"
-              className="absolute inset-0 h-full w-full object-cover sm:hidden"
+              className={`absolute inset-0 h-full w-full object-cover sm:hidden ${heroBackdropPosition.mobile}`}
               src={heroBackdrop}
             />
             <img
               alt=""
               aria-hidden="true"
-              className="absolute inset-x-0 bottom-0 z-[1] h-[54%] w-full object-contain object-center opacity-28 sm:hidden"
-              src={heroBackdrop}
-            />
-            <img
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 hidden h-full w-full object-cover sm:block"
+              className={`absolute inset-0 hidden h-full w-full object-cover sm:block ${heroBackdropPosition.desktop}`}
               src={heroBackdrop}
             />
           </>

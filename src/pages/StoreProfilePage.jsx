@@ -129,26 +129,26 @@ export default function StoreProfilePage() {
   const isFollowingStore = followedStoreSlugs.includes(store.slug);
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-5 sm:space-y-8">
       <section className="console-panel binder-edge overflow-hidden p-0">
-        <div className="relative overflow-hidden bg-[linear-gradient(135deg,#4d0f13,#7a181d)] p-5 text-white sm:p-8">
+        <div className="relative overflow-hidden bg-[linear-gradient(135deg,#4d0f13,#7a181d)] p-4 text-white sm:p-8">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.08),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(239,59,51,0.14),transparent_18%)]" />
-          <div className="relative z-10 grid gap-6 lg:grid-cols-[1fr_16rem] lg:items-end">
+          <div className="relative z-10 grid gap-4 sm:gap-6 lg:grid-cols-[1fr_16rem] lg:items-end">
             <div>
               <p className="section-kicker text-white/62">Store profile</p>
-              <h1 className="mt-3 font-display text-[2.2rem] font-semibold tracking-[-0.05em] text-white sm:text-[3.15rem]">
+              <h1 className="mt-3 font-display text-[1.85rem] font-semibold tracking-[-0.05em] text-white sm:text-[3.15rem]">
                 {store.name}
               </h1>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white">
+              <div className="mt-3 flex flex-wrap gap-2 sm:mt-4">
+                <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white sm:px-3 sm:text-xs sm:tracking-[0.18em]">
                   <ShieldCheck size={14} />
                   Approved meetup spot
                 </span>
-                <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white">
+                <span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white sm:px-3 sm:text-xs sm:tracking-[0.18em]">
                   {store.neighborhood}
                 </span>
               </div>
-              <div className="mt-5 grid gap-3 text-sm text-white/82">
+              <div className="mt-4 grid gap-2 text-[0.84rem] text-white/82 sm:mt-5 sm:gap-3 sm:text-sm">
                 <span className="inline-flex items-center gap-2">
                   <MapPin size={16} />
                   {store.address}
@@ -158,9 +158,9 @@ export default function StoreProfilePage() {
                   {sellerCount} seller{sellerCount === 1 ? "" : "s"} use this spot
                 </span>
               </div>
-              <div className="mt-5 flex flex-wrap gap-3">
+              <div className="mt-4 flex flex-wrap gap-2.5 sm:mt-5 sm:gap-3">
                 <button
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  className={`inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[0.82rem] font-semibold transition sm:px-4 sm:text-sm ${
                     isFollowingStore
                       ? "bg-white text-navy"
                       : "border border-white/16 bg-white/10 text-white hover:bg-white/16"
@@ -173,7 +173,7 @@ export default function StoreProfilePage() {
                 </button>
                 {store.eventsUrl ? (
                   <a
-                    className="inline-flex items-center gap-2 rounded-full border border-white/16 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/16"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/16 bg-white/10 px-3.5 py-2 text-[0.82rem] font-semibold text-white hover:bg-white/16 sm:px-4 sm:text-sm"
                     href={store.eventsUrl}
                     rel="noreferrer"
                     target="_blank"
@@ -185,10 +185,10 @@ export default function StoreProfilePage() {
               </div>
             </div>
 
-            <div className="rounded-[20px] border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))] p-3 backdrop-blur-sm sm:rounded-[28px] sm:p-4">
-              <div className="flex h-full min-h-[7rem] items-center justify-center rounded-[18px] border border-[rgba(255,255,255,0.82)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,243,243,0.96))] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.74),0_14px_34px_rgba(80,16,16,0.12)] sm:min-h-[9rem] sm:rounded-[22px] sm:px-5 sm:py-4">
+            <div className="rounded-[18px] border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))] p-2.5 backdrop-blur-sm sm:rounded-[28px] sm:p-4">
+              <div className="flex h-full min-h-[5.75rem] items-center justify-center rounded-[16px] border border-[rgba(255,255,255,0.82)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,243,243,0.96))] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.74),0_14px_34px_rgba(80,16,16,0.12)] sm:min-h-[9rem] sm:rounded-[22px] sm:px-5 sm:py-4">
               {store.logoUrl ? (
-                <img alt={store.name} className="h-24 w-full object-contain" src={store.logoUrl} />
+                <img alt={store.name} className="h-16 w-full object-contain sm:h-24" src={store.logoUrl} />
               ) : null}
               </div>
             </div>
@@ -196,18 +196,18 @@ export default function StoreProfilePage() {
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <article className="console-panel binder-edge p-5 sm:p-6">
+      <section className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr] sm:gap-6">
+        <article className="console-panel binder-edge p-4 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Upcoming events</p>
-              <h2 className="mt-2 font-display text-[1.95rem] font-semibold tracking-[-0.05em] text-ink">
+              <h2 className="mt-2 font-display text-[1.55rem] font-semibold tracking-[-0.05em] text-ink sm:text-[1.95rem]">
                 Store calendar
               </h2>
             </div>
             {store.eventsUrl ? (
               <a
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-navy"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-[0.82rem] font-semibold text-navy sm:px-4 sm:text-sm"
                 href={store.eventsUrl}
                 rel="noreferrer"
                 target="_blank"
@@ -218,21 +218,21 @@ export default function StoreProfilePage() {
             ) : null}
           </div>
 
-          <div className="mt-5 space-y-3">
+          <div className="mt-4 space-y-2.5 sm:mt-5 sm:space-y-3">
             {matchingEvents.length ? (
               matchingEvents.map((event) => {
                 const eventKey = `${event.id || "event"}:${event.dateStr || ""}:${event.time || ""}`;
                 const reminderEnabled = eventReminderIds.includes(eventKey);
                 const selectedIntent = eventAttendance[eventKey] || "";
                 return (
-                <div key={event.id} className="rounded-[22px] border border-slate-200 bg-[#f7f7f8] p-4">
-                  <p className="font-semibold text-ink">{event.title}</p>
-                  <p className="mt-2 text-sm text-steel">
+                <div key={event.id} className="rounded-[18px] border border-slate-200 bg-[#f7f7f8] p-3.5 sm:rounded-[22px] sm:p-4">
+                  <p className="text-[0.95rem] font-semibold text-ink sm:text-base">{event.title}</p>
+                  <p className="mt-1.5 text-[0.8rem] text-steel sm:mt-2 sm:text-sm">
                     {event.dateStr} | {event.time} | {event.game}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
-                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition ${
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] transition sm:text-xs sm:tracking-[0.18em] ${
                         reminderEnabled
                           ? "border-[rgba(177,29,35,0.22)] bg-[rgba(240,55,55,0.08)] text-navy"
                           : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
@@ -250,7 +250,7 @@ export default function StoreProfilePage() {
                     ].map((option) => (
                       <button
                         key={option.id}
-                        className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
+                        className={`rounded-full border px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] transition sm:text-xs sm:tracking-[0.18em] ${
                           selectedIntent === option.id
                             ? "border-[rgba(177,29,35,0.24)] bg-navy text-white"
                             : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
@@ -268,18 +268,18 @@ export default function StoreProfilePage() {
             ) : eventsLoading ? (
               <p className="text-sm leading-7 text-steel">Loading store events...</p>
             ) : (
-              <p className="rounded-[22px] border border-dashed border-slate-200 bg-white/70 px-4 py-6 text-sm text-steel">
+              <p className="rounded-[18px] border border-dashed border-slate-200 bg-white/70 px-3 py-5 text-sm text-steel sm:rounded-[22px] sm:px-4 sm:py-6">
                 No upcoming events are available for this store right now.
               </p>
             )}
           </div>
         </article>
 
-        <article className="console-panel binder-edge p-5 sm:p-6">
+        <article className="console-panel binder-edge p-4 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Featured listings</p>
-              <h2 className="mt-2 font-display text-[1.95rem] font-semibold tracking-[-0.05em] text-ink">
+              <h2 className="mt-2 font-display text-[1.55rem] font-semibold tracking-[-0.05em] text-ink sm:text-[1.95rem]">
                 Meet here
               </h2>
             </div>
@@ -288,11 +288,11 @@ export default function StoreProfilePage() {
             </Link>
           </div>
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <div className="mt-4 grid gap-3 sm:mt-5 sm:gap-4 sm:grid-cols-2">
             {featuredListings.length ? (
               featuredListings.map((listing) => <ListingCard key={listing.id} listing={listing} />)
             ) : (
-              <p className="rounded-[22px] border border-dashed border-slate-200 bg-white/70 px-4 py-6 text-sm text-steel sm:col-span-2">
+              <p className="rounded-[18px] border border-dashed border-slate-200 bg-white/70 px-3 py-5 text-sm text-steel sm:col-span-2 sm:rounded-[22px] sm:px-4 sm:py-6">
                 No live listings are currently tied to this meetup spot.
               </p>
             )}
@@ -300,38 +300,38 @@ export default function StoreProfilePage() {
         </article>
       </section>
 
-      <section className="console-panel binder-edge p-5 sm:p-6">
+      <section className="console-panel binder-edge p-4 sm:p-6">
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="section-kicker">Featured lanes</p>
-            <h2 className="mt-2 font-display text-[1.95rem] font-semibold tracking-[-0.05em] text-ink">
+            <h2 className="mt-2 font-display text-[1.55rem] font-semibold tracking-[-0.05em] text-ink sm:text-[1.95rem]">
               Browse by game at this store
             </h2>
           </div>
         </div>
-        <div className="mt-5 grid gap-5 xl:grid-cols-3">
+        <div className="mt-4 grid gap-3 xl:grid-cols-3 sm:mt-5 sm:gap-5">
           {Object.entries(listingsByGame).map(([game, listings]) => (
-            <article key={game} className="console-well p-4">
+            <article key={game} className="console-well p-3 sm:p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-xs sm:tracking-[0.18em]">
                     {game}
                   </p>
-                  <p className="mt-1 text-sm text-steel">
+                  <p className="mt-1 text-[0.82rem] text-steel sm:text-sm">
                     {listings.length} listing{listings.length === 1 ? "" : "s"} tied to this spot
                   </p>
                 </div>
-                <Link className="text-sm font-semibold text-navy hover:underline" to={`/market/${game === "One Piece" ? "one-piece" : game.toLowerCase()}`}>
+                <Link className="text-[0.82rem] font-semibold text-navy hover:underline sm:text-sm" to={`/market/${game === "One Piece" ? "one-piece" : game.toLowerCase()}`}>
                   Open lane
                 </Link>
               </div>
-              <div className="mt-4 grid gap-3">
+              <div className="mt-3 grid gap-2.5 sm:mt-4 sm:gap-3">
                 {listings.length ? (
                   listings.slice(0, 2).map((listing) => (
                     <ListingCard key={listing.id} listing={listing} />
                   ))
                 ) : (
-                  <div className="rounded-[18px] border border-dashed border-slate-200 bg-white/72 px-4 py-5 text-sm text-steel">
+                  <div className="rounded-[16px] border border-dashed border-slate-200 bg-white/72 px-3 py-4 text-[0.82rem] text-steel sm:rounded-[18px] sm:px-4 sm:py-5 sm:text-sm">
                     Nothing active in {game} here yet.
                   </div>
                 )}
@@ -341,18 +341,18 @@ export default function StoreProfilePage() {
         </div>
       </section>
 
-      <section className="console-panel binder-edge p-5 sm:p-6">
+      <section className="console-panel binder-edge p-4 sm:p-6">
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="section-kicker">Quick links</p>
-            <h2 className="mt-2 font-display text-[1.95rem] font-semibold tracking-[-0.05em] text-ink">
+            <h2 className="mt-2 font-display text-[1.55rem] font-semibold tracking-[-0.05em] text-ink sm:text-[1.95rem]">
               Store actions
             </h2>
           </div>
         </div>
-        <div className="mt-5 flex flex-wrap gap-3">
+        <div className="mt-4 flex flex-wrap gap-2.5 sm:mt-5 sm:gap-3">
           <a
-            className="inline-flex items-center gap-2 rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
+            className="inline-flex items-center gap-2 rounded-full bg-navy px-4 py-2.5 text-[0.82rem] font-semibold text-white sm:px-5 sm:py-3 sm:text-sm"
             href={store.siteUrl}
             rel="noreferrer"
             target="_blank"
@@ -361,7 +361,7 @@ export default function StoreProfilePage() {
             <ExternalLink size={14} />
           </a>
           <Link
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-[0.82rem] font-semibold text-steel sm:px-5 sm:py-3 sm:text-sm"
             to="/events"
           >
             <CalendarDays size={15} />

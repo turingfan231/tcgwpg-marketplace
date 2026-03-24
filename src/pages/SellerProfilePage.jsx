@@ -63,42 +63,42 @@ export default function SellerProfilePage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-8">
       <section className="console-panel overflow-hidden">
         <div
-          className={`relative overflow-hidden bg-gradient-to-r ${bannerToneMap[seller.bannerStyle] || bannerToneMap.neutral} p-8 text-white`}
+          className={`relative overflow-hidden bg-gradient-to-r ${bannerToneMap[seller.bannerStyle] || bannerToneMap.neutral} p-4 text-white sm:p-8`}
         >
           <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(6,17,27,0.9),rgba(16,39,57,0.78)_44%,rgba(6,17,27,0.84))]" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.1),transparent_16%),radial-gradient(circle_at_82%_20%,rgba(239,59,51,0.16),transparent_14%),radial-gradient(circle_at_75%_78%,rgba(177,29,35,0.16),transparent_18%),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:auto,auto,auto,42px_42px,42px_42px]" />
 
           <div className="relative z-10">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-              <div className="flex items-start gap-5">
+            <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div className="flex items-start gap-3.5 sm:gap-5">
                 <UserAvatar
-                  className="h-24 w-24 border border-white/15 bg-white/10 text-3xl"
+                  className="h-16 w-16 border border-white/15 bg-white/10 text-xl sm:h-24 sm:w-24 sm:text-3xl"
                   imageClassName="border border-white/15"
-                  textClassName="text-3xl font-bold"
+                  textClassName="text-xl font-bold sm:text-3xl"
                   user={seller}
                 />
                 <div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h1 className="font-display text-4xl font-semibold tracking-[-0.05em]">
+                  <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+                    <h1 className="font-display text-[1.85rem] font-semibold tracking-[-0.05em] sm:text-4xl">
                       {seller.publicName || seller.name}
                     </h1>
                     {seller.verified ? (
-                      <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white sm:px-3 sm:text-xs sm:tracking-[0.18em]">
                         <ShieldCheck size={14} />
                         Verified seller
                       </span>
                     ) : null}
                   </div>
-                  <p className="mt-3 max-w-3xl text-base leading-8 text-white/82">{seller.bio}</p>
-                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <p className="mt-2.5 max-w-3xl text-[0.88rem] leading-6 text-white/82 sm:mt-3 sm:text-base sm:leading-8">{seller.bio}</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2.5 sm:mt-4 sm:gap-3">
                     <RatingStars size={18} value={seller.overallRating} />
-                    <span className="text-sm text-white/80">
+                    <span className="text-[0.8rem] text-white/80 sm:text-sm">
                       {seller.overallRating.toFixed(1)} overall from {seller.reviewCount} reviews
                     </span>
-                    <span className="text-sm text-white/80">
+                    <span className="text-[0.8rem] text-white/80 sm:text-sm">
                       {seller.neighborhood}
                       {seller.postalCode ? ` | ${seller.postalCode}` : ""}
                     </span>
@@ -106,15 +106,15 @@ export default function SellerProfilePage() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2.5 sm:gap-3">
                 {isOwnProfile ? (
-                  <div className="rounded-full border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white/78">
+                  <div className="rounded-full border border-white/15 bg-white/10 px-4 py-2.5 text-[0.82rem] font-semibold text-white/78 sm:px-5 sm:py-3 sm:text-sm">
                     Reviews from other local buyers only
                   </div>
                 ) : (
                   <>
                     <button
-                      className={`inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold ${
+                      className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[0.82rem] font-semibold sm:px-5 sm:py-3 sm:text-sm ${
                         seller.followedByCurrentUser
                           ? "border border-white/20 bg-white/10 text-white"
                           : "bg-white text-ink"
@@ -134,7 +134,7 @@ export default function SellerProfilePage() {
                       {seller.followedByCurrentUser ? "Following seller" : "Follow seller"}
                     </button>
                     <button
-                      className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-ink"
+                      className="rounded-full bg-white px-4 py-2.5 text-[0.82rem] font-semibold text-ink sm:px-5 sm:py-3 sm:text-sm"
                       type="button"
                       onClick={() => setReviewModalOpen(true)}
                     >
@@ -145,50 +145,50 @@ export default function SellerProfilePage() {
               </div>
             </div>
             {followMessage ? (
-              <div className="mt-5 text-sm font-semibold text-white/82">{followMessage}</div>
+              <div className="mt-4 text-[0.82rem] font-semibold text-white/82 sm:mt-5 sm:text-sm">{followMessage}</div>
             ) : null}
           </div>
         </div>
 
-        <div className="grid gap-4 p-6 lg:grid-cols-5">
-          <div className="console-well p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+        <div className="grid gap-3 p-4 sm:gap-4 sm:p-6 md:grid-cols-2 lg:grid-cols-5">
+          <div className="console-well p-3 sm:p-5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-xs sm:tracking-[0.18em]">
               Favorite games
             </p>
-            <p className="mt-2 text-lg font-semibold text-ink">
+            <p className="mt-1.5 text-[0.95rem] font-semibold text-ink sm:mt-2 sm:text-lg">
               {seller.favoriteGames.join(", ") || "Not set"}
             </p>
           </div>
-          <div className="console-well p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+          <div className="console-well p-3 sm:p-5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-xs sm:tracking-[0.18em]">
               Meetup style
             </p>
-            <p className="mt-2 text-sm leading-7 text-steel">{seller.meetupPreferences}</p>
+            <p className="mt-1.5 text-[0.82rem] leading-6 text-steel sm:mt-2 sm:text-sm sm:leading-7">{seller.meetupPreferences}</p>
           </div>
-          <div className="console-well p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+          <div className="console-well p-3 sm:p-5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-xs sm:tracking-[0.18em]">
               Response time
             </p>
-            <p className="mt-2 inline-flex items-center gap-2 text-lg font-semibold text-ink">
+            <p className="mt-1.5 inline-flex items-center gap-2 text-[0.95rem] font-semibold text-ink sm:mt-2 sm:text-lg">
               <Clock3 size={16} className="text-orange" />
               {seller.responseTime}
             </p>
           </div>
-          <div className="console-well p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+          <div className="console-well p-3 sm:p-5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-xs sm:tracking-[0.18em]">
               Completed deals
             </p>
-            <p className="mt-2 inline-flex items-center gap-2 text-lg font-semibold text-ink">
+            <p className="mt-1.5 inline-flex items-center gap-2 text-[0.95rem] font-semibold text-ink sm:mt-2 sm:text-lg">
               <Store size={16} className="text-navy" />
               {seller.completedDeals}
             </p>
           </div>
-          <div className="console-well p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+          <div className="console-well p-3 sm:p-5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-xs sm:tracking-[0.18em]">
               Risk signals
             </p>
-            <p className="mt-2 text-lg font-semibold text-ink">{seller.riskLabel}</p>
-            <div className="mt-3 space-y-1 text-sm text-steel">
+            <p className="mt-1.5 text-[0.95rem] font-semibold text-ink sm:mt-2 sm:text-lg">{seller.riskLabel}</p>
+            <div className="mt-2.5 space-y-1 text-[0.8rem] text-steel sm:mt-3 sm:text-sm">
               <p>Account age: {seller.accountAgeLabel}</p>
               <p>Response rate: {seller.responseRate}%</p>
               <p>Moderation actions: {seller.moderationActions}</p>
@@ -196,13 +196,13 @@ export default function SellerProfilePage() {
           </div>
         </div>
 
-        <div className="px-6 pb-6">
+        <div className="px-4 pb-4 sm:px-6 sm:pb-6">
           {trustedSpots.length ? (
-            <div className="mb-4 flex flex-wrap gap-2">
+            <div className="mb-3 flex flex-wrap gap-2 sm:mb-4">
               {trustedSpots.map((spot) => (
                 <span
                   key={spot.id}
-                  className="inline-flex items-center gap-2 rounded-full border border-[rgba(203,220,231,0.88)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-navy"
+                  className="inline-flex items-center gap-2 rounded-full border border-[rgba(203,220,231,0.88)] bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-navy sm:px-3 sm:text-xs sm:tracking-[0.18em]"
                 >
                   <Store size={14} />
                   {spot.label}
@@ -214,7 +214,7 @@ export default function SellerProfilePage() {
             {seller.badges.map((badge) => (
               <span
                 key={badge}
-                className="inline-flex items-center gap-2 rounded-full border border-[rgba(203,220,231,0.88)] bg-[rgba(235,242,247,0.92)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-ink"
+                className="inline-flex items-center gap-2 rounded-full border border-[rgba(203,220,231,0.88)] bg-[rgba(235,242,247,0.92)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink sm:px-3 sm:text-xs sm:tracking-[0.18em]"
               >
                 <BadgeCheck size={14} />
                 {reviewBadgeCatalog[badge]?.label || badge}
@@ -224,19 +224,19 @@ export default function SellerProfilePage() {
         </div>
       </section>
 
-      <section className="space-y-5">
+      <section className="space-y-4 sm:space-y-5">
         <div>
           <p className="section-kicker">Storefront</p>
           <h2 className="section-title mt-2">Active listings</h2>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {sellerListings.map((listing) => (
             <ListingCard key={listing.id} listing={listing} />
           ))}
         </div>
       </section>
 
-      <section className="space-y-5">
+      <section className="space-y-4 sm:space-y-5">
         <div>
           <p className="section-kicker">Buyer reviews</p>
           <h2 className="section-title mt-2">Recent feedback</h2>
@@ -244,24 +244,24 @@ export default function SellerProfilePage() {
         {deleteReviewError ? (
           <p className="text-sm font-semibold text-rose-700">{deleteReviewError}</p>
         ) : null}
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
           {sellerReviews.map((review) => (
             <article
               key={review.id}
-              className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-soft"
+              className="rounded-[20px] border border-slate-200 bg-white p-4 shadow-soft sm:rounded-[28px] sm:p-5"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="font-display text-xl font-semibold tracking-[-0.03em] text-ink">
+                  <p className="font-display text-[1.05rem] font-semibold tracking-[-0.03em] text-ink sm:text-xl">
                     {review.author}
                   </p>
-                  <p className="mt-1 text-sm text-steel">{review.createdAt}</p>
+                  <p className="mt-1 text-[0.8rem] text-steel sm:text-sm">{review.createdAt}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <RatingStars value={review.rating} />
                   {isAdmin ? (
                     <button
-                      className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-rose-700"
+                      className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-rose-700 sm:px-3 sm:text-xs sm:tracking-[0.18em]"
                       type="button"
                       onClick={async () => {
                         setDeleteReviewError("");
@@ -277,11 +277,11 @@ export default function SellerProfilePage() {
                   ) : null}
                 </div>
               </div>
-              <p className="mt-4 text-base text-steel">{review.comment}</p>
+              <p className="mt-3 text-[0.92rem] text-steel sm:mt-4 sm:text-base">{review.comment}</p>
               {review.imageUrl ? (
                 <img
                   alt={`Review from ${review.author}`}
-                  className="mt-4 h-56 w-full rounded-[22px] border border-slate-200 object-cover"
+                  className="mt-3 h-44 w-full rounded-[18px] border border-slate-200 object-cover sm:mt-4 sm:h-56 sm:rounded-[22px]"
                   src={review.imageUrl}
                 />
               ) : null}
