@@ -599,7 +599,7 @@ export default function EventsPage() {
                     <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 sm:px-3 sm:text-xs sm:tracking-[0.18em]">
                       {event.store}
                     </span>
-                    <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 sm:px-3 sm:text-xs sm:tracking-[0.18em]">
+                    <span className="hidden rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 sm:inline-flex sm:px-3 sm:text-xs sm:tracking-[0.18em]">
                       {event.source}
                     </span>
                   </div>
@@ -657,9 +657,9 @@ export default function EventsPage() {
                     </button>
                   </div>
                   {event.note ? (
-                    <p className="mt-2.5 text-[0.78rem] leading-5 text-steel sm:mt-4 sm:text-sm sm:leading-7">{event.note}</p>
+                    <p className="mt-2.5 hidden text-[0.78rem] leading-5 text-steel sm:mt-4 sm:block sm:text-sm sm:leading-7">{event.note}</p>
                   ) : null}
-                  <div className="mt-2.5 flex flex-wrap gap-1.5 sm:mt-4 sm:gap-2">
+                  <div className="mt-2.5 hidden flex-wrap gap-1.5 sm:mt-4 sm:flex sm:gap-2">
                     <button
                       className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] transition sm:px-4 sm:py-2 sm:text-sm sm:tracking-[0] ${
                         reminderEnabled
@@ -685,9 +685,9 @@ export default function EventsPage() {
                       >
                         {option.label}
                       </button>
-                    ))}
-                  </div>
-                  <div className="mt-3 rounded-[16px] border border-[rgba(177,29,35,0.12)] bg-white/82 p-3 sm:mt-5 sm:rounded-[20px] sm:p-4">
+                      ))}
+                    </div>
+                  <div className="mt-3 hidden rounded-[16px] border border-[rgba(177,29,35,0.12)] bg-white/82 p-3 sm:mt-5 sm:block sm:rounded-[20px] sm:p-4">
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-xs sm:tracking-[0.18em]">
                         Related listings for this event
@@ -724,6 +724,13 @@ export default function EventsPage() {
                       )}
                     </div>
                   </div>
+                  {relatedListings.length > 0 ? (
+                    <div className="mt-2.5 sm:hidden">
+                      <span className="inline-flex rounded-full border border-[rgba(177,29,35,0.12)] bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+                        {relatedListings.length} related listing{relatedListings.length === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                  ) : null}
                       </>
                     );
                   })()}

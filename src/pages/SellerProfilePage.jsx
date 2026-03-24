@@ -18,6 +18,15 @@ const bannerToneMap = {
   "one-piece": "from-[#6a1418]/96 via-[#911e24]/94 to-[#35080a]/96",
 };
 
+const sellerBannerArtMap = {
+  pokemon:
+    "https://bouncycastlenetwork-res.cloudinary.com/image/upload/f_auto,q_auto,c_limit,w_1000/ff36cb86b0aefad50ddd401ff138fde5",
+  magic:
+    "https://shikdartrading.com/cdn/shop/files/MTG_Banner_2.jpg?v=1730184513&width=3840",
+  "one-piece":
+    "https://www.toei-animation.com/wp-content/uploads/2019/02/collage-1920x595.png",
+};
+
 export default function SellerProfilePage() {
   const { sellerId } = useParams();
   const {
@@ -48,6 +57,7 @@ export default function SellerProfilePage() {
   const trustedSpots = approvedMeetupSpots.filter((spot) =>
     Array.isArray(seller.trustedMeetupSpots) ? seller.trustedMeetupSpots.includes(spot.id) : false,
   );
+  const sellerBannerArt = sellerBannerArtMap[seller.bannerStyle];
 
   if (loading && !seller) {
     return <PageSkeleton cards={4} titleWidth="w-72" />;
@@ -68,6 +78,14 @@ export default function SellerProfilePage() {
         <div
           className={`relative overflow-hidden bg-gradient-to-r ${bannerToneMap[seller.bannerStyle] || bannerToneMap.neutral} p-4 text-white sm:p-8`}
         >
+          {sellerBannerArt ? (
+            <img
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full object-cover opacity-28"
+              src={sellerBannerArt}
+            />
+          ) : null}
           <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(6,17,27,0.9),rgba(16,39,57,0.78)_44%,rgba(6,17,27,0.84))]" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.1),transparent_16%),radial-gradient(circle_at_82%_20%,rgba(239,59,51,0.16),transparent_14%),radial-gradient(circle_at_75%_78%,rgba(177,29,35,0.16),transparent_18%),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:auto,auto,auto,42px_42px,42px_42px]" />
 

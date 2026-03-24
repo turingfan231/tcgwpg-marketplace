@@ -176,16 +176,24 @@ export default function Header() {
         <div className="page-shell py-2.5 sm:py-4">
           <div className="console-panel px-2.5 py-2.5 sm:px-4 sm:py-4">
           <div className="flex items-center justify-between gap-2 sm:gap-2.5">
-            <Link className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3" to="/">
+            <Link className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3" to="/">
               <div className="collector-strip-mark shrink-0" aria-hidden="true">
                 <span className="collector-strip-bar">T</span>
                 <span className="collector-strip-bar">C</span>
                 <span className="collector-strip-bar">G</span>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-display text-[0.84rem] font-semibold leading-none tracking-[-0.05em] text-ink sm:text-[1.7rem]">
+                <p className="hidden truncate font-display text-[1.7rem] font-semibold leading-none tracking-[-0.05em] text-ink sm:block">
                   WPG Marketplace
                 </p>
+                <div className="sm:hidden pr-1">
+                  <p className="font-display text-[0.78rem] font-semibold leading-none tracking-[-0.05em] text-ink">
+                    WPG
+                  </p>
+                  <p className="font-display text-[0.78rem] font-semibold leading-none tracking-[-0.05em] text-ink">
+                    Marketplace
+                  </p>
+                </div>
                 <p className="hidden text-sm text-navy sm:block">Local cards, faster deals</p>
               </div>
             </Link>

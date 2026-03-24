@@ -4,8 +4,8 @@ export default function AppLaunchScreen({ compact = false }) {
       <div className="launch-screen-panel">
         <div className="launch-orb" aria-hidden="true" />
         <div className="collector-strip-mark" aria-hidden="true">
-          <span className="collector-strip-bar">W</span>
-          <span className="collector-strip-bar">P</span>
+          <span className="collector-strip-bar">T</span>
+          <span className="collector-strip-bar">C</span>
           <span className="collector-strip-bar">G</span>
         </div>
         <div className="space-y-2 text-center">

@@ -198,6 +198,7 @@ function BannerCard({
   const backgroundImage =
     slide.payload.backgroundImage || listingGallery[0] || slide.payload.imageUrl || null;
   const heroBackdropPosition = HERO_BACKDROP_POSITION[heroGameKey] || HERO_BACKDROP_POSITION.default;
+  const compactMeta = slide.meta.slice(0, 2);
 
   return (
     <article
@@ -207,7 +208,7 @@ function BannerCard({
           : "pointer-events-none translate-y-4 opacity-0"
       }`}
     >
-      <div className="relative h-full overflow-hidden rounded-[26px] border border-white/10 bg-[#23090b] p-5 text-white shadow-[0_32px_90px_-48px_rgba(80,16,16,0.42)] sm:rounded-[32px] sm:p-10 lg:p-12">
+      <div className="relative h-full overflow-hidden rounded-[26px] border border-white/10 bg-[#23090b] p-4 text-white shadow-[0_32px_90px_-48px_rgba(80,16,16,0.42)] sm:rounded-[32px] sm:p-10 lg:p-12">
         {heroBackdrop ? (
           <>
             <img
@@ -237,32 +238,40 @@ function BannerCard({
           </div>
         ) : null}
 
-        <div className="relative z-10 flex h-full flex-col gap-8">
+        <div className="relative z-10 flex h-full flex-col justify-between gap-5 sm:gap-8">
           <div className={`max-w-xl sm:max-w-2xl ${slide.kind === "listing" ? "lg:max-w-[52%]" : ""}`}>
             <span className="inline-flex rounded-full bg-white/12 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/80">
               {slide.kicker}
             </span>
-            <h1 className="mt-4 max-w-3xl font-display text-[2rem] font-semibold leading-[0.94] tracking-[-0.07em] sm:mt-5 sm:text-[4rem]">
+            <h1 className="mt-3 max-w-[16rem] font-display text-[1.72rem] font-semibold leading-[0.94] tracking-[-0.07em] sm:mt-5 sm:max-w-3xl sm:text-[4rem]">
               {slide.title}
             </h1>
-            <p className="mt-3 max-w-xl text-[0.92rem] leading-6 text-white/76 sm:mt-4 sm:max-w-2xl sm:text-base sm:leading-7">
+            <p className="mt-2 max-w-[16.5rem] text-[0.86rem] leading-5 text-white/76 sm:mt-4 sm:max-w-2xl sm:text-base sm:leading-7">
               {slide.description}
             </p>
 
-            <div className="mt-5 flex flex-wrap gap-2">
-              {slide.meta.map((item) => (
+            <div className="mt-4 flex flex-wrap gap-1.5 sm:mt-5 sm:gap-2">
+              {compactMeta.map((item) => (
                 <span
                   key={item}
-                  className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-white/74"
+                  className="rounded-full border border-white/10 bg-white/10 px-2.5 py-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-white/74 sm:px-3 sm:text-xs sm:tracking-[0.18em]"
+                >
+                  {item}
+                </span>
+              ))}
+              {slide.meta.slice(2).map((item) => (
+                <span
+                  key={item}
+                  className="hidden rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-white/74 sm:inline-flex"
                 >
                   {item}
                 </span>
               ))}
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3 sm:mt-8">
+            <div className="mt-4 flex flex-wrap gap-3 sm:mt-8">
               <button
-                className={`rounded-full px-5 py-3 text-sm font-semibold shadow-soft transition duration-300 hover:-translate-y-0.5 hover:shadow-lift ${
+                className={`rounded-full px-4 py-2.5 text-[0.82rem] font-semibold shadow-soft transition duration-300 hover:-translate-y-0.5 hover:shadow-lift sm:px-5 sm:py-3 sm:text-sm ${
                   slide.kind === "event" ? "bg-orange text-white" : "bg-white text-navy"
                 }`}
                 type="button"
@@ -789,7 +798,7 @@ export default function HomePage() {
       <section className="drop-in-item space-y-4 sm:space-y-6">
         <div>
           {bannerSlides.length ? (
-            <div className="relative min-h-[22.5rem] overflow-hidden rounded-[26px] sm:min-h-[33rem] sm:rounded-[36px] lg:min-h-[31rem]">
+            <div className="relative min-h-[16.5rem] overflow-hidden rounded-[26px] sm:min-h-[33rem] sm:rounded-[36px] lg:min-h-[31rem]">
               {bannerSlides.map((slide, index) => (
                 <BannerCard
                   key={slide.id}
