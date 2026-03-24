@@ -119,7 +119,7 @@ function PulseTile({ label, value, detail }) {
 
 function FeedRow({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
   return (
-    <div className="flex items-start gap-2.5 rounded-[18px] border border-[rgba(203,220,231,0.92)] bg-white/82 px-3 py-3 shadow-[0_14px_32px_-28px_rgba(26,91,120,0.55)] transition duration-300 hover:-translate-y-0.5 hover:border-navy/16 hover:shadow-soft sm:gap-3 sm:rounded-[22px] sm:px-4 sm:py-4">
+    <div className="flex w-full min-w-0 items-start gap-2.5 overflow-hidden rounded-[18px] border border-[rgba(203,220,231,0.92)] bg-white/82 px-3 py-3 shadow-[0_14px_32px_-28px_rgba(26,91,120,0.55)] transition duration-300 hover:-translate-y-0.5 hover:border-navy/16 hover:shadow-soft sm:gap-3 sm:rounded-[22px] sm:px-4 sm:py-4">
       <button className="min-w-0 flex-1 text-left" type="button" onClick={() => onOpen(listing.id)}>
         <p className="truncate text-[0.95rem] font-semibold text-ink sm:text-base">{listing.title}</p>
         <p className="mt-0.5 text-[0.78rem] text-steel sm:mt-1 sm:text-sm">
@@ -152,7 +152,7 @@ function FeedRow({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
 function ShelfCard({ listing, formatCadPrice, onOpen }) {
   return (
     <button
-      className="flex w-full items-center gap-2.5 rounded-[18px] border border-[rgba(203,220,231,0.92)] bg-white/82 px-3 py-3 text-left transition duration-300 hover:-translate-y-0.5 hover:border-navy/20 hover:shadow-soft sm:gap-3 sm:rounded-[20px] sm:px-4 sm:py-4"
+      className="flex w-full min-w-0 items-center gap-2.5 overflow-hidden rounded-[18px] border border-[rgba(203,220,231,0.92)] bg-white/82 px-3 py-3 text-left transition duration-300 hover:-translate-y-0.5 hover:border-navy/20 hover:shadow-soft sm:gap-3 sm:rounded-[20px] sm:px-4 sm:py-4"
       type="button"
       onClick={() => onOpen(listing.id)}
     >
@@ -214,7 +214,13 @@ function BannerCard({
             <img
               alt=""
               aria-hidden="true"
-              className={`absolute inset-0 h-full w-full object-cover sm:hidden ${heroBackdropPosition.mobile}`}
+              className={`absolute inset-0 h-full w-full scale-[1.08] object-cover blur-[2px] sm:hidden ${heroBackdropPosition.mobile}`}
+              src={heroBackdrop}
+            />
+            <img
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full object-contain object-center opacity-40 sm:hidden"
               src={heroBackdrop}
             />
             <img
@@ -798,7 +804,7 @@ export default function HomePage() {
       <section className="drop-in-item space-y-4 sm:space-y-6">
         <div>
           {bannerSlides.length ? (
-            <div className="relative min-h-[16.5rem] overflow-hidden rounded-[26px] sm:min-h-[33rem] sm:rounded-[36px] lg:min-h-[31rem]">
+            <div className="relative min-h-[15.75rem] overflow-hidden rounded-[26px] sm:min-h-[33rem] sm:rounded-[36px] lg:min-h-[31rem]">
               {bannerSlides.map((slide, index) => (
                 <BannerCard
                   key={slide.id}
@@ -966,7 +972,7 @@ export default function HomePage() {
         }`}
       >
         {homeSections.showFreshFeed !== false ? (
-        <article className="drop-in-item console-panel binder-edge p-4 sm:p-6">
+        <article className="drop-in-item min-w-0 overflow-hidden console-panel binder-edge p-4 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Fresh from the feed</p>
@@ -998,7 +1004,7 @@ export default function HomePage() {
         ) : null}
 
         {homeSections.showFollowedFeed !== false && currentUser && followedSellerIds.length ? (
-          <article className="drop-in-item console-panel binder-edge p-4 sm:p-6">
+          <article className="drop-in-item min-w-0 overflow-hidden console-panel binder-edge p-4 sm:p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="section-kicker">Following</p>
@@ -1029,7 +1035,7 @@ export default function HomePage() {
           </article>
         ) : null}
 
-        <aside className="drop-in-item console-panel binder-edge p-4 sm:p-6">
+        <aside className="drop-in-item min-w-0 overflow-hidden console-panel binder-edge p-4 sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="section-kicker">Browse by game</p>
@@ -1044,7 +1050,7 @@ export default function HomePage() {
             {categorySummaries.map((game) => (
               <button
                 key={game.slug}
-                className="console-well px-3 py-3 text-left transition hover:-translate-y-0.5 hover:border-navy/25 sm:px-4 sm:py-4"
+                className="console-well w-full min-w-0 px-3 py-3 text-left transition hover:-translate-y-0.5 hover:border-navy/25 sm:px-4 sm:py-4"
                 type="button"
                 onClick={() => {
                   setGlobalSearch("");

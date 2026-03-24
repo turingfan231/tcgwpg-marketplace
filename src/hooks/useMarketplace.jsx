@@ -945,6 +945,85 @@ function readFileAsDataUrl(file) {
   });
 }
 
+function createObjectUrl(file) {
+  return URL.createObjectURL(file);
+}
+
+function loadImageElement(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Image preview failed."));
+    image.src = url;
+  });
+}
+
+function canvasToBlob(canvas, type, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+        return;
+      }
+      reject(new Error("Image compression failed."));
+    }, type, quality);
+  });
+}
+
+async function compressChatImage(file, options = {}) {
+  const maxDimension = Number(options.maxDimension || 1800);
+  const targetBytes = Number(options.targetBytes || 2_400_000);
+  const hardLimitBytes = Number(options.hardLimitBytes || 5_500_000);
+  if (!file || !String(file.type || "").startsWith("image/")) {
+    return file;
+  }
+
+  if (String(file.type || "").includes("gif") || Number(file.size || 0) <= targetBytes) {
+    return file;
+  }
+
+  const objectUrl = createObjectUrl(file);
+  try {
+    const image = await loadImageElement(objectUrl);
+    const sourceWidth = image.naturalWidth || image.width || 1;
+    const sourceHeight = image.naturalHeight || image.height || 1;
+    const scale = Math.min(1, maxDimension / Math.max(sourceWidth, sourceHeight));
+    const width = Math.max(1, Math.round(sourceWidth * scale));
+    const height = Math.max(1, Math.round(sourceHeight * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      return file;
+    }
+
+    context.drawImage(image, 0, 0, width, height);
+
+    let blob = null;
+    for (const quality of [0.86, 0.78, 0.68, 0.58]) {
+      blob = await canvasToBlob(canvas, "image/jpeg", quality);
+      if (blob.size <= targetBytes) {
+        break;
+      }
+    }
+
+    if (!blob || blob.size > hardLimitBytes) {
+      return file;
+    }
+
+    const compressedName = `${String(file.name || "photo").replace(/\.[^.]+$/, "")}.jpg`;
+    return new File([blob], compressedName, {
+      type: "image/jpeg",
+      lastModified: Date.now(),
+    });
+  } catch {
+    return file;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 function buildMessageBody({ text = "", attachments = [] }) {
   const normalizedText = String(text || "");
   const normalizedAttachments = Array.isArray(attachments)
@@ -3588,14 +3667,30 @@ export function MarketplaceProvider({ children }) {
         return { ok: false, error: "Chat attachments must be image files." };
       }
 
-      if (Number(file.size || 0) > 4_000_000) {
-        return { ok: false, error: "Each chat photo must be under 4 MB." };
+    }
+
+    const preparedFiles = await Promise.all(
+      validFiles.map((file) =>
+        compressChatImage(file, {
+          maxDimension: 1800,
+          targetBytes: 2_400_000,
+          hardLimitBytes: 5_500_000,
+        }),
+      ),
+    );
+
+    for (const file of preparedFiles) {
+      if (Number(file.size || 0) > 5_500_000) {
+        return {
+          ok: false,
+          error: "A chat photo is still too large after compression. Try a smaller image.",
+        };
       }
     }
 
     if (!isSupabaseConfigured) {
       const attachments = await Promise.all(
-        validFiles.map(async (file, index) => ({
+        preparedFiles.map(async (file, index) => ({
           id: `attachment-${Date.now()}-${index + 1}`,
           url: await readFileAsDataUrl(file),
           name: file.name || `Photo ${index + 1}`,
@@ -3607,7 +3702,7 @@ export function MarketplaceProvider({ children }) {
 
     try {
       const attachments = [];
-      for (const [index, file] of validFiles.entries()) {
+      for (const [index, file] of preparedFiles.entries()) {
         const extension = getFileExtension(file.name, file.type);
         const filePath = `chat/${threadId}/${currentUserId}/${Date.now()}-${index + 1}.${extension}`;
         const uploadResult = await supabase.storage.from(MEDIA_BUCKET).upload(filePath, file, {
