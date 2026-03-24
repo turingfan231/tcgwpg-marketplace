@@ -2,6 +2,7 @@ import { AlertTriangle, LockKeyhole, MapPin, ShieldCheck, Trash2 } from "lucide-
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { neighborhoods } from "../data/mockData";
+import { approvedMeetupSpots } from "../data/storefrontData";
 import { useMarketplace } from "../hooks/useMarketplace";
 import UserAvatar from "../components/shared/UserAvatar";
 
@@ -19,6 +20,7 @@ function buildProfileForm(user) {
     postalCode: normalizePostalInput(user?.postalCode || ""),
     defaultListingGame: user?.defaultListingGame || user?.favoriteGames?.[0] || "Pokemon",
     favoriteGames: user?.favoriteGames || [],
+    trustedMeetupSpots: user?.trustedMeetupSpots || [],
     meetupPreferences: user?.meetupPreferences || "",
     responseTime: user?.responseTime || "~ 1 hour",
     bannerStyle: user?.bannerStyle || "neutral",
@@ -447,6 +449,36 @@ export default function AccountPage() {
                   <option value="~ 1 hour">~ 1 hour</option>
                   <option value="Same day">Same day</option>
                 </select>
+              </label>
+
+              <label className="block sm:col-span-2">
+                <span className="mb-2 block text-sm font-semibold text-steel">Trusted meetup spots</span>
+                <div className="flex flex-wrap gap-2">
+                  {approvedMeetupSpots.map((spot) => {
+                    const active = profileForm.trustedMeetupSpots.includes(spot.id);
+                    return (
+                      <button
+                        key={spot.id}
+                        className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                          active
+                            ? "bg-navy text-white"
+                            : "border border-slate-200 bg-white text-steel"
+                        }`}
+                        type="button"
+                        onClick={() =>
+                          updateProfileFormField(
+                            "trustedMeetupSpots",
+                            active
+                              ? profileForm.trustedMeetupSpots.filter((item) => item !== spot.id)
+                              : [...profileForm.trustedMeetupSpots, spot.id],
+                          )
+                        }
+                      >
+                        {spot.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </label>
 
               <label className="block sm:col-span-2">

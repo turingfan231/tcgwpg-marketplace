@@ -28,6 +28,7 @@ const browseLinks = [
 ];
 
 const utilityLinks = [
+  { to: "/stores", label: "Stores" },
   { to: "/sellers", label: "Sellers" },
   { to: "/events", label: "Events" },
 ];
@@ -404,6 +405,7 @@ export default function Header() {
 
               <div className="mt-6 space-y-2">
                 {[
+                  { to: "/stores", label: "Stores", icon: Store },
                   { to: "/sellers", label: "Browse sellers", icon: Store },
                   { to: "/events", label: "Events", icon: CalendarRange },
                   { to: "/messages", label: "Messages", icon: MessageCircle, count: safeUnreadMessageCount },

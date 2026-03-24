@@ -151,7 +151,7 @@ export default function SellersPage() {
             </div>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div className="console-well px-4 py-3">
+              <div className="console-well px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-steel">
                   Deals
                 </p>
@@ -160,7 +160,7 @@ export default function SellersPage() {
                   {seller.completedDeals}
                 </p>
               </div>
-                <div className="console-well px-4 py-3">
+              <div className="console-well px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-steel">
                   Rating
                 </p>
@@ -169,6 +169,18 @@ export default function SellersPage() {
                   {seller.overallRating.toFixed(1)}
                 </p>
               </div>
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-700">
+                {seller.riskLabel}
+              </span>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-700">
+                {seller.accountAgeLabel} old
+              </span>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-700">
+                {seller.responseRate}% response
+              </span>
             </div>
 
             <p className="mt-4 line-clamp-3 text-sm leading-7 text-steel">

@@ -19,6 +19,8 @@ const MessagesPage = lazy(() => import("./pages/MessagesPage"));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const SellerProfilePage = lazy(() => import("./pages/SellerProfilePage"));
 const SellersPage = lazy(() => import("./pages/SellersPage"));
+const StoreProfilePage = lazy(() => import("./pages/StoreProfilePage"));
+const StoresPage = lazy(() => import("./pages/StoresPage"));
 const WantToBuyPage = lazy(() => import("./pages/WantToBuyPage"));
 const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 
@@ -37,6 +39,8 @@ export default function App() {
                 <Route path="/listing/:listingId" element={<ListingDetailPage />} />
                 <Route path="/seller/:sellerId" element={<SellerProfilePage />} />
                 <Route path="/sellers" element={<SellersPage />} />
+                <Route path="/stores" element={<StoresPage />} />
+                <Route path="/stores/:storeSlug" element={<StoreProfilePage />} />
                 <Route path="/events" element={<EventsPage />} />
                 <Route path="/wtb" element={<WantToBuyPage />} />
                 <Route element={<ProtectedRoute />}>

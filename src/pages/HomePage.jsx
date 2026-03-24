@@ -15,6 +15,7 @@ import { Link, useNavigate } from "react-router-dom";
 import CardArtwork from "../components/shared/CardArtwork";
 import UserAvatar from "../components/shared/UserAvatar";
 import PageSkeleton from "../components/ui/PageSkeleton";
+import { storeProfiles } from "../data/storefrontData";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { fetchLocalEvents } from "../services/cardDatabase";
 import { formatNumber } from "../utils/formatters";
@@ -410,6 +411,7 @@ export default function HomePage() {
   } = useMarketplace();
   const [remoteEvents, setRemoteEvents] = useState([]);
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
+  const homeSections = siteSettings?.homeSections || {};
 
   const safeListings = Array.isArray(activeListings) ? activeListings.filter(Boolean) : [];
   const safeHotListings = Array.isArray(hotListings) ? hotListings.filter(Boolean) : [];
@@ -466,6 +468,32 @@ export default function HomePage() {
       return Number(right.overallRating || 0) - Number(left.overallRating || 0);
     })
     .slice(0, 4);
+  const storeSpotlights = useMemo(
+    () =>
+      storeProfiles.map((store) => {
+        const relatedListings = safeListings.filter((listing) => {
+          const seller = listing.seller;
+          if (!seller) {
+            return false;
+          }
+
+          const trustedSpotMatch = Array.isArray(seller.trustedMeetupSpots)
+            ? seller.trustedMeetupSpots.includes(store.slug)
+            : false;
+          const neighborhoodMatch =
+            String(seller.neighborhood || "").toLowerCase() === store.neighborhood.toLowerCase();
+
+          return trustedSpotMatch || neighborhoodMatch;
+        });
+
+        return {
+          ...store,
+          activeCount: relatedListings.length,
+          featuredListing: relatedListings[0] || null,
+        };
+      }),
+    [safeListings],
+  );
   const featuredGame = useMemo(() => {
     const pinnedSlug = siteSettings?.homeHero?.spotlightGameSlug || null;
     if (pinnedSlug) {
@@ -719,6 +747,7 @@ export default function HomePage() {
 
   return (
     <div className="stagger-stack space-y-10 lg:space-y-14">
+      {homeSections.showHero !== false ? (
       <section className="drop-in-item space-y-6">
         <div>
           {bannerSlides.length ? (
@@ -802,7 +831,9 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+      ) : null}
 
+      {homeSections.showPromo !== false ? (
       <SecondaryPromo
         feature={promoFeature}
         formatCadPrice={formatCadPrice}
@@ -813,7 +844,9 @@ export default function HomePage() {
         }}
         onOpenListing={openListing}
       />
+      ) : null}
 
+      {homeSections.showBestSellers !== false ? (
       <section className="drop-in-item space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -840,7 +873,10 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+      ) : null}
 
+      {(homeSections.showFreshFeed !== false ||
+        (homeSections.showFollowedFeed !== false && currentUser && followedSellerIds.length)) ? (
       <section
         className={`drop-in-cluster grid gap-6 ${
           currentUser && followedSellerIds.length
@@ -848,6 +884,7 @@ export default function HomePage() {
             : "xl:grid-cols-[minmax(0,1fr)_22rem]"
         }`}
       >
+        {homeSections.showFreshFeed !== false ? (
         <article className="drop-in-item console-panel p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -877,8 +914,9 @@ export default function HomePage() {
             )}
           </div>
         </article>
+        ) : null}
 
-        {currentUser && followedSellerIds.length ? (
+        {homeSections.showFollowedFeed !== false && currentUser && followedSellerIds.length ? (
           <article className="drop-in-item console-panel p-5 sm:p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -941,7 +979,9 @@ export default function HomePage() {
           </div>
         </aside>
       </section>
+      ) : null}
 
+      {homeSections.showGameShelves !== false ? (
       <section className="drop-in-item console-panel p-5 sm:p-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -1018,8 +1058,11 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+      ) : null}
 
+      {(homeSections.showEvents !== false || homeSections.showTrustedSellers !== false) ? (
       <section className="drop-in-cluster grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        {homeSections.showEvents !== false ? (
         <article className="drop-in-item console-panel p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -1055,7 +1098,9 @@ export default function HomePage() {
             )}
           </div>
         </article>
+        ) : null}
 
+        {homeSections.showTrustedSellers !== false ? (
         <article className="drop-in-item console-panel p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -1112,7 +1157,65 @@ export default function HomePage() {
             </div>
           </div>
         </article>
+        ) : null}
       </section>
+      ) : null}
+
+      {homeSections.showStores !== false ? (
+      <section className="drop-in-item console-panel p-5 sm:p-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="section-kicker">Verified meetup spots</p>
+            <h2 className="mt-2 font-display text-[2rem] font-semibold tracking-[-0.05em] text-ink">
+              Local store profiles
+            </h2>
+            <p className="mt-2 text-sm text-steel">
+              Approved public meetup locations with their own event calendars and local listing lanes.
+            </p>
+          </div>
+          <Link className="inline-flex items-center gap-2 text-sm font-semibold text-navy" to="/stores">
+            View all stores
+            <ArrowRight size={14} />
+          </Link>
+        </div>
+        <div className="mt-5 grid gap-4 xl:grid-cols-4">
+          {storeSpotlights.map((store) => (
+            <Link
+              key={store.slug}
+              className="overflow-hidden rounded-[26px] border border-[rgba(203,220,231,0.92)] bg-white/78 transition duration-300 hover:-translate-y-0.5 hover:shadow-soft"
+              to={`/stores/${store.slug}`}
+            >
+              <div className="flex h-32 items-center justify-center border-b border-[rgba(203,220,231,0.82)] bg-[linear-gradient(135deg,#153447,#0d2232)] p-6">
+                {store.logoUrl ? (
+                  <img alt={store.name} className="max-h-full w-full object-contain" src={store.logoUrl} />
+                ) : null}
+              </div>
+              <div className="space-y-3 p-4">
+                <div>
+                  <p className="font-display text-[1.4rem] font-semibold tracking-[-0.03em] text-ink">
+                    {store.name}
+                  </p>
+                  <p className="mt-1 text-sm text-steel">{store.neighborhood}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <span className="rounded-full bg-navy/8 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-navy">
+                    {store.activeCount} listings
+                  </span>
+                  <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                    Approved
+                  </span>
+                </div>
+                <p className="line-clamp-2 text-sm leading-7 text-steel">
+                  {store.featuredListing
+                    ? `${store.featuredListing.title} is live and tied to this meetup area.`
+                    : "Browse upcoming events and sellers who prefer meeting here."}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+      ) : null}
     </div>
   );
 }

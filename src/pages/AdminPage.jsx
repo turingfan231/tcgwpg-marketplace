@@ -4,7 +4,6 @@ import {
   CalendarCog,
   ExternalLink,
   Flag,
-  LayoutTemplate,
   Home,
   ShieldCheck,
   Trash2,
@@ -19,27 +18,6 @@ import { fetchLocalEvents } from "../services/cardDatabase";
 const badgeIds = ["fast", "trusted", "verified", "community", "power", "judge", "beta"];
 const storeOptions = ["Fusion Gaming", "Galaxy Comics", "A Muse N Games", "Arctic Rift Cards", "Other"];
 const gameOptions = ["Magic", "Pokemon", "One Piece"];
-const landingConcepts = [
-  {
-    id: "retro-catalog",
-    name: "Retro Catalog",
-    note: "Feels like an old price guide, binder index, or printed collector catalog. Structured, nostalgic, and collector-heavy without feeling messy.",
-    recommendation: "Best if you want a nostalgic collector vibe with the cleanest desktop presentation.",
-  },
-  {
-    id: "handheld-app",
-    name: "Handheld App",
-    note: "Inspired by DS / PSP era interfaces with soft gradients, rounded modules, and a playful app feel.",
-    recommendation: "Best if you want nostalgia without losing the polished app-product vibe.",
-  },
-  {
-    id: "lgs-board",
-    name: "LGS Board",
-    note: "Feels like a local shop bulletin wall with posted events, pinned cards, and community-first energy.",
-    recommendation: "Best if you want the most Winnipeg/local personality and the warmest nostalgic feel.",
-  },
-];
-
 function formatEventDate(dateStr) {
   try {
     return new Date(`${dateStr}T12:00:00`).toLocaleDateString("en-CA", {
@@ -81,181 +59,6 @@ function EmptyAdminState({ children }) {
   return <p className="text-sm leading-7 text-steel">{children}</p>;
 }
 
-function PreviewChip({ children, tone = "light" }) {
-  return (
-    <span
-      className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
-        tone === "dark"
-          ? "bg-white/12 text-white/78"
-          : tone === "navy"
-            ? "bg-navy/10 text-navy"
-            : "bg-[#f6f2ea] text-steel"
-      }`}
-    >
-      {children}
-    </span>
-  );
-}
-
-function PreviewBlock({ className = "", children }) {
-  return (
-    <div className={`rounded-[22px] border border-slate-200/80 bg-white ${className}`}>{children}</div>
-  );
-}
-
-function LandingDirectionPreview({ conceptId }) {
-  if (conceptId === "retro-catalog") {
-    return (
-      <div className="space-y-4">
-        <PreviewBlock className="overflow-hidden border-[#d9ccb0] bg-[linear-gradient(180deg,#f7edd6_0%,#f0e1bf_100%)] p-5">
-          <div className="flex items-center justify-between gap-4 border-b border-[#d7c8a9] pb-4">
-            <div>
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[#7b5a2f]">
-                Collector issue no. 01
-              </p>
-              <h3 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em] text-[#2d2418]">
-                A price guide front page
-              </h3>
-            </div>
-            <PreviewChip>March issue</PreviewChip>
-          </div>
-          <div className="mt-5 grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
-            <div className="rounded-[24px] border border-[#d7c8a9] bg-[#fbf3df] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
-              <div className="aspect-[4/5] rounded-[20px] border border-[#c9b48a] bg-[linear-gradient(180deg,#ead8b0,#f8efd8)]" />
-              <div className="mt-4 h-4 w-28 rounded-full bg-[#d4c09a]" />
-              <div className="mt-2 h-3 w-16 rounded-full bg-[#e4d3b1]" />
-            </div>
-            <div className="space-y-3">
-              <div className="rounded-[20px] border border-[#d7c8a9] bg-[#fbf3df] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="h-4 w-36 rounded-full bg-[#d4c09a]" />
-                  <div className="h-4 w-16 rounded-full bg-[#e8dabd]" />
-                </div>
-                <div className="mt-3 grid gap-2">
-                  <div className="h-12 rounded-[14px] bg-[#fff8eb]" />
-                  <div className="h-12 rounded-[14px] bg-[#fff8eb]" />
-                  <div className="h-12 rounded-[14px] bg-[#fff8eb]" />
-                </div>
-              </div>
-              <div className="rounded-[20px] border border-[#d7c8a9] bg-[#fbf3df] p-4">
-                <div className="flex flex-wrap gap-2">
-                  {["Pokemon", "Magic", "One Piece", "Freshly listed"].map((chip) => (
-                    <PreviewChip key={chip}>{chip}</PreviewChip>
-                  ))}
-                </div>
-                <div className="mt-4 h-20 rounded-[16px] bg-[#fff8eb]" />
-              </div>
-            </div>
-        </div>
-        </PreviewBlock>
-      </div>
-    );
-  }
-
-  if (conceptId === "handheld-app") {
-    return (
-      <div className="space-y-4">
-        <PreviewBlock className="overflow-hidden bg-[linear-gradient(180deg,#dce9f3_0%,#c5daea_100%)] p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-navy/55">
-                Handheld home
-              </p>
-              <h3 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em] text-ink">
-                Soft modules and cartridge-era energy
-              </h3>
-            </div>
-            <PreviewChip tone="navy">Touch-first</PreviewChip>
-          </div>
-          <div className="mt-5 grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-            <div className="rounded-[26px] border border-white/45 bg-white/62 p-4 shadow-[0_18px_44px_-30px_rgba(26,91,120,0.45)]">
-              <div className="flex items-center justify-between gap-3">
-                <div className="h-4 w-28 rounded-full bg-slate-200" />
-                <div className="h-9 w-9 rounded-full bg-orange/80" />
-              </div>
-              <div className="mt-4 grid gap-3 md:grid-cols-3">
-                {[1, 2, 3].map((item) => (
-                  <div key={item} className="rounded-[18px] bg-white/90 p-3">
-                    <div className="aspect-[63/88] rounded-[14px] bg-[linear-gradient(180deg,#d8e8f4,#f5fbff)]" />
-                    <div className="mt-3 h-4 w-4/5 rounded-full bg-slate-200" />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="grid gap-3">
-              {[1, 2, 3].map((item) => (
-                <div key={item} className="rounded-[22px] border border-white/50 bg-white/72 p-4">
-                  <div className="h-4 w-32 rounded-full bg-slate-200" />
-                  <div className="mt-3 h-12 rounded-[16px] bg-[#edf4f9]" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </PreviewBlock>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          {["Quick browse", "Inbox pulse", "Tonight's events"].map((label) => (
-            <PreviewBlock key={label} className="p-4">
-              <p className="section-kicker">{label}</p>
-              <div className="mt-4 h-28 rounded-[20px] bg-[linear-gradient(180deg,#edf4f9,#dbe9f3)]" />
-            </PreviewBlock>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <PreviewBlock className="overflow-hidden border-[#d4c2a3] bg-[linear-gradient(180deg,#f8f1e6_0%,#efe2ca_100%)] p-5">
-        <div className="flex items-center justify-between gap-4 border-b border-[#d8c5a1] pb-4">
-          <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[#7b5f34]">
-              Shop bulletin
-            </p>
-            <h3 className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em] text-[#2d2418]">
-              Pinned cards and posted events
-            </h3>
-          </div>
-          <PreviewChip>Community-led</PreviewChip>
-        </div>
-        <div className="mt-5 grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-          <div className="rounded-[24px] border border-[#d9c8ab] bg-[#fff8ec] p-4 shadow-[0_16px_34px_-28px_rgba(77,54,18,0.38)]">
-            <div className="grid gap-3 md:grid-cols-2">
-              {[1, 2].map((item) => (
-                <div key={item} className="rounded-[18px] border border-[#dbcdb1] bg-white p-3">
-                  <div className="aspect-[63/88] rounded-[14px] bg-[linear-gradient(180deg,#f7ead4,#fef8ef)]" />
-                  <div className="mt-3 h-4 w-3/4 rounded-full bg-[#d4c09b]" />
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="space-y-3">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="rounded-[20px] border border-[#d9c8ab] bg-[#fff8ec] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="h-4 w-32 rounded-full bg-[#d4c09b]" />
-                  <div className="h-4 w-14 rounded-full bg-[#eadbbe]" />
-                </div>
-                <div className="mt-3 h-14 rounded-[16px] bg-white" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </PreviewBlock>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        {["Pinned events", "Meetup notes", "Featured sellers"].map((label) => (
-          <PreviewBlock key={label} className="p-4">
-            <p className="section-kicker">{label}</p>
-            <div className="mt-4 h-24 rounded-[18px] bg-[#faf3e4]" />
-          </PreviewBlock>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function AdminPage() {
   const navigate = useNavigate();
   const {
@@ -278,6 +81,7 @@ export default function AdminPage() {
     toggleUserSuspended,
     toggleUserVerified,
     updateHomeHeroSettings,
+    updateStorefrontSettings,
     updateBugReport,
     updateListingAdminNote,
     updateReportStatus,
@@ -311,6 +115,9 @@ export default function AdminPage() {
       spotlightGameSlug: null,
     },
   );
+  const [sectionSettingsDraft, setSectionSettingsDraft] = useState(
+    siteSettings?.homeSections || {},
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -343,6 +150,10 @@ export default function AdminPage() {
         spotlightGameSlug: null,
       },
     );
+  }, [siteSettings]);
+
+  useEffect(() => {
+    setSectionSettingsDraft(siteSettings?.homeSections || {});
   }, [siteSettings]);
 
   const sortedUsers = useMemo(
@@ -1342,14 +1153,14 @@ export default function AdminPage() {
           <div className="flex items-center gap-3">
             <Home className="text-orange" size={20} />
             <div>
-              <p className="section-kicker">Storefront hero</p>
+              <p className="section-kicker">Storefront CMS</p>
               <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                Curate the homepage banner
+                Homepage controls
               </h2>
             </div>
           </div>
           <p className="mt-4 max-w-4xl text-sm leading-7 text-steel">
-            Pick the featured listing, pin a specific event, and choose which game gets the market-channel slide.
+            Pick the featured listing, pin a specific event, choose the spotlight game, and toggle homepage lanes on or off without touching code.
           </p>
 
           <div className="mt-6 grid gap-4 xl:grid-cols-3">
@@ -1440,6 +1251,83 @@ export default function AdminPage() {
             >
               Reset to automatic
             </button>
+          </div>
+
+          <div className="mt-8 border-t border-slate-200 pt-8">
+            <div className="flex items-center gap-3">
+              <Home className="text-navy" size={18} />
+              <div>
+                <p className="section-kicker">Section visibility</p>
+                <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-ink">
+                  Homepage lanes
+                </h3>
+              </div>
+            </div>
+            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {[
+                ["showHero", "Hero banner"],
+                ["showPromo", "Secondary promo"],
+                ["showBestSellers", "Best sellers"],
+                ["showFreshFeed", "Fresh feed"],
+                ["showFollowedFeed", "Followed sellers"],
+                ["showGameShelves", "Game shelves"],
+                ["showEvents", "Events lane"],
+                ["showTrustedSellers", "Trusted sellers"],
+                ["showStores", "Store profiles"],
+              ].map(([key, label]) => {
+                const active = sectionSettingsDraft[key] !== false;
+                return (
+                  <button
+                    key={key}
+                    className={`rounded-[22px] border px-4 py-4 text-left transition ${
+                      active
+                        ? "border-navy bg-navy text-white shadow-soft"
+                        : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
+                    }`}
+                    type="button"
+                    onClick={() =>
+                      setSectionSettingsDraft((current) => ({
+                        ...current,
+                        [key]: !active,
+                      }))
+                    }
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em]">
+                      {active ? "Visible" : "Hidden"}
+                    </p>
+                    <p className="mt-2 font-semibold">{label}</p>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button
+                className="rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
+                type="button"
+                onClick={() => void updateStorefrontSettings({ homeSections: sectionSettingsDraft })}
+              >
+                Save section visibility
+              </button>
+              <button
+                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel"
+                type="button"
+                onClick={() =>
+                  setSectionSettingsDraft({
+                    showHero: true,
+                    showPromo: true,
+                    showBestSellers: true,
+                    showFreshFeed: true,
+                    showFollowedFeed: true,
+                    showGameShelves: true,
+                    showEvents: true,
+                    showTrustedSellers: true,
+                    showStores: true,
+                  })
+                }
+              >
+                Reset sections
+              </button>
+            </div>
           </div>
         </section>
       ) : null}

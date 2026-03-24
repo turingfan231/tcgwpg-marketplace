@@ -9,9 +9,11 @@ import {
   Store,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import EmptyState from "../components/ui/EmptyState";
 import InlineSpinner from "../components/ui/InlineSpinner";
 import PageSkeleton from "../components/ui/PageSkeleton";
+import { getStoreSlugByName } from "../data/storefrontData";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { fetchLocalEvents } from "../services/cardDatabase";
 
@@ -541,7 +543,13 @@ export default function EventsPage() {
                   <div className="mt-4 grid gap-3 text-sm text-steel">
                     <span className="inline-flex items-center gap-2">
                       <Store size={16} />
-                      {event.store}
+                      {getStoreSlugByName(event.store) ? (
+                        <Link className="font-semibold text-navy hover:underline" to={`/stores/${getStoreSlugByName(event.store)}`}>
+                          {event.store}
+                        </Link>
+                      ) : (
+                        event.store
+                      )}
                     </span>
                     <span className="inline-flex items-center gap-2">
                       <CalendarDays size={16} />

@@ -7,6 +7,7 @@ import UserAvatar from "../components/shared/UserAvatar";
 import EmptyState from "../components/ui/EmptyState";
 import PageSkeleton from "../components/ui/PageSkeleton";
 import RatingStars from "../components/ui/RatingStars";
+import { approvedMeetupSpots } from "../data/storefrontData";
 import { useMarketplace } from "../hooks/useMarketplace";
 
 const bannerToneMap = {
@@ -44,6 +45,9 @@ export default function SellerProfilePage() {
   );
   const isOwnProfile = String(currentUser?.id || "") === String(sellerId || "");
   const isAdmin = currentUser?.role === "admin";
+  const trustedSpots = approvedMeetupSpots.filter((spot) =>
+    Array.isArray(seller.trustedMeetupSpots) ? seller.trustedMeetupSpots.includes(spot.id) : false,
+  );
 
   if (loading && !seller) {
     return <PageSkeleton cards={4} titleWidth="w-72" />;
@@ -146,7 +150,7 @@ export default function SellerProfilePage() {
           </div>
         </div>
 
-        <div className="grid gap-4 p-6 lg:grid-cols-4">
+        <div className="grid gap-4 p-6 lg:grid-cols-5">
           <div className="console-well p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
               Favorite games
@@ -179,9 +183,33 @@ export default function SellerProfilePage() {
               {seller.completedDeals}
             </p>
           </div>
+          <div className="console-well p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+              Risk signals
+            </p>
+            <p className="mt-2 text-lg font-semibold text-ink">{seller.riskLabel}</p>
+            <div className="mt-3 space-y-1 text-sm text-steel">
+              <p>Account age: {seller.accountAgeLabel}</p>
+              <p>Response rate: {seller.responseRate}%</p>
+              <p>Moderation actions: {seller.moderationActions}</p>
+            </div>
+          </div>
         </div>
 
         <div className="px-6 pb-6">
+          {trustedSpots.length ? (
+            <div className="mb-4 flex flex-wrap gap-2">
+              {trustedSpots.map((spot) => (
+                <span
+                  key={spot.id}
+                  className="inline-flex items-center gap-2 rounded-full border border-[rgba(203,220,231,0.88)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-navy"
+                >
+                  <Store size={14} />
+                  {spot.label}
+                </span>
+              ))}
+            </div>
+          ) : null}
           <div className="flex flex-wrap gap-2">
             {seller.badges.map((badge) => (
               <span

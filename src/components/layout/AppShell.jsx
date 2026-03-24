@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useMarketplace } from "../../hooks/useMarketplace";
 import CreateListingModal from "../modals/CreateListingModal";
+import OnboardingModal from "../modals/OnboardingModal";
 import AppLaunchScreen from "../ui/AppLaunchScreen";
 import InstallPrompt from "../ui/InstallPrompt";
 import ToastStack from "../ui/ToastStack";
@@ -10,12 +11,14 @@ import Header from "./Header";
 import MobileTabBar from "./MobileTabBar";
 
 const INSTALL_DISMISS_KEY = "tcgwpg.installPromptDismissed";
+const ONBOARDING_DISMISS_KEY = "tcgwpg.onboardingDismissed";
 
 export default function AppShell() {
   const location = useLocation();
   const {
     authReady,
     closeCreateListing,
+    currentUser,
     dismissToast,
     isCreateListingOpen,
     isSuspended,
@@ -24,6 +27,7 @@ export default function AppShell() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [installVisible, setInstallVisible] = useState(false);
   const [appBooted, setAppBooted] = useState(false);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
 
   const isStandalone = useMemo(() => {
     if (typeof window === "undefined") {
@@ -117,6 +121,15 @@ export default function AppShell() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const dismissedUserId = window.localStorage.getItem(ONBOARDING_DISMISS_KEY) || "";
+    setOnboardingDismissed(dismissedUserId === String(currentUser?.id || ""));
+  }, [currentUser?.id]);
+
+  useEffect(() => {
     if (!appBooted && authReady) {
       const timeout = window.setTimeout(() => setAppBooted(true), 180);
       return () => window.clearTimeout(timeout);
@@ -126,6 +139,19 @@ export default function AppShell() {
   }, [appBooted, authReady]);
 
   const showLaunchScreen = !appBooted;
+  const showOnboarding =
+    authReady &&
+    !showLaunchScreen &&
+    Boolean(currentUser) &&
+    !Boolean(currentUser?.onboardingComplete) &&
+    !onboardingDismissed;
+
+  function handleCloseOnboarding() {
+    setOnboardingDismissed(true);
+    if (typeof window !== "undefined" && currentUser?.id) {
+      window.localStorage.setItem(ONBOARDING_DISMISS_KEY, String(currentUser.id));
+    }
+  }
 
   return (
     <div className="min-h-screen bg-transparent">
@@ -235,6 +261,7 @@ export default function AppShell() {
       {isCreateListingOpen ? (
         <CreateListingModal onClose={closeCreateListing} />
       ) : null}
+      {showOnboarding ? <OnboardingModal onClose={handleCloseOnboarding} /> : null}
       <InstallPrompt
         installState={installState}
         onDismiss={dismissInstallPrompt}

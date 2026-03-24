@@ -18,6 +18,7 @@ import UserAvatar from "../components/shared/UserAvatar";
 import EmptyState from "../components/ui/EmptyState";
 import InlineSpinner from "../components/ui/InlineSpinner";
 import RatingStars from "../components/ui/RatingStars";
+import { approvedMeetupSpots } from "../data/storefrontData";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { fetchSourceSalesForPrinting } from "../services/cardDatabase";
 import { getConditionClasses, getListingTypeClasses } from "../utils/formatters";
@@ -195,6 +196,11 @@ export default function ListingDetailPage() {
 
   const isOwner = currentUser && listing && currentUser.id === listing.sellerId;
   const isAdmin = currentUser?.role === "admin";
+  const trustedMeetupSpots = approvedMeetupSpots.filter((spot) =>
+    Array.isArray(listing?.seller?.trustedMeetupSpots)
+      ? listing.seller.trustedMeetupSpots.includes(spot.id)
+      : false,
+  );
 
   async function handleSaveAdminNote() {
     if (!listing || !isAdmin) {
@@ -782,6 +788,20 @@ export default function ListingDetailPage() {
                     {listing.seller.neighborhood}
                     {listing.seller.postalCode ? ` | ${listing.seller.postalCode}` : ""}
                   </p>
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                    <span className="rounded-full bg-slate-100 px-3 py-1">
+                      Account age {listing.seller.accountAgeLabel}
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-3 py-1">
+                      Response {listing.seller.responseRate}%
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-3 py-1">
+                      {listing.seller.moderationActions} moderation action{listing.seller.moderationActions === 1 ? "" : "s"}
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-3 py-1">
+                      {listing.seller.riskLabel}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -797,6 +817,19 @@ export default function ListingDetailPage() {
                 ))}
               </div>
             </div>
+            {trustedMeetupSpots.length ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {trustedMeetupSpots.map((spot) => (
+                  <span
+                    key={spot.id}
+                    className="inline-flex items-center gap-2 rounded-full border border-[rgba(203,220,231,0.88)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-navy"
+                  >
+                    <ShieldCheck size={13} />
+                    {spot.label}
+                  </span>
+                ))}
+              </div>
+            ) : null}
           </Link>
 
           {(isOwner || listingOffers.length) && (

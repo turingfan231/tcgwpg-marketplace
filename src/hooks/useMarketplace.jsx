@@ -17,6 +17,7 @@ import {
   sellerBadgeCatalog,
   sellers as seedUsers,
 } from "../data/mockData";
+import { storeProfiles } from "../data/storefrontData";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
 import { average, formatCurrency, slugify } from "../utils/formatters";
 
@@ -34,6 +35,17 @@ const DEFAULT_SITE_SETTINGS = {
     featuredListingId: null,
     pinnedEventId: null,
     spotlightGameSlug: null,
+  },
+  homeSections: {
+    showHero: true,
+    showPromo: true,
+    showBestSellers: true,
+    showFreshFeed: true,
+    showFollowedFeed: true,
+    showGameShelves: true,
+    showEvents: true,
+    showTrustedSellers: true,
+    showStores: true,
   },
 };
 
@@ -106,11 +118,23 @@ function readMarketplaceCache() {
 
 function normalizeSiteSettings(settings) {
   const homeHero = settings?.homeHero || {};
+  const homeSections = settings?.homeSections || {};
   return {
     homeHero: {
       featuredListingId: homeHero.featuredListingId || null,
       pinnedEventId: homeHero.pinnedEventId || null,
       spotlightGameSlug: homeHero.spotlightGameSlug || null,
+    },
+    homeSections: {
+      showHero: homeSections.showHero !== false,
+      showPromo: homeSections.showPromo !== false,
+      showBestSellers: homeSections.showBestSellers !== false,
+      showFreshFeed: homeSections.showFreshFeed !== false,
+      showFollowedFeed: homeSections.showFollowedFeed !== false,
+      showGameShelves: homeSections.showGameShelves !== false,
+      showEvents: homeSections.showEvents !== false,
+      showTrustedSellers: homeSections.showTrustedSellers !== false,
+      showStores: homeSections.showStores !== false,
     },
   };
 }
@@ -171,6 +195,11 @@ function buildMarketplaceCacheSnapshot(snapshot) {
       followedSellerIds: Array.isArray(user.followedSellerIds)
         ? user.followedSellerIds.slice(0, 200)
         : [],
+      trustedMeetupSpots: Array.isArray(user.trustedMeetupSpots)
+        ? user.trustedMeetupSpots.slice(0, 8)
+        : [],
+      createdAt: user.createdAt || "",
+      onboardingComplete: Boolean(user.onboardingComplete),
       publicName: user.publicName,
       firstName: user.firstName,
       initials: user.initials,
@@ -252,6 +281,79 @@ function normalizeUsername(value) {
     .replace(/\s+/g, "_")
     .replace(/[^a-zA-Z0-9._-]/g, "")
     .slice(0, 24);
+}
+
+function parseMeetupPreferenceValue(value = "") {
+  const rawValue = String(value || "").trim();
+  const prefixMatch = rawValue.match(/^\[\[spots:([^\]]*)\]\]\s*/i);
+  const prefixSpots = prefixMatch?.[1]
+    ? prefixMatch[1]
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean)
+    : [];
+  const noteText = prefixMatch ? rawValue.replace(prefixMatch[0], "").trim() : rawValue;
+  const normalizedNote = noteText.toLowerCase();
+  const inferredSpots = storeProfiles
+    .filter(
+      (store) =>
+        normalizedNote.includes(store.name.toLowerCase()) ||
+        normalizedNote.includes(store.shortName.toLowerCase()),
+    )
+    .map((store) => store.slug);
+
+  return {
+    notes: noteText,
+    trustedMeetupSpots: [...new Set([...prefixSpots, ...inferredSpots])].slice(0, 4),
+  };
+}
+
+function buildMeetupPreferenceValue(notes = "", spotIds = []) {
+  const cleanedNotes = String(notes || "").trim();
+  const normalizedSpotIds = [...new Set((spotIds || []).filter(Boolean))];
+  const prefix = normalizedSpotIds.length ? `[[spots:${normalizedSpotIds.join(",")}]]` : "";
+  return [prefix, cleanedNotes].filter(Boolean).join(" ").trim();
+}
+
+function estimateResponseRate(user, reviewCount = 0) {
+  const base =
+    {
+      "< 15 min": 97,
+      "~ 30 min": 92,
+      "~ 1 hour": 86,
+      "Same day": 74,
+    }[String(user?.responseTime || "").trim()] || 78;
+  const dealBonus = Math.min(Math.round(Number(user?.completedDeals || 0) / 4), 8);
+  const reviewBonus = Math.min(reviewCount * 2, 6);
+  const moderationPenalty = user?.accountStatus === "suspended" ? 20 : 0;
+  return Math.max(32, Math.min(99, base + dealBonus + reviewBonus - moderationPenalty));
+}
+
+function buildAccountAgeLabel(createdAt) {
+  const createdTime = new Date(createdAt || Date.now()).getTime();
+  const days = Math.max(1, Math.floor((Date.now() - createdTime) / 86400000));
+
+  if (days >= 365) {
+    return `${Math.max(1, Math.floor(days / 365))}y`;
+  }
+
+  if (days >= 30) {
+    return `${Math.max(1, Math.floor(days / 30))}mo`;
+  }
+
+  return `${days}d`;
+}
+
+function buildRiskLabel({ verified, moderationActions, responseRate, completedDeals }) {
+  if (!verified || moderationActions >= 2 || responseRate < 65) {
+    return "Review closely";
+  }
+
+  if (moderationActions === 0 && responseRate >= 88 && completedDeals >= 10) {
+    return "Low risk";
+  }
+
+  return "Standard";
 }
 
 function getFileExtension(name, mimeType = "") {
@@ -460,11 +562,16 @@ function isSupportedListing(listing) {
 }
 
 function normalizeUserRecord(user) {
+  const meetupData = parseMeetupPreferenceValue(user.meetupPreferences || "");
   const username = normalizeUsername(user.username || "");
   const publicName = username || user.publicName || getPublicName(user.name);
   const favoriteGames = Array.isArray(user.favoriteGames) ? user.favoriteGames : [];
   const followedSellerIds = Array.isArray(user.followedSellerIds) ? user.followedSellerIds : [];
   const defaultListingGame = user.defaultListingGame || favoriteGames[0] || "Pokemon";
+  const trustedMeetupSpots =
+    Array.isArray(user.trustedMeetupSpots) && user.trustedMeetupSpots.length
+      ? user.trustedMeetupSpots
+      : meetupData.trustedMeetupSpots;
 
   return {
     role: "seller",
@@ -472,20 +579,31 @@ function normalizeUserRecord(user) {
     verified: false,
     accountStatus: "active",
     bannerStyle: "neutral",
-    meetupPreferences: "Flexible local meetup.",
     responseTime: "~ 1 hour",
     completedDeals: 0,
     avatarUrl: "",
     ...user,
+    createdAt: user.createdAt || new Date().toISOString(),
     email: normalizeEmail(user.email),
     postalCode: normalizePostalCode(user.postalCode),
     favoriteGames,
     followedSellerIds,
+    trustedMeetupSpots,
+    meetupPreferences: meetupData.notes,
     defaultListingGame,
     username,
     firstName: getFirstName(user.name),
     publicName,
     initials: user.initials || buildInitials(user.name),
+    onboardingComplete:
+      user.onboardingComplete ??
+      Boolean(
+        username &&
+          (favoriteGames.length || defaultListingGame) &&
+          user.neighborhood &&
+          normalizePostalCode(user.postalCode).length >= 3 &&
+          (trustedMeetupSpots.length || meetupData.notes),
+      ),
   };
 }
 
@@ -599,6 +717,8 @@ function fromProfileRow(row) {
     meetupPreferences: row.meetup_preferences,
     responseTime: row.response_time,
     completedDeals: row.completed_deals || 0,
+    createdAt: row.created_at,
+    onboardingComplete: row.onboarding_complete,
   });
 }
 
@@ -765,6 +885,15 @@ function mergeAuthedProfileMetadata(profileRow, authUser) {
       "",
     followed_seller_ids:
       profileRow.followed_seller_ids || authUser?.user_metadata?.followed_seller_ids || [],
+    meetup_preferences:
+      profileRow.meetup_preferences ||
+      buildMeetupPreferenceValue(
+        authUser?.user_metadata?.meetup_preferences_text || "",
+        authUser?.user_metadata?.trusted_meetup_spots || [],
+      ),
+    created_at: profileRow.created_at || authUser?.created_at || new Date().toISOString(),
+    onboarding_complete:
+      profileRow.onboarding_complete ?? authUser?.user_metadata?.onboarding_complete ?? false,
   };
 }
 
@@ -947,20 +1076,36 @@ export function MarketplaceProvider({ children }) {
 
     users.forEach((user) => {
       const sellerReviews = reviews.filter((review) => review.sellerId === user.id);
-      const listingCount = listings.filter(
-        (listing) => listing.sellerId === user.id && listing.status === "active",
-      ).length;
+      const sellerListings = listings.filter((listing) => listing.sellerId === user.id);
+      const listingCount = sellerListings.filter((listing) => listing.status === "active").length;
+      const moderationActions =
+        sellerListings.filter((listing) => listing.flagged || listing.status === "removed").length +
+        reports.filter(
+          (report) =>
+            report.sellerId === user.id &&
+            String(report.status || "").toLowerCase() !== "dismissed",
+        ).length;
+      const responseRate = estimateResponseRate(user, sellerReviews.length);
       map[user.id] = {
         ...sanitizeUser(user),
         activeListingCount: listingCount,
         followedByCurrentUser: followedSellerSet.has(user.id),
         reviewCount: sellerReviews.length,
         overallRating: average(sellerReviews.map((review) => review.rating)),
+        accountAgeLabel: buildAccountAgeLabel(user.createdAt),
+        responseRate,
+        moderationActions,
+        riskLabel: buildRiskLabel({
+          verified: user.verified,
+          moderationActions,
+          responseRate,
+          completedDeals: Number(user.completedDeals || 0),
+        }),
       };
     });
 
     return map;
-  }, [followedSellerSet, listings, reviews, users]);
+  }, [followedSellerSet, listings, reports, reviews, users]);
   const normalizedWishlist = useMemo(
     () =>
       wishlist.filter((listingId) =>
@@ -1291,23 +1436,35 @@ export function MarketplaceProvider({ children }) {
 
     if (existingProfile) {
       const desiredUsername =
-        normalizeUsername(payload.username) ||
-        normalizeUsername(authUser.user_metadata?.username) ||
-        "";
-      const desiredAvatarUrl = payload.avatarUrl || authUser.user_metadata?.avatar_url || "";
+          normalizeUsername(payload.username) ||
+          normalizeUsername(authUser.user_metadata?.username) ||
+          "";
+        const desiredAvatarUrl = payload.avatarUrl || authUser.user_metadata?.avatar_url || "";
+        const desiredMeetupValue = buildMeetupPreferenceValue(
+          payload.meetupPreferences || authUser.user_metadata?.meetup_preferences_text || "",
+          payload.trustedMeetupSpots || authUser.user_metadata?.trusted_meetup_spots || [],
+        );
 
-      if ((!existingProfile.username && desiredUsername) || (!existingProfile.avatar_url && desiredAvatarUrl)) {
-        const nextProfilePatch = {
-          updated_at: new Date().toISOString(),
-        };
+        if (
+          (!existingProfile.username && desiredUsername) ||
+          (!existingProfile.avatar_url && desiredAvatarUrl) ||
+          (!existingProfile.meetup_preferences && desiredMeetupValue)
+        ) {
+          const nextProfilePatch = {
+            updated_at: new Date().toISOString(),
+          };
 
         if (!existingProfile.username && desiredUsername) {
           nextProfilePatch.username = desiredUsername;
         }
 
-        if (!existingProfile.avatar_url && desiredAvatarUrl) {
-          nextProfilePatch.avatar_url = desiredAvatarUrl;
-        }
+          if (!existingProfile.avatar_url && desiredAvatarUrl) {
+            nextProfilePatch.avatar_url = desiredAvatarUrl;
+          }
+
+          if (!existingProfile.meetup_preferences && desiredMeetupValue) {
+            nextProfilePatch.meetup_preferences = desiredMeetupValue;
+          }
 
         const updateResult = await supabase
           .from("profiles")
@@ -1367,11 +1524,14 @@ export function MarketplaceProvider({ children }) {
       bio: payload.bio || "New local seller on TCGWPG.",
       banner_style: "neutral",
       favorite_games: payload.favoriteGames || [],
-      followed_seller_ids: payload.followedSellerIds || [],
-      meetup_preferences: payload.meetupPreferences || "Flexible local meetup.",
-      response_time: payload.responseTime || "~ 1 hour",
-      completed_deals: 0,
-    };
+        followed_seller_ids: payload.followedSellerIds || [],
+        meetup_preferences: buildMeetupPreferenceValue(
+          payload.meetupPreferences || authUser.user_metadata?.meetup_preferences_text || "Flexible local meetup.",
+          payload.trustedMeetupSpots || authUser.user_metadata?.trusted_meetup_spots || [],
+        ),
+        response_time: payload.responseTime || "~ 1 hour",
+        completed_deals: 0,
+      };
 
     let insertResult = await supabase
       .from("profiles")
@@ -1788,6 +1948,28 @@ export function MarketplaceProvider({ children }) {
     return { ok: true, settings: nextSettings };
   }
 
+  async function updateStorefrontSettings(payload = {}) {
+    if (!currentUser || currentUser.role !== "admin") {
+      return { ok: false, error: "Only admins can update storefront settings." };
+    }
+
+    const nextSettings = normalizeSiteSettings({
+      ...siteSettings,
+      ...payload,
+      homeHero: {
+        ...siteSettings.homeHero,
+        ...(payload.homeHero || {}),
+      },
+      homeSections: {
+        ...siteSettings.homeSections,
+        ...(payload.homeSections || {}),
+      },
+    });
+
+    setSiteSettings(nextSettings);
+    return { ok: true, settings: nextSettings };
+  }
+
   async function recordSearchQuery(query, metadata = {}) {
     const trimmed = String(query || "").trim();
     if (!trimmed) {
@@ -1918,6 +2100,7 @@ export function MarketplaceProvider({ children }) {
             username,
             neighborhood: payload.neighborhood,
             postal_code: normalizePostalCode(payload.postalCode),
+            onboarding_complete: false,
           },
         },
       });
@@ -2022,6 +2205,10 @@ export function MarketplaceProvider({ children }) {
         avatar_url: nextAvatarUrl || null,
         default_listing_game:
           payload.defaultListingGame || currentUserRecord?.defaultListingGame || "Pokemon",
+        trusted_meetup_spots: payload.trustedMeetupSpots || currentUserRecord?.trustedMeetupSpots || [],
+        meetup_preferences_text: payload.meetupPreferences || currentUserRecord?.meetupPreferences || "",
+        onboarding_complete:
+          payload.onboardingComplete ?? currentUserRecord?.onboardingComplete ?? false,
       },
     });
 
@@ -2036,7 +2223,10 @@ export function MarketplaceProvider({ children }) {
       default_listing_game:
         payload.defaultListingGame || currentUserRecord?.defaultListingGame || "Pokemon",
       favorite_games: payload.favoriteGames || [],
-      meetup_preferences: payload.meetupPreferences || "",
+      meetup_preferences: buildMeetupPreferenceValue(
+        payload.meetupPreferences || "",
+        payload.trustedMeetupSpots || currentUserRecord?.trustedMeetupSpots || [],
+      ),
       response_time: payload.responseTime || "~ 1 hour",
       banner_style: payload.bannerStyle || "neutral",
       bio: payload.bio || "",
@@ -4255,6 +4445,7 @@ export function MarketplaceProvider({ children }) {
     updateBugReport,
     updateCurrentUserProfile,
     updateHomeHeroSettings,
+    updateStorefrontSettings,
     updateListingAdminNote,
     updateReportStatus,
     users: Object.values(sellerMap),
