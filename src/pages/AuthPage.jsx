@@ -171,19 +171,9 @@ export default function AuthPage() {
             Login or create a local account.
           </h1>
           <p className="mt-4 leading-8 text-white/82">
-            Accounts unlock in-app messaging, saved listings, listing management, and a
-            cleaner selling flow for repeat local deals.
+            Sign in to message locally, manage listings, save cards, and keep your deals
+            moving inside one account.
           </p>
-
-          <div className="mt-8 rounded-[28px] border border-white/15 bg-white/10 p-5">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/70">
-              Supabase auth
-            </p>
-            <p className="mt-3 text-base leading-7 text-white/82">
-              Signup now creates a real shared account in Supabase. To make an admin,
-              create the account first, then promote its profile row in Supabase.
-            </p>
-          </div>
         </div>
 
         <div className="surface-card p-7">
