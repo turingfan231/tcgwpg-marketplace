@@ -233,7 +233,7 @@ export default function AppShell() {
           </div>
         </div>
       ) : null}
-      <main className="page-shell py-5 pb-[calc(7.75rem+env(safe-area-inset-bottom))] sm:py-6 lg:py-10 lg:pb-24">
+      <main className="page-shell py-4 pb-[calc(7.15rem+env(safe-area-inset-bottom))] sm:py-6 lg:py-10 lg:pb-24">
         <div key={location.pathname} className="app-page-transition">
           <Outlet />
         </div>

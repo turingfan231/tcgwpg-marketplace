@@ -691,21 +691,21 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="grid gap-5 lg:h-[calc(100dvh-12.5rem)] lg:grid-cols-[23rem_minmax(0,1fr)]">
+    <div className="grid gap-4 lg:h-[calc(100dvh-12.5rem)] lg:grid-cols-[23rem_minmax(0,1fr)]">
       <section
-        className={`overflow-hidden rounded-[30px] border border-[rgba(203,220,231,0.9)] bg-[linear-gradient(180deg,rgba(251,253,255,0.96),rgba(241,243,245,0.9))] shadow-soft lg:h-full ${
+        className={`overflow-hidden rounded-[22px] border border-[rgba(203,220,231,0.9)] bg-[linear-gradient(180deg,rgba(251,253,255,0.96),rgba(241,243,245,0.9))] shadow-soft sm:rounded-[30px] lg:h-full ${
           showMobileThread ? "hidden lg:block" : "block"
         }`}
       >
-        <div className="border-b border-slate-200/80 px-5 py-5">
+        <div className="border-b border-slate-200/80 px-4 py-4 sm:px-5 sm:py-5">
           <p className="section-kicker">Messages</p>
-          <h1 className="mt-2 font-display text-[2rem] font-semibold tracking-[-0.04em] text-ink">
+          <h1 className="mt-2 font-display text-[1.65rem] font-semibold tracking-[-0.04em] text-ink sm:text-[2rem]">
             Inbox
           </h1>
           <p className="mt-2 max-w-sm text-sm leading-6 text-steel">
             Keep listings, offers, and meetup details together instead of scattered across DMs.
           </p>
-          <div className="mt-4 rounded-[20px] border border-[rgba(203,220,231,0.88)] bg-white/88 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+          <div className="mt-3 rounded-[18px] border border-[rgba(203,220,231,0.88)] bg-white/88 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] sm:mt-4 sm:rounded-[20px]">
             <div className="flex items-center gap-3">
               <Search size={16} className="text-steel" />
               <input
@@ -738,7 +738,7 @@ export default function MessagesPage() {
           </div>
         </div>
 
-        <div className="overflow-y-auto px-4 py-4 lg:h-[calc(100%-9.75rem)]">
+        <div className="overflow-y-auto px-3 py-3 sm:px-4 sm:py-4 lg:h-[calc(100%-9.75rem)]">
           {filteredThreads.length ? (
             <div className="space-y-3">
               {filteredThreads.map((thread) => (
@@ -760,13 +760,13 @@ export default function MessagesPage() {
       </section>
 
       <section
-        className={`flex min-h-[calc(100dvh-10.5rem)] flex-col overflow-hidden rounded-[30px] border border-[rgba(203,220,231,0.9)] bg-[linear-gradient(180deg,rgba(251,253,255,0.97),rgba(241,243,245,0.92))] shadow-soft lg:h-full lg:min-h-0 ${
+        className={`flex min-h-[calc(100dvh-9.6rem)] flex-col overflow-hidden rounded-[22px] border border-[rgba(203,220,231,0.9)] bg-[linear-gradient(180deg,rgba(251,253,255,0.97),rgba(241,243,245,0.92))] shadow-soft sm:rounded-[30px] lg:h-full lg:min-h-0 ${
           !showMobileThread ? "hidden lg:flex" : "flex"
         }`}
       >
         {activeThread ? (
           <>
-            <div className="border-b border-slate-200/80 px-4 py-5 sm:px-6">
+            <div className="border-b border-slate-200/80 px-4 py-4 sm:px-6 sm:py-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0">
                   <button
@@ -784,7 +784,7 @@ export default function MessagesPage() {
                     />
                     <div className="min-w-0">
                       <p className="section-kicker">Conversation</p>
-                      <h2 className="mt-1 truncate font-display text-[1.75rem] font-semibold tracking-[-0.04em] text-ink">
+                      <h2 className="mt-1 truncate font-display text-[1.4rem] font-semibold tracking-[-0.04em] text-ink sm:text-[1.75rem]">
                         {activeThread.participantIds.length > 2
                           ? activeThread.participantLabel || "Support / resolution chat"
                           : activeThread.otherParticipant?.publicName || "Conversation"}
@@ -841,9 +841,9 @@ export default function MessagesPage() {
               onSendCounter={sendCounter}
             />
 
-            <div className="relative flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+            <div className="relative flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-5">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(240,55,55,0.07),transparent_18%),radial-gradient(circle_at_bottom_right,rgba(17,39,56,0.08),transparent_24%)]" />
-              <div className="pointer-events-none absolute inset-x-4 inset-y-5 rounded-[30px] border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.28),rgba(255,255,255,0.08))] sm:inset-x-6" />
+              <div className="pointer-events-none absolute inset-x-3 inset-y-4 rounded-[22px] border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.28),rgba(255,255,255,0.08))] sm:inset-x-6 sm:inset-y-5 sm:rounded-[30px]" />
               <div className="relative flex min-h-full flex-col justify-end gap-3">
                 <div className="mb-1 flex items-center gap-3 px-1 pt-1">
                   <div className="h-px flex-1 bg-[rgba(177,29,35,0.12)]" />
@@ -941,10 +941,10 @@ export default function MessagesPage() {
             </div>
 
             <form
-              className="border-t border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(241,246,249,0.94))] px-4 py-4 sm:px-6"
+              className="border-t border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(241,246,249,0.94))] px-3 py-3 sm:px-6 sm:py-4"
               onSubmit={handleSubmit}
             >
-              <div className="rounded-[28px] border border-[rgba(203,220,231,0.92)] bg-white/96 p-3 shadow-soft">
+              <div className="rounded-[20px] border border-[rgba(203,220,231,0.92)] bg-white/96 p-2.5 shadow-soft sm:rounded-[28px] sm:p-3">
                 {quickReplies.length ? (
                   <div className="mb-3 flex flex-wrap gap-2 px-1">
                     {quickReplies.map((reply) => (
@@ -988,7 +988,7 @@ export default function MessagesPage() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                   <div className="flex-1">
                     <textarea
-                      className="min-h-[58px] w-full resize-none bg-transparent px-3 py-2 text-sm leading-7 outline-none"
+                      className="min-h-[52px] w-full resize-none bg-transparent px-2.5 py-2 text-sm leading-6 outline-none sm:min-h-[58px] sm:px-3 sm:leading-7"
                       disabled={sending}
                       placeholder="Write about condition, trades, meetup timing, or anything else you need to lock the deal in."
                       value={draft}

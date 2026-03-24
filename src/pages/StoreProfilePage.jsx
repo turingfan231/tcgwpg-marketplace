@@ -129,14 +129,14 @@ export default function StoreProfilePage() {
   const isFollowingStore = followedStoreSlugs.includes(store.slug);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <section className="console-panel binder-edge overflow-hidden p-0">
-        <div className="relative overflow-hidden bg-[linear-gradient(135deg,#4d0f13,#7a181d)] p-7 text-white sm:p-8">
+        <div className="relative overflow-hidden bg-[linear-gradient(135deg,#4d0f13,#7a181d)] p-5 text-white sm:p-8">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.08),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(239,59,51,0.14),transparent_18%)]" />
           <div className="relative z-10 grid gap-6 lg:grid-cols-[1fr_16rem] lg:items-end">
             <div>
               <p className="section-kicker text-white/62">Store profile</p>
-              <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-white sm:text-[3.15rem]">
+              <h1 className="mt-3 font-display text-[2.2rem] font-semibold tracking-[-0.05em] text-white sm:text-[3.15rem]">
                 {store.name}
               </h1>
               <div className="mt-4 flex flex-wrap gap-2">
@@ -185,8 +185,8 @@ export default function StoreProfilePage() {
               </div>
             </div>
 
-            <div className="rounded-[28px] border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))] p-4 backdrop-blur-sm">
-              <div className="flex h-full min-h-[9rem] items-center justify-center rounded-[22px] border border-[rgba(255,255,255,0.82)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,243,243,0.96))] px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.74),0_14px_34px_rgba(80,16,16,0.12)]">
+            <div className="rounded-[20px] border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))] p-3 backdrop-blur-sm sm:rounded-[28px] sm:p-4">
+              <div className="flex h-full min-h-[7rem] items-center justify-center rounded-[18px] border border-[rgba(255,255,255,0.82)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,243,243,0.96))] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.74),0_14px_34px_rgba(80,16,16,0.12)] sm:min-h-[9rem] sm:rounded-[22px] sm:px-5 sm:py-4">
               {store.logoUrl ? (
                 <img alt={store.name} className="h-24 w-full object-contain" src={store.logoUrl} />
               ) : null}

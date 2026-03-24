@@ -173,29 +173,29 @@ export default function Header() {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-[rgba(145,38,43,0.12)] bg-[rgba(251,248,248,0.9)] backdrop-blur-2xl">
-        <div className="page-shell py-3 sm:py-4">
-          <div className="console-panel px-3 py-3 sm:px-4 sm:py-4">
-          <div className="flex items-center justify-between gap-3">
-            <Link className="flex min-w-0 items-center gap-4" to="/">
+        <div className="page-shell py-2.5 sm:py-4">
+          <div className="console-panel px-2.5 py-2.5 sm:px-4 sm:py-4">
+          <div className="flex items-center justify-between gap-2.5">
+            <Link className="flex min-w-0 items-center gap-3" to="/">
               <div className="collector-strip-mark shrink-0" aria-hidden="true">
                 <span className="collector-strip-bar">W</span>
                 <span className="collector-strip-bar">P</span>
                 <span className="collector-strip-bar">G</span>
               </div>
               <div className="min-w-0">
-                <p className="truncate font-display text-[1.2rem] font-semibold tracking-[-0.04em] text-ink sm:text-[1.7rem]">
+                <p className="truncate font-display text-[1.05rem] font-semibold tracking-[-0.04em] text-ink sm:text-[1.7rem]">
                   WPG Marketplace
                 </p>
                 <p className="hidden text-sm text-navy sm:block">Local cards, faster deals</p>
-                <p className="text-[11px] uppercase tracking-[0.14em] text-steel sm:hidden">
-                  Local cards, faster deals
+                <p className="text-[10px] uppercase tracking-[0.12em] text-steel sm:hidden">
+                  Local cards
                 </p>
               </div>
             </Link>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <Link
-                className="relative inline-flex items-center justify-center rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 p-3 text-steel transition hover:border-slate-300 hover:text-ink md:px-4 md:py-2.5"
+                className="relative inline-flex items-center justify-center rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 p-2.5 text-steel transition hover:border-slate-300 hover:text-ink md:px-4 md:py-2.5"
                 to="/messages"
               >
                 <MessageCircle size={18} />
@@ -208,7 +208,7 @@ export default function Header() {
               </Link>
 
               <button
-                className="rounded-full bg-orange px-4 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-[#d8332d] sm:px-5 sm:py-2.5"
+                className="rounded-full bg-orange px-3.5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-[#d8332d] sm:px-5 sm:py-2.5"
                 type="button"
                 onClick={() => openListing("WTS", "/dashboard")}
               >
@@ -218,7 +218,7 @@ export default function Header() {
 
               <button
                 aria-label="Open navigation menu"
-                className="inline-flex items-center justify-center rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 p-3 text-steel transition hover:border-slate-300 hover:text-ink lg:hidden"
+                className="inline-flex items-center justify-center rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 p-2.5 text-steel transition hover:border-slate-300 hover:text-ink lg:hidden"
                 type="button"
                 onClick={() => setMobileDrawerOpen(true)}
               >
@@ -304,20 +304,20 @@ export default function Header() {
             </div>
           </div>
 
-          <form className="relative mt-3 min-w-0" onSubmit={handleSubmit}>
+          <form className="relative mt-2.5 min-w-0" onSubmit={handleSubmit}>
             <Search
               className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-steel"
               size={18}
             />
             <input
-            className="w-full rounded-[22px] border border-[rgba(145,38,43,0.12)] bg-[rgba(255,255,255,0.88)] py-3 pl-12 pr-4 text-sm text-ink outline-none transition focus:border-navy focus:bg-white sm:py-3.5"
+            className="w-full rounded-[20px] border border-[rgba(145,38,43,0.12)] bg-[rgba(255,255,255,0.88)] py-2.5 pl-11 pr-4 text-sm text-ink outline-none transition focus:border-navy focus:bg-white sm:py-3.5"
               placeholder="Search cards, set codes, variants, or sellers"
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
             />
           </form>
 
-          <div className="mt-4 hidden flex-col gap-3 border-t border-[rgba(145,38,43,0.12)] pt-4 sm:flex lg:flex-row lg:items-center lg:justify-between">
+          <div className="mt-3 hidden flex-col gap-3 border-t border-[rgba(145,38,43,0.12)] pt-3 sm:flex lg:flex-row lg:items-center lg:justify-between">
             <div className="header-chip-scroll flex items-center gap-2 overflow-x-auto">
               {browseLinks.map((link) => (
                 <NavLink

@@ -187,7 +187,7 @@ function BannerCard({
           : "pointer-events-none translate-y-4 opacity-0"
       }`}
     >
-      <div className="relative h-full overflow-hidden rounded-[36px] border border-white/10 bg-[#23090b] p-8 text-white shadow-[0_32px_90px_-48px_rgba(80,16,16,0.42)] sm:p-10 lg:p-12">
+      <div className="relative h-full overflow-hidden rounded-[26px] border border-white/10 bg-[#23090b] p-5 text-white shadow-[0_32px_90px_-48px_rgba(80,16,16,0.42)] sm:rounded-[32px] sm:p-10 lg:p-12">
         {heroBackdrop ? (
           <img
             alt=""
@@ -210,18 +210,18 @@ function BannerCard({
         ) : null}
 
         <div className="relative z-10 flex h-full flex-col gap-8">
-          <div className={`max-w-2xl ${slide.kind === "listing" ? "lg:max-w-[52%]" : ""}`}>
+          <div className={`max-w-xl sm:max-w-2xl ${slide.kind === "listing" ? "lg:max-w-[52%]" : ""}`}>
             <span className="inline-flex rounded-full bg-white/12 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/80">
               {slide.kicker}
             </span>
-            <h1 className="mt-5 max-w-3xl font-display text-[2.65rem] font-semibold leading-[0.92] tracking-[-0.07em] sm:text-[4rem]">
+            <h1 className="mt-4 max-w-3xl font-display text-[2rem] font-semibold leading-[0.94] tracking-[-0.07em] sm:mt-5 sm:text-[4rem]">
               {slide.title}
             </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-white/76 sm:text-base">
+            <p className="mt-3 max-w-xl text-[0.92rem] leading-6 text-white/76 sm:mt-4 sm:max-w-2xl sm:text-base sm:leading-7">
               {slide.description}
             </p>
 
-            <div className="mt-6 flex flex-wrap gap-2">
+            <div className="mt-5 flex flex-wrap gap-2">
               {slide.meta.map((item) => (
                 <span
                   key={item}
@@ -232,7 +232,7 @@ function BannerCard({
               ))}
             </div>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap gap-3 sm:mt-8">
               <button
                 className={`rounded-full px-5 py-3 text-sm font-semibold shadow-soft transition duration-300 hover:-translate-y-0.5 hover:shadow-lift ${
                   slide.kind === "event" ? "bg-orange text-white" : "bg-white text-navy"
@@ -756,12 +756,12 @@ export default function HomePage() {
   }
 
   return (
-    <div className="stagger-stack space-y-10 lg:space-y-14">
+    <div className="stagger-stack space-y-8 lg:space-y-14">
       {homeSections.showHero !== false ? (
-      <section className="drop-in-item space-y-6">
+      <section className="drop-in-item space-y-4 sm:space-y-6">
         <div>
           {bannerSlides.length ? (
-            <div className="relative min-h-[29rem] overflow-hidden rounded-[36px] sm:min-h-[33rem] lg:min-h-[31rem]">
+            <div className="relative min-h-[22.5rem] overflow-hidden rounded-[26px] sm:min-h-[33rem] sm:rounded-[36px] lg:min-h-[31rem]">
               {bannerSlides.map((slide, index) => (
                 <BannerCard
                   key={slide.id}
@@ -779,7 +779,7 @@ export default function HomePage() {
               ))}
 
               {bannerSlides.length > 1 ? (
-                <div className="absolute bottom-6 right-6 z-10 flex gap-2">
+                <div className="absolute bottom-4 right-4 z-10 flex gap-2 sm:bottom-6 sm:right-6">
                   {bannerSlides.map((slide, index) => (
                     <button
                       key={slide.id}
@@ -797,21 +797,21 @@ export default function HomePage() {
               ) : null}
             </div>
           ) : (
-            <div className="rounded-[30px] border border-dashed border-[rgba(203,220,231,0.92)] bg-white/70 px-6 py-12 text-sm leading-7 text-steel">
+            <div className="rounded-[22px] border border-dashed border-[rgba(203,220,231,0.92)] bg-white/70 px-5 py-10 text-sm leading-7 text-steel sm:rounded-[30px] sm:px-6 sm:py-12">
               Banner content will appear as soon as there are active listings and upcoming events.
             </div>
           )}
         </div>
 
-        <div className="flex flex-wrap items-start justify-between gap-5">
+        <div className="flex flex-wrap items-start justify-between gap-4 sm:gap-5">
           <div className="max-w-3xl">
             <p className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-navy/62">
               Winnipeg TCG marketplace
             </p>
-            <h1 className="mt-3 font-display text-[2.15rem] font-semibold leading-[0.96] tracking-[-0.06em] text-ink sm:text-[3rem] lg:text-[3.55rem]">
+            <h1 className="mt-2.5 font-display text-[1.78rem] font-semibold leading-[0.98] tracking-[-0.06em] text-ink sm:mt-3 sm:text-[3rem] lg:text-[3.55rem]">
               A local card market built to feel fast, clean, and easy to trust.
             </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-steel sm:text-base">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-steel sm:mt-4 sm:text-base sm:leading-7">
               Browse by game, catch store events, and keep offers attached to each listing without the usual marketplace clutter.
             </p>
           </div>
@@ -835,7 +835,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {marketPulse.map((item) => (
             <PulseTile key={item.label} detail={item.detail} label={item.label} value={item.value} />
           ))}
@@ -857,11 +857,11 @@ export default function HomePage() {
       ) : null}
 
       {homeSections.showBestSellers !== false ? (
-      <section className="drop-in-item space-y-5">
+      <section className="drop-in-item space-y-4 sm:space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="section-kicker">Best sellers</p>
-            <h2 className="mt-2 font-display text-[2rem] font-semibold tracking-[-0.05em] text-ink">
+            <h2 className="mt-2 font-display text-[1.6rem] font-semibold tracking-[-0.05em] text-ink sm:text-[2rem]">
               Hot listings right now
             </h2>
             <p className="mt-2 text-sm text-steel">A cleaner top shelf of live cards from the local market.</p>
@@ -871,7 +871,7 @@ export default function HomePage() {
             <ArrowRight size={14} />
           </Link>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {safeHotListings.slice(0, 5).map((listing) => (
             <BestSellerCard
               key={listing.id}
@@ -885,11 +885,11 @@ export default function HomePage() {
       </section>
       ) : null}
 
-      <section className="drop-in-item space-y-5">
+      <section className="drop-in-item space-y-4 sm:space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="section-kicker">New this week</p>
-            <h2 className="mt-2 font-display text-[2rem] font-semibold tracking-[-0.05em] text-ink">
+            <h2 className="mt-2 font-display text-[1.6rem] font-semibold tracking-[-0.05em] text-ink sm:text-[2rem]">
               Fresh cards that just hit the market
             </h2>
             <p className="mt-2 text-sm text-steel">
@@ -901,7 +901,7 @@ export default function HomePage() {
             <ArrowRight size={14} />
           </Link>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {newThisWeekListings.length ? (
             newThisWeekListings.map((listing) => (
               <ShelfCard
