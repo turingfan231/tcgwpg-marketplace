@@ -1185,10 +1185,13 @@ export default function HomePage() {
               className="overflow-hidden rounded-[26px] border border-[rgba(203,220,231,0.92)] bg-white/78 transition duration-300 hover:-translate-y-0.5 hover:shadow-soft"
               to={`/stores/${store.slug}`}
             >
-              <div className="flex h-32 items-center justify-center border-b border-[rgba(203,220,231,0.82)] bg-[linear-gradient(135deg,#153447,#0d2232)] p-6">
-                {store.logoUrl ? (
-                  <img alt={store.name} className="max-h-full w-full object-contain" src={store.logoUrl} />
-                ) : null}
+              <div className="relative flex h-32 items-center justify-center overflow-hidden border-b border-[rgba(203,220,231,0.82)] bg-[linear-gradient(135deg,#153447,#0d2232)] p-5">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(255,255,255,0.09),transparent_22%),radial-gradient(circle_at_78%_18%,rgba(108,167,214,0.12),transparent_24%)]" />
+                <div className="relative z-10 flex h-full w-full items-center justify-center rounded-[24px] border border-[rgba(255,255,255,0.78)] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(235,242,248,0.94))] px-6 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_20px_50px_-30px_rgba(6,18,29,0.22)]">
+                  {store.logoUrl ? (
+                    <img alt={store.name} className="max-h-full w-full object-contain" src={store.logoUrl} />
+                  ) : null}
+                </div>
               </div>
               <div className="space-y-3 p-4">
                 <div>

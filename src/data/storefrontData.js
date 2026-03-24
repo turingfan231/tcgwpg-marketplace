@@ -6,7 +6,7 @@ export const storeProfiles = [
     neighborhood: "Downtown",
     address: "1473 Pembina Hwy, Winnipeg, MB",
     siteUrl: "https://fusiongamingonline.com/",
-    eventsUrl: "https://topdeck.gg/hubs/sTSJ3zWce0fWw8lip6hhHoXkGzk1",
+    eventsUrl: "https://fusiongamingonline.com/pages/events",
     logoUrl:
       "https://fusiongamingonline.com/cdn/shop/files/Fusion_Gaming_Logo_Black_7377cfa4-195a-4d0f-b4b0-059f82d46afd_150x@2x.png?v=1728146962",
     bannerUrl:
@@ -34,7 +34,7 @@ export const storeProfiles = [
     neighborhood: "St. Vital",
     address: "Unit 5, 1510 St. Mary's Rd, Winnipeg, MB",
     siteUrl: "https://amusengames.ca/",
-    eventsUrl: "https://amusengames.ca/collections/events/products.json?limit=250",
+    eventsUrl: "https://amusengames.ca/collections/events",
     logoUrl:
       "https://amusengames.ca/cdn/shop/files/a_muse_n_games_word_mark.png?v=1751577921&width=500",
     bannerUrl:
@@ -49,7 +49,7 @@ export const storeProfiles = [
     neighborhood: "North End",
     address: "Winnipeg, MB",
     siteUrl: "https://www.arcticriftcards.ca/",
-    eventsUrl: "https://www.arcticriftcards.ca/pages/events",
+    eventsUrl: "https://www.arcticriftcards.ca/",
     logoUrl:
       "https://www.arcticriftcards.ca/cdn/shop/files/Untitled_design.png?height=628&pad_color=ffffff&v=1730944237&width=1200",
     bannerUrl:
