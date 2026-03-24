@@ -41,8 +41,8 @@ const PRICECHARTING_SEARCH_ENDPOINT =
   "https://www.pricecharting.com/search-products";
 const BANK_OF_CANADA_ENDPOINT =
   "https://www.bankofcanada.ca/valet/observations/FXUSDCAD/json?recent=5";
-const FUSION_TOPDECK_HUB_ID = "sTSJ3zWce0fWw8lip6hhHoXkGzk1";
-const FUSION_TOPDECK_ENDPOINT = `https://topdeck.gg/api/event-filter/${FUSION_TOPDECK_HUB_ID}`;
+const FUSION_EVENTS_PAGE = "https://fusiongamingonline.com/pages/events";
+const FUSION_BINDERPOS_ENDPOINT = "https://portal.binderpos.com/api/events/forStore";
 const A_MUSE_EVENTS_ENDPOINT =
   "https://amusengames.ca/collections/events/products.json?limit=250";
 const ARCTIC_HOME_PAGE = "https://www.arcticriftcards.ca/";
@@ -1607,61 +1607,72 @@ const GALAXY_FACEBOOK_SNAPSHOT_EVENTS = [
 
 async function fetchFusionEvents() {
   try {
-    const response = await fetchWithTimeout(FUSION_TOPDECK_ENDPOINT, {
-      method: "POST",
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 7);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 127);
+    const searchParams = new URLSearchParams({
+      startDate: startDate.toISOString().slice(0, 10),
+      endDate: endDate.toISOString().slice(0, 10),
+    });
+
+    const response = await fetchWithTimeout(`${FUSION_BINDERPOS_ENDPOINT}?${searchParams.toString()}`, {
+      method: "GET",
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
+        Origin: "https://fusiongamingonline.com",
+        Referer: FUSION_EVENTS_PAGE,
+        "User-Agent": "TCGWPG/0.2 (local marketplace development)",
       },
-      body: JSON.stringify({}),
     });
 
     if (!response.ok) {
-      throw new Error(`TopDeck request failed (${response.status}).`);
+      throw new Error(`Fusion BinderPOS request failed (${response.status}).`);
     }
 
     const payload = await response.json();
-    const currEvents = Array.isArray(payload.currEvents) ? payload.currEvents : [];
-    const events = currEvents
+    const rawEvents = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.events)
+        ? payload.events
+        : [];
+    const events = rawEvents
       .map((item) => {
-        const title =
-          item.name ||
-          item.title ||
-          item.eventName ||
-          item.tournamentName ||
-          item.event?.name ||
-          "";
-        const startAt =
-          item.startAt ||
-          item.startDate ||
-          item.startDateTime ||
-          item.eventStartDate ||
-          item.date ||
-          item.event?.startAt ||
-          "";
-        const parsedDate = startAt ? new Date(startAt) : null;
-        const game = normalizeEventGame(
-          item.game || item.gameName || item.format || item.event?.game || title,
-        );
+        const title = stripHtml(item.title || item.name || "");
+        const rawDate = String(item.date || item.startDate || "").slice(0, 10);
+        const rawTime = String(item.time || item.startTime || "").slice(0, 8);
+        const parsedDate = rawDate ? new Date(`${rawDate}T12:00:00`) : null;
+        const parsedTime = rawDate && rawTime ? new Date(`${rawDate}T${rawTime}`) : null;
+        const game = normalizeEventGame(item.game || item.gameName || title);
 
         if (!title || !parsedDate || Number.isNaN(parsedDate.getTime()) || !game) {
           return null;
         }
 
         return normalizeEventRecord({
-          id: buildEventId("fusion", item.id || item.shortCode || title),
+          id: buildEventId("fusion", item.id || item.handle || `${title}-${rawDate}-${rawTime}`),
           title,
           store: "Fusion Gaming",
-          source: "TopDeck",
-          sourceUrl: item.slug ? `https://topdeck.gg/event/${item.slug}` : "https://topdeck.gg",
-          dateStr: parsedDate.toISOString().slice(0, 10),
-          time: parsedDate.toLocaleTimeString("en-CA", {
-            hour: "numeric",
-            minute: "2-digit",
-          }),
+          source: "Fusion events calendar",
+          sourceUrl: item.handle
+            ? `https://fusiongamingonline.com/collections/events/products/${item.handle}`
+            : FUSION_EVENTS_PAGE,
+          dateStr: rawDate,
+          time:
+            parsedTime && !Number.isNaN(parsedTime.getTime())
+              ? parsedTime.toLocaleTimeString("en-CA", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                })
+              : "TBD",
           game,
-          fee: normalizeEventFee(item.entryFee || item.buyin || item.price || item.cost),
-          neighborhood: "",
+          fee: normalizeEventFee(item.ticketPrice ?? item.entryFee ?? item.buyin ?? item.price ?? item.cost),
+          neighborhood: "Fort Garry",
+          note:
+            stripHtml(item.description || "") ||
+            stripHtml(item.prizeStructure || "") ||
+            stripHtml(item.buildingName || ""),
         });
       })
       .filter(Boolean)
@@ -1674,9 +1685,9 @@ async function fetchFusionEvents() {
         label: "Fusion Gaming",
         mode: events.length ? "Live pull" : "Live source / no current events",
         note: events.length
-          ? `Pulled ${events.length} upcoming event(s) from TopDeck.`
-          : "TopDeck is wired in, but it did not return upcoming events right now.",
-        sourceUrl: `https://topdeck.gg/hubs/${FUSION_TOPDECK_HUB_ID}`,
+          ? `Pulled ${events.length} upcoming event(s) from Fusion's BinderPOS calendar.`
+          : "Fusion's events page is reachable, but it did not return upcoming Magic, Pokemon, or One Piece events right now.",
+        sourceUrl: FUSION_EVENTS_PAGE,
       },
     };
   } catch (error) {
@@ -1687,7 +1698,7 @@ async function fetchFusionEvents() {
         label: "Fusion Gaming",
         mode: "Source error",
         note: error.message,
-        sourceUrl: `https://topdeck.gg/hubs/${FUSION_TOPDECK_HUB_ID}`,
+        sourceUrl: FUSION_EVENTS_PAGE,
       },
     };
   }
