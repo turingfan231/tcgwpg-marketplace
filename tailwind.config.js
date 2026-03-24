@@ -5,7 +5,7 @@ export default {
     extend: {
       colors: {
         navy: "#14364a",
-        orange: "#69b4b0",
+        orange: "#6d86f0",
         mist: "#e6eef4",
         ink: "#112738",
         steel: "#617989",
@@ -25,7 +25,7 @@ export default {
         "market-grid":
           "linear-gradient(rgba(20,54,74,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(20,54,74,0.08) 1px, transparent 1px)",
         "hero-glow":
-          "radial-gradient(circle at top left, rgba(105,180,176,0.18), transparent 22%), radial-gradient(circle at bottom right, rgba(20,54,74,0.22), transparent 28%)",
+          "radial-gradient(circle at top left, rgba(109,134,240,0.18), transparent 22%), radial-gradient(circle at bottom right, rgba(20,54,74,0.22), transparent 28%)",
       },
     },
   },

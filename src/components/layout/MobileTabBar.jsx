@@ -37,7 +37,7 @@ export default function MobileTabBar() {
 
         <button
           aria-label="Create listing"
-          className="relative -mt-7 inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-orange text-white shadow-[0_20px_32px_-18px_rgba(255,153,0,0.95)] transition hover:bg-[#ff8d00]"
+          className="relative -mt-7 inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-orange text-white shadow-[0_20px_32px_-18px_rgba(109,134,240,0.75)] transition hover:bg-[#5b74db]"
           type="button"
           onClick={handleSell}
         >

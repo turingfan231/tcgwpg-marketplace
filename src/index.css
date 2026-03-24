@@ -110,8 +110,8 @@ a {
   height: 1.4rem;
   padding: 0 0.45rem;
   border-radius: 0.65rem;
-  background: #69b4b0;
-  color: #112738;
+  background: #6d86f0;
+  color: white;
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -139,7 +139,7 @@ a {
   inset: 0;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent 35%),
-    radial-gradient(circle at top right, rgba(255, 153, 0, 0.3), transparent 26%);
+    radial-gradient(circle at top right, rgba(109, 134, 240, 0.28), transparent 26%);
 }
 
 .card-stack-card:nth-child(1) {
@@ -171,7 +171,7 @@ a {
   @apply absolute inset-x-5 bottom-5 top-16 rounded-[1.2rem] border border-white/15;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 35%),
-    radial-gradient(circle at 30% 25%, rgba(255, 153, 0, 0.55), transparent 22%),
+    radial-gradient(circle at 30% 25%, rgba(109, 134, 240, 0.46), transparent 22%),
     radial-gradient(circle at 70% 58%, rgba(255, 255, 255, 0.18), transparent 28%);
 }
 
@@ -378,7 +378,7 @@ a {
   border-radius: 999px;
   background:
     radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.95), transparent 36%),
-    radial-gradient(circle at 68% 68%, rgba(105, 180, 176, 0.28), transparent 32%),
+    radial-gradient(circle at 68% 68%, rgba(109, 134, 240, 0.28), transparent 32%),
     linear-gradient(180deg, rgba(20, 54, 74, 0.24), rgba(255, 255, 255, 0.02));
   filter: blur(10px);
   opacity: 0.9;
@@ -399,7 +399,7 @@ a {
   width: 42%;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #14364a, #49687c 55%, #69b4b0);
+  background: linear-gradient(90deg, #14364a, #49687c 55%, #6d86f0);
   animation: loader-glide 1.2s cubic-bezier(0.76, 0, 0.24, 1) infinite;
 }
 
@@ -407,7 +407,7 @@ a {
   width: 32%;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #14364a, #527287 60%, #69b4b0);
+  background: linear-gradient(90deg, #14364a, #527287 60%, #6d86f0);
   animation: loader-glide 1.15s cubic-bezier(0.76, 0, 0.24, 1) infinite;
 }
 
@@ -483,6 +483,6 @@ a {
 }
 
 ::selection {
-  background: rgba(255, 153, 0, 0.18);
+  background: rgba(109, 134, 240, 0.18);
   color: #163445;
 }

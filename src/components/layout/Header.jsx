@@ -202,7 +202,7 @@ export default function Header() {
               </Link>
 
               <button
-                className="rounded-full bg-orange px-4 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-[#ff8d00] sm:px-5 sm:py-2.5"
+                className="rounded-full bg-orange px-4 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-[#5b74db] sm:px-5 sm:py-2.5"
                 type="button"
                 onClick={() => openListing("WTS", "/dashboard")}
               >
