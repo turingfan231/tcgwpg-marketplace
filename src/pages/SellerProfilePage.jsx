@@ -65,9 +65,9 @@ export default function SellerProfilePage() {
   const isOwnProfile = String(currentUser?.id || "") === String(sellerId || "");
   const isAdmin = currentUser?.role === "admin";
   const trustedSpots = approvedMeetupSpots.filter((spot) =>
-    Array.isArray(seller.trustedMeetupSpots) ? seller.trustedMeetupSpots.includes(spot.id) : false,
+    Array.isArray(seller?.trustedMeetupSpots) ? seller.trustedMeetupSpots.includes(spot.id) : false,
   );
-  const sellerBannerArt = sellerBannerArtMap[seller.bannerStyle];
+  const sellerBannerArt = seller ? sellerBannerArtMap[seller.bannerStyle] : "";
 
   if (loading && !seller) {
     return <PageSkeleton cards={4} titleWidth="w-72" />;
