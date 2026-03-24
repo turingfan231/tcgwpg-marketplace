@@ -53,62 +53,79 @@ function formatOfferSummary(offer, formatCadPrice) {
   return parts.join(" | ");
 }
 
-function ThreadCard({ isActive, offerCount, onOpen, thread }) {
+function ThreadCard({ formatCadPrice, isActive, offerCount, onOpen, thread }) {
   return (
     <button
-      className={`group w-full rounded-[26px] border px-4 py-4 text-left transition ${
+      className={`group w-full rounded-[20px] border px-3 py-3 text-left transition sm:rounded-[26px] sm:px-4 sm:py-4 ${
         isActive
-          ? "border-navy/15 bg-[linear-gradient(180deg,rgba(19,48,65,0.08),rgba(255,255,255,0.95))] shadow-soft"
-          : "border-[rgba(203,220,231,0.8)] bg-white/90 hover:border-navy/20 hover:-translate-y-[1px] hover:shadow-soft"
+          ? "border-navy/15 bg-[linear-gradient(180deg,rgba(19,48,65,0.08),rgba(255,255,255,0.98))] shadow-soft"
+          : "border-[rgba(203,220,231,0.72)] bg-white/92 hover:border-navy/20 hover:-translate-y-[1px] hover:shadow-soft"
       }`}
       type="button"
       onClick={onOpen}
     >
       <div className="flex items-start gap-3">
         <UserAvatar
-          className="h-12 w-12 shrink-0 border border-white/80 text-sm font-bold shadow-sm"
+          className="h-11 w-11 shrink-0 border border-white/80 text-[0.78rem] font-bold shadow-sm sm:h-12 sm:w-12 sm:text-sm"
           user={thread.otherParticipant || { name: thread.participantLabel || "Chat" }}
         />
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="truncate font-display text-[1.1rem] font-semibold tracking-[-0.03em] text-ink">
+              <p className="truncate font-display text-[1rem] font-semibold tracking-[-0.03em] text-ink sm:text-[1.1rem]">
                 {thread.participantIds.length > 2
                   ? thread.participantLabel || `Support chat (${thread.participantIds.length})`
                   : thread.otherParticipant?.publicName || "Conversation"}
               </p>
-              <p className="mt-1 truncate text-sm text-steel">
+              <p className="mt-0.5 truncate text-[0.82rem] text-steel sm:mt-1 sm:text-sm">
                 {thread.listing?.title || "General thread"}
               </p>
             </div>
-            <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-steel/80">
+            <span className="shrink-0 pt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-steel/80 sm:text-[11px] sm:tracking-[0.14em]">
               {formatMessageTime(thread.updatedAt)}
             </span>
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 sm:mt-3 sm:gap-2">
             {thread.unreadCount ? (
-              <span className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-orange px-2 text-[11px] font-semibold text-white">
+              <span className="inline-flex h-5 min-w-[1.2rem] items-center justify-center rounded-full bg-orange px-1.5 text-[10px] font-semibold text-white sm:h-6 sm:min-w-[1.5rem] sm:px-2 sm:text-[11px]">
                 {thread.unreadCount}
               </span>
             ) : null}
             {offerCount ? (
-              <span className="rounded-full bg-navy/8 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-navy">
+              <span className="rounded-full bg-navy/8 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-navy sm:px-2.5 sm:text-[11px] sm:tracking-[0.16em]">
                 {offerCount} offer{offerCount === 1 ? "" : "s"}
               </span>
             ) : null}
             {thread.listing?.game ? (
               <span
-                className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${getGameClasses(thread.listing.game)}`}
+                className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] sm:px-2.5 sm:text-[11px] sm:tracking-[0.16em] ${getGameClasses(thread.listing.game)}`}
               >
                 {thread.listing.game}
               </span>
             ) : null}
           </div>
 
-          <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">
-            {thread.lastMessage?.body || "No messages yet. Start the conversation."}
-          </p>
+          <div className="mt-2.5 flex items-start gap-3 sm:mt-3">
+            <div className="min-w-0 flex-1">
+              <p className="line-clamp-2 text-[0.86rem] leading-5 text-slate-600 sm:text-sm sm:leading-6">
+                {thread.lastMessage?.body || "No messages yet. Start the conversation."}
+              </p>
+              {thread.listing?.price ? (
+                <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-steel/80">
+                  Asking {formatCadPrice(thread.listing.price, thread.listing.priceCurrency)}
+                </p>
+              ) : null}
+            </div>
+            {thread.listing ? (
+              <CardArtwork
+                className="h-14 w-12 shrink-0 rounded-[14px] object-cover shadow-sm sm:h-16 sm:w-14 sm:rounded-[16px]"
+                game={thread.listing.game}
+                src={thread.listing.primaryImage || thread.listing.imageUrl}
+                title={thread.listing.title}
+              />
+            ) : null}
+          </div>
         </div>
       </div>
     </button>
@@ -693,19 +710,19 @@ export default function MessagesPage() {
   return (
     <div className="grid gap-4 lg:h-[calc(100dvh-12.5rem)] lg:grid-cols-[23rem_minmax(0,1fr)]">
       <section
-        className={`overflow-hidden rounded-[22px] border border-[rgba(203,220,231,0.9)] bg-[linear-gradient(180deg,rgba(251,253,255,0.96),rgba(241,243,245,0.9))] shadow-soft sm:rounded-[30px] lg:h-full ${
+        className={`min-h-[calc(100dvh-9.1rem)] overflow-hidden rounded-none border-0 bg-transparent shadow-none sm:rounded-[30px] sm:border sm:border-[rgba(203,220,231,0.9)] sm:bg-[linear-gradient(180deg,rgba(251,253,255,0.96),rgba(241,243,245,0.9))] sm:shadow-soft lg:h-full lg:min-h-0 ${
           showMobileThread ? "hidden lg:block" : "block"
         }`}
       >
-        <div className="border-b border-slate-200/80 px-4 py-4 sm:px-5 sm:py-5">
-          <p className="section-kicker">Messages</p>
-          <h1 className="mt-2 font-display text-[1.65rem] font-semibold tracking-[-0.04em] text-ink sm:text-[2rem]">
+        <div className="sticky top-0 z-10 border-b border-slate-200/80 bg-[rgba(247,242,242,0.92)] px-2 pb-3 pt-1 backdrop-blur-xl sm:static sm:bg-transparent sm:px-5 sm:py-5">
+          <p className="section-kicker hidden sm:block">Messages</p>
+          <h1 className="mt-1 font-display text-[1.45rem] font-semibold tracking-[-0.04em] text-ink sm:mt-2 sm:text-[2rem]">
             Inbox
           </h1>
-          <p className="mt-2 max-w-sm text-sm leading-6 text-steel">
+          <p className="mt-1 max-w-sm text-[0.86rem] leading-5 text-steel sm:mt-2 sm:text-sm sm:leading-6">
             Keep listings, offers, and meetup details together instead of scattered across DMs.
           </p>
-          <div className="mt-3 rounded-[18px] border border-[rgba(203,220,231,0.88)] bg-white/88 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] sm:mt-4 sm:rounded-[20px]">
+          <div className="mt-3 rounded-[18px] border border-[rgba(203,220,231,0.88)] bg-white/96 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] sm:mt-4 sm:rounded-[20px]">
             <div className="flex items-center gap-3">
               <Search size={16} className="text-steel" />
               <input
@@ -716,7 +733,7 @@ export default function MessagesPage() {
               />
             </div>
           </div>
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
             {[
               { id: "all", label: "All" },
               { id: "unread", label: "Unread" },
@@ -724,9 +741,9 @@ export default function MessagesPage() {
             ].map((filter) => (
               <button
                 key={filter.id}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-semibold transition sm:px-4 ${
                   threadFilter === filter.id
-                    ? "bg-navy text-white"
+                    ? "bg-navy text-white shadow-sm"
                     : "border border-slate-200 bg-white text-steel hover:border-navy/20 hover:text-ink"
                 }`}
                 type="button"
@@ -738,11 +755,12 @@ export default function MessagesPage() {
           </div>
         </div>
 
-        <div className="overflow-y-auto px-3 py-3 sm:px-4 sm:py-4 lg:h-[calc(100%-9.75rem)]">
+        <div className="overflow-y-auto px-0 py-2 sm:px-4 sm:py-4 lg:h-[calc(100%-9.75rem)]">
           {filteredThreads.length ? (
-            <div className="space-y-3">
+            <div className="space-y-2.5 sm:space-y-3">
               {filteredThreads.map((thread) => (
                 <ThreadCard
+                  formatCadPrice={formatCadPrice}
                   key={thread.id}
                   isActive={thread.id === threadId}
                   offerCount={(offersByListingId[thread.listingId] || []).length}
@@ -752,7 +770,7 @@ export default function MessagesPage() {
               ))}
             </div>
           ) : (
-            <div className="rounded-[24px] border border-dashed border-slate-300 px-5 py-10 text-sm text-steel">
+            <div className="mx-1 rounded-[20px] border border-dashed border-slate-300 bg-white/80 px-5 py-10 text-sm text-steel sm:mx-0 sm:rounded-[24px]">
               No inbox threads match this search.
             </div>
           )}
