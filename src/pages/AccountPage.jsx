@@ -194,8 +194,8 @@ export default function AccountPage() {
         </section>
       ) : null}
 
-      <section className="grid gap-7 xl:grid-cols-[0.92fr_1.08fr]">
-        <article className="surface-card p-6">
+      <section className="grid items-start gap-7 xl:grid-cols-[0.92fr_1.08fr]">
+        <article className="surface-card self-start p-6">
           <div className="flex items-center gap-3">
             <ShieldCheck className="text-navy" size={20} />
             <div>
@@ -278,7 +278,7 @@ export default function AccountPage() {
                   }
                 />
               </label>
-              <label className="block">
+              <label className="block sm:col-span-2">
                 <span className="mb-2 block text-sm font-semibold text-steel">Profile photo</span>
                 <div className="rounded-[22px] border border-slate-200 bg-[#f2f3f5] p-4">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
