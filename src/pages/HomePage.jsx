@@ -176,7 +176,7 @@ function BannerCard({
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,13,20,0.94)_0%,rgba(7,18,27,0.92)_32%,rgba(10,24,35,0.66)_58%,rgba(10,24,35,0.34)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.06),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(255,153,0,0.12),transparent_16%)]" />
 
-        <div className="relative z-10 flex h-full flex-col justify-between gap-8">
+        <div className="relative z-10 flex h-full flex-col gap-8">
           <div className="max-w-2xl">
             <span className="inline-flex rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
               {slide.kicker}
@@ -219,50 +219,6 @@ function BannerCard({
               >
                 {slide.cta}
               </button>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-end justify-between gap-4 pb-4 pr-20">
-            <div className="flex flex-wrap gap-3">
-              <div className="rounded-[26px] border border-white/12 bg-white/8 px-5 py-4 backdrop-blur">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/58">
-                  {slide.kind === "listing"
-                    ? "Current ask"
-                    : slide.kind === "event"
-                      ? "Store and date"
-                      : "Market pulse"}
-                </p>
-                {slide.kind === "listing" ? (
-                  <>
-                    <p className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.05em] text-white">
-                      {formatCadPrice(slide.payload.price, slide.payload.priceCurrency || "CAD")}
-                    </p>
-                    <p className="mt-2 text-sm text-white/74">
-                      {slide.payload.game} | {slide.payload.neighborhood}
-                    </p>
-                  </>
-                ) : null}
-                {slide.kind === "event" ? (
-                  <>
-                    <p className="mt-3 font-display text-[1.45rem] font-semibold tracking-[-0.05em] text-white">
-                      {slide.payload.store}
-                    </p>
-                    <p className="mt-2 text-sm text-white/74">
-                      {slide.payload.dateStr} | {slide.payload.time}
-                    </p>
-                  </>
-                ) : null}
-                {slide.kind === "game" ? (
-                  <>
-                    <p className="mt-3 font-display text-[1.45rem] font-semibold tracking-[-0.05em] text-white">
-                      {slide.payload.shortName}
-                    </p>
-                    <p className="mt-2 text-sm text-white/74">
-                      {slide.payload.count} active listings across {slide.payload.neighborhoodCount} neighborhoods
-                    </p>
-                  </>
-                ) : null}
-              </div>
             </div>
           </div>
         </div>
