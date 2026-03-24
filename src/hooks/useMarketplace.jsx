@@ -2595,15 +2595,6 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: updateResult.error.message };
     }
 
-    if (missingFollowedSellersColumn) {
-      return {
-        ok: true,
-        followed: !alreadyFollowing,
-        warning:
-          "Followed sellers were saved for this session, but the profiles table is still missing the followed_seller_ids column in Supabase.",
-      };
-    }
-
     return { ok: true, followed: !alreadyFollowing };
   }
 

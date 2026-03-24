@@ -115,16 +115,15 @@ export default function SellerProfilePage() {
                           ? "border border-white/20 bg-white/10 text-white"
                           : "bg-white text-ink"
                       }`}
-                      type="button"
-                      onClick={async () => {
-                        const result = await toggleSellerFollow(seller.id);
-                        setFollowMessage(
-                          result?.warning ||
+                        type="button"
+                        onClick={async () => {
+                          const result = await toggleSellerFollow(seller.id);
+                          setFollowMessage(
                             result?.error ||
-                            (result?.followed
-                              ? "You will get alerts when this seller posts new listings."
-                              : "Seller notifications turned off."),
-                        );
+                              (result?.followed
+                                ? "You will get alerts when this seller posts new listings."
+                                : "Seller notifications turned off."),
+                          );
                       }}
                     >
                       <BellRing size={15} />
