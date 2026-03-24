@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   BellRing,
+  ChevronDown,
   ExternalLink,
   ImagePlus,
   Search,
@@ -416,6 +417,7 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false);
   const [threadQuery, setThreadQuery] = useState("");
   const [threadFilter, setThreadFilter] = useState("all");
+  const [mobileDetailPanel, setMobileDetailPanel] = useState(null);
   const [pendingPhotos, setPendingPhotos] = useState([]);
   const seenMessageKeysRef = useRef(new Set());
   const photoInputRef = useRef(null);
@@ -502,6 +504,10 @@ export default function MessagesPage() {
     }
   }, [activeThread?.id, markThreadRead]);
 
+  useEffect(() => {
+    setMobileDetailPanel(null);
+  }, [threadId]);
+
   useEffect(
     () => () => {
       pendingPhotos.forEach((photo) => {
@@ -549,6 +555,9 @@ export default function MessagesPage() {
       "I can confirm today if timing works.",
     ];
   }, [activeThread]);
+
+  const showListingPanel = Boolean(activeThread?.listing) && (isDesktop || mobileDetailPanel === "listing");
+  const showOfferPanel = Boolean(threadOffers.length) && (isDesktop || mobileDetailPanel === "offers");
 
   if (loading && !threadsForCurrentUser.length) {
     return <PageSkeleton cards={2} rows={1} titleWidth="w-48" />;
@@ -817,7 +826,7 @@ export default function MessagesPage() {
                 <div className="flex w-full flex-wrap gap-2 sm:w-auto">
                   {activeThread.listing ? (
                     <Link
-                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-navy/20 hover:text-ink"
+                      className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-navy/20 hover:text-ink sm:inline-flex"
                       to={`/listing/${activeThread.listing.id}`}
                     >
                       {formatCadPrice(
@@ -840,24 +849,99 @@ export default function MessagesPage() {
               </div>
             </div>
 
-            <ListingThreadCard
-              formatCadPrice={formatCadPrice}
-              listing={activeThread.listing}
-              otherParticipant={activeThread.otherParticipant}
-            />
+            {!isDesktop && (activeThread.listing || threadOffers.length) ? (
+              <div className="border-b border-slate-200/80 bg-white/92 px-4 py-3 sm:hidden">
+                <div className="flex flex-wrap gap-2">
+                  {activeThread.listing ? (
+                    <button
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition ${
+                        mobileDetailPanel === "listing"
+                          ? "border-navy/20 bg-navy text-white"
+                          : "border-slate-200 bg-white text-steel"
+                      }`}
+                      type="button"
+                      onClick={() =>
+                        setMobileDetailPanel((current) => (current === "listing" ? null : "listing"))
+                      }
+                    >
+                      Listing
+                      <ChevronDown
+                        size={14}
+                        className={`transition ${mobileDetailPanel === "listing" ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                  ) : null}
+                  {threadOffers.length ? (
+                    <button
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition ${
+                        mobileDetailPanel === "offers"
+                          ? "border-navy/20 bg-navy text-white"
+                          : "border-slate-200 bg-white text-steel"
+                      }`}
+                      type="button"
+                      onClick={() =>
+                        setMobileDetailPanel((current) => (current === "offers" ? null : "offers"))
+                      }
+                    >
+                      Deal flow
+                      {threadOffers.length ? (
+                        <span
+                          className={`inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-bold ${
+                            mobileDetailPanel === "offers" ? "bg-white/20 text-white" : "bg-navy/10 text-navy"
+                          }`}
+                        >
+                          {threadOffers.length}
+                        </span>
+                      ) : null}
+                      <ChevronDown
+                        size={14}
+                        className={`transition ${mobileDetailPanel === "offers" ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                  ) : null}
+                </div>
+                {activeThread.listing ? (
+                  <div className="mt-2 flex items-center justify-between gap-3 rounded-[18px] border border-slate-200 bg-[#fbfbfc] px-3 py-2.5">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-ink">{activeThread.listing.title}</p>
+                      <p className="mt-0.5 text-[11px] uppercase tracking-[0.12em] text-steel">
+                        {formatCadPrice(activeThread.listing.price, activeThread.listing.priceCurrency)}
+                      </p>
+                    </div>
+                    <Link
+                      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-steel"
+                      to={`/listing/${activeThread.listing.id}`}
+                    >
+                      Open
+                      <ExternalLink size={12} />
+                    </Link>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
 
-            <OfferTimeline
-              counterDrafts={counterDrafts}
-              currentUserId={currentUserId}
-              formatCadPrice={formatCadPrice}
-              offers={threadOffers}
-              onAccept={(offerId) => respondToOffer(offerId, "accept")}
-              onBeginCounter={beginCounterDraft}
-              onCancelCounter={clearCounterDraft}
-              onChangeCounterDraft={updateCounterDraft}
-              onDecline={(offerId) => respondToOffer(offerId, "decline")}
-              onSendCounter={sendCounter}
-            />
+            {showListingPanel ? (
+              <ListingThreadCard
+                formatCadPrice={formatCadPrice}
+                listing={activeThread.listing}
+                otherParticipant={activeThread.otherParticipant}
+              />
+            ) : null}
+
+            {showOfferPanel ? (
+              <OfferTimeline
+                counterDrafts={counterDrafts}
+                currentUserId={currentUserId}
+                formatCadPrice={formatCadPrice}
+                offers={threadOffers}
+                onAccept={(offerId) => respondToOffer(offerId, "accept")}
+                onBeginCounter={beginCounterDraft}
+                onCancelCounter={clearCounterDraft}
+                onChangeCounterDraft={updateCounterDraft}
+                onDecline={(offerId) => respondToOffer(offerId, "decline")}
+                onSendCounter={sendCounter}
+              />
+            ) : null}
 
             <div className="relative flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-5">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(240,55,55,0.07),transparent_18%),radial-gradient(circle_at_bottom_right,rgba(17,39,56,0.08),transparent_24%)]" />
