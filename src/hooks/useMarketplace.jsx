@@ -24,6 +24,7 @@ import { average, formatCurrency, slugify } from "../utils/formatters";
 const MarketplaceContext = createContext(null);
 const SEARCH_STORAGE_KEY = "tcgwpg.globalSearch";
 const TOAST_SEEN_STORAGE_PREFIX = "tcgwpg.seenToasts";
+const HIDDEN_THREADS_STORAGE_PREFIX = "tcgwpg.hiddenThreads";
 const MARKETPLACE_CACHE_KEY = "tcgwpg.marketplaceCache";
 const SITE_SETTINGS_STORAGE_KEY = "tcgwpg.siteSettings";
 const SUPPORTED_GAME_SLUGS = new Set(["magic", "pokemon", "one-piece"]);
@@ -113,6 +114,37 @@ function readMarketplaceCache() {
     return parsed && typeof parsed === "object" ? parsed : null;
   } catch {
     return null;
+  }
+}
+
+function getHiddenThreadsStorageKey(userId) {
+  return `${HIDDEN_THREADS_STORAGE_PREFIX}.${userId}`;
+}
+
+function readHiddenThreadsStorage(userId) {
+  if (typeof window === "undefined" || !userId) {
+    return {};
+  }
+
+  try {
+    const stored = JSON.parse(
+      window.localStorage.getItem(getHiddenThreadsStorageKey(userId)) || "{}",
+    );
+    return stored && typeof stored === "object" ? stored : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeHiddenThreadsStorage(userId, value) {
+  if (typeof window === "undefined" || !userId) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(getHiddenThreadsStorageKey(userId), JSON.stringify(value || {}));
+  } catch {
+    // Ignore storage write failures in constrained/private browser contexts.
   }
 }
 
@@ -997,6 +1029,7 @@ export function MarketplaceProvider({ children }) {
   const [threads, setThreads] = useState(() =>
     isSupabaseConfigured ? cachedState?.threads || [] : seedState.threads,
   );
+  const [hiddenThreadMap, setHiddenThreadMap] = useState({});
   const [manualEvents, setManualEvents] = useState(() =>
     isSupabaseConfigured ? cachedState?.manualEvents || [] : seedState.manualEvents,
   );
@@ -1214,11 +1247,19 @@ export function MarketplaceProvider({ children }) {
           unreadCount,
         };
       })
+      .filter((thread) => {
+        const hiddenAt = hiddenThreadMap[thread.id];
+        if (!hiddenAt) {
+          return true;
+        }
+
+        return new Date(thread.updatedAt || 0).getTime() > new Date(hiddenAt).getTime();
+      })
       .sort(
         (left, right) =>
           new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
       );
-  }, [currentUserId, enrichedListings, sellerMap, threads]);
+  }, [currentUserId, enrichedListings, hiddenThreadMap, sellerMap, threads]);
 
   const notificationsForCurrentUser = useMemo(
     () =>
@@ -1753,6 +1794,23 @@ export function MarketplaceProvider({ children }) {
   useEffect(() => {
     writeSiteSettingsStorage(siteSettings);
   }, [siteSettings]);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      setHiddenThreadMap({});
+      return;
+    }
+
+    setHiddenThreadMap(readHiddenThreadsStorage(currentUserId));
+  }, [currentUserId]);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      return;
+    }
+
+    writeHiddenThreadsStorage(currentUserId, hiddenThreadMap);
+  }, [currentUserId, hiddenThreadMap]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -2956,7 +3014,24 @@ export function MarketplaceProvider({ children }) {
     }
 
     const nextParticipants = participantIds || [currentUserId, otherUserId];
-    return findOrCreateThreadInternal({ participantIds: nextParticipants, listingId });
+    const result = await findOrCreateThreadInternal({
+      participantIds: nextParticipants,
+      listingId,
+    });
+
+    if (result.ok && result.thread?.id) {
+      setHiddenThreadMap((current) => {
+        if (!current[result.thread.id]) {
+          return current;
+        }
+
+        const next = { ...current };
+        delete next[result.thread.id];
+        return next;
+      });
+    }
+
+    return result;
   }
 
   async function markThreadRead(threadId, options = {}) {
@@ -3074,6 +3149,16 @@ export function MarketplaceProvider({ children }) {
       readBy: [currentUserId],
     };
 
+    setHiddenThreadMap((current) => {
+      if (!current[threadId]) {
+        return current;
+      }
+
+      const next = { ...current };
+      delete next[threadId];
+      return next;
+    });
+
     if (!isSupabaseConfigured) {
       setThreads((current) =>
         current.map((item) =>
@@ -3163,6 +3248,43 @@ export function MarketplaceProvider({ children }) {
     );
 
     await refreshMarketplaceData(currentUserId, { silent: true });
+    return { ok: true };
+  }
+
+  async function hideThreadForCurrentUser(threadId) {
+    if (!currentUserId || !threadId) {
+      return { ok: false, error: "Conversation not found." };
+    }
+
+    const hiddenAt = new Date().toISOString();
+    setHiddenThreadMap((current) => ({
+      ...current,
+      [threadId]: hiddenAt,
+    }));
+    setNotifications((current) =>
+      current.filter(
+        (notification) =>
+          !(
+            notification.userId === currentUserId &&
+            notification.type === "message" &&
+            notification.entityId === threadId
+        ),
+      ),
+    );
+
+    if (isSupabaseConfigured) {
+      const { error } = await supabase
+        .from("notifications")
+        .update({ read: true })
+        .eq("user_id", currentUserId)
+        .eq("type", "message")
+        .eq("entity_id", threadId);
+
+      if (error) {
+        return { ok: false, error: error.message };
+      }
+    }
+
     return { ok: true };
   }
 
@@ -4377,12 +4499,13 @@ export function MarketplaceProvider({ children }) {
     editListing,
     enrichedListings,
     featuredMerchandising,
-    findOrCreateThread,
-    formatCadPrice,
-    gameCatalog,
-    getThreadById,
-    globalSearch,
-    hotListings,
+      findOrCreateThread,
+      formatCadPrice,
+      gameCatalog,
+      getThreadById,
+      globalSearch,
+      hideThreadForCurrentUser,
+      hotListings,
     isAdmin: currentUser?.role === "admin",
     isAuthenticated: Boolean(currentUser),
     isBetaTester,

@@ -1,9 +1,24 @@
-import { BellRing, Search } from "lucide-react";
+import {
+  ArrowLeft,
+  BellRing,
+  ExternalLink,
+  Search,
+  SendHorizontal,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import CardArtwork from "../components/shared/CardArtwork";
+import UserAvatar from "../components/shared/UserAvatar";
 import EmptyState from "../components/ui/EmptyState";
+import InlineSpinner from "../components/ui/InlineSpinner";
 import PageSkeleton from "../components/ui/PageSkeleton";
 import { useMarketplace } from "../hooks/useMarketplace";
+import {
+  getConditionClasses,
+  getGameClasses,
+  getListingTypeClasses,
+} from "../utils/formatters";
 
 function formatMessageTime(isoString) {
   return new Date(isoString).toLocaleString("en-CA", {
@@ -19,7 +34,342 @@ function formatOfferTypeLabel(type) {
     return "Cash + Trade";
   }
 
-  return type[0].toUpperCase() + type.slice(1);
+  return type?.[0]?.toUpperCase() + type?.slice(1);
+}
+
+function formatOfferSummary(offer, formatCadPrice) {
+  const parts = [formatOfferTypeLabel(offer.offerType)];
+
+  if (offer.offerType !== "trade" && Number(offer.cashAmount) > 0) {
+    parts.push(formatCadPrice(offer.cashAmount, "CAD"));
+  }
+
+  if (offer.offerType !== "cash" && Array.isArray(offer.tradeItems) && offer.tradeItems.length) {
+    parts.push(`Trade: ${offer.tradeItems.join(", ")}`);
+  }
+
+  return parts.join(" | ");
+}
+
+function ThreadCard({ isActive, offerCount, onOpen, thread }) {
+  return (
+    <button
+      className={`group w-full rounded-[26px] border px-4 py-4 text-left transition ${
+        isActive
+          ? "border-navy/15 bg-[linear-gradient(180deg,rgba(19,48,65,0.08),rgba(255,255,255,0.95))] shadow-soft"
+          : "border-[rgba(203,220,231,0.8)] bg-white/90 hover:border-navy/20 hover:-translate-y-[1px] hover:shadow-soft"
+      }`}
+      type="button"
+      onClick={onOpen}
+    >
+      <div className="flex items-start gap-3">
+        <UserAvatar
+          className="h-12 w-12 shrink-0 border border-white/80 text-sm font-bold shadow-sm"
+          user={thread.otherParticipant || { name: thread.participantLabel || "Chat" }}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate font-display text-[1.1rem] font-semibold tracking-[-0.03em] text-ink">
+                {thread.participantIds.length > 2
+                  ? thread.participantLabel || `Support chat (${thread.participantIds.length})`
+                  : thread.otherParticipant?.publicName || "Conversation"}
+              </p>
+              <p className="mt-1 truncate text-sm text-steel">
+                {thread.listing?.title || "General thread"}
+              </p>
+            </div>
+            <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-steel/80">
+              {formatMessageTime(thread.updatedAt)}
+            </span>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {thread.unreadCount ? (
+              <span className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-orange px-2 text-[11px] font-semibold text-white">
+                {thread.unreadCount}
+              </span>
+            ) : null}
+            {offerCount ? (
+              <span className="rounded-full bg-navy/8 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-navy">
+                {offerCount} offer{offerCount === 1 ? "" : "s"}
+              </span>
+            ) : null}
+            {thread.listing?.game ? (
+              <span
+                className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${getGameClasses(thread.listing.game)}`}
+              >
+                {thread.listing.game}
+              </span>
+            ) : null}
+          </div>
+
+          <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">
+            {thread.lastMessage?.body || "No messages yet. Start the conversation."}
+          </p>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function ListingThreadCard({ formatCadPrice, listing, otherParticipant }) {
+  if (!listing) {
+    return null;
+  }
+
+  return (
+    <div className="mx-4 mt-4 rounded-[28px] border border-[rgba(203,220,231,0.88)] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(238,245,249,0.92))] p-4 shadow-soft sm:mx-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <CardArtwork
+          className="h-24 w-20 shrink-0 rounded-[22px] object-cover sm:h-28 sm:w-24"
+          game={listing.game}
+          src={listing.primaryImage || listing.imageUrl}
+          title={listing.title}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            {listing.type ? (
+              <span
+                className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${getListingTypeClasses(listing.type)}`}
+              >
+                {listing.type}
+              </span>
+            ) : null}
+            {listing.condition ? (
+              <span
+                className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${getConditionClasses(listing.condition)}`}
+              >
+                {listing.condition}
+              </span>
+            ) : null}
+            {listing.game ? (
+              <span
+                className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${getGameClasses(listing.game)}`}
+              >
+                {listing.game}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="truncate font-display text-[1.35rem] font-semibold tracking-[-0.04em] text-ink">
+                {listing.title}
+              </p>
+              <p className="mt-1 text-sm text-steel">
+                {listing.neighborhood}
+                {listing.postalCode ? ` | ${listing.postalCode}` : ""}
+              </p>
+              {otherParticipant ? (
+                <Link
+                  className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-navy transition hover:text-orange"
+                  to={`/seller/${otherParticipant.id}`}
+                >
+                  <UserAvatar
+                    className="h-7 w-7 border border-white/80 text-[0.65rem] font-bold shadow-sm"
+                    user={otherParticipant}
+                  />
+                  {otherParticipant.publicName || otherParticipant.name}
+                </Link>
+              ) : null}
+            </div>
+
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <span className="inline-flex rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white">
+                {formatCadPrice(listing.price, listing.priceCurrency)}
+              </span>
+              <Link
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-navy/20 hover:text-ink"
+                to={`/listing/${listing.id}`}
+              >
+                Open listing
+                <ExternalLink size={14} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OfferTimeline({
+  counterDrafts,
+  currentUserId,
+  formatCadPrice,
+  onAccept,
+  onBeginCounter,
+  onCancelCounter,
+  onChangeCounterDraft,
+  onDecline,
+  onSendCounter,
+  offers,
+}) {
+  if (!offers.length) {
+    return null;
+  }
+
+  return (
+    <div className="mx-4 mt-4 rounded-[28px] border border-[rgba(203,220,231,0.88)] bg-[linear-gradient(180deg,rgba(247,251,253,0.96),rgba(232,240,245,0.92))] p-4 shadow-soft sm:mx-6">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-steel">
+        <BellRing size={14} />
+        Offer timeline
+      </div>
+      <div className="grid gap-3">
+        {offers.map((offer) => {
+          const isSeller = offer.sellerId === currentUserId;
+          const isBuyer = offer.buyerId === currentUserId;
+          const lastActorId =
+            offer.lastActorId || (offer.status === "pending" ? offer.buyerId : offer.sellerId);
+          const canRespond =
+            (offer.status === "pending" && isSeller) ||
+            (offer.status === "countered" &&
+              (isSeller || isBuyer) &&
+              String(lastActorId) !== String(currentUserId));
+          const counterDraft = counterDrafts[offer.id];
+
+          return (
+            <div
+              key={offer.id}
+              className="rounded-[22px] border border-[rgba(203,220,231,0.86)] bg-white/95 px-4 py-4"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold text-ink">
+                    {formatOfferSummary(offer, formatCadPrice)}
+                  </p>
+                  <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-steel">
+                    Updated {formatMessageTime(offer.updatedAt || offer.createdAt)}
+                  </p>
+                  {offer.note ? (
+                    <p className="mt-2 text-sm leading-7 text-steel">{offer.note}</p>
+                  ) : null}
+                </div>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                  {offer.status}
+                </span>
+              </div>
+
+              {canRespond ? (
+                <>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                      type="button"
+                      onClick={() => void onAccept(offer.id)}
+                    >
+                      Accept
+                    </button>
+                    <button
+                      className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                      type="button"
+                      onClick={() => void onDecline(offer.id)}
+                    >
+                      Decline
+                    </button>
+                    <button
+                      className="rounded-full border border-navy/20 bg-navy/5 px-4 py-2 text-sm font-semibold text-navy transition hover:border-navy/30 hover:bg-navy/10"
+                      type="button"
+                      onClick={() => onBeginCounter(offer)}
+                    >
+                      {offer.status === "countered" ? "Counter back" : "Counter"}
+                    </button>
+                  </div>
+
+                  {counterDraft ? (
+                    <div className="mt-4 rounded-[20px] border border-slate-200 bg-[#f9fcfe] p-4">
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <label className="block">
+                          <span className="mb-2 block text-sm font-semibold text-steel">
+                            {isSeller ? "Counter type" : "Reply type"}
+                          </span>
+                          <select
+                            className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-navy"
+                            value={counterDraft.offerType}
+                            onChange={(event) =>
+                              onChangeCounterDraft(offer.id, "offerType", event.target.value)
+                            }
+                          >
+                            <option value="cash">Cash</option>
+                            <option value="trade">Trade</option>
+                            <option value="cash-trade">Cash + Trade</option>
+                          </select>
+                        </label>
+
+                        {counterDraft.offerType !== "trade" ? (
+                          <label className="block">
+                            <span className="mb-2 block text-sm font-semibold text-steel">
+                              {isSeller ? "Counter amount (CAD)" : "Reply amount (CAD)"}
+                            </span>
+                            <input
+                              min="0"
+                              step="0.01"
+                              className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-navy"
+                              type="number"
+                              value={counterDraft.cashAmount}
+                              onChange={(event) =>
+                                onChangeCounterDraft(offer.id, "cashAmount", event.target.value)
+                              }
+                            />
+                          </label>
+                        ) : null}
+
+                        {counterDraft.offerType !== "cash" ? (
+                          <label className="block md:col-span-2">
+                            <span className="mb-2 block text-sm font-semibold text-steel">
+                              Trade items
+                            </span>
+                            <textarea
+                              className="min-h-24 w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-navy"
+                              value={counterDraft.tradeItems}
+                              onChange={(event) =>
+                                onChangeCounterDraft(offer.id, "tradeItems", event.target.value)
+                              }
+                            />
+                          </label>
+                        ) : null}
+
+                        <label className="block md:col-span-2">
+                          <span className="mb-2 block text-sm font-semibold text-steel">
+                            {isSeller ? "Counter note" : "Reply note"}
+                          </span>
+                          <textarea
+                            className="min-h-24 w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-navy"
+                            value={counterDraft.note}
+                            onChange={(event) =>
+                              onChangeCounterDraft(offer.id, "note", event.target.value)
+                            }
+                          />
+                        </label>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          className="rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#102a39]"
+                          type="button"
+                          onClick={() => void onSendCounter(offer.id, counterDraft)}
+                        >
+                          {offer.status === "countered" ? "Send reply counter" : "Send counter"}
+                        </button>
+                        <button
+                          className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                          type="button"
+                          onClick={() => onCancelCounter(offer.id)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 export default function MessagesPage() {
@@ -29,6 +379,7 @@ export default function MessagesPage() {
     currentUserId,
     formatCadPrice,
     getThreadById,
+    hideThreadForCurrentUser,
     loading,
     markThreadRead,
     offersByListingId,
@@ -38,6 +389,7 @@ export default function MessagesPage() {
   } = useMarketplace();
   const [draft, setDraft] = useState("");
   const [counterDrafts, setCounterDrafts] = useState({});
+  const [deletingThread, setDeletingThread] = useState(false);
   const [sendError, setSendError] = useState("");
   const [sending, setSending] = useState(false);
   const [threadQuery, setThreadQuery] = useState("");
@@ -137,7 +489,7 @@ export default function MessagesPage() {
   if (!threadsForCurrentUser.length) {
     return (
       <EmptyState
-        description="Start a conversation from any listing to keep negotiation, meetup planning, and follow-up in one place."
+        description="Start a conversation from any listing to keep pricing, meetup timing, and offer negotiation in one place."
         title="No messages yet"
       />
     );
@@ -163,6 +515,42 @@ export default function MessagesPage() {
     setSending(false);
   }
 
+  function handleDraftKeyDown(event) {
+    if (event.key !== "Enter" || event.shiftKey) {
+      return;
+    }
+
+    event.preventDefault();
+    if (!draft.trim() || sending) {
+      return;
+    }
+
+    void handleSubmit(event);
+  }
+
+  async function handleDeleteThread() {
+    if (!activeThread || deletingThread) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Delete this chat on your side? The conversation will be hidden for you, but it will stay available for the other person.",
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingThread(true);
+    const result = await hideThreadForCurrentUser(activeThread.id);
+    setDeletingThread(false);
+    if (result?.ok) {
+      navigate("/messages", { replace: true });
+      return;
+    }
+
+    setSendError(result?.error || "Chat could not be deleted.");
+  }
+
   function beginCounterDraft(offer) {
     setCounterDrafts((current) => ({
       ...current,
@@ -183,19 +571,51 @@ export default function MessagesPage() {
     });
   }
 
+  function updateCounterDraft(offerId, field, value) {
+    setCounterDrafts((current) => ({
+      ...current,
+      [offerId]: {
+        ...current[offerId],
+        [field]: value,
+      },
+    }));
+  }
+
+  async function sendCounter(offerId, counterDraft) {
+    const result = await respondToOffer(offerId, "counter", {
+      offerType: counterDraft.offerType,
+      cashAmount: counterDraft.offerType === "trade" ? 0 : Number(counterDraft.cashAmount || 0),
+      tradeItems:
+        counterDraft.offerType === "cash"
+          ? []
+          : counterDraft.tradeItems
+              .split("\n")
+              .map((item) => item.trim())
+              .filter(Boolean),
+      note: counterDraft.note,
+    });
+
+    if (result?.ok) {
+      clearCounterDraft(offerId);
+    }
+  }
+
   return (
-    <div className="grid gap-4 lg:grid-cols-[24rem_minmax(0,1fr)]">
+    <div className="grid gap-5 lg:grid-cols-[23rem_minmax(0,1fr)]">
       <section
-        className={`overflow-hidden rounded-[24px] border border-[rgba(203,220,231,0.92)] bg-[linear-gradient(180deg,rgba(250,253,255,0.94),rgba(232,240,245,0.88))] shadow-soft lg:rounded-[30px] ${
+        className={`overflow-hidden rounded-[30px] border border-[rgba(203,220,231,0.9)] bg-[linear-gradient(180deg,rgba(251,253,255,0.96),rgba(232,240,245,0.9))] shadow-soft ${
           showMobileThread ? "hidden lg:block" : "block"
         }`}
       >
-        <div className="border-b border-slate-200 px-5 py-4">
+        <div className="border-b border-slate-200/80 px-5 py-5">
           <p className="section-kicker">Messages</p>
-          <h1 className="mt-2 font-display text-[2.2rem] font-semibold tracking-[-0.04em] text-ink">
+          <h1 className="mt-2 font-display text-[2rem] font-semibold tracking-[-0.04em] text-ink">
             Inbox
           </h1>
-          <div className="mt-4 rounded-[18px] border border-[rgba(203,220,231,0.92)] bg-[rgba(249,252,255,0.84)] px-4 py-3">
+          <p className="mt-2 max-w-sm text-sm leading-6 text-steel">
+            Keep listings, offers, and meetup details together instead of scattered across DMs.
+          </p>
+          <div className="mt-4 rounded-[20px] border border-[rgba(203,220,231,0.88)] bg-white/88 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
             <div className="flex items-center gap-3">
               <Search size={16} className="text-steel" />
               <input
@@ -217,7 +637,7 @@ export default function MessagesPage() {
                 className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                   threadFilter === filter.id
                     ? "bg-navy text-white"
-                    : "border border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
+                    : "border border-slate-200 bg-white text-steel hover:border-navy/20 hover:text-ink"
                 }`}
                 type="button"
                 onClick={() => setThreadFilter(filter.id)}
@@ -228,57 +648,21 @@ export default function MessagesPage() {
           </div>
         </div>
 
-        <div className="max-h-[calc(100dvh-16rem)] overflow-y-auto lg:max-h-[72vh]">
+        <div className="max-h-[calc(100dvh-16rem)] overflow-y-auto px-4 py-4 lg:max-h-[76vh]">
           {filteredThreads.length ? (
-            filteredThreads.map((thread) => {
-              const offerCount = (offersByListingId[thread.listingId] || []).length;
-
-              return (
-                <button
+            <div className="space-y-3">
+              {filteredThreads.map((thread) => (
+                <ThreadCard
                   key={thread.id}
-                  className={`w-full border-b border-slate-100 px-5 py-4 text-left transition hover:bg-slate-50 ${
-                    thread.id === threadId ? "bg-[#faf7f1]" : ""
-                  }`}
-                  type="button"
-                  onClick={() => navigate(`/messages/${thread.id}`)}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate font-display text-xl font-semibold tracking-[-0.03em] text-ink">
-                        {thread.participantIds.length > 2
-                          ? thread.participantLabel || `Support chat (${thread.participantIds.length} people)`
-                          : thread.otherParticipant?.publicName || "Conversation"}
-                      </p>
-                      <p className="mt-1 truncate text-sm text-steel">
-                        {thread.listing?.title || "General thread"}
-                      </p>
-                    </div>
-                    <span className="whitespace-nowrap text-xs text-steel">
-                      {formatMessageTime(thread.updatedAt)}
-                    </span>
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    {thread.unreadCount ? (
-                      <span className="inline-flex rounded-full bg-orange px-2 py-0.5 text-xs font-semibold text-white">
-                        {thread.unreadCount} unread
-                      </span>
-                    ) : null}
-                    {offerCount ? (
-                      <span className="rounded-full bg-navy/8 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-navy">
-                        {offerCount} offer{offerCount === 1 ? "" : "s"}
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">
-                    {thread.lastMessage?.body || "No messages yet. Start the conversation."}
-                  </p>
-                </button>
-              );
-            })
+                  isActive={thread.id === threadId}
+                  offerCount={(offersByListingId[thread.listingId] || []).length}
+                  thread={thread}
+                  onOpen={() => navigate(`/messages/${thread.id}`)}
+                />
+              ))}
+            </div>
           ) : (
-            <div className="px-5 py-10 text-sm text-steel">
+            <div className="rounded-[24px] border border-dashed border-slate-300 px-5 py-10 text-sm text-steel">
               No inbox threads match this search.
             </div>
           )}
@@ -286,320 +670,168 @@ export default function MessagesPage() {
       </section>
 
       <section
-        className={`overflow-hidden rounded-[24px] border border-[rgba(203,220,231,0.92)] bg-[linear-gradient(180deg,rgba(250,253,255,0.94),rgba(232,240,245,0.88))] shadow-soft lg:rounded-[30px] ${
-          !showMobileThread ? "hidden lg:block" : "block"
+        className={`flex min-h-[72vh] flex-col overflow-hidden rounded-[30px] border border-[rgba(203,220,231,0.9)] bg-[linear-gradient(180deg,rgba(251,253,255,0.97),rgba(232,240,245,0.92))] shadow-soft ${
+          !showMobileThread ? "hidden lg:flex" : "flex"
         }`}
       >
         {activeThread ? (
           <>
-            <div className="border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5">
+            <div className="border-b border-slate-200/80 px-4 py-5 sm:px-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
+                <div className="min-w-0">
                   <button
-                    className="mb-3 inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-steel lg:hidden"
+                    className="mb-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-steel lg:hidden"
                     type="button"
                     onClick={() => navigate("/messages")}
                   >
+                    <ArrowLeft size={14} />
                     Back to inbox
                   </button>
-                  <p className="section-kicker">Conversation</p>
-                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                    {activeThread.participantIds.length > 2
-                      ? activeThread.participantLabel || "Support / resolution chat"
-                      : activeThread.otherParticipant?.publicName || "Conversation"}
-                  </h2>
-                  <p className="mt-2 text-sm text-steel">
-                    {activeThread.listing?.title || "General thread"}
-                  </p>
+                  <div className="flex items-center gap-3">
+                    <UserAvatar
+                      className="h-12 w-12 border border-white/90 text-sm font-bold shadow-sm"
+                      user={activeThread.otherParticipant || { name: activeThread.participantLabel }}
+                    />
+                    <div className="min-w-0">
+                      <p className="section-kicker">Conversation</p>
+                      <h2 className="mt-1 truncate font-display text-[1.75rem] font-semibold tracking-[-0.04em] text-ink">
+                        {activeThread.participantIds.length > 2
+                          ? activeThread.participantLabel || "Support / resolution chat"
+                          : activeThread.otherParticipant?.publicName || "Conversation"}
+                      </h2>
+                      <p className="mt-1 text-sm text-steel">
+                        {activeThread.listing?.title || "General thread"}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-                  {activeThread.otherParticipant && activeThread.participantIds.length === 2 ? (
-                    <Link
-                      className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
-                      to={`/seller/${activeThread.otherParticipant.id}`}
-                    >
-                      View seller page
-                    </Link>
-                  ) : null}
                   {activeThread.listing ? (
                     <Link
-                      className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-navy/20 hover:text-ink"
                       to={`/listing/${activeThread.listing.id}`}
                     >
                       {formatCadPrice(
                         activeThread.listing.price,
                         activeThread.listing.priceCurrency,
                       )}
+                      <ExternalLink size={14} />
                     </Link>
                   ) : null}
+                  <button
+                    className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={deletingThread}
+                    type="button"
+                    onClick={() => void handleDeleteThread()}
+                  >
+                    <Trash2 size={14} />
+                    {deletingThread ? "Deleting..." : "Delete chat"}
+                  </button>
                 </div>
               </div>
             </div>
 
-            {threadOffers.length ? (
-              <div className="border-b border-slate-200 bg-[#fbf8f1] px-4 py-4 sm:px-6 sm:py-5">
-                <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-steel">
-                  <BellRing size={14} />
-                  Offer timeline
-                </div>
-                <div className="grid gap-3">
-                  {threadOffers.map((offer) => {
-                    const isSeller = offer.sellerId === currentUserId;
-                    const isBuyer = offer.buyerId === currentUserId;
-                    const lastActorId =
-                      offer.lastActorId ||
-                      (offer.status === "pending" ? offer.buyerId : offer.sellerId);
-                    const canRespond =
-                      (offer.status === "pending" && isSeller) ||
-                      (offer.status === "countered" &&
-                        (isSeller || isBuyer) &&
-                        String(lastActorId) !== String(currentUserId));
-                    const counterDraft = counterDrafts[offer.id];
+            <ListingThreadCard
+              formatCadPrice={formatCadPrice}
+              listing={activeThread.listing}
+              otherParticipant={activeThread.otherParticipant}
+            />
+
+            <OfferTimeline
+              counterDrafts={counterDrafts}
+              currentUserId={currentUserId}
+              formatCadPrice={formatCadPrice}
+              offers={threadOffers}
+              onAccept={(offerId) => respondToOffer(offerId, "accept")}
+              onBeginCounter={beginCounterDraft}
+              onCancelCounter={clearCounterDraft}
+              onChangeCounterDraft={updateCounterDraft}
+              onDecline={(offerId) => respondToOffer(offerId, "decline")}
+              onSendCounter={sendCounter}
+            />
+
+            <div className="relative flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(240,55,55,0.07),transparent_18%),radial-gradient(circle_at_bottom_right,rgba(17,39,56,0.08),transparent_24%)]" />
+              <div className="pointer-events-none absolute inset-x-4 inset-y-5 rounded-[30px] border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.28),rgba(255,255,255,0.08))] sm:inset-x-6" />
+              <div className="relative flex min-h-full flex-col justify-end gap-3">
+                {activeThread.messages.map((message) => {
+                  const mine = message.senderId === currentUserId;
+                  const isSystemSupportThread =
+                    activeThread.participantIds.length > 2 &&
+                    String(message.body || "").toLowerCase().startsWith("report ");
+
+                  if (isSystemSupportThread) {
                     return (
-                      <div
-                        key={offer.id}
-                        className="rounded-[22px] border border-slate-200 bg-white px-4 py-4"
-                      >
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="font-semibold text-ink">
-                              {formatOfferTypeLabel(offer.offerType)}
-                              {offer.cashAmount
-                                ? ` | ${formatCadPrice(offer.cashAmount, "CAD")}`
-                                : ""}
-                            </p>
-                            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-steel">
-                              Updated {formatMessageTime(offer.updatedAt || offer.createdAt)}
-                            </p>
-                            {offer.tradeItems.length ? (
-                              <p className="mt-2 text-sm text-steel">
-                                Trade: {offer.tradeItems.join(", ")}
-                              </p>
-                            ) : null}
-                            {offer.note ? (
-                              <p className="mt-2 text-sm leading-7 text-steel">{offer.note}</p>
-                            ) : null}
-                          </div>
-                          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                            {offer.status}
-                          </span>
+                      <div key={message.id} className="message-pop mx-auto w-full max-w-2xl">
+                        <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 shadow-sm">
+                          <p className="text-sm leading-7">{message.body}</p>
+                          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700/80">
+                            {formatMessageTime(message.sentAt)}
+                          </p>
                         </div>
-                        {canRespond ? (
-                          <>
-                            <div className="mt-4 flex flex-wrap gap-2">
-                              <button
-                                className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
-                                type="button"
-                                onClick={() => void respondToOffer(offer.id, "accept")}
-                              >
-                                Accept
-                              </button>
-                              <button
-                                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                                type="button"
-                                onClick={() => void respondToOffer(offer.id, "decline")}
-                              >
-                                Decline
-                              </button>
-                              <button
-                                className="rounded-full border border-navy bg-navy/5 px-4 py-2 text-sm font-semibold text-navy"
-                                type="button"
-                                onClick={() => beginCounterDraft(offer)}
-                              >
-                                {offer.status === "countered" ? "Counter back" : "Counter"}
-                              </button>
-                            </div>
-
-                            {counterDraft ? (
-                              <div className="mt-4 rounded-[20px] border border-slate-200 bg-[#fbf8f1] p-4">
-                                <div className="grid gap-3 md:grid-cols-2">
-                                  <label className="block">
-                                    <span className="mb-2 block text-sm font-semibold text-steel">
-                                      {isSeller ? "Counter type" : "Reply type"}
-                                    </span>
-                                    <select
-                                      className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-navy"
-                                      value={counterDraft.offerType}
-                                      onChange={(event) =>
-                                        setCounterDrafts((current) => ({
-                                          ...current,
-                                          [offer.id]: {
-                                            ...current[offer.id],
-                                            offerType: event.target.value,
-                                          },
-                                        }))
-                                      }
-                                    >
-                                      <option value="cash">Cash</option>
-                                      <option value="trade">Trade</option>
-                                      <option value="cash-trade">Cash + Trade</option>
-                                    </select>
-                                  </label>
-
-                                  {counterDraft.offerType !== "trade" ? (
-                                    <label className="block">
-                                      <span className="mb-2 block text-sm font-semibold text-steel">
-                                        {isSeller ? "Counter amount (CAD)" : "Reply amount (CAD)"}
-                                      </span>
-                                      <input
-                                        min="0"
-                                        step="0.01"
-                                        className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-navy"
-                                        type="number"
-                                        value={counterDraft.cashAmount}
-                                        onChange={(event) =>
-                                          setCounterDrafts((current) => ({
-                                            ...current,
-                                            [offer.id]: {
-                                              ...current[offer.id],
-                                              cashAmount: event.target.value,
-                                            },
-                                          }))
-                                        }
-                                      />
-                                    </label>
-                                  ) : null}
-
-                                  {counterDraft.offerType !== "cash" ? (
-                                    <label className="block md:col-span-2">
-                                      <span className="mb-2 block text-sm font-semibold text-steel">
-                                        Trade items
-                                      </span>
-                                      <textarea
-                                        className="min-h-24 w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-navy"
-                                        value={counterDraft.tradeItems}
-                                        onChange={(event) =>
-                                          setCounterDrafts((current) => ({
-                                            ...current,
-                                            [offer.id]: {
-                                              ...current[offer.id],
-                                              tradeItems: event.target.value,
-                                            },
-                                          }))
-                                        }
-                                      />
-                                    </label>
-                                  ) : null}
-
-                                  <label className="block md:col-span-2">
-                                    <span className="mb-2 block text-sm font-semibold text-steel">
-                                      {isSeller ? "Counter note" : "Reply note"}
-                                    </span>
-                                    <textarea
-                                      className="min-h-24 w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-navy"
-                                      value={counterDraft.note}
-                                      onChange={(event) =>
-                                        setCounterDrafts((current) => ({
-                                          ...current,
-                                          [offer.id]: {
-                                            ...current[offer.id],
-                                            note: event.target.value,
-                                          },
-                                        }))
-                                      }
-                                    />
-                                  </label>
-                                </div>
-
-                                <div className="mt-4 flex flex-wrap gap-2">
-                                  <button
-                                    className="rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white"
-                                    type="button"
-                                    onClick={() =>
-                                      void respondToOffer(offer.id, "counter", {
-                                        offerType: counterDraft.offerType,
-                                        cashAmount:
-                                          counterDraft.offerType === "trade"
-                                            ? 0
-                                            : Number(counterDraft.cashAmount || 0),
-                                        tradeItems:
-                                          counterDraft.offerType === "cash"
-                                            ? []
-                                            : counterDraft.tradeItems
-                                                .split("\n")
-                                                .map((item) => item.trim())
-                                                .filter(Boolean),
-                                        note: counterDraft.note,
-                                      }).then((result) => {
-                                        if (result?.ok) {
-                                          clearCounterDraft(offer.id);
-                                        }
-                                      })
-                                    }
-                                  >
-                                    {offer.status === "countered" ? "Send reply counter" : "Send counter"}
-                                  </button>
-                                  <button
-                                    className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                                    type="button"
-                                    onClick={() => clearCounterDraft(offer.id)}
-                                  >
-                                    Cancel
-                                  </button>
-                                </div>
-                              </div>
-                            ) : null}
-                          </>
-                        ) : null}
                       </div>
                     );
-                  })}
-                </div>
-              </div>
-            ) : null}
+                  }
 
-            <div className="flex max-h-[calc(100dvh-22rem)] flex-col gap-3 overflow-y-auto bg-[linear-gradient(180deg,#f7fbfe_0%,#edf4f8_100%)] px-4 py-4 sm:max-h-[50vh] sm:px-6 sm:py-5">
-              {activeThread.messages.map((message) => {
-                const mine = message.senderId === currentUserId;
-                const isSystemSupportThread =
-                  activeThread.participantIds.length > 2 &&
-                  String(message.body || "").toLowerCase().startsWith("report ");
-
-                return (
-                  <div
-                    key={message.id}
-                    className={`max-w-[85%] rounded-[22px] px-4 py-3 ${
-                      isSystemSupportThread
-                        ? "mx-auto w-full max-w-full border border-amber-200 bg-amber-50 text-amber-900"
-                        : mine
-                          ? "ml-auto bg-navy text-white"
-                          : "border border-slate-200 bg-white text-ink"
-                    }`}
-                  >
-                    <p className="text-sm leading-7">{message.body}</p>
-                    <p
-                      className={`mt-2 text-xs ${
-                        mine ? "text-white/70" : "text-slate-500"
+                  return (
+                    <div
+                      key={message.id}
+                      className={`message-pop flex items-end gap-3 ${
+                        mine ? "justify-end" : "justify-start"
                       }`}
                     >
-                      {formatMessageTime(message.sentAt)}
-                    </p>
-                  </div>
-                );
-              })}
+                      {!mine ? (
+                        <UserAvatar
+                          className="h-8 w-8 shrink-0 border border-white/80 text-[0.62rem] font-bold shadow-sm"
+                          user={activeThread.otherParticipant || { name: activeThread.participantLabel }}
+                        />
+                      ) : null}
+                      <div
+                        className={`max-w-[min(44rem,88%)] rounded-[24px] px-4 py-3 shadow-[0_18px_34px_-28px_rgba(17,39,56,0.45)] ${
+                          mine
+                            ? "bg-[linear-gradient(180deg,#f03737,#d32d2d)] text-white"
+                            : "border border-white/70 bg-white/92 text-ink"
+                        }`}
+                      >
+                        <p className="text-sm leading-7">{message.body}</p>
+                        <p className={`mt-2 text-[11px] ${mine ? "text-white/70" : "text-steel"}`}>
+                          {formatMessageTime(message.sentAt)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
-            <form className="sticky bottom-0 border-t border-slate-200 bg-white px-4 py-4 sm:px-6 sm:py-5" onSubmit={handleSubmit}>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <input
-                  className="flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  placeholder="Write a message about condition, trades, or meetup timing"
-                  disabled={sending}
-                  value={draft}
-                  onChange={(event) => setDraft(event.target.value)}
-                />
-                <button
-                  className="rounded-full bg-orange px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300 sm:self-auto"
-                  disabled={sending || !draft.trim()}
-                  type="submit"
-                >
-                  {sending ? "Sending..." : "Send"}
-                </button>
+            <form
+              className="border-t border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(241,246,249,0.94))] px-4 py-4 sm:px-6"
+              onSubmit={handleSubmit}
+            >
+              <div className="rounded-[28px] border border-[rgba(203,220,231,0.92)] bg-white/96 p-3 shadow-soft">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="flex-1">
+                    <textarea
+                      className="min-h-[58px] w-full resize-none bg-transparent px-3 py-2 text-sm leading-7 outline-none"
+                      disabled={sending}
+                      placeholder="Write about condition, trades, meetup timing, or anything else you need to lock the deal in."
+                      value={draft}
+                      onChange={(event) => setDraft(event.target.value)}
+                      onKeyDown={handleDraftKeyDown}
+                    />
+                  </div>
+                  <button
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-orange px-5 py-3 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-[1px] hover:shadow-lift disabled:cursor-not-allowed disabled:bg-slate-300 sm:self-auto"
+                    disabled={sending || !draft.trim()}
+                    type="submit"
+                  >
+                    {sending ? <InlineSpinner className="text-white" size={14} /> : <SendHorizontal size={15} />}
+                    {sending ? "Sending..." : "Send message"}
+                  </button>
+                </div>
               </div>
-              {sendError ? (
-                <p className="mt-3 text-sm font-semibold text-rose-700">{sendError}</p>
-              ) : null}
+              {sendError ? <p className="mt-3 text-sm font-semibold text-rose-700">{sendError}</p> : null}
             </form>
           </>
         ) : (
