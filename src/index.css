@@ -89,8 +89,8 @@ a {
   height: 2.75rem;
   padding: 0 0.7rem 0 0.85rem;
   border-radius: 0.95rem;
-  background: #14364a;
-  box-shadow: 0 18px 30px -20px rgba(20, 54, 74, 0.42);
+  background: #f03737;
+  box-shadow: 0 18px 30px -20px rgba(240, 55, 55, 0.36);
 }
 
 .brand-pill-mark {
@@ -110,7 +110,7 @@ a {
   height: 1.4rem;
   padding: 0 0.45rem;
   border-radius: 0.65rem;
-  background: #f03737;
+  background: #6d86f0;
   color: white;
   font-size: 0.68rem;
   font-weight: 800;
@@ -139,28 +139,28 @@ a {
   inset: 0;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent 35%),
-    radial-gradient(circle at top right, rgba(240, 55, 55, 0.22), transparent 26%);
+    radial-gradient(circle at top right, rgba(109, 134, 240, 0.28), transparent 26%);
 }
 
 .card-stack-card:nth-child(1) {
   top: 10px;
   left: 10px;
   transform: rotate(-13deg);
-  background: linear-gradient(180deg, #14364a 0%, #204b63 100%);
+  background: linear-gradient(180deg, #f03737 0%, #bf2c2c 100%);
 }
 
 .card-stack-card:nth-child(2) {
   top: 24px;
   left: 118px;
   transform: rotate(5deg);
-  background: linear-gradient(180deg, #2b4f67 0%, #1b3344 100%);
+  background: linear-gradient(180deg, #d93636 0%, #8d2020 100%);
 }
 
 .card-stack-card:nth-child(3) {
   top: 56px;
   left: 56px;
   transform: rotate(-2deg);
-  background: linear-gradient(180deg, #18384c 0%, #0f2430 100%);
+  background: linear-gradient(180deg, #c22f2f 0%, #7d1c1c 100%);
 }
 
 .card-stack-label {
@@ -171,7 +171,7 @@ a {
   @apply absolute inset-x-5 bottom-5 top-16 rounded-[1.2rem] border border-white/15;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 35%),
-    radial-gradient(circle at 30% 25%, rgba(240, 55, 55, 0.36), transparent 22%),
+    radial-gradient(circle at 30% 25%, rgba(109, 134, 240, 0.42), transparent 22%),
     radial-gradient(circle at 70% 58%, rgba(255, 255, 255, 0.18), transparent 28%);
 }
 
@@ -378,8 +378,8 @@ a {
   border-radius: 999px;
   background:
     radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.95), transparent 36%),
-    radial-gradient(circle at 68% 68%, rgba(240, 55, 55, 0.22), transparent 32%),
-    linear-gradient(180deg, rgba(20, 54, 74, 0.24), rgba(255, 255, 255, 0.02));
+    radial-gradient(circle at 68% 68%, rgba(109, 134, 240, 0.24), transparent 32%),
+    linear-gradient(180deg, rgba(240, 55, 55, 0.2), rgba(255, 255, 255, 0.02));
   filter: blur(10px);
   opacity: 0.9;
   animation: orb-float 3.6s ease-in-out infinite;
@@ -399,7 +399,7 @@ a {
   width: 42%;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #14364a, #49687c 55%, #f03737);
+  background: linear-gradient(90deg, #f03737, #d35454 55%, #6d86f0);
   animation: loader-glide 1.2s cubic-bezier(0.76, 0, 0.24, 1) infinite;
 }
 
@@ -407,7 +407,7 @@ a {
   width: 32%;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #14364a, #527287 60%, #f03737);
+  background: linear-gradient(90deg, #f03737, #d76565 60%, #6d86f0);
   animation: loader-glide 1.15s cubic-bezier(0.76, 0, 0.24, 1) infinite;
 }
 
@@ -483,8 +483,8 @@ a {
 }
 
 ::selection {
-  background: rgba(240, 55, 55, 0.14);
-  color: #163445;
+  background: rgba(109, 134, 240, 0.18);
+  color: #5a1c1c;
 }
 
 .message-pop {

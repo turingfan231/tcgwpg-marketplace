@@ -24,9 +24,9 @@ export default function CardArtwork({ src, title, game, className = "" }) {
 
   return (
     <div
-      className={`relative overflow-hidden bg-[linear-gradient(160deg,#1b4258_0%,#14364a_48%,#113042_100%)] ${className}`}
+      className={`relative overflow-hidden bg-[linear-gradient(160deg,#f03737_0%,#bf2c2c_48%,#7f1d1d_100%)] ${className}`}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(240,55,55,0.28),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.12),transparent_32%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(109,134,240,0.28),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.12),transparent_32%)]" />
       <div className="absolute inset-4 rounded-[20px] border border-white/15 bg-white/5" />
       <div className="relative flex h-full flex-col justify-between p-5 text-white">
         <span className="w-fit rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/80">
