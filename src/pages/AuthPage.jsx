@@ -13,7 +13,14 @@ function normalizePostalInput(value) {
 export default function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { authReady, isAuthenticated, login, signup } = useMarketplace();
+  const {
+    authReady,
+    completePasswordRecovery,
+    isAuthenticated,
+    login,
+    requestPasswordReset,
+    signup,
+  } = useMarketplace();
   const [mode, setMode] = useState("login");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -21,6 +28,11 @@ export default function AuthPage() {
   const [loginForm, setLoginForm] = useState({
     email: "",
     password: "",
+  });
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [recoveryForm, setRecoveryForm] = useState({
+    newPassword: "",
+    confirmPassword: "",
   });
   const [signupForm, setSignupForm] = useState({
     username: "",
@@ -34,10 +46,23 @@ export default function AuthPage() {
   const redirectTarget = location.state?.from || "/dashboard";
 
   useEffect(() => {
-    if (authReady && isAuthenticated) {
+    if (authReady && isAuthenticated && mode !== "recovery") {
       navigate(redirectTarget, { replace: true });
     }
-  }, [authReady, isAuthenticated, navigate, redirectTarget]);
+  }, [authReady, isAuthenticated, mode, navigate, redirectTarget]);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const isRecoveryRoute = searchParams.get("mode") === "recovery";
+    const hashParams = new URLSearchParams(String(location.hash || "").replace(/^#/, ""));
+    const isRecoveryHash = hashParams.get("type") === "recovery";
+
+    if (isRecoveryRoute || isRecoveryHash) {
+      setMode("recovery");
+      setError("");
+      setMessage("Set a new password to finish recovering your account.");
+    }
+  }, [location.hash, location.search]);
 
   async function handleLoginSubmit(event) {
     event.preventDefault();
@@ -93,6 +118,50 @@ export default function AuthPage() {
     }
   }
 
+  async function handleForgotSubmit(event) {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+    setSubmitting(true);
+    try {
+      const result = await requestPasswordReset(forgotEmail);
+
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+
+      setMessage("Password reset email sent. Check your inbox and open the recovery link.");
+    } catch (error) {
+      setError(error?.message || "Password reset email could not be sent.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleRecoverySubmit(event) {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+    setSubmitting(true);
+    try {
+      const result = await completePasswordRecovery(recoveryForm);
+
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+
+      setMode("login");
+      setRecoveryForm({ newPassword: "", confirmPassword: "" });
+      setMessage("Password updated. You can sign in now.");
+    } catch (error) {
+      setError(error?.message || "Password reset failed. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-6xl">
       <section className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
@@ -118,7 +187,7 @@ export default function AuthPage() {
         </div>
 
         <div className="surface-card p-7">
-          <div className="inline-flex rounded-full bg-[#f4f0e8] p-1">
+          <div className="inline-flex rounded-full bg-[#f2f3f5] p-1">
             <button
               className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
                 mode === "login" ? "bg-white text-ink shadow-sm" : "text-steel"
@@ -127,6 +196,7 @@ export default function AuthPage() {
               onClick={() => {
                 setMode("login");
                 setError("");
+                setMessage("");
               }}
             >
               Login
@@ -139,6 +209,7 @@ export default function AuthPage() {
               onClick={() => {
                 setMode("signup");
                 setError("");
+                setMessage("");
               }}
             >
               Sign Up
@@ -186,6 +257,19 @@ export default function AuthPage() {
                   }
                 />
               </label>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <button
+                  className="text-sm font-semibold text-navy transition hover:text-orange"
+                  type="button"
+                  onClick={() => {
+                    setMode("forgot");
+                    setForgotEmail(loginForm.email);
+                    setError("");
+                    setMessage("");
+                  }}
+                >
+                  Reset password
+                </button>
                 <button
                 className="rounded-full bg-navy px-6 py-3.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-400"
                 disabled={submitting}
@@ -193,6 +277,92 @@ export default function AuthPage() {
               >
                 {submitting ? "Signing in..." : "Login"}
               </button>
+              </div>
+            </form>
+          ) : mode === "forgot" ? (
+            <form className="mt-7 space-y-5" onSubmit={handleForgotSubmit}>
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-steel">Email</span>
+                <input
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(event) => setForgotEmail(event.target.value)}
+                />
+              </label>
+              <p className="text-sm leading-7 text-steel">
+                We will send a branded reset email to this address with a secure button to recover your account.
+              </p>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <button
+                  className="text-sm font-semibold text-steel transition hover:text-ink"
+                  type="button"
+                  onClick={() => {
+                    setMode("login");
+                    setError("");
+                    setMessage("");
+                  }}
+                >
+                  Back to login
+                </button>
+                <button
+                  className="rounded-full bg-navy px-6 py-3.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-400"
+                  disabled={submitting}
+                  type="submit"
+                >
+                  {submitting ? "Sending..." : "Send reset email"}
+                </button>
+              </div>
+            </form>
+          ) : mode === "recovery" ? (
+            <form className="mt-7 space-y-5" onSubmit={handleRecoverySubmit}>
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-steel">New password</span>
+                <input
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  type="password"
+                  value={recoveryForm.newPassword}
+                  onChange={(event) =>
+                    setRecoveryForm((current) => ({
+                      ...current,
+                      newPassword: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-steel">Confirm password</span>
+                <input
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  type="password"
+                  value={recoveryForm.confirmPassword}
+                  onChange={(event) =>
+                    setRecoveryForm((current) => ({
+                      ...current,
+                      confirmPassword: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <button
+                  className="text-sm font-semibold text-steel transition hover:text-ink"
+                  type="button"
+                  onClick={() => {
+                    setMode("login");
+                    setError("");
+                  }}
+                >
+                  Back to login
+                </button>
+                <button
+                  className="rounded-full bg-orange px-6 py-3.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-400"
+                  disabled={submitting}
+                  type="submit"
+                >
+                  {submitting ? "Updating..." : "Set new password"}
+                </button>
+              </div>
             </form>
           ) : (
             <form className="mt-7 grid gap-5 sm:grid-cols-2" onSubmit={handleSignupSubmit}>

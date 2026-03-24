@@ -735,7 +735,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="grid gap-4 lg:h-[calc(100dvh-12.5rem)] lg:grid-cols-[23rem_minmax(0,1fr)]">
+    <div className="grid gap-4 overflow-hidden overscroll-none lg:h-[calc(100dvh-12.5rem)] lg:grid-cols-[23rem_minmax(0,1fr)]">
       <section
         className={`min-h-[calc(100dvh-9.1rem)] overflow-hidden rounded-none border-0 bg-transparent shadow-none sm:rounded-[30px] sm:border sm:border-[rgba(203,220,231,0.9)] sm:bg-[linear-gradient(180deg,rgba(251,253,255,0.96),rgba(241,243,245,0.9))] sm:shadow-soft lg:h-full lg:min-h-0 ${
           showMobileThread ? "hidden lg:block" : "block"
@@ -805,7 +805,7 @@ export default function MessagesPage() {
       </section>
 
       <section
-        className={`flex ${immersiveMobileThread ? "h-[100dvh] rounded-none border-0 shadow-none" : "h-[calc(100dvh-8.6rem)] rounded-[22px] border border-[rgba(203,220,231,0.9)] shadow-soft"} flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(251,253,255,0.97),rgba(241,243,245,0.92))] sm:rounded-[30px] sm:min-h-[calc(100dvh-9.6rem)] sm:h-auto lg:h-full lg:min-h-0 ${
+        className={`flex ${immersiveMobileThread ? "h-[100dvh] rounded-none border-0 shadow-none" : "h-[calc(100dvh-8.6rem)] rounded-[22px] border border-[rgba(203,220,231,0.9)] shadow-soft"} flex-col overflow-hidden overscroll-none bg-[linear-gradient(180deg,rgba(251,253,255,0.97),rgba(241,243,245,0.92))] sm:rounded-[30px] sm:min-h-[calc(100dvh-9.6rem)] sm:h-auto lg:h-full lg:min-h-0 ${
           !showMobileThread ? "hidden lg:flex" : "flex"
         }`}
       >
@@ -962,7 +962,7 @@ export default function MessagesPage() {
 
             <div
               ref={messagesScrollRef}
-              className="relative flex-1 overflow-y-auto px-3 py-3 sm:px-6 sm:py-5"
+              className="relative flex-1 overflow-y-auto overscroll-contain px-3 py-3 [touch-action:pan-y] sm:px-6 sm:py-5"
             >
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(240,55,55,0.07),transparent_18%),radial-gradient(circle_at_bottom_right,rgba(17,39,56,0.08),transparent_24%)]" />
               <div className="pointer-events-none absolute inset-x-3 inset-y-4 rounded-[22px] border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.28),rgba(255,255,255,0.08))] sm:inset-x-6 sm:inset-y-5 sm:rounded-[30px]" />

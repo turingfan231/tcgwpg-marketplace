@@ -246,7 +246,7 @@ export default function AppShell() {
       <main
         className={`page-shell ${
           isMobileThreadRoute
-            ? "px-0 py-0 pb-[env(safe-area-inset-bottom)] sm:px-6 sm:py-6 lg:px-8 lg:py-10 lg:pb-24 xl:px-10"
+            ? "h-[100dvh] overflow-hidden px-0 py-0 pb-[env(safe-area-inset-bottom)] sm:px-6 sm:py-6 lg:px-8 lg:py-10 lg:pb-24 xl:px-10"
             : "py-4 pb-[calc(7.15rem+env(safe-area-inset-bottom))] sm:py-6 lg:py-10 lg:pb-24"
         }`}
       >

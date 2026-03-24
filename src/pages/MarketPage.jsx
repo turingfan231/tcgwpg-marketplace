@@ -184,7 +184,23 @@ export default function MarketPage() {
   return (
     <div className="space-y-7">
       <section className="console-shell overflow-hidden">
-        <div className="grid gap-5 p-5 sm:p-7 xl:grid-cols-[1.15fr_0.85fr] xl:items-end">
+        <div className="flex items-center justify-between gap-4 p-4 sm:hidden">
+          <div className="min-w-0">
+            <p className="section-kicker">Market</p>
+            <h1 className="mt-1 truncate font-display text-[1.55rem] font-semibold tracking-[-0.05em] text-ink">
+              {selectedGame?.name || "All listings"}
+            </h1>
+            <p className="mt-1 text-sm text-steel">Live local listings.</p>
+          </div>
+          <button
+            className="shrink-0 rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-white shadow-soft"
+            type="button"
+            onClick={() => openCreateListing({ type: "WTS" })}
+          >
+            Sell
+          </button>
+        </div>
+        <div className="hidden gap-5 p-5 sm:grid sm:p-7 xl:grid-cols-[1.15fr_0.85fr] xl:items-end">
           <div>
             <p className="section-kicker">Market feed</p>
             <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-ink sm:text-[3.25rem]">

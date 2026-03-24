@@ -306,17 +306,18 @@ function BannerCard({
 function BestSellerCard({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
   return (
     <article className="overflow-hidden rounded-[20px] border border-[rgba(205,220,231,0.88)] bg-white shadow-soft sm:rounded-[26px]">
-      <button className="block w-full text-left" type="button" onClick={() => onOpen(listing.id)}>
-        <div className="flex aspect-[16/10] items-center justify-center bg-[linear-gradient(180deg,#fbf8f8_0%,#f0e8e8_100%)] p-3 sm:aspect-[4/3] sm:p-4">
+      <div className="flex sm:block">
+      <button className="block w-[6.6rem] shrink-0 text-left sm:w-full" type="button" onClick={() => onOpen(listing.id)}>
+        <div className="flex h-full min-h-[7.25rem] items-center justify-center bg-[linear-gradient(180deg,#fbf8f8_0%,#f0e8e8_100%)] p-2.5 sm:aspect-[4/3] sm:min-h-0 sm:p-4">
           <CardArtwork
-            className="aspect-[63/88] h-full max-h-[170px] rounded-[14px] object-cover shadow-soft sm:max-h-[220px] sm:rounded-[18px]"
+            className="aspect-[63/88] h-full max-h-[110px] rounded-[12px] object-cover shadow-soft sm:max-h-[220px] sm:rounded-[18px]"
             game={listing.game}
             src={listing.imageUrl}
             title={listing.title}
           />
         </div>
       </button>
-      <div className="space-y-3 p-3 sm:space-y-4 sm:p-4">
+      <div className="flex min-w-0 flex-1 flex-col justify-between space-y-2 p-3 sm:space-y-4 sm:p-4">
         <div className="flex items-start justify-between gap-2 sm:gap-3">
           <div className="min-w-0">
             <p className="line-clamp-2 text-[0.95rem] font-semibold text-ink sm:text-base">{listing.title}</p>
@@ -339,10 +340,11 @@ function BestSellerCard({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
           <p className="font-display text-[1.25rem] font-semibold tracking-[-0.05em] text-ink sm:text-[1.6rem]">
             {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
           </p>
-          <button className="text-[0.82rem] font-semibold text-navy sm:text-sm" type="button" onClick={() => onOpen(listing.id)}>
+          <button className="text-[0.78rem] font-semibold text-navy sm:text-sm" type="button" onClick={() => onOpen(listing.id)}>
             View
           </button>
         </div>
+      </div>
       </div>
     </article>
   );

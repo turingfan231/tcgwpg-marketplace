@@ -337,13 +337,13 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="space-y-5 sm:space-y-7">
+    <div className="space-y-4 sm:space-y-7">
       <section className="console-shell binder-edge p-4 sm:p-7">
         <p className="section-kicker">Local Events</p>
         <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.05em] text-ink sm:text-[3.25rem]">
           Winnipeg tournaments, leagues, and local nights
         </h1>
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-steel sm:mt-4 sm:text-base sm:leading-8">
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-steel sm:mt-4 sm:text-base sm:leading-8">
           Filter by game, store, and date range, then jump straight to the event page when a direct link is available.
         </p>
       </section>
@@ -533,7 +533,7 @@ export default function EventsPage() {
           )}
         </article>
 
-        <article className="console-panel binder-edge p-4 sm:p-6">
+        <article className="console-panel binder-edge p-3 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Upcoming list</p>
@@ -578,11 +578,11 @@ export default function EventsPage() {
           ) : null}
 
           {eventsForList.length ? (
-            <div className="header-chip-scroll mt-4 space-y-3 overflow-y-auto pr-1 md:mt-5 md:space-y-4 md:max-h-[46.25rem]">
+            <div className="header-chip-scroll mt-3 space-y-2.5 overflow-y-auto pr-1 md:mt-5 md:space-y-4 md:max-h-[46.25rem]">
               {eventsForList.map((event) => (
                 <article
                   key={event.id}
-                  className="rounded-[18px] border border-slate-200 bg-[#f7f7f8] p-3 sm:rounded-[24px] sm:p-5"
+                  className="rounded-[16px] border border-slate-200 bg-[#f7f7f8] p-2.5 sm:rounded-[24px] sm:p-5"
                 >
                   {(() => {
                     const eventKey = buildEventKey(event);
@@ -604,10 +604,10 @@ export default function EventsPage() {
                     </span>
                   </div>
 
-                  <h3 className="mt-2.5 font-display text-[1.18rem] font-semibold tracking-[-0.03em] text-ink sm:mt-4 sm:text-2xl">
+                  <h3 className="mt-2 font-display text-[1rem] font-semibold tracking-[-0.03em] text-ink sm:mt-4 sm:text-2xl">
                     {event.title}
                   </h3>
-                  <div className="mt-2.5 grid gap-1.5 text-[0.78rem] text-steel sm:mt-4 sm:gap-3 sm:text-sm">
+                  <div className="mt-2 grid gap-1 text-[0.76rem] text-steel sm:mt-4 sm:gap-3 sm:text-sm">
                     <span className="inline-flex items-center gap-2">
                       <Store size={16} />
                       {getStoreSlugByName(event.store) ? (
@@ -633,7 +633,7 @@ export default function EventsPage() {
                       </span>
                     ) : null}
                   </div>
-                  <div className="mt-2.5 flex flex-wrap gap-1.5 sm:mt-4 sm:gap-2">
+                  <div className="mt-2 flex flex-wrap gap-1.5 sm:mt-4 sm:gap-2">
                     {event.sourceUrl ? (
                       <a
                         className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-navy transition hover:border-slate-300 sm:px-4 sm:py-2 sm:text-sm sm:tracking-[0]"
@@ -655,6 +655,33 @@ export default function EventsPage() {
                       <span className="hidden sm:inline">Add to calendar</span>
                       <CalendarDays size={14} />
                     </button>
+                  </div>
+                  <div className="mt-2 grid grid-cols-3 gap-1.5 sm:hidden">
+                    <button
+                      className={`rounded-full border px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] transition ${
+                        reminderEnabled
+                          ? "border-[rgba(177,29,35,0.24)] bg-[rgba(240,55,55,0.08)] text-navy"
+                          : "border-slate-200 bg-white text-steel"
+                      }`}
+                      type="button"
+                      onClick={() => void toggleEventReminder(eventKey)}
+                    >
+                      Remind
+                    </button>
+                    {attendanceOptions.map((option) => (
+                      <button
+                        key={option.id}
+                        className={`rounded-full border px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] transition ${
+                          selectedIntent === option.id
+                            ? "border-[rgba(177,29,35,0.24)] bg-navy text-white"
+                            : "border-slate-200 bg-white text-steel"
+                        }`}
+                        type="button"
+                        onClick={() => void setEventAttendanceIntent(eventKey, option.id)}
+                      >
+                        {option.id === "trading-there" ? "Trade" : option.label}
+                      </button>
+                    ))}
                   </div>
                   {event.note ? (
                     <p className="mt-2.5 hidden text-[0.78rem] leading-5 text-steel sm:mt-4 sm:block sm:text-sm sm:leading-7">{event.note}</p>

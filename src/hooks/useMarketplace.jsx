@@ -2740,6 +2740,32 @@ export function MarketplaceProvider({ children }) {
     }
   }
 
+  async function requestPasswordReset(email) {
+    if (!isSupabaseConfigured) {
+      return { ok: false, error: "Supabase is not configured." };
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedEmail) {
+      return { ok: false, error: "Enter the email on your account first." };
+    }
+
+    const redirectTo =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/auth?mode=recovery`
+        : undefined;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo,
+    });
+
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+
+    return { ok: true };
+  }
+
   async function logout() {
     setAuthReady(false);
     try {
@@ -3009,6 +3035,30 @@ export function MarketplaceProvider({ children }) {
         activeDraftId: draftId,
       },
       updated_at: new Date().toISOString(),
+    });
+
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+
+    return { ok: true };
+  }
+
+  async function completePasswordRecovery(payload) {
+    if (!isSupabaseConfigured) {
+      return { ok: false, error: "Supabase is not configured." };
+    }
+
+    if (!payload.newPassword || payload.newPassword.length < 6) {
+      return { ok: false, error: "New password must be at least 6 characters." };
+    }
+
+    if (payload.newPassword !== payload.confirmPassword) {
+      return { ok: false, error: "New passwords do not match." };
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password: payload.newPassword,
     });
 
     if (error) {
@@ -5585,6 +5635,7 @@ export function MarketplaceProvider({ children }) {
     recordListingView,
     recordSearchQuery,
     refreshMarketplaceData,
+    requestPasswordReset,
     removeManualEvent,
     removeCollectionItem,
     reports,
@@ -5620,6 +5671,7 @@ export function MarketplaceProvider({ children }) {
     toggleUserVerified,
     unreadMessageCount,
     unreadNotificationCount,
+    completePasswordRecovery,
     updateBugReport,
     updateCollectionItem,
     updateCurrentUserProfile,

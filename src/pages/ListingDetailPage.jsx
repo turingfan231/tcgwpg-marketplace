@@ -466,8 +466,8 @@ export default function ListingDetailPage() {
           </div>
         </div>
 
-        <div className="space-y-5">
-          <div className="console-shell p-5 sm:p-7">
+        <div className="space-y-4 sm:space-y-5">
+          <div className="console-shell p-4 sm:p-7">
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] sm:px-3 sm:text-[11px] sm:tracking-[0.18em] ${getListingTypeClasses(
@@ -497,23 +497,23 @@ export default function ListingDetailPage() {
               ) : null}
             </div>
 
-            <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.05em] text-ink sm:mt-4 sm:text-4xl">
+            <h1 className="mt-2.5 font-display text-[1.55rem] font-semibold tracking-[-0.05em] text-ink sm:mt-4 sm:text-4xl">
               {listing.title}
             </h1>
-            <p className="mt-3 text-[0.9rem] leading-6 text-steel sm:mt-4 sm:text-base sm:leading-8">{listing.description}</p>
+            <p className="mt-2 text-[0.84rem] leading-5 text-steel sm:mt-4 sm:text-base sm:leading-8">{listing.description}</p>
 
-            <div className="mt-4 grid gap-3 sm:mt-6 sm:gap-4 sm:grid-cols-2">
-              <div className="rounded-[18px] bg-slate-50 p-3.5 sm:rounded-[26px] sm:p-5">
+            <div className="mt-3 grid gap-2.5 sm:mt-6 sm:gap-4 sm:grid-cols-2">
+              <div className="rounded-[16px] bg-slate-50 p-3 sm:rounded-[26px] sm:p-5">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-sm sm:tracking-[0.2em]">
                   Asking price
                 </p>
-                <div className="mt-2.5 flex flex-wrap items-end gap-2.5 sm:mt-3 sm:gap-3">
+                <div className="mt-2 flex flex-wrap items-end gap-2 sm:mt-3 sm:gap-3">
                   {listing.previousPrice && listing.previousPrice > listing.price ? (
                     <span className="text-[1rem] font-semibold text-slate-400 line-through sm:text-xl">
                       {formatCadPrice(listing.previousPrice, listing.priceCurrency || "CAD")}
                     </span>
                   ) : null}
-                  <span className="font-display text-[2rem] font-semibold tracking-[-0.04em] text-ink sm:text-4xl">
+                  <span className="font-display text-[1.55rem] font-semibold tracking-[-0.04em] text-ink sm:text-4xl">
                     {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
                   </span>
                 </div>
@@ -522,12 +522,12 @@ export default function ListingDetailPage() {
                   {listing.postalCode ? ` | ${listing.postalCode}` : ""}
                 </p>
               </div>
-              <div className="rounded-[18px] bg-navy/8 p-3.5 sm:rounded-[26px] sm:p-5">
+              <div className="rounded-[16px] bg-navy/8 p-3 sm:rounded-[26px] sm:p-5">
                 <p className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-navy sm:text-sm sm:tracking-[0.2em]">
                   <TrendingUp size={16} />
                   Market average
                 </p>
-                <p className="mt-2.5 font-display text-[2rem] font-semibold tracking-[-0.04em] text-ink sm:mt-3 sm:text-4xl">
+                <p className="mt-2 font-display text-[1.55rem] font-semibold tracking-[-0.04em] text-ink sm:mt-3 sm:text-4xl">
                   {listing.marketPrice
                     ? formatCadPrice(listing.marketPrice, listing.marketPriceCurrency || "CAD")
                     : "Unavailable"}
@@ -540,29 +540,29 @@ export default function ListingDetailPage() {
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-2.5 sm:mt-6 sm:gap-3 sm:grid-cols-4">
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-6 sm:gap-3 sm:grid-cols-4">
               {[
                 { label: "Views", value: listing.views },
                 { label: "Offers", value: listing.offers },
                 { label: "Posted", value: listing.timeAgo },
                 { label: "Format", value: listing.listingFormat || "single" },
               ].map((stat) => (
-                <div key={stat.label} className="rounded-[18px] border border-slate-200 px-3 py-3 sm:rounded-[24px] sm:px-4 sm:py-4">
+                <div key={stat.label} className="rounded-[16px] border border-slate-200 px-3 py-2.5 sm:rounded-[24px] sm:px-4 sm:py-4">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-sm sm:tracking-[0.2em]">
                     {stat.label}
                   </p>
-                  <p className="mt-1.5 font-display text-[1.2rem] font-semibold tracking-[-0.03em] text-ink sm:mt-2 sm:text-2xl">
+                  <p className="mt-1 font-display text-[1.02rem] font-semibold tracking-[-0.03em] text-ink sm:mt-2 sm:text-2xl">
                     {stat.value}
                   </p>
                 </div>
               ))}
             </div>
 
-            <div className="mt-4 grid grid-cols-3 gap-2.5 sm:mt-6 sm:flex sm:flex-wrap sm:gap-3">
+            <div className="mt-3 grid grid-cols-3 gap-2 sm:mt-6 sm:flex sm:flex-wrap sm:gap-3">
               {!isOwner ? (
                 <button
                   aria-label="Make offer"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-orange px-3 py-3 text-[0.82rem] font-semibold text-white shadow-soft sm:w-auto sm:px-5 sm:py-4 sm:text-sm"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-orange px-3 py-2.5 text-[0.8rem] font-semibold text-white shadow-soft sm:w-auto sm:px-5 sm:py-4 sm:text-sm"
                   type="button"
                   onClick={() => setShowOfferModal(true)}
                 >
@@ -574,7 +574,7 @@ export default function ListingDetailPage() {
               {!isOwner ? (
                 <button
                   aria-label="Message seller"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-navy px-3 py-3 text-[0.82rem] font-semibold text-white shadow-soft sm:w-auto sm:px-5 sm:py-4 sm:text-sm"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-navy px-3 py-2.5 text-[0.8rem] font-semibold text-white shadow-soft sm:w-auto sm:px-5 sm:py-4 sm:text-sm"
                   type="button"
                   onClick={async () => {
                     if (!currentUser) {
@@ -593,10 +593,11 @@ export default function ListingDetailPage() {
                   }}
                 >
                   <MessageSquare size={18} />
+                  <span className="sm:hidden">Chat</span>
                   <span className="hidden sm:inline">Message seller</span>
                 </button>
               ) : (
-                <div className="col-span-2 inline-flex w-full items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-3 py-3 text-[0.82rem] font-semibold text-steel sm:w-auto sm:px-5 sm:py-4 sm:text-sm">
+                <div className="col-span-2 inline-flex w-full items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-3 py-2.5 text-[0.8rem] font-semibold text-steel sm:w-auto sm:px-5 sm:py-4 sm:text-sm">
                   <span className="sm:hidden">Your listing</span>
                   <span className="hidden sm:inline">Your own listing</span>
                 </div>
@@ -604,11 +605,12 @@ export default function ListingDetailPage() {
               {!isOwner ? (
                 <button
                   aria-label="Report listing"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-3 text-[0.82rem] font-semibold text-rose-700 sm:w-auto sm:px-5 sm:py-4 sm:text-sm"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2.5 text-[0.8rem] font-semibold text-rose-700 sm:w-auto sm:px-5 sm:py-4 sm:text-sm"
                   type="button"
                   onClick={() => setShowReportModal(true)}
                 >
                   <Flag size={16} />
+                  <span className="sm:hidden">Flag</span>
                   <span className="hidden sm:inline">Report</span>
                 </button>
               ) : null}
