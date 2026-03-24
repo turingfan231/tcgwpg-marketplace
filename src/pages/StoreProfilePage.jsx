@@ -104,7 +104,7 @@ export default function StoreProfilePage() {
     <div className="space-y-8">
       <section className="console-panel overflow-hidden p-0">
         <div className="relative overflow-hidden bg-[linear-gradient(135deg,#0f2536,#17384c)] p-7 text-white sm:p-8">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.08),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(216,164,90,0.12),transparent_18%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.08),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(105,180,176,0.14),transparent_18%)]" />
           <div className="relative z-10 grid gap-6 lg:grid-cols-[1fr_16rem] lg:items-end">
             <div>
               <p className="section-kicker text-white/62">Store profile</p>
