@@ -400,10 +400,12 @@ export default function MessagesPage() {
   const navigate = useNavigate();
   const { threadId } = useParams();
   const {
+    authReady,
     currentUserId,
     formatCadPrice,
     getThreadById,
     hideThreadForCurrentUser,
+    isAuthenticated,
     loading,
     markThreadRead,
     offersByListingId,
@@ -576,8 +578,9 @@ export default function MessagesPage() {
 
   const showListingPanel = Boolean(activeThread?.listing) && (isDesktop || mobileDetailPanel === "listing");
   const showOfferPanel = Boolean(threadOffers.length) && (isDesktop || mobileDetailPanel === "offers");
+  const shouldShowLoading = !authReady || (loading && isAuthenticated);
 
-  if (loading && !threadsForCurrentUser.length) {
+  if (shouldShowLoading && !threadsForCurrentUser.length) {
     return <PageSkeleton cards={2} rows={1} titleWidth="w-48" />;
   }
 
