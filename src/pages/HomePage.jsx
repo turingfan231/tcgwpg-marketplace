@@ -90,28 +90,28 @@ function QuickActionButton({ children, tone = "light", ...props }) {
 
 function PulseTile({ label, value, detail }) {
   return (
-    <div className="console-well px-4 py-4">
+    <div className="console-well px-3 py-3 sm:px-4 sm:py-4">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy/65">{label}</p>
-      <p className="mt-2 font-display text-[1.9rem] font-semibold tracking-[-0.04em] text-ink">{value}</p>
-      {detail ? <p className="mt-1 text-sm text-steel">{detail}</p> : null}
+      <p className="mt-1.5 font-display text-[1.45rem] font-semibold tracking-[-0.04em] text-ink sm:mt-2 sm:text-[1.9rem]">{value}</p>
+      {detail ? <p className="mt-1 text-[0.82rem] text-steel sm:text-sm">{detail}</p> : null}
     </div>
   );
 }
 
 function FeedRow({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
   return (
-    <div className="flex items-start gap-3 rounded-[22px] border border-[rgba(203,220,231,0.92)] bg-white/82 px-4 py-4 shadow-[0_14px_32px_-28px_rgba(26,91,120,0.55)] transition duration-300 hover:-translate-y-0.5 hover:border-navy/16 hover:shadow-soft">
+    <div className="flex items-start gap-2.5 rounded-[18px] border border-[rgba(203,220,231,0.92)] bg-white/82 px-3 py-3 shadow-[0_14px_32px_-28px_rgba(26,91,120,0.55)] transition duration-300 hover:-translate-y-0.5 hover:border-navy/16 hover:shadow-soft sm:gap-3 sm:rounded-[22px] sm:px-4 sm:py-4">
       <button className="min-w-0 flex-1 text-left" type="button" onClick={() => onOpen(listing.id)}>
-        <p className="truncate font-semibold text-ink">{listing.title}</p>
-        <p className="mt-1 text-sm text-steel">
+        <p className="truncate text-[0.95rem] font-semibold text-ink sm:text-base">{listing.title}</p>
+        <p className="mt-0.5 text-[0.78rem] text-steel sm:mt-1 sm:text-sm">
           {listing.game} | {listing.neighborhood}
         </p>
       </button>
       <div className="text-right">
-        <p className="font-semibold text-ink">
+        <p className="text-[0.95rem] font-semibold text-ink sm:text-base">
           {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
         </p>
-        <p className="mt-1 text-xs uppercase tracking-[0.16em] text-steel">{listing.timeAgo}</p>
+        <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-steel sm:mt-1 sm:text-xs sm:tracking-[0.16em]">{listing.timeAgo}</p>
       </div>
       <button
         aria-label={listing.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
@@ -133,23 +133,23 @@ function FeedRow({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
 function ShelfCard({ listing, formatCadPrice, onOpen }) {
   return (
     <button
-      className="flex w-full items-center gap-3 rounded-[20px] border border-[rgba(203,220,231,0.92)] bg-white/82 px-4 py-4 text-left transition duration-300 hover:-translate-y-0.5 hover:border-navy/20 hover:shadow-soft"
+      className="flex w-full items-center gap-2.5 rounded-[18px] border border-[rgba(203,220,231,0.92)] bg-white/82 px-3 py-3 text-left transition duration-300 hover:-translate-y-0.5 hover:border-navy/20 hover:shadow-soft sm:gap-3 sm:rounded-[20px] sm:px-4 sm:py-4"
       type="button"
       onClick={() => onOpen(listing.id)}
     >
       <CardArtwork
-        className="aspect-[63/88] w-[4.5rem] rounded-[16px] object-cover"
+        className="aspect-[63/88] w-[3.75rem] rounded-[14px] object-cover sm:w-[4.5rem] sm:rounded-[16px]"
         game={listing.game}
         src={listing.imageUrl}
         title={listing.title}
       />
       <div className="min-w-0 flex-1">
-        <p className="line-clamp-2 font-semibold text-ink">{listing.title}</p>
-        <p className="mt-1 text-sm text-steel">
+        <p className="line-clamp-2 text-[0.92rem] font-semibold text-ink sm:text-base">{listing.title}</p>
+        <p className="mt-0.5 text-[0.78rem] text-steel sm:mt-1 sm:text-sm">
           {listing.neighborhood} | {listing.seller?.publicName || listing.seller?.name}
         </p>
       </div>
-      <p className="font-semibold text-ink">
+      <p className="text-[0.95rem] font-semibold text-ink sm:text-base">
         {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
       </p>
     </button>
@@ -262,22 +262,22 @@ function BannerCard({
 
 function BestSellerCard({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
   return (
-    <article className="overflow-hidden rounded-[26px] border border-[rgba(205,220,231,0.88)] bg-white shadow-soft">
+    <article className="overflow-hidden rounded-[20px] border border-[rgba(205,220,231,0.88)] bg-white shadow-soft sm:rounded-[26px]">
       <button className="block w-full text-left" type="button" onClick={() => onOpen(listing.id)}>
-        <div className="flex aspect-[4/3] items-center justify-center bg-[linear-gradient(180deg,#fbf8f8_0%,#f0e8e8_100%)] p-4">
+        <div className="flex aspect-[16/10] items-center justify-center bg-[linear-gradient(180deg,#fbf8f8_0%,#f0e8e8_100%)] p-3 sm:aspect-[4/3] sm:p-4">
           <CardArtwork
-            className="aspect-[63/88] h-full max-h-[220px] rounded-[18px] object-cover shadow-soft"
+            className="aspect-[63/88] h-full max-h-[170px] rounded-[14px] object-cover shadow-soft sm:max-h-[220px] sm:rounded-[18px]"
             game={listing.game}
             src={listing.imageUrl}
             title={listing.title}
           />
         </div>
       </button>
-      <div className="space-y-4 p-4">
-        <div className="flex items-start justify-between gap-3">
+      <div className="space-y-3 p-3 sm:space-y-4 sm:p-4">
+        <div className="flex items-start justify-between gap-2 sm:gap-3">
           <div className="min-w-0">
-            <p className="line-clamp-2 font-semibold text-ink">{listing.title}</p>
-            <p className="mt-1 text-sm text-steel">
+            <p className="line-clamp-2 text-[0.95rem] font-semibold text-ink sm:text-base">{listing.title}</p>
+            <p className="mt-0.5 text-[0.78rem] text-steel sm:mt-1 sm:text-sm">
               {listing.game} | {listing.neighborhood}
             </p>
           </div>
@@ -293,10 +293,10 @@ function BestSellerCard({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
           </button>
         </div>
         <div className="flex items-center justify-between">
-          <p className="font-display text-[1.6rem] font-semibold tracking-[-0.05em] text-ink">
+          <p className="font-display text-[1.25rem] font-semibold tracking-[-0.05em] text-ink sm:text-[1.6rem]">
             {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
           </p>
-          <button className="text-sm font-semibold text-navy" type="button" onClick={() => onOpen(listing.id)}>
+          <button className="text-[0.82rem] font-semibold text-navy sm:text-sm" type="button" onClick={() => onOpen(listing.id)}>
             View
           </button>
         </div>
@@ -756,7 +756,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="stagger-stack space-y-8 lg:space-y-14">
+    <div className="stagger-stack space-y-6 sm:space-y-8 lg:space-y-14">
       {homeSections.showHero !== false ? (
       <section className="drop-in-item space-y-4 sm:space-y-6">
         <div>
@@ -901,7 +901,7 @@ export default function HomePage() {
             <ArrowRight size={14} />
           </Link>
         </div>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
           {newThisWeekListings.length ? (
             newThisWeekListings.map((listing) => (
               <ShelfCard
@@ -912,7 +912,7 @@ export default function HomePage() {
               />
             ))
           ) : (
-            <div className="rounded-[24px] border border-dashed border-[rgba(203,220,231,0.92)] bg-white/70 px-5 py-10 text-sm leading-7 text-steel md:col-span-2 xl:col-span-4">
+            <div className="rounded-[20px] border border-dashed border-[rgba(203,220,231,0.92)] bg-white/70 px-4 py-8 text-sm leading-6 text-steel md:col-span-2 xl:col-span-4 sm:rounded-[24px] sm:px-5 sm:py-10 sm:leading-7">
               New listings from the last seven days will appear here automatically.
             </div>
           )}
@@ -929,18 +929,18 @@ export default function HomePage() {
         }`}
       >
         {homeSections.showFreshFeed !== false ? (
-        <article className="drop-in-item console-panel binder-edge p-5 sm:p-6">
+        <article className="drop-in-item console-panel binder-edge p-4 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Fresh from the feed</p>
-              <h2 className="mt-2 font-display text-[2rem] font-semibold tracking-[-0.05em] text-ink">
+              <h2 className="mt-2 font-display text-[1.65rem] font-semibold tracking-[-0.05em] text-ink sm:text-[2rem]">
                 New local listings
               </h2>
             </div>
             <Store className="text-navy" size={20} />
           </div>
 
-          <div className="mt-5 grid gap-3">
+          <div className="mt-4 grid gap-2.5 sm:mt-5 sm:gap-3">
             {freshListings.length ? (
               freshListings.map((listing) => (
                 <FeedRow
@@ -952,7 +952,7 @@ export default function HomePage() {
                 />
               ))
             ) : (
-              <div className="rounded-[24px] border border-dashed border-[rgba(203,220,231,0.92)] bg-white/70 px-5 py-10 text-sm leading-7 text-steel">
+              <div className="rounded-[20px] border border-dashed border-[rgba(203,220,231,0.92)] bg-white/70 px-4 py-8 text-sm leading-6 text-steel sm:rounded-[24px] sm:px-5 sm:py-10 sm:leading-7">
                 New listings will appear here as soon as cards are posted.
               </div>
             )}
@@ -961,18 +961,18 @@ export default function HomePage() {
         ) : null}
 
         {homeSections.showFollowedFeed !== false && currentUser && followedSellerIds.length ? (
-          <article className="drop-in-item console-panel binder-edge p-5 sm:p-6">
+          <article className="drop-in-item console-panel binder-edge p-4 sm:p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="section-kicker">Following</p>
-                <h2 className="mt-2 font-display text-[1.9rem] font-semibold tracking-[-0.04em] text-ink">
+                <h2 className="mt-2 font-display text-[1.6rem] font-semibold tracking-[-0.04em] text-ink sm:text-[1.9rem]">
                   New from followed sellers
                 </h2>
               </div>
               <BellRing className="text-orange" size={20} />
             </div>
 
-            <div className="mt-5 grid gap-3">
+            <div className="mt-4 grid gap-2.5 sm:mt-5 sm:gap-3">
               {followedSellerFeed.length ? (
                 followedSellerFeed.map((listing) => (
                   <FeedRow
@@ -984,7 +984,7 @@ export default function HomePage() {
                   />
                 ))
               ) : (
-                <div className="rounded-[24px] border border-dashed border-[rgba(203,220,231,0.92)] bg-white/70 px-5 py-10 text-sm leading-7 text-steel">
+                <div className="rounded-[20px] border border-dashed border-[rgba(203,220,231,0.92)] bg-white/70 px-4 py-8 text-sm leading-6 text-steel sm:rounded-[24px] sm:px-5 sm:py-10 sm:leading-7">
                   Follow a few sellers and their newest listings will show up here.
                 </div>
               )}
@@ -992,32 +992,32 @@ export default function HomePage() {
           </article>
         ) : null}
 
-        <aside className="drop-in-item console-panel binder-edge p-5 sm:p-6">
+        <aside className="drop-in-item console-panel binder-edge p-4 sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="section-kicker">Browse by game</p>
-              <h2 className="mt-2 font-display text-[1.9rem] font-semibold tracking-[-0.04em] text-ink">
+              <h2 className="mt-2 font-display text-[1.6rem] font-semibold tracking-[-0.04em] text-ink sm:text-[1.9rem]">
                 Quick channels
               </h2>
             </div>
             <Users className="text-orange" size={20} />
           </div>
 
-          <div className="mt-5 grid gap-3">
+          <div className="mt-4 grid gap-2.5 sm:mt-5 sm:gap-3">
             {categorySummaries.map((game) => (
               <button
                 key={game.slug}
-                className="console-well px-4 py-4 text-left transition hover:-translate-y-0.5 hover:border-navy/25"
+                className="console-well px-3 py-3 text-left transition hover:-translate-y-0.5 hover:border-navy/25 sm:px-4 sm:py-4"
                 type="button"
                 onClick={() => {
                   setGlobalSearch("");
                   navigate(`/market/${game.slug}`);
                 }}
               >
-                <p className="font-display text-[1.2rem] font-semibold tracking-[-0.03em] text-ink">
+                <p className="font-display text-[1rem] font-semibold tracking-[-0.03em] text-ink sm:text-[1.2rem]">
                   {game.name}
                 </p>
-                <p className="mt-1 text-sm text-steel">{game.count} active listings</p>
+                <p className="mt-0.5 text-[0.8rem] text-steel sm:mt-1 sm:text-sm">{game.count} active listings</p>
               </button>
             ))}
           </div>
@@ -1026,11 +1026,11 @@ export default function HomePage() {
       ) : null}
 
       {homeSections.showGameShelves !== false ? (
-      <section className="drop-in-item console-panel binder-edge p-5 sm:p-6">
+      <section className="drop-in-item console-panel binder-edge p-4 sm:p-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="section-kicker">Game shelves</p>
-            <h2 className="mt-2 font-display text-[2rem] font-semibold tracking-[-0.05em] text-ink">
+            <h2 className="mt-2 font-display text-[1.65rem] font-semibold tracking-[-0.05em] text-ink sm:text-[2rem]">
               Browse the active market
             </h2>
           </div>
@@ -1040,14 +1040,14 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="mt-5 grid gap-4 xl:grid-cols-3">
+        <div className="mt-4 grid gap-3 xl:grid-cols-3 sm:mt-5 sm:gap-4">
           {gameShelves.map((game) => (
             <article
               key={game.slug}
-              className="overflow-hidden rounded-[26px] border border-[rgba(203,220,231,0.92)] bg-white/78 transition duration-300 hover:-translate-y-0.5 hover:shadow-soft"
+              className="overflow-hidden rounded-[20px] border border-[rgba(203,220,231,0.92)] bg-white/78 transition duration-300 hover:-translate-y-0.5 hover:shadow-soft sm:rounded-[26px]"
             >
               <div
-                className={`border-b border-[rgba(203,220,231,0.82)] px-5 py-5 ${
+                className={`border-b border-[rgba(203,220,231,0.82)] px-4 py-4 sm:px-5 sm:py-5 ${
                   GAME_SHELF_THEMES[game.slug]?.header ||
                   "bg-[linear-gradient(180deg,#fbf8f8_0%,#f2ebeb_100%)]"
                 }`}
@@ -1055,18 +1055,18 @@ export default function HomePage() {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p
-                      className={`text-xs font-semibold uppercase tracking-[0.2em] ${
+                      className={`text-[10px] font-semibold uppercase tracking-[0.14em] sm:text-xs sm:tracking-[0.2em] ${
                         GAME_SHELF_THEMES[game.slug]?.badge || "text-navy/60"
                       }`}
                     >
                       {game.shortName}
                     </p>
-                    <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-ink">
+                    <h3 className="mt-1.5 font-display text-[1.45rem] font-semibold tracking-[-0.04em] text-ink sm:mt-2 sm:text-2xl">
                       {game.name}
                     </h3>
                   </div>
                   <button
-                    className={`inline-flex items-center gap-1 text-sm font-semibold ${
+                    className={`inline-flex items-center gap-1 text-[0.82rem] font-semibold sm:text-sm ${
                       GAME_SHELF_THEMES[game.slug]?.button || "text-navy"
                     }`}
                     type="button"
@@ -1079,10 +1079,10 @@ export default function HomePage() {
                     <ArrowRight size={14} />
                   </button>
                 </div>
-                <p className="mt-3 text-sm leading-7 text-steel">{game.description}</p>
+                <p className="mt-2 text-[0.84rem] leading-6 text-steel sm:mt-3 sm:text-sm sm:leading-7">{game.description}</p>
               </div>
 
-              <div className="space-y-3 p-4">
+              <div className="space-y-2.5 p-3 sm:space-y-3 sm:p-4">
                 {game.listings.length ? (
                   game.listings.map((listing) => (
                     <ShelfCard
@@ -1093,7 +1093,7 @@ export default function HomePage() {
                     />
                   ))
                 ) : (
-                  <div className="rounded-[20px] border border-dashed border-[rgba(203,220,231,0.92)] bg-white/68 px-4 py-6 text-sm text-steel">
+                  <div className="rounded-[18px] border border-dashed border-[rgba(203,220,231,0.92)] bg-white/68 px-3 py-5 text-sm text-steel sm:rounded-[20px] sm:px-4 sm:py-6">
                     No active {game.shortName} listings yet.
                   </div>
                 )}
@@ -1107,36 +1107,36 @@ export default function HomePage() {
       {(homeSections.showEvents !== false || homeSections.showTrustedSellers !== false) ? (
       <section className="drop-in-cluster grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         {homeSections.showEvents !== false ? (
-        <article className="drop-in-item console-panel binder-edge p-5 sm:p-6">
+        <article className="drop-in-item console-panel binder-edge p-4 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Upcoming events</p>
-              <h2 className="mt-2 font-display text-[1.95rem] font-semibold tracking-[-0.05em] text-ink">
+              <h2 className="mt-2 font-display text-[1.6rem] font-semibold tracking-[-0.05em] text-ink sm:text-[1.95rem]">
                 Local calendar
               </h2>
             </div>
             <CalendarRange className="text-orange" size={20} />
           </div>
-          <div className="mt-5 space-y-3">
+          <div className="mt-4 space-y-2.5 sm:mt-5 sm:space-y-3">
             {upcomingEvents.length ? (
               upcomingEvents.map((event) => (
                 <div
                   key={event.id}
-                  className="flex items-start justify-between gap-4 rounded-[20px] border border-[rgba(203,220,231,0.92)] bg-white/78 px-4 py-4"
+                  className="flex items-start justify-between gap-3 rounded-[18px] border border-[rgba(203,220,231,0.92)] bg-white/78 px-3 py-3 sm:gap-4 sm:rounded-[20px] sm:px-4 sm:py-4"
                 >
                   <div>
-                    <p className="font-semibold text-ink">{event.title}</p>
-                    <p className="mt-1 text-sm text-steel">
+                    <p className="text-[0.95rem] font-semibold text-ink sm:text-base">{event.title}</p>
+                    <p className="mt-0.5 text-[0.8rem] text-steel sm:mt-1 sm:text-sm">
                       {event.store} | {event.dateStr} | {event.time}
                     </p>
                   </div>
-                  <Link className="whitespace-nowrap text-sm font-semibold text-navy" to="/events">
+                  <Link className="whitespace-nowrap text-[0.82rem] font-semibold text-navy sm:text-sm" to="/events">
                     Details
                   </Link>
                 </div>
               ))
             ) : (
-              <div className="rounded-[20px] border border-dashed border-[rgba(203,220,231,0.92)] bg-white/70 px-4 py-6 text-sm text-steel">
+              <div className="rounded-[18px] border border-dashed border-[rgba(203,220,231,0.92)] bg-white/70 px-3 py-5 text-sm text-steel sm:rounded-[20px] sm:px-4 sm:py-6">
                 Event listings are still being refreshed.
               </div>
             )}
@@ -1145,38 +1145,38 @@ export default function HomePage() {
         ) : null}
 
         {homeSections.showTrustedSellers !== false ? (
-        <article className="drop-in-item console-panel binder-edge p-5 sm:p-6">
+        <article className="drop-in-item console-panel binder-edge p-4 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Trusted sellers</p>
-              <h2 className="mt-2 font-display text-[1.95rem] font-semibold tracking-[-0.05em] text-ink">
+              <h2 className="mt-2 font-display text-[1.6rem] font-semibold tracking-[-0.05em] text-ink sm:text-[1.95rem]">
                 Accounts worth browsing
               </h2>
             </div>
             <Shield className="text-navy" size={20} />
           </div>
 
-          <div className="mt-5 space-y-3">
+          <div className="mt-4 space-y-2.5 sm:mt-5 sm:space-y-3">
             {topSellers.map((seller) => (
               <button
                 key={seller.id}
-                className="flex w-full items-center justify-between gap-4 rounded-[20px] border border-[rgba(203,220,231,0.92)] bg-white/78 px-4 py-4 text-left transition hover:border-navy/20"
+                className="flex w-full items-center justify-between gap-3 rounded-[18px] border border-[rgba(203,220,231,0.92)] bg-white/78 px-3 py-3 text-left transition hover:border-navy/20 sm:gap-4 sm:rounded-[20px] sm:px-4 sm:py-4"
                 type="button"
                 onClick={() => navigate(`/seller/${seller.id}`)}
               >
-                <div className="flex min-w-0 items-center gap-3">
-                  <UserAvatar className="h-11 w-11 text-sm font-bold" user={seller} />
+                <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+                  <UserAvatar className="h-9 w-9 text-[0.78rem] font-bold sm:h-11 sm:w-11 sm:text-sm" user={seller} />
                   <div className="min-w-0">
-                    <p className="truncate font-semibold text-ink">
+                    <p className="truncate text-[0.95rem] font-semibold text-ink sm:text-base">
                       {seller.publicName || seller.firstName || seller.name}
                     </p>
-                    <p className="mt-1 text-sm text-steel">
+                    <p className="mt-0.5 text-[0.78rem] text-steel sm:mt-1 sm:text-sm">
                       {seller.completedDeals || 0} deals
                       {seller.overallRating ? ` | ${seller.overallRating.toFixed(1)} rating` : ""}
                     </p>
                   </div>
                 </div>
-                <span className="inline-flex items-center gap-2 text-sm font-semibold text-navy">
+                <span className="inline-flex items-center gap-2 text-[0.82rem] font-semibold text-navy sm:text-sm">
                   View
                   <ArrowRight size={14} />
                 </span>
@@ -1184,18 +1184,18 @@ export default function HomePage() {
             ))}
           </div>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <div className="console-well p-4">
+          <div className="mt-4 grid gap-2.5 sm:mt-5 sm:gap-3 sm:grid-cols-2">
+            <div className="console-well p-3 sm:p-4">
               <MessageCircleMore className="text-orange" size={18} />
-              <p className="mt-3 font-semibold text-ink">In-app offers</p>
-              <p className="mt-1 text-sm leading-7 text-steel">
+              <p className="mt-2.5 text-[0.95rem] font-semibold text-ink sm:mt-3 sm:text-base">In-app offers</p>
+              <p className="mt-1 text-[0.82rem] leading-6 text-steel sm:text-sm sm:leading-7">
                 Keep cash, trade, and meetup details attached to the listing thread.
               </p>
             </div>
-            <div className="console-well p-4">
+            <div className="console-well p-3 sm:p-4">
               <MapPin className="text-navy" size={18} />
-              <p className="mt-3 font-semibold text-ink">Neighborhood filters</p>
-              <p className="mt-1 text-sm leading-7 text-steel">
+              <p className="mt-2.5 text-[0.95rem] font-semibold text-ink sm:mt-3 sm:text-base">Neighborhood filters</p>
+              <p className="mt-1 text-[0.82rem] leading-6 text-steel sm:text-sm sm:leading-7">
                 Browse by where you actually want to meet instead of the whole city at once.
               </p>
             </div>
@@ -1206,11 +1206,11 @@ export default function HomePage() {
       ) : null}
 
       {homeSections.showStores !== false ? (
-      <section className="drop-in-item console-panel binder-edge p-5 sm:p-6">
+      <section className="drop-in-item console-panel binder-edge p-4 sm:p-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="section-kicker">Verified meetup spots</p>
-            <h2 className="mt-2 font-display text-[2rem] font-semibold tracking-[-0.05em] text-ink">
+            <h2 className="mt-2 font-display text-[1.65rem] font-semibold tracking-[-0.05em] text-ink sm:text-[2rem]">
               Local store profiles
             </h2>
             <p className="mt-2 text-sm text-steel">
@@ -1222,37 +1222,37 @@ export default function HomePage() {
             <ArrowRight size={14} />
           </Link>
         </div>
-        <div className="mt-5 grid gap-4 xl:grid-cols-4">
+        <div className="mt-4 grid gap-3 xl:grid-cols-4 sm:mt-5 sm:gap-4">
           {storeSpotlights.map((store) => (
             <Link
               key={store.slug}
-              className="overflow-hidden rounded-[26px] border border-[rgba(203,220,231,0.92)] bg-white/78 transition duration-300 hover:-translate-y-0.5 hover:shadow-soft"
+              className="overflow-hidden rounded-[20px] border border-[rgba(203,220,231,0.92)] bg-white/78 transition duration-300 hover:-translate-y-0.5 hover:shadow-soft sm:rounded-[26px]"
               to={`/stores/${store.slug}`}
             >
-              <div className="relative flex h-32 items-center justify-center overflow-hidden border-b border-[rgba(145,38,43,0.12)] bg-[linear-gradient(135deg,#4d0f13,#7a181d)] p-5">
+              <div className="relative flex h-24 items-center justify-center overflow-hidden border-b border-[rgba(145,38,43,0.12)] bg-[linear-gradient(135deg,#4d0f13,#7a181d)] p-4 sm:h-32 sm:p-5">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(255,255,255,0.09),transparent_22%),radial-gradient(circle_at_78%_18%,rgba(239,59,51,0.12),transparent_24%)]" />
-                <div className="relative z-10 flex h-full w-full items-center justify-center rounded-[24px] border border-[rgba(255,255,255,0.84)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,243,243,0.96))] px-6 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.76),0_20px_50px_-30px_rgba(80,16,16,0.18)]">
+                <div className="relative z-10 flex h-full w-full items-center justify-center rounded-[16px] border border-[rgba(255,255,255,0.84)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,243,243,0.96))] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.76),0_20px_50px_-30px_rgba(80,16,16,0.18)] sm:rounded-[24px] sm:px-6 sm:py-4">
                   {store.logoUrl ? (
                     <img alt={store.name} className="max-h-full w-full object-contain" src={store.logoUrl} />
                   ) : null}
                 </div>
               </div>
-              <div className="space-y-3 p-4">
+              <div className="space-y-2.5 p-3 sm:space-y-3 sm:p-4">
                 <div>
-                  <p className="font-display text-[1.4rem] font-semibold tracking-[-0.03em] text-ink">
+                  <p className="font-display text-[1.1rem] font-semibold tracking-[-0.03em] text-ink sm:text-[1.4rem]">
                     {store.name}
                   </p>
-                  <p className="mt-1 text-sm text-steel">{store.neighborhood}</p>
+                  <p className="mt-0.5 text-[0.78rem] text-steel sm:mt-1 sm:text-sm">{store.neighborhood}</p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <span className="rounded-full bg-navy/8 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-navy">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  <span className="rounded-full bg-navy/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-navy sm:px-3 sm:text-[11px] sm:tracking-[0.16em]">
                     {store.activeCount} listings
                   </span>
-                  <span className="rounded-full bg-orange/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-orange">
+                  <span className="rounded-full bg-orange/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-orange sm:px-3 sm:text-[11px] sm:tracking-[0.16em]">
                     Approved
                   </span>
                 </div>
-                <p className="line-clamp-2 text-sm leading-7 text-steel">
+                <p className="line-clamp-2 text-[0.82rem] leading-6 text-steel sm:text-sm sm:leading-7">
                   {store.featuredListing
                     ? `${store.featuredListing.title} is live and tied to this meetup area.`
                     : "Browse upcoming events and sellers who prefer meeting here."}
