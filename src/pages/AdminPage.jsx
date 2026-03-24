@@ -5,14 +5,16 @@ import {
   ExternalLink,
   Flag,
   LayoutTemplate,
+  Home,
   ShieldCheck,
   Trash2,
   Users,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { neighborhoods } from "../data/mockData";
 import { useMarketplace } from "../hooks/useMarketplace";
+import { fetchLocalEvents } from "../services/cardDatabase";
 
 const badgeIds = ["fast", "trusted", "verified", "community", "power", "judge", "beta"];
 const storeOptions = ["Fusion Gaming", "Galaxy Comics", "A Muse N Games", "Arctic Rift Cards", "Other"];
@@ -266,6 +268,7 @@ export default function AdminPage() {
     openReportResolutionThread,
     openReports,
     reviewBadgeCatalog,
+    siteSettings,
     toggleListingFeatured,
     toggleListingFlag,
     toggleListingRemoved,
@@ -274,6 +277,7 @@ export default function AdminPage() {
     toggleUserBadge,
     toggleUserSuspended,
     toggleUserVerified,
+    updateHomeHeroSettings,
     updateBugReport,
     updateListingAdminNote,
     updateReportStatus,
@@ -299,6 +303,47 @@ export default function AdminPage() {
   const [bugNoteDrafts, setBugNoteDrafts] = useState({});
   const [listingFilter, setListingFilter] = useState("all");
   const [userFilter, setUserFilter] = useState("all");
+  const [remoteHeroEvents, setRemoteHeroEvents] = useState([]);
+  const [heroSettingsDraft, setHeroSettingsDraft] = useState(
+    siteSettings?.homeHero || {
+      featuredListingId: null,
+      pinnedEventId: null,
+      spotlightGameSlug: null,
+    },
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadHeroEvents() {
+      try {
+        const data = await fetchLocalEvents();
+        if (!cancelled) {
+          setRemoteHeroEvents(Array.isArray(data?.events) ? data.events.filter(Boolean) : []);
+        }
+      } catch {
+        if (!cancelled) {
+          setRemoteHeroEvents([]);
+        }
+      }
+    }
+
+    void loadHeroEvents();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    setHeroSettingsDraft(
+      siteSettings?.homeHero || {
+        featuredListingId: null,
+        pinnedEventId: null,
+        spotlightGameSlug: null,
+      },
+    );
+  }, [siteSettings]);
 
   const sortedUsers = useMemo(
     () =>
@@ -315,6 +360,23 @@ export default function AdminPage() {
   const sortedListings = useMemo(
     () => [...enrichedListings].sort((left, right) => right.sortTimestamp - left.sortTimestamp),
     [enrichedListings],
+  );
+  const heroEventChoices = useMemo(
+    () =>
+      [...remoteHeroEvents, ...manualEvents]
+        .filter(Boolean)
+        .filter(
+          (event, index, items) =>
+            items.findIndex(
+              (candidate) =>
+                String(candidate.id || "") === String(event.id || "") ||
+                (String(candidate.title || "") === String(event.title || "") &&
+                  String(candidate.store || "") === String(event.store || "") &&
+                  String(candidate.dateStr || "") === String(event.dateStr || "")),
+            ) === index,
+        )
+        .sort((left, right) => new Date(left.dateStr).getTime() - new Date(right.dateStr).getTime()),
+    [manualEvents, remoteHeroEvents],
   );
 
   const filteredUsers = useMemo(() => {
@@ -392,7 +454,7 @@ export default function AdminPage() {
     { id: "listings", label: "Listings", count: sortedListings.length },
     { id: "users", label: "Users", count: sortedUsers.length },
     { id: "events", label: "Events", count: manualEvents.length },
-    { id: "landing-lab", label: "Landing Lab" },
+    { id: "storefront", label: "Storefront" },
   ];
 
   function handleAddEvent(event) {
@@ -616,9 +678,9 @@ export default function AdminPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">Events</p>
                 <p className="mt-2 font-semibold text-ink">Calendar overrides</p>
               </button>
-              <button className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-slate-300" type="button" onClick={() => setActiveSection("landing-lab")}>
+              <button className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-slate-300" type="button" onClick={() => setActiveSection("storefront")}>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">Storefront</p>
-                <p className="mt-2 font-semibold text-ink">Compare landing directions</p>
+                <p className="mt-2 font-semibold text-ink">Hero controls and homepage curation</p>
               </button>
             </div>
           </section>
@@ -1275,55 +1337,111 @@ export default function AdminPage() {
         </section>
       ) : null}
 
-      {activeSection === "landing-lab" ? (
-        <div className="space-y-8">
-          <section className="surface-card p-6">
-            <div className="flex items-center gap-3">
-              <LayoutTemplate className="text-orange" size={20} />
-              <div>
-                <p className="section-kicker">Storefront Lab</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                  Landing page directions
-                </h2>
-              </div>
+      {activeSection === "storefront" ? (
+        <section className="surface-card p-6">
+          <div className="flex items-center gap-3">
+            <Home className="text-orange" size={20} />
+            <div>
+              <p className="section-kicker">Storefront hero</p>
+              <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                Curate the homepage banner
+              </h2>
             </div>
-            <p className="mt-4 max-w-4xl text-sm leading-7 text-steel">
-              Compare three full homepage directions before rebuilding the live storefront.
-              Each option is meant to answer a different question: should the site feel like
-              a polished app, a local community board, or a premium collector marketplace?
-            </p>
-          </section>
+          </div>
+          <p className="mt-4 max-w-4xl text-sm leading-7 text-steel">
+            Pick the featured listing, pin a specific event, and choose which game gets the market-channel slide.
+          </p>
 
-          <section className="grid gap-6">
-            {landingConcepts.map((concept) => (
-              <article key={concept.id} className="surface-card p-6">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="max-w-3xl">
-                    <p className="section-kicker">Direction</p>
-                    <h3 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                      {concept.name}
-                    </h3>
-                    <p className="mt-3 text-sm leading-7 text-steel">{concept.note}</p>
-                  </div>
-                  <span className="rounded-full bg-[#edf3f7] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-steel">
-                    {concept.id}
-                  </span>
-                </div>
+          <div className="mt-6 grid gap-4 xl:grid-cols-3">
+            <label className="block">
+              <span className="mb-2 block text-sm font-semibold text-steel">Featured listing</span>
+              <select
+                className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy"
+                value={heroSettingsDraft.featuredListingId || ""}
+                onChange={(event) =>
+                  setHeroSettingsDraft((current) => ({
+                    ...current,
+                    featuredListingId: event.target.value || null,
+                  }))
+                }
+              >
+                <option value="">Auto-pick featured listing</option>
+                {sortedListings
+                  .filter((listing) => listing.status === "active")
+                  .map((listing) => (
+                    <option key={listing.id} value={listing.id}>
+                      {listing.title} | {listing.game}
+                    </option>
+                  ))}
+              </select>
+            </label>
 
-                <div className="mt-5">
-                  <LandingDirectionPreview conceptId={concept.id} />
-                </div>
+            <label className="block">
+              <span className="mb-2 block text-sm font-semibold text-steel">Pinned event</span>
+              <select
+                className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy"
+                value={heroSettingsDraft.pinnedEventId || ""}
+                onChange={(event) =>
+                  setHeroSettingsDraft((current) => ({
+                    ...current,
+                    pinnedEventId: event.target.value || null,
+                  }))
+                }
+              >
+                <option value="">Auto-pick next event</option>
+                {heroEventChoices.map((event) => (
+                  <option key={event.id} value={event.id}>
+                    {event.title} | {event.store} | {formatEventDate(event.dateStr)}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-                <div className="mt-5 rounded-[22px] border border-slate-200 bg-[#fbf8f1] px-4 py-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                    Recommendation
-                  </p>
-                  <p className="mt-2 text-sm leading-7 text-steel">{concept.recommendation}</p>
-                </div>
-              </article>
-            ))}
-          </section>
-        </div>
+            <label className="block">
+              <span className="mb-2 block text-sm font-semibold text-steel">Spotlight game</span>
+              <select
+                className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy"
+                value={heroSettingsDraft.spotlightGameSlug || ""}
+                onChange={(event) =>
+                  setHeroSettingsDraft((current) => ({
+                    ...current,
+                    spotlightGameSlug: event.target.value || null,
+                  }))
+                }
+              >
+                <option value="">Auto-pick busiest channel</option>
+                <option value="pokemon">Pokemon</option>
+                <option value="magic">Magic</option>
+                <option value="one-piece">One Piece</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button
+              className="rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
+              type="button"
+              onClick={() => void updateHomeHeroSettings(heroSettingsDraft)}
+            >
+              Save storefront hero
+            </button>
+            <button
+              className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel"
+              type="button"
+              onClick={() => {
+                const nextSettings = {
+                  featuredListingId: null,
+                  pinnedEventId: null,
+                  spotlightGameSlug: null,
+                };
+                setHeroSettingsDraft(nextSettings);
+                void updateHomeHeroSettings(nextSettings);
+              }}
+            >
+              Reset to automatic
+            </button>
+          </div>
+        </section>
       ) : null}
     </div>
   );

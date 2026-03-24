@@ -56,6 +56,57 @@ function daysUntil(dateStr) {
   return Math.round((nextDate.getTime() - today.getTime()) / 86400000);
 }
 
+function buildEventIcs(event) {
+  const start = new Date(`${event.dateStr}T12:00:00`);
+  const timeMatch = String(event.time || "").match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (timeMatch) {
+    let hours = Number(timeMatch[1]) % 12;
+    const minutes = Number(timeMatch[2]);
+    if (String(timeMatch[3]).toUpperCase() === "PM") {
+      hours += 12;
+    }
+    start.setHours(hours, minutes, 0, 0);
+  } else {
+    start.setHours(18, 0, 0, 0);
+  }
+
+  const end = new Date(start.getTime() + 3 * 60 * 60 * 1000);
+  const toUtcStamp = (value) =>
+    value
+      .toISOString()
+      .replace(/[-:]/g, "")
+      .replace(/\.\d{3}Z$/, "Z");
+  const location = [event.store, event.neighborhood].filter(Boolean).join(" | ");
+
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//TCGWPG//Events//EN",
+    "BEGIN:VEVENT",
+    `UID:${event.id}@tcgwpg`,
+    `DTSTAMP:${toUtcStamp(new Date())}`,
+    `DTSTART:${toUtcStamp(start)}`,
+    `DTEND:${toUtcStamp(end)}`,
+    `SUMMARY:${String(event.title || "").replace(/\n/g, " ")}`,
+    `LOCATION:${location.replace(/\n/g, " ")}`,
+    `DESCRIPTION:${String(event.note || event.source || "Local TCG event").replace(/\n/g, " ")}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+}
+
+function downloadEventCalendar(event) {
+  const blob = new Blob([buildEventIcs(event)], { type: "text/calendar;charset=utf-8" });
+  const href = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = href;
+  anchor.download = `${String(event.title || "event").replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "event"}.ics`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(href);
+}
+
 export default function EventsPage() {
   const { manualEvents } = useMarketplace();
   const [remoteEvents, setRemoteEvents] = useState([]);
@@ -242,20 +293,24 @@ export default function EventsPage() {
           Filters
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,0.8fr)_auto]">
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-steel">Store</span>
-            <select
-              className="w-full rounded-[20px] border border-[rgba(203,220,231,0.92)] bg-[rgba(249,252,255,0.84)] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-              value={selectedStore}
-              onChange={(event) => setSelectedStore(event.target.value)}
+        <div className="flex flex-wrap gap-2">
+          {storeOptions.map((store) => (
+            <button
+              key={store}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                selectedStore === store
+                  ? "bg-navy text-white shadow-soft"
+                  : "border border-[rgba(203,220,231,0.92)] bg-white/82 text-steel hover:border-slate-300 hover:text-ink"
+              }`}
+              type="button"
+              onClick={() => setSelectedStore(store)}
             >
-              {storeOptions.map((store) => (
-                <option key={store}>{store}</option>
-              ))}
-            </select>
-          </label>
+              {store}
+            </button>
+          ))}
+        </div>
 
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_auto]">
           <label className="block">
             <span className="mb-2 block text-sm font-semibold text-steel">Game</span>
             <select
@@ -503,17 +558,27 @@ export default function EventsPage() {
                       </span>
                     ) : null}
                   </div>
-                  {event.sourceUrl ? (
-                    <a
-                      className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-navy transition hover:border-slate-300"
-                      href={event.sourceUrl}
-                      rel="noreferrer"
-                      target="_blank"
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {event.sourceUrl ? (
+                      <a
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-navy transition hover:border-slate-300"
+                        href={event.sourceUrl}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        View event page
+                        <ExternalLink size={14} />
+                      </a>
+                    ) : null}
+                    <button
+                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                      type="button"
+                      onClick={() => downloadEventCalendar(event)}
                     >
-                      View event page
-                      <ExternalLink size={14} />
-                    </a>
-                  ) : null}
+                      Add to calendar
+                      <CalendarDays size={14} />
+                    </button>
+                  </div>
                   {event.note ? (
                     <p className="mt-4 text-sm leading-7 text-steel">{event.note}</p>
                   ) : null}

@@ -47,12 +47,10 @@ export default function Header() {
     setGlobalSearch,
     unreadMessageCount,
     unreadNotificationCount,
-    wishlist,
   } = useMarketplace();
   const [searchValue, setSearchValue] = useState(globalSearch);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const safeWishlistCount = Array.isArray(wishlist) ? wishlist.length : 0;
   const safeUnreadMessageCount = Number(unreadMessageCount) || 0;
   const safeUnreadNotificationCount = Number(unreadNotificationCount) || 0;
 
@@ -119,7 +117,7 @@ export default function Header() {
     setMobileDrawerOpen(false);
   }
 
-  const menuNotificationCount = safeUnreadNotificationCount + safeWishlistCount;
+  const menuNotificationCount = safeUnreadNotificationCount;
   const accountMenuItems = [
     {
       to: "/account",
@@ -138,7 +136,7 @@ export default function Header() {
     },
     {
       to: "/wishlist",
-      label: `Wishlist${safeWishlistCount ? ` (${safeWishlistCount})` : ""}`,
+      label: "Wishlist",
       icon: Heart,
     },
     {

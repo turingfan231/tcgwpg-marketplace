@@ -1,5 +1,6 @@
 import {
   ArrowRight,
+  BellRing,
   CalendarRange,
   Clock3,
   Heart,
@@ -47,15 +48,36 @@ const CURATED_HERO_ART = {
     "https://shikdartrading.com/cdn/shop/files/MTG_Banner_2.jpg?v=1730184513&width=3840",
 };
 
+const GAME_SHELF_THEMES = {
+  pokemon: {
+    header:
+      "bg-[linear-gradient(180deg,rgba(255,205,76,0.2)_0%,rgba(104,175,255,0.18)_100%)]",
+    badge: "text-[#1456a5]",
+    button: "text-[#1456a5]",
+  },
+  magic: {
+    header:
+      "bg-[linear-gradient(180deg,rgba(89,118,255,0.14)_0%,rgba(73,104,132,0.18)_100%)]",
+    badge: "text-navy",
+    button: "text-navy",
+  },
+  "one-piece": {
+    header:
+      "bg-[linear-gradient(180deg,rgba(34,164,255,0.14)_0%,rgba(27,122,186,0.18)_100%)]",
+    badge: "text-[#0e6fa7]",
+    button: "text-[#0e6fa7]",
+  },
+};
+
 function QuickActionButton({ children, tone = "light", ...props }) {
   return (
     <button
-      className={`rounded-[18px] px-4 py-3 text-sm font-semibold transition ${
+      className={`rounded-[18px] px-4 py-3 text-sm font-semibold transition duration-300 hover:-translate-y-0.5 ${
         tone === "primary"
-          ? "bg-navy text-white shadow-soft"
+          ? "bg-navy text-white shadow-soft hover:shadow-lift"
           : tone === "orange"
-            ? "bg-orange text-white shadow-soft"
-            : "border border-[rgba(203,220,231,0.92)] bg-white/80 text-ink hover:border-slate-300"
+            ? "bg-orange text-white shadow-soft hover:shadow-lift"
+            : "border border-[rgba(203,220,231,0.92)] bg-white/80 text-ink hover:border-slate-300 hover:shadow-soft"
       }`}
       type="button"
       {...props}
@@ -77,7 +99,7 @@ function PulseTile({ label, value, detail }) {
 
 function FeedRow({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
   return (
-    <div className="flex items-start gap-3 rounded-[22px] border border-[rgba(203,220,231,0.92)] bg-white/82 px-4 py-4 shadow-[0_14px_32px_-28px_rgba(26,91,120,0.55)]">
+    <div className="flex items-start gap-3 rounded-[22px] border border-[rgba(203,220,231,0.92)] bg-white/82 px-4 py-4 shadow-[0_14px_32px_-28px_rgba(26,91,120,0.55)] transition duration-300 hover:-translate-y-0.5 hover:border-navy/16 hover:shadow-soft">
       <button className="min-w-0 flex-1 text-left" type="button" onClick={() => onOpen(listing.id)}>
         <p className="truncate font-semibold text-ink">{listing.title}</p>
         <p className="mt-1 text-sm text-steel">
@@ -110,7 +132,7 @@ function FeedRow({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
 function ShelfCard({ listing, formatCadPrice, onOpen }) {
   return (
     <button
-      className="flex w-full items-center gap-3 rounded-[20px] border border-[rgba(203,220,231,0.92)] bg-white/82 px-4 py-4 text-left transition hover:border-navy/20"
+      className="flex w-full items-center gap-3 rounded-[20px] border border-[rgba(203,220,231,0.92)] bg-white/82 px-4 py-4 text-left transition duration-300 hover:-translate-y-0.5 hover:border-navy/20 hover:shadow-soft"
       type="button"
       onClick={() => onOpen(listing.id)}
     >
@@ -173,7 +195,7 @@ function BannerCard({
             src={heroBackdrop}
           />
         ) : null}
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,13,20,0.94)_0%,rgba(7,18,27,0.92)_32%,rgba(10,24,35,0.66)_58%,rgba(10,24,35,0.34)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(4,10,16,0.97)_0%,rgba(6,15,23,0.95)_32%,rgba(9,20,31,0.74)_58%,rgba(9,20,31,0.4)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.06),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(255,153,0,0.12),transparent_16%)]" />
         {slide.kind === "listing" && backgroundImage ? (
           <div className="pointer-events-none absolute bottom-10 right-10 z-[1] hidden lg:flex h-[18.5rem] w-[13.25rem] items-center justify-center rounded-[30px] border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] p-4 shadow-[0_28px_60px_-34px_rgba(0,0,0,0.65)] backdrop-blur-md">
@@ -211,7 +233,7 @@ function BannerCard({
 
             <div className="mt-8 flex flex-wrap gap-3">
               <button
-                className={`rounded-full px-5 py-3 text-sm font-semibold shadow-soft ${
+                className={`rounded-full px-5 py-3 text-sm font-semibold shadow-soft transition duration-300 hover:-translate-y-0.5 hover:shadow-lift ${
                   slide.kind === "event" ? "bg-orange text-white" : "bg-white text-navy"
                 }`}
                 type="button"
@@ -373,6 +395,8 @@ export default function HomePage() {
   const navigate = useNavigate();
   const {
     activeListings,
+    currentUser,
+    followedSellerIds,
     formatCadPrice,
     gameCatalog,
     hotListings,
@@ -381,6 +405,7 @@ export default function HomePage() {
     openCreateListing,
     sellers,
     setGlobalSearch,
+    siteSettings,
     toggleWishlist,
   } = useMarketplace();
   const [remoteEvents, setRemoteEvents] = useState([]);
@@ -431,7 +456,6 @@ export default function HomePage() {
   );
 
   const freshListings = safeHotListings.slice(0, 4);
-  const featuredListing = safeHotListings[0] || safeListings[0] || null;
   const verifiedSellerCount = safeSellers.filter((seller) => seller?.verified).length;
   const topSellers = [...safeSellers]
     .sort((left, right) => {
@@ -443,6 +467,25 @@ export default function HomePage() {
     })
     .slice(0, 4);
   const featuredGame = useMemo(() => {
+    const pinnedSlug = siteSettings?.homeHero?.spotlightGameSlug || null;
+    if (pinnedSlug) {
+      const pinnedGame = categorySummaries.find((game) => game.slug === pinnedSlug);
+      if (pinnedGame) {
+        const listings = safeListings.filter((listing) => listing?.gameSlug === pinnedGame.slug).slice(0, 3);
+        const neighborhoods = new Set(
+          safeListings
+            .filter((listing) => listing?.gameSlug === pinnedGame.slug && listing?.neighborhood)
+            .map((listing) => listing.neighborhood),
+        );
+        return {
+          ...pinnedGame,
+          count: safeListings.filter((listing) => listing?.gameSlug === pinnedGame.slug).length,
+          neighborhoodCount: neighborhoods.size,
+          gallery: listings.map((listing) => listing.imageUrl).filter(Boolean),
+        };
+      }
+    }
+
     const rankedGames = categorySummaries
       .map((game) => {
         const listings = safeListings.filter((listing) => listing?.gameSlug === game.slug).slice(0, 3);
@@ -459,9 +502,8 @@ export default function HomePage() {
         };
       })
       .sort((left, right) => right.count - left.count);
-
     return rankedGames[0] || null;
-  }, [categorySummaries, safeListings]);
+  }, [categorySummaries, safeListings, siteSettings]);
 
   const mergedEvents = useMemo(
     () =>
@@ -481,7 +523,23 @@ export default function HomePage() {
     [remoteEvents, safeManualEvents],
   );
   const upcomingEvents = mergedEvents.slice(0, 4);
-  const nextEvent = upcomingEvents[0] || null;
+  const nextEvent =
+    mergedEvents.find((event) => event.id === siteSettings?.homeHero?.pinnedEventId) ||
+    upcomingEvents[0] ||
+    null;
+  const featuredListing =
+    safeListings.find((listing) => listing.id === siteSettings?.homeHero?.featuredListingId) ||
+    safeHotListings[0] ||
+    safeListings[0] ||
+    null;
+  const followedSellerFeed = useMemo(
+    () =>
+      activeListings
+        .filter((listing) => followedSellerIds.includes(listing.sellerId))
+        .sort((left, right) => right.sortTimestamp - left.sortTimestamp)
+        .slice(0, 4),
+    [activeListings, followedSellerIds],
+  );
 
   const bannerSlides = useMemo(() => {
     const slides = [];
@@ -496,8 +554,7 @@ export default function HomePage() {
         kind: "listing",
         kicker: "Featured listing",
         title: featuredListing.title,
-        description:
-          "A highlighted local card with full in-app offers, meetup planning, and seller context built in.",
+        description: "Featured locally with offers, seller context, and meetup planning built in.",
         meta: [
           featuredListing.game,
           featuredListing.neighborhood,
@@ -518,8 +575,7 @@ export default function HomePage() {
         kind: "event",
         kicker: "Upcoming event",
         title: nextEvent.title,
-        description:
-          "Use the events calendar to line up store nights, prereleases, and local tournaments with what is happening in the market.",
+        description: "Line up local nights, prereleases, and store events with what is moving in the market.",
         meta: [nextEvent.store, nextEvent.game, nextEvent.time],
         cta: "View events",
         payload: {
@@ -536,8 +592,7 @@ export default function HomePage() {
         kind: "game",
         kicker: "Market channel",
         title: `${featuredGame.name} is moving fastest in the market`,
-        description:
-          "Jump straight into the busiest game channel to see what is actually getting posted locally right now.",
+        description: "Jump into the busiest game channel and see what is actually getting posted locally.",
         meta: [
           `${featuredGame.count} listings`,
           `${featuredGame.neighborhoodCount || 1} neighborhoods`,
@@ -568,8 +623,7 @@ export default function HomePage() {
         ...featuredGame,
         kicker: "Featured channel",
         title: `Browse ${featuredGame.name} like a live storefront`,
-        description:
-          "See the busiest game channel first, then jump into the rest of the market when you want more depth.",
+        description: "Open the busiest game channel first, then branch into the rest of the local market.",
         meta: [
           `${featuredGame.count} listings`,
           `${featuredGame.neighborhoodCount || 1} neighborhoods`,
@@ -586,8 +640,7 @@ export default function HomePage() {
         ...nextEvent,
         kicker: "Upcoming event",
         title: nextEvent.title,
-        description:
-          "Use the event calendar to line up store nights, prereleases, and tournament weekends with what is moving in the market.",
+        description: "Use the calendar to line up store nights and tournament weekends with the current market.",
         meta: [nextEvent.store, nextEvent.game, nextEvent.time],
         gallery: [artworkByGame[eventGameKey], featuredListing?.imageUrl].filter(Boolean),
         cta: "View events",
@@ -599,8 +652,7 @@ export default function HomePage() {
         kind: "listing",
         ...featuredListing,
         kicker: "Featured listing",
-        description:
-          "A highlighted local listing with pricing, in-app offers, and meetup planning built into the page.",
+        description: "A highlighted local listing with pricing, offers, and meetup planning built in.",
         meta: [featuredListing.game, featuredListing.neighborhood, `${featuredListing.views || 0} views`],
         gallery: [featuredListing.imageUrl, ...(featuredListing.conditionImages || [])].filter(Boolean),
         cta: "Open listing",
@@ -718,10 +770,10 @@ export default function HomePage() {
               Winnipeg TCG marketplace
             </p>
             <h1 className="mt-3 font-display text-[2.15rem] font-semibold leading-[0.96] tracking-[-0.06em] text-ink sm:text-[3rem] lg:text-[3.55rem]">
-              A local card market that feels more like a storefront than a classifieds page.
+              A local card market built to feel fast, clean, and easy to trust.
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-steel sm:text-base">
-              Browse by game, catch store events, and keep offers attached to the listing without the site feeling cluttered.
+              Browse by game, catch store events, and keep offers attached to each listing without the usual marketplace clutter.
             </p>
           </div>
 
@@ -789,7 +841,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="drop-in-cluster grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <section
+        className={`drop-in-cluster grid gap-6 ${
+          currentUser && followedSellerIds.length
+            ? "xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)_22rem]"
+            : "xl:grid-cols-[minmax(0,1fr)_22rem]"
+        }`}
+      >
         <article className="drop-in-item console-panel p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -819,6 +877,38 @@ export default function HomePage() {
             )}
           </div>
         </article>
+
+        {currentUser && followedSellerIds.length ? (
+          <article className="drop-in-item console-panel p-5 sm:p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="section-kicker">Following</p>
+                <h2 className="mt-2 font-display text-[1.9rem] font-semibold tracking-[-0.04em] text-ink">
+                  New from followed sellers
+                </h2>
+              </div>
+              <BellRing className="text-orange" size={20} />
+            </div>
+
+            <div className="mt-5 grid gap-3">
+              {followedSellerFeed.length ? (
+                followedSellerFeed.map((listing) => (
+                  <FeedRow
+                    key={listing.id}
+                    formatCadPrice={formatCadPrice}
+                    listing={listing}
+                    onOpen={openListing}
+                    onToggleWishlist={handleToggleWishlist}
+                  />
+                ))
+              ) : (
+                <div className="rounded-[24px] border border-dashed border-[rgba(203,220,231,0.92)] bg-white/70 px-5 py-10 text-sm leading-7 text-steel">
+                  Follow a few sellers and their newest listings will show up here.
+                </div>
+              )}
+            </div>
+          </article>
+        ) : null}
 
         <aside className="drop-in-item console-panel p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3">
@@ -870,12 +960,21 @@ export default function HomePage() {
           {gameShelves.map((game) => (
             <article
               key={game.slug}
-              className="overflow-hidden rounded-[26px] border border-[rgba(203,220,231,0.92)] bg-white/78"
+              className="overflow-hidden rounded-[26px] border border-[rgba(203,220,231,0.92)] bg-white/78 transition duration-300 hover:-translate-y-0.5 hover:shadow-soft"
             >
-              <div className="border-b border-[rgba(203,220,231,0.82)] bg-[linear-gradient(180deg,#edf4f9_0%,#deebf3_100%)] px-5 py-5">
+              <div
+                className={`border-b border-[rgba(203,220,231,0.82)] px-5 py-5 ${
+                  GAME_SHELF_THEMES[game.slug]?.header ||
+                  "bg-[linear-gradient(180deg,#edf4f9_0%,#deebf3_100%)]"
+                }`}
+              >
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-navy/60">
+                    <p
+                      className={`text-xs font-semibold uppercase tracking-[0.2em] ${
+                        GAME_SHELF_THEMES[game.slug]?.badge || "text-navy/60"
+                      }`}
+                    >
                       {game.shortName}
                     </p>
                     <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-ink">
@@ -883,7 +982,9 @@ export default function HomePage() {
                     </h3>
                   </div>
                   <button
-                    className="inline-flex items-center gap-1 text-sm font-semibold text-navy"
+                    className={`inline-flex items-center gap-1 text-sm font-semibold ${
+                      GAME_SHELF_THEMES[game.slug]?.button || "text-navy"
+                    }`}
                     type="button"
                     onClick={() => {
                       setGlobalSearch("");

@@ -24,10 +24,18 @@ const MarketplaceContext = createContext(null);
 const SEARCH_STORAGE_KEY = "tcgwpg.globalSearch";
 const TOAST_SEEN_STORAGE_PREFIX = "tcgwpg.seenToasts";
 const MARKETPLACE_CACHE_KEY = "tcgwpg.marketplaceCache";
+const SITE_SETTINGS_STORAGE_KEY = "tcgwpg.siteSettings";
 const SUPPORTED_GAME_SLUGS = new Set(["magic", "pokemon", "one-piece"]);
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
 const MEDIA_BUCKET = "listing-media";
 const FOREGROUND_REFRESH_MS = 12000;
+const DEFAULT_SITE_SETTINGS = {
+  homeHero: {
+    featuredListingId: null,
+    pinnedEventId: null,
+    spotlightGameSlug: null,
+  },
+};
 
 function readSearchStorage() {
   if (typeof window === "undefined") {
@@ -96,6 +104,45 @@ function readMarketplaceCache() {
   }
 }
 
+function normalizeSiteSettings(settings) {
+  const homeHero = settings?.homeHero || {};
+  return {
+    homeHero: {
+      featuredListingId: homeHero.featuredListingId || null,
+      pinnedEventId: homeHero.pinnedEventId || null,
+      spotlightGameSlug: homeHero.spotlightGameSlug || null,
+    },
+  };
+}
+
+function readSiteSettingsStorage() {
+  if (typeof window === "undefined") {
+    return DEFAULT_SITE_SETTINGS;
+  }
+
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(SITE_SETTINGS_STORAGE_KEY) || "null");
+    return normalizeSiteSettings(parsed || DEFAULT_SITE_SETTINGS);
+  } catch {
+    return DEFAULT_SITE_SETTINGS;
+  }
+}
+
+function writeSiteSettingsStorage(settings) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      SITE_SETTINGS_STORAGE_KEY,
+      JSON.stringify(normalizeSiteSettings(settings)),
+    );
+  } catch {
+    // Ignore storage write failures in constrained/private browser contexts.
+  }
+}
+
 function trimCacheArray(items, limit) {
   return Array.isArray(items) ? items.filter(Boolean).slice(0, limit) : [];
 }
@@ -142,6 +189,7 @@ function buildMarketplaceCacheSnapshot(snapshot) {
     manualEvents: trimCacheArray(snapshot.manualEvents, 80),
     listingDrafts: trimCacheArray(snapshot.listingDrafts, 8),
     activeDraftId: snapshot.activeDraftId || null,
+    siteSettings: normalizeSiteSettings(snapshot.siteSettings || DEFAULT_SITE_SETTINGS),
   };
 }
 
@@ -797,6 +845,7 @@ function buildSeedState() {
     listingDrafts: [],
     activeDraftId: null,
     searchHistory: [],
+    siteSettings: DEFAULT_SITE_SETTINGS,
   };
 }
 
@@ -842,6 +891,12 @@ export function MarketplaceProvider({ children }) {
   );
   const [searchHistory, setSearchHistory] = useState(() =>
     isSupabaseConfigured ? cachedState?.searchHistory || [] : seedState.searchHistory,
+  );
+  const [siteSettings, setSiteSettings] = useState(() =>
+    normalizeSiteSettings(
+      (isSupabaseConfigured ? cachedState?.siteSettings : seedState.siteSettings) ||
+        readSiteSettingsStorage(),
+    ),
   );
   const [globalSearch, setGlobalSearchState] = useState(() => readSearchStorage());
   const [isCreateListingOpen, setCreateListingOpen] = useState(false);
@@ -1516,6 +1571,7 @@ export function MarketplaceProvider({ children }) {
       listingDrafts,
       activeDraftId,
       searchHistory,
+      siteSettings,
     });
   }, [
     activeDraftId,
@@ -1528,10 +1584,15 @@ export function MarketplaceProvider({ children }) {
     reports,
     reviews,
     searchHistory,
+    siteSettings,
     threads,
     users,
     wishlist,
   ]);
+
+  useEffect(() => {
+    writeSiteSettingsStorage(siteSettings);
+  }, [siteSettings]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -1708,6 +1769,23 @@ export function MarketplaceProvider({ children }) {
       entity_id: notification.entityId,
       read: false,
     });
+  }
+
+  async function updateHomeHeroSettings(payload = {}) {
+    if (!currentUser || currentUser.role !== "admin") {
+      return { ok: false, error: "Only admins can update storefront hero settings." };
+    }
+
+    const nextSettings = normalizeSiteSettings({
+      ...siteSettings,
+      homeHero: {
+        ...siteSettings.homeHero,
+        ...payload,
+      },
+    });
+
+    setSiteSettings(nextSettings);
+    return { ok: true, settings: nextSettings };
   }
 
   async function recordSearchQuery(query, metadata = {}) {
@@ -4185,6 +4263,7 @@ export function MarketplaceProvider({ children }) {
     unreadNotificationCount,
     updateBugReport,
     updateCurrentUserProfile,
+    updateHomeHeroSettings,
     updateListingAdminNote,
     updateReportStatus,
     users: Object.values(sellerMap),
@@ -4192,6 +4271,7 @@ export function MarketplaceProvider({ children }) {
     wishlistedListings,
     toggleWishlist,
     followedSellerIds,
+    siteSettings,
   };
 
   return <MarketplaceContext.Provider value={value}>{children}</MarketplaceContext.Provider>;
