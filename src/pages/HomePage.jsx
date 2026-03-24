@@ -176,9 +176,8 @@ function BannerCard({
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,13,20,0.94)_0%,rgba(7,18,27,0.92)_32%,rgba(10,24,35,0.66)_58%,rgba(10,24,35,0.34)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.06),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(255,153,0,0.12),transparent_16%)]" />
 
-        <div className="relative z-10 flex h-full flex-col justify-between gap-6">
+        <div className="relative z-10 flex h-full flex-col justify-between gap-8">
           <div className="max-w-2xl">
-            <div className="max-w-2xl">
             <span className="inline-flex rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
               {slide.kicker}
             </span>
@@ -223,7 +222,7 @@ function BannerCard({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex flex-wrap items-end justify-between gap-4 pb-4 pr-20">
             <div className="flex flex-wrap gap-3">
               <div className="rounded-[26px] border border-white/12 bg-white/8 px-5 py-4 backdrop-blur">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/58">
@@ -264,7 +263,6 @@ function BannerCard({
                   </>
                 ) : null}
               </div>
-            </div>
             </div>
           </div>
         </div>
