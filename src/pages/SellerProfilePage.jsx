@@ -11,11 +11,11 @@ import { approvedMeetupSpots } from "../data/storefrontData";
 import { useMarketplace } from "../hooks/useMarketplace";
 
 const bannerToneMap = {
-  neutral: "from-[#102739]/96 via-[#17384c]/94 to-[#0b1d2a]/96",
-  admin: "from-[#0f2637]/96 via-[#17384c]/94 to-[#091825]/96",
-  pokemon: "from-[#102739]/96 via-[#17384c]/94 to-[#1b4460]/96",
-  magic: "from-[#102739]/96 via-[#142f42]/94 to-[#091825]/96",
-  "one-piece": "from-[#102739]/96 via-[#183f56]/94 to-[#0c2130]/96",
+  neutral: "from-[#551014]/96 via-[#7a181d]/94 to-[#30090b]/96",
+  admin: "from-[#4d0d11]/96 via-[#74161b]/94 to-[#290708]/96",
+  pokemon: "from-[#631216]/96 via-[#8c1c22]/94 to-[#3b0a0c]/96",
+  magic: "from-[#4b0d10]/96 via-[#6d161a]/94 to-[#250607]/96",
+  "one-piece": "from-[#6a1418]/96 via-[#911e24]/94 to-[#35080a]/96",
 };
 
 export default function SellerProfilePage() {
@@ -69,7 +69,7 @@ export default function SellerProfilePage() {
           className={`relative overflow-hidden bg-gradient-to-r ${bannerToneMap[seller.bannerStyle] || bannerToneMap.neutral} p-8 text-white`}
         >
           <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(6,17,27,0.9),rgba(16,39,57,0.78)_44%,rgba(6,17,27,0.84))]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.1),transparent_16%),radial-gradient(circle_at_82%_20%,rgba(105,180,176,0.16),transparent_14%),radial-gradient(circle_at_75%_78%,rgba(94,127,147,0.16),transparent_18%),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:auto,auto,auto,42px_42px,42px_42px]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.1),transparent_16%),radial-gradient(circle_at_82%_20%,rgba(239,59,51,0.16),transparent_14%),radial-gradient(circle_at_75%_78%,rgba(177,29,35,0.16),transparent_18%),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:auto,auto,auto,42px_42px,42px_42px]" />
 
           <div className="relative z-10">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">

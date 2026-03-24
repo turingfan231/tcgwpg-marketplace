@@ -22,9 +22,9 @@ export default function StoresPage() {
             className="console-panel overflow-hidden p-0 transition hover:-translate-y-0.5 hover:shadow-lift"
             to={`/stores/${store.slug}`}
           >
-            <div className="relative h-48 overflow-hidden border-b border-[rgba(203,220,231,0.82)] bg-[linear-gradient(135deg,#11283a,#183a51)] p-6">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(255,255,255,0.09),transparent_22%),radial-gradient(circle_at_78%_18%,rgba(108,167,214,0.12),transparent_24%)]" />
-              <div className="relative z-10 flex h-full items-center justify-center rounded-[28px] border border-[rgba(255,255,255,0.78)] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(235,242,248,0.94))] px-8 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_20px_50px_rgba(6,18,29,0.14)]">
+            <div className="relative h-48 overflow-hidden border-b border-[rgba(145,38,43,0.12)] bg-[linear-gradient(135deg,#4d0f13,#7a181d)] p-6">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(255,255,255,0.09),transparent_22%),radial-gradient(circle_at_78%_18%,rgba(239,59,51,0.12),transparent_24%)]" />
+              <div className="relative z-10 flex h-full items-center justify-center rounded-[28px] border border-[rgba(255,255,255,0.82)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,243,243,0.96))] px-8 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.74),0_20px_50px_rgba(80,16,16,0.14)]">
               {store.bannerUrl ? (
                 <img alt={store.name} className="h-full w-full object-contain" src={store.bannerUrl} />
               ) : null}
@@ -39,7 +39,7 @@ export default function StoresPage() {
                   </h2>
                 </div>
                 {store.approvedMeetup ? (
-                  <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-orange/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-orange">
                     <ShieldCheck size={14} />
                     Approved meetup
                   </span>

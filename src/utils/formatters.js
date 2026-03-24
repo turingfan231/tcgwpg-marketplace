@@ -50,7 +50,7 @@ export function slugify(value) {
 export function getListingTypeClasses(type) {
   const toneMap = {
     WTS: "bg-orange/15 text-orange ring-1 ring-orange/30",
-    WTB: "bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-500/30",
+    WTB: "bg-navy/10 text-navy ring-1 ring-navy/20",
     WTT: "bg-navy/12 text-navy ring-1 ring-navy/20",
   };
 
@@ -59,8 +59,8 @@ export function getListingTypeClasses(type) {
 
 export function getConditionClasses(condition) {
   const toneMap = {
-    NM: "bg-emerald-500/10 text-emerald-700 ring-1 ring-emerald-500/20",
-    LP: "bg-amber-400/15 text-amber-800 ring-1 ring-amber-400/25",
+    NM: "bg-navy/10 text-navy ring-1 ring-navy/20",
+    LP: "bg-orange/12 text-orange ring-1 ring-orange/20",
     MP: "bg-rose-500/10 text-rose-700 ring-1 ring-rose-500/20",
     HP: "bg-slate-200 text-slate-700 ring-1 ring-slate-300",
   };
@@ -73,7 +73,7 @@ export function getGameClasses(game) {
     "Magic: The Gathering": "bg-navy/10 text-navy",
     Magic: "bg-navy/10 text-navy",
     Pokemon: "bg-orange/10 text-orange",
-    "One Piece": "bg-sky-100 text-sky-700",
+    "One Piece": "bg-navy/8 text-navy",
   };
 
   return toneMap[game] || "bg-slate-100 text-slate-700";

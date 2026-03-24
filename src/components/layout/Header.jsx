@@ -172,22 +172,23 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-[rgba(195,215,228,0.75)] bg-[rgba(238,246,250,0.86)] backdrop-blur-2xl">
+      <header className="sticky top-0 z-40 border-b border-[rgba(145,38,43,0.12)] bg-[rgba(251,248,248,0.9)] backdrop-blur-2xl">
         <div className="page-shell py-3 sm:py-4">
           <div className="console-panel px-3 py-3 sm:px-4 sm:py-4">
           <div className="flex items-center justify-between gap-3">
-            <Link className="flex min-w-0 items-center gap-3" to="/">
-              <div className="brand-pill shrink-0">
-                <span className="brand-pill-mark">TCG</span>
-                <span className="brand-pill-tag">WPG</span>
+            <Link className="flex min-w-0 items-center gap-4" to="/">
+              <div className="collector-strip-mark shrink-0" aria-hidden="true">
+                <span className="collector-strip-bar">T</span>
+                <span className="collector-strip-bar">C</span>
+                <span className="collector-strip-bar">G</span>
               </div>
               <div className="min-w-0">
                 <p className="truncate font-display text-[1.2rem] font-semibold tracking-[-0.04em] text-ink sm:text-[1.7rem]">
-                  Marketplace
+                  WPG Marketplace
                 </p>
-                <p className="hidden text-sm text-steel sm:block">Local TCG hub</p>
+                <p className="hidden text-sm text-navy sm:block">Collector strip system</p>
                 <p className="text-[11px] uppercase tracking-[0.18em] text-steel sm:hidden">
-                  Local TCG hub
+                  Collector strip
                 </p>
               </div>
             </Link>
@@ -207,7 +208,7 @@ export default function Header() {
               </Link>
 
               <button
-                className="rounded-full bg-orange px-4 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-[#5b74db] sm:px-5 sm:py-2.5"
+                className="rounded-full bg-orange px-4 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-[#d8332d] sm:px-5 sm:py-2.5"
                 type="button"
                 onClick={() => openListing("WTS", "/dashboard")}
               >
@@ -309,14 +310,14 @@ export default function Header() {
               size={18}
             />
             <input
-              className="w-full rounded-[22px] border border-[rgba(203,220,231,0.92)] bg-[rgba(250,253,255,0.8)] py-3 pl-12 pr-4 text-sm text-ink outline-none transition focus:border-navy focus:bg-white sm:py-3.5"
+            className="w-full rounded-[22px] border border-[rgba(145,38,43,0.12)] bg-[rgba(255,255,255,0.88)] py-3 pl-12 pr-4 text-sm text-ink outline-none transition focus:border-navy focus:bg-white sm:py-3.5"
               placeholder="Search cards, set codes, variants, or sellers"
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
             />
           </form>
 
-          <div className="mt-4 hidden flex-col gap-3 border-t border-[rgba(195,215,228,0.82)] pt-4 sm:flex lg:flex-row lg:items-center lg:justify-between">
+          <div className="mt-4 hidden flex-col gap-3 border-t border-[rgba(145,38,43,0.12)] pt-4 sm:flex lg:flex-row lg:items-center lg:justify-between">
             <div className="header-chip-scroll flex items-center gap-2 overflow-x-auto">
               {browseLinks.map((link) => (
                 <NavLink
@@ -366,7 +367,7 @@ export default function Header() {
           />
           <div
             ref={mobileDrawerRef}
-            className="absolute right-0 top-0 flex h-full w-full max-w-[22rem] flex-col bg-[linear-gradient(180deg,#f4f9fc_0%,#dce9f0_100%)] shadow-lift"
+            className="absolute right-0 top-0 flex h-full w-full max-w-[22rem] flex-col bg-[linear-gradient(180deg,#fbf8f8_0%,#f3ecec_100%)] shadow-lift"
           >
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
               <div>
@@ -419,7 +420,7 @@ export default function Header() {
                   return (
                     <Link
                       key={item.to}
-                      className="flex items-center justify-between rounded-2xl border border-slate-200 bg-[#faf7f1] px-4 py-3 text-sm font-semibold text-ink"
+                      className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-ink"
                       to={item.to}
                       onClick={() => setMobileDrawerOpen(false)}
                     >
@@ -467,7 +468,7 @@ export default function Header() {
                 </p>
                 {isAuthenticated ? (
                   <div className="mt-3 space-y-2">
-                    <div className="rounded-2xl border border-slate-200 bg-[#faf7f1] px-4 py-4">
+                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
                       <div className="flex items-center gap-3">
                         <UserAvatar className="h-11 w-11 text-sm" user={currentUser} />
                         <div className="min-w-0">

@@ -405,7 +405,7 @@ export default function ListingDetailPage() {
                     <p className="text-sm leading-7 text-steel">
                     {recentSalesSourceLabel || "Source-backed"} sold comps are shown in CAD.
                   </p>
-                  <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                  <span className="rounded-full bg-navy/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-navy">
                     {visibleSourceSales.length} sales
                   </span>
                 </div>
@@ -520,8 +520,8 @@ export default function ListingDetailPage() {
                   {listing.postalCode ? ` | ${listing.postalCode}` : ""}
                 </p>
               </div>
-              <div className="rounded-[26px] bg-emerald-500/8 p-5">
-                <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">
+              <div className="rounded-[26px] bg-navy/8 p-5">
+                <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-navy">
                   <TrendingUp size={16} />
                   Market average
                 </p>
@@ -633,7 +633,7 @@ export default function ListingDetailPage() {
                   <span
                     className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
                       listing.featured
-                        ? "bg-emerald-100 text-emerald-700"
+                        ? "bg-navy/10 text-navy"
                         : "bg-slate-100 text-slate-600"
                     }`}
                   >
@@ -672,7 +672,7 @@ export default function ListingDetailPage() {
                 <button
                   className={`rounded-[22px] border px-4 py-4 text-left transition ${
                     listing.featured
-                      ? "border-emerald-200 bg-white text-emerald-700"
+                      ? "border-navy/20 bg-white text-navy"
                       : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
                   }`}
                   type="button"
@@ -689,7 +689,7 @@ export default function ListingDetailPage() {
                 <button
                   className={`rounded-[22px] border px-4 py-4 text-left transition ${
                     listing.status === "removed"
-                      ? "border-emerald-200 bg-white text-emerald-700"
+                      ? "border-navy/20 bg-white text-navy"
                       : "border-amber-200 bg-white text-amber-800"
                   }`}
                   type="button"
@@ -741,7 +741,7 @@ export default function ListingDetailPage() {
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                   <p
                     className={`text-sm ${
-                      adminFeedback === "Admin note saved." ? "text-emerald-700" : "text-rose-700"
+                      adminFeedback === "Admin note saved." ? "text-navy" : "text-rose-700"
                     }`}
                   >
                     {adminFeedback}
@@ -772,7 +772,7 @@ export default function ListingDetailPage() {
                       {listing.seller.publicName || listing.seller.name}
                     </h2>
                     {listing.seller.verified ? (
-                      <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-orange/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-orange">
                         <ShieldCheck size={14} />
                         Verified
                       </span>
@@ -875,7 +875,7 @@ export default function ListingDetailPage() {
                       {isOwner && offer.status === "pending" ? (
                         <div className="mt-4 flex flex-wrap gap-2">
                           <button
-                            className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
+                            className="rounded-full bg-orange px-4 py-2 text-sm font-semibold text-white"
                             type="button"
                             onClick={() => void respondToOffer(offer.id, "accept")}
                           >

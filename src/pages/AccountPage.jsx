@@ -509,7 +509,7 @@ export default function AccountPage() {
                 </div>
               ) : null}
               {profileMessage ? (
-                <div className="sm:col-span-2 rounded-[18px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                <div className="sm:col-span-2 rounded-[18px] border border-navy/20 bg-navy/5 px-4 py-3 text-sm text-navy">
                   {profileMessage}
                 </div>
               ) : null}
@@ -590,7 +590,7 @@ export default function AccountPage() {
                 </div>
               ) : null}
               {passwordMessage ? (
-                <div className="rounded-[18px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                <div className="rounded-[18px] border border-navy/20 bg-navy/5 px-4 py-3 text-sm text-navy">
                   {passwordMessage}
                 </div>
               ) : null}
@@ -635,7 +635,7 @@ export default function AccountPage() {
                   </div>
                 ) : null}
                 {appealMessage ? (
-                  <div className="rounded-[18px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                  <div className="rounded-[18px] border border-navy/20 bg-navy/5 px-4 py-3 text-sm text-navy">
                     {appealMessage}
                   </div>
                 ) : null}

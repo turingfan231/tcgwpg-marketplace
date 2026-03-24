@@ -52,21 +52,21 @@ const CURATED_HERO_ART = {
 const GAME_SHELF_THEMES = {
   pokemon: {
     header:
-      "bg-[linear-gradient(180deg,rgba(255,205,76,0.2)_0%,rgba(104,175,255,0.18)_100%)]",
-    badge: "text-[#1456a5]",
-    button: "text-[#1456a5]",
+      "bg-[linear-gradient(180deg,rgba(239,59,51,0.16)_0%,rgba(177,29,35,0.08)_100%)]",
+    badge: "text-navy",
+    button: "text-navy",
   },
   magic: {
     header:
-      "bg-[linear-gradient(180deg,rgba(89,118,255,0.14)_0%,rgba(73,104,132,0.18)_100%)]",
+      "bg-[linear-gradient(180deg,rgba(177,29,35,0.18)_0%,rgba(90,24,24,0.1)_100%)]",
     badge: "text-navy",
     button: "text-navy",
   },
   "one-piece": {
     header:
-      "bg-[linear-gradient(180deg,rgba(34,164,255,0.14)_0%,rgba(27,122,186,0.18)_100%)]",
-    badge: "text-[#0e6fa7]",
-    button: "text-[#0e6fa7]",
+      "bg-[linear-gradient(180deg,rgba(204,38,38,0.16)_0%,rgba(239,59,51,0.12)_100%)]",
+    badge: "text-navy",
+    button: "text-navy",
   },
 };
 
@@ -116,7 +116,7 @@ function FeedRow({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
       <button
         aria-label={listing.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
         className={`inline-flex items-center justify-center rounded-full p-2 ${
-          listing.wishlisted ? "bg-orange/15 text-orange" : "bg-[#eef5f9] text-steel"
+          listing.wishlisted ? "bg-orange/15 text-orange" : "bg-[#f4efef] text-steel"
         }`}
         type="button"
         onClick={(event) => {
@@ -187,7 +187,7 @@ function BannerCard({
           : "pointer-events-none translate-y-4 opacity-0"
       }`}
     >
-      <div className="relative h-full overflow-hidden rounded-[36px] border border-white/10 bg-[#09131d] p-8 text-white shadow-[0_32px_90px_-48px_rgba(6,18,27,0.62)] sm:p-10 lg:p-12">
+      <div className="relative h-full overflow-hidden rounded-[36px] border border-white/10 bg-[#23090b] p-8 text-white shadow-[0_32px_90px_-48px_rgba(80,16,16,0.42)] sm:p-10 lg:p-12">
         {heroBackdrop ? (
           <img
             alt=""
@@ -196,8 +196,8 @@ function BannerCard({
             src={heroBackdrop}
           />
         ) : null}
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(4,10,16,0.97)_0%,rgba(6,15,23,0.95)_32%,rgba(9,20,31,0.74)_58%,rgba(9,20,31,0.4)_100%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.06),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(105,180,176,0.14),transparent_16%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(24,7,8,0.97)_0%,rgba(41,10,12,0.95)_34%,rgba(88,20,23,0.72)_60%,rgba(125,28,32,0.36)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.08),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(239,59,51,0.14),transparent_16%)]" />
         {slide.kind === "listing" && backgroundImage ? (
           <div className="pointer-events-none absolute bottom-10 right-10 z-[1] hidden lg:flex h-[18.5rem] w-[13.25rem] items-center justify-center rounded-[30px] border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] p-4 shadow-[0_28px_60px_-34px_rgba(0,0,0,0.65)] backdrop-blur-md">
             <CardArtwork
@@ -211,7 +211,7 @@ function BannerCard({
 
         <div className="relative z-10 flex h-full flex-col gap-8">
           <div className={`max-w-2xl ${slide.kind === "listing" ? "lg:max-w-[52%]" : ""}`}>
-            <span className="inline-flex rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
+            <span className="inline-flex rounded-full bg-white/12 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/80">
               {slide.kicker}
             </span>
             <h1 className="mt-5 max-w-3xl font-display text-[2.65rem] font-semibold leading-[0.92] tracking-[-0.07em] sm:text-[4rem]">
@@ -264,7 +264,7 @@ function BestSellerCard({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
   return (
     <article className="overflow-hidden rounded-[26px] border border-[rgba(205,220,231,0.88)] bg-white shadow-soft">
       <button className="block w-full text-left" type="button" onClick={() => onOpen(listing.id)}>
-        <div className="flex aspect-[4/3] items-center justify-center bg-[linear-gradient(180deg,#edf4f8_0%,#dce7ef_100%)] p-4">
+        <div className="flex aspect-[4/3] items-center justify-center bg-[linear-gradient(180deg,#fbf8f8_0%,#f0e8e8_100%)] p-4">
           <CardArtwork
             className="aspect-[63/88] h-full max-h-[220px] rounded-[18px] object-cover shadow-soft"
             game={listing.game}
@@ -284,7 +284,7 @@ function BestSellerCard({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
           <button
             aria-label={listing.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
             className={`inline-flex items-center justify-center rounded-full p-2 ${
-              listing.wishlisted ? "bg-orange/15 text-orange" : "bg-[#f2f3f5] text-steel"
+              listing.wishlisted ? "bg-orange/15 text-orange" : "bg-[#f4efef] text-steel"
             }`}
             type="button"
             onClick={() => onToggleWishlist(listing.id)}
@@ -311,7 +311,7 @@ function SecondaryPromo({ feature, formatCadPrice, onOpenListing, onOpenEvent, o
   }
 
   return (
-    <section className="overflow-hidden rounded-[30px] border border-[rgba(201,216,228,0.9)] bg-[linear-gradient(120deg,#123246_0%,#16384c_56%,#0b2231_100%)] text-white shadow-[0_28px_80px_-48px_rgba(6,18,27,0.58)]">
+    <section className="overflow-hidden rounded-[30px] border border-[rgba(145,38,43,0.14)] bg-[linear-gradient(120deg,#4f0f14_0%,#74161b_56%,#2b090b_100%)] text-white shadow-[0_28px_80px_-48px_rgba(80,16,16,0.42)]">
       <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)_14rem] lg:items-center">
         <div className="flex justify-center px-6 pt-6 lg:pt-0">
           <div className="flex items-end gap-3">
@@ -1005,7 +1005,7 @@ export default function HomePage() {
               <div
                 className={`border-b border-[rgba(203,220,231,0.82)] px-5 py-5 ${
                   GAME_SHELF_THEMES[game.slug]?.header ||
-                  "bg-[linear-gradient(180deg,#edf4f9_0%,#deebf3_100%)]"
+                  "bg-[linear-gradient(180deg,#fbf8f8_0%,#f2ebeb_100%)]"
                 }`}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -1185,9 +1185,9 @@ export default function HomePage() {
               className="overflow-hidden rounded-[26px] border border-[rgba(203,220,231,0.92)] bg-white/78 transition duration-300 hover:-translate-y-0.5 hover:shadow-soft"
               to={`/stores/${store.slug}`}
             >
-              <div className="relative flex h-32 items-center justify-center overflow-hidden border-b border-[rgba(203,220,231,0.82)] bg-[linear-gradient(135deg,#153447,#0d2232)] p-5">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(255,255,255,0.09),transparent_22%),radial-gradient(circle_at_78%_18%,rgba(108,167,214,0.12),transparent_24%)]" />
-                <div className="relative z-10 flex h-full w-full items-center justify-center rounded-[24px] border border-[rgba(255,255,255,0.78)] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(235,242,248,0.94))] px-6 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_20px_50px_-30px_rgba(6,18,29,0.22)]">
+              <div className="relative flex h-32 items-center justify-center overflow-hidden border-b border-[rgba(145,38,43,0.12)] bg-[linear-gradient(135deg,#4d0f13,#7a181d)] p-5">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(255,255,255,0.09),transparent_22%),radial-gradient(circle_at_78%_18%,rgba(239,59,51,0.12),transparent_24%)]" />
+                <div className="relative z-10 flex h-full w-full items-center justify-center rounded-[24px] border border-[rgba(255,255,255,0.84)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,243,243,0.96))] px-6 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.76),0_20px_50px_-30px_rgba(80,16,16,0.18)]">
                   {store.logoUrl ? (
                     <img alt={store.name} className="max-h-full w-full object-contain" src={store.logoUrl} />
                   ) : null}
@@ -1204,7 +1204,7 @@ export default function HomePage() {
                   <span className="rounded-full bg-navy/8 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-navy">
                     {store.activeCount} listings
                   </span>
-                  <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                  <span className="rounded-full bg-orange/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-orange">
                     Approved
                   </span>
                 </div>

@@ -118,7 +118,7 @@ export default function SellersPage() {
                 </div>
               </div>
               {seller.verified ? (
-                <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                <span className="rounded-full bg-orange/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-orange">
                   Verified
                 </span>
               ) : null}

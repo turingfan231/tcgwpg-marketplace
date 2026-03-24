@@ -37,10 +37,10 @@ const MEDIA_BUCKET = "listing-media";
 const FOREGROUND_REFRESH_MS = 12000;
 const RICH_MESSAGE_PREFIX = "[[tcgwpg-message]]";
 const DEFAULT_SITE_SETTINGS = {
-  themePreset: "ember-signal",
+  themePreset: "collector-strip",
   customTheme: normalizeCustomTheme({
-    primary: "#f03737",
-    accent: "#6d86f0",
+    primary: "#b11d23",
+    accent: "#ef3b33",
   }),
   homeHero: {
     featuredListingId: null,

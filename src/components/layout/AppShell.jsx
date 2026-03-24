@@ -1,7 +1,6 @@
 import { AlertTriangle, Clock3, MapPin, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { resolveThemeSelection } from "../../data/themePresets";
 import { useMarketplace } from "../../hooks/useMarketplace";
 import CreateListingModal from "../modals/CreateListingModal";
 import OnboardingModal from "../modals/OnboardingModal";
@@ -24,7 +23,6 @@ export default function AppShell() {
     isCreateListingOpen,
     isViewingAs,
     isSuspended,
-    siteSettings,
     stopViewAs,
     toastItems,
     viewedUserRecord,
@@ -121,8 +119,14 @@ export default function AppShell() {
   }, [deferredPrompt, installVisible, isStandalone]);
 
   const activeTheme = useMemo(
-    () => resolveThemeSelection(siteSettings?.themePreset, siteSettings?.customTheme),
-    [siteSettings?.customTheme, siteSettings?.themePreset],
+    () => ({
+      id: "collector-strip",
+      primary: "#b11d23",
+      primaryRgb: "177, 29, 35",
+      accent: "#ef3b33",
+      accentRgb: "239, 59, 51",
+    }),
+    [],
   );
 
   const themeStyle = useMemo(
@@ -213,7 +217,7 @@ export default function AppShell() {
         </div>
       ) : null}
       {isViewingAs && viewedUserRecord ? (
-        <div className="border-b border-[rgba(240,55,55,0.18)] bg-[rgba(240,55,55,0.08)]">
+        <div className="border-b border-[rgba(177,29,35,0.18)] bg-[rgba(177,29,35,0.08)]">
           <div className="page-shell flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
             <div className="inline-flex items-center gap-2 font-semibold text-ink">
               <ShieldCheck size={16} className="text-navy" />
@@ -235,7 +239,7 @@ export default function AppShell() {
         </div>
       </main>
 
-      <footer className="hidden border-t border-[rgba(195,215,228,0.75)] bg-transparent md:block">
+      <footer className="hidden border-t border-[rgba(145,38,43,0.12)] bg-transparent md:block">
         <div className="page-shell py-10">
           <div className="console-shell px-6 py-7 sm:px-8">
             <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr_0.8fr]">
@@ -309,7 +313,7 @@ export default function AppShell() {
         </div>
       </footer>
 
-      <div className="border-t border-[rgba(195,215,228,0.8)] bg-[rgba(244,249,252,0.92)] px-4 py-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-steel md:hidden">
+      <div className="border-t border-[rgba(145,38,43,0.12)] bg-[rgba(251,248,248,0.96)] px-4 py-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-steel md:hidden">
         TCGWPG | Local cards, faster meetups
       </div>
 

@@ -257,7 +257,7 @@ function OfferTimeline({
                 <>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
-                      className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                      className="rounded-full bg-orange px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#d8332d]"
                       type="button"
                       onClick={() => void onAccept(offer.id)}
                     >
