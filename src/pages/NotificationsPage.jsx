@@ -52,15 +52,19 @@ function formatNotificationDate(dateString) {
 
 export default function NotificationsPage() {
   const {
+    authReady,
     clearReadNotifications,
     deleteNotification,
+    isAuthenticated,
     loading,
     markAllNotificationsRead,
     markNotificationRead,
     notificationsForCurrentUser,
   } = useMarketplace();
 
-  if (loading && !notificationsForCurrentUser.length) {
+  const shouldShowLoading = !authReady || (loading && isAuthenticated && notificationsForCurrentUser.length > 0);
+
+  if (!authReady || (loading && isAuthenticated && !notificationsForCurrentUser.length)) {
     return <PageSkeleton cards={3} rows={1} titleWidth="w-56" />;
   }
 
@@ -88,7 +92,8 @@ export default function NotificationsPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <button
-              className="inline-flex items-center gap-2 rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
+              className="inline-flex items-center gap-2 rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={shouldShowLoading}
               type="button"
               onClick={markAllNotificationsRead}
             >
@@ -96,7 +101,8 @@ export default function NotificationsPage() {
               Mark all read
             </button>
             <button
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={shouldShowLoading}
               type="button"
               onClick={clearReadNotifications}
             >
