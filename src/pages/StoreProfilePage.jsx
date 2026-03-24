@@ -1,4 +1,4 @@
-import { CalendarDays, ExternalLink, MapPin, ShieldCheck, Store } from "lucide-react";
+import { BellRing, CalendarDays, ExternalLink, Heart, MapPin, ShieldCheck, Store } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import ListingCard from "../components/cards/ListingCard";
@@ -14,7 +14,17 @@ function normalizeStoreName(value) {
 
 export default function StoreProfilePage() {
   const { storeSlug } = useParams();
-  const { activeListings, loading, sellers } = useMarketplace();
+  const {
+    activeListings,
+    eventReminderIds,
+    eventAttendance,
+    followedStoreSlugs,
+    loading,
+    sellers,
+    setEventAttendanceIntent,
+    toggleEventReminder,
+    toggleStoreFollow,
+  } = useMarketplace();
   const [remoteEvents, setRemoteEvents] = useState([]);
   const [eventsLoading, setEventsLoading] = useState(true);
 
@@ -82,6 +92,22 @@ export default function StoreProfilePage() {
       .slice(0, 8);
   }, [activeListings, sellers, store]);
 
+  const listingsByGame = useMemo(() => {
+    const groups = {
+      Pokemon: [],
+      Magic: [],
+      "One Piece": [],
+    };
+
+    featuredListings.forEach((listing) => {
+      if (groups[listing.game]) {
+        groups[listing.game].push(listing);
+      }
+    });
+
+    return groups;
+  }, [featuredListings]);
+
   const sellerCount = useMemo(() => {
     if (!store) {
       return 0;
@@ -100,9 +126,11 @@ export default function StoreProfilePage() {
     return <EmptyState title="Store Not Found" description="That store profile does not exist." />;
   }
 
+  const isFollowingStore = followedStoreSlugs.includes(store.slug);
+
   return (
     <div className="space-y-8">
-      <section className="console-panel overflow-hidden p-0">
+      <section className="console-panel binder-edge overflow-hidden p-0">
         <div className="relative overflow-hidden bg-[linear-gradient(135deg,#4d0f13,#7a181d)] p-7 text-white sm:p-8">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.08),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(239,59,51,0.14),transparent_18%)]" />
           <div className="relative z-10 grid gap-6 lg:grid-cols-[1fr_16rem] lg:items-end">
@@ -130,6 +158,31 @@ export default function StoreProfilePage() {
                   {sellerCount} seller{sellerCount === 1 ? "" : "s"} use this spot
                 </span>
               </div>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <button
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    isFollowingStore
+                      ? "bg-white text-navy"
+                      : "border border-white/16 bg-white/10 text-white hover:bg-white/16"
+                  }`}
+                  type="button"
+                  onClick={() => void toggleStoreFollow(store.slug)}
+                >
+                  <Heart fill={isFollowingStore ? "currentColor" : "none"} size={15} />
+                  {isFollowingStore ? "Following store" : "Follow store"}
+                </button>
+                {store.eventsUrl ? (
+                  <a
+                    className="inline-flex items-center gap-2 rounded-full border border-white/16 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/16"
+                    href={store.eventsUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    Source calendar
+                    <ExternalLink size={14} />
+                  </a>
+                ) : null}
+              </div>
             </div>
 
             <div className="rounded-[28px] border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))] p-4 backdrop-blur-sm">
@@ -144,7 +197,7 @@ export default function StoreProfilePage() {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <article className="console-panel p-5 sm:p-6">
+        <article className="console-panel binder-edge p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Upcoming events</p>
@@ -167,14 +220,51 @@ export default function StoreProfilePage() {
 
           <div className="mt-5 space-y-3">
             {matchingEvents.length ? (
-              matchingEvents.map((event) => (
+              matchingEvents.map((event) => {
+                const eventKey = `${event.id || "event"}:${event.dateStr || ""}:${event.time || ""}`;
+                const reminderEnabled = eventReminderIds.includes(eventKey);
+                const selectedIntent = eventAttendance[eventKey] || "";
+                return (
                 <div key={event.id} className="rounded-[22px] border border-slate-200 bg-[#f7f7f8] p-4">
                   <p className="font-semibold text-ink">{event.title}</p>
                   <p className="mt-2 text-sm text-steel">
                     {event.dateStr} | {event.time} | {event.game}
                   </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition ${
+                        reminderEnabled
+                          ? "border-[rgba(177,29,35,0.22)] bg-[rgba(240,55,55,0.08)] text-navy"
+                          : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
+                      }`}
+                      type="button"
+                      onClick={() => void toggleEventReminder(eventKey)}
+                    >
+                      {reminderEnabled ? "Reminder on" : "Remind me"}
+                      <BellRing size={13} />
+                    </button>
+                    {[
+                      { id: "going", label: "Going" },
+                      { id: "maybe", label: "Maybe" },
+                      { id: "trading-there", label: "Trading there" },
+                    ].map((option) => (
+                      <button
+                        key={option.id}
+                        className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
+                          selectedIntent === option.id
+                            ? "border-[rgba(177,29,35,0.24)] bg-navy text-white"
+                            : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
+                        }`}
+                        type="button"
+                        onClick={() => void setEventAttendanceIntent(eventKey, option.id)}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              ))
+              );
+            })
             ) : eventsLoading ? (
               <p className="text-sm leading-7 text-steel">Loading store events...</p>
             ) : (
@@ -185,7 +275,7 @@ export default function StoreProfilePage() {
           </div>
         </article>
 
-        <article className="console-panel p-5 sm:p-6">
+        <article className="console-panel binder-edge p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Featured listings</p>
@@ -210,7 +300,48 @@ export default function StoreProfilePage() {
         </article>
       </section>
 
-      <section className="console-panel p-5 sm:p-6">
+      <section className="console-panel binder-edge p-5 sm:p-6">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="section-kicker">Featured lanes</p>
+            <h2 className="mt-2 font-display text-[1.95rem] font-semibold tracking-[-0.05em] text-ink">
+              Browse by game at this store
+            </h2>
+          </div>
+        </div>
+        <div className="mt-5 grid gap-5 xl:grid-cols-3">
+          {Object.entries(listingsByGame).map(([game, listings]) => (
+            <article key={game} className="console-well p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                    {game}
+                  </p>
+                  <p className="mt-1 text-sm text-steel">
+                    {listings.length} listing{listings.length === 1 ? "" : "s"} tied to this spot
+                  </p>
+                </div>
+                <Link className="text-sm font-semibold text-navy hover:underline" to={`/market/${game === "One Piece" ? "one-piece" : game.toLowerCase()}`}>
+                  Open lane
+                </Link>
+              </div>
+              <div className="mt-4 grid gap-3">
+                {listings.length ? (
+                  listings.slice(0, 2).map((listing) => (
+                    <ListingCard key={listing.id} listing={listing} />
+                  ))
+                ) : (
+                  <div className="rounded-[18px] border border-dashed border-slate-200 bg-white/72 px-4 py-5 text-sm text-steel">
+                    Nothing active in {game} here yet.
+                  </div>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="console-panel binder-edge p-5 sm:p-6">
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="section-kicker">Quick links</p>

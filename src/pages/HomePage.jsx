@@ -568,6 +568,16 @@ export default function HomePage() {
         .slice(0, 4),
     [activeListings, followedSellerIds],
   );
+  const newThisWeekListings = useMemo(() => {
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    return safeListings
+      .filter((listing) => {
+        const createdTime = new Date(listing.createdAt || listing.updatedAt || 0).getTime();
+        return Number.isFinite(createdTime) && createdTime >= weekAgo;
+      })
+      .sort((left, right) => (right.sortTimestamp || 0) - (left.sortTimestamp || 0))
+      .slice(0, 4);
+  }, [safeListings]);
 
   const bannerSlides = useMemo(() => {
     const slides = [];
@@ -875,6 +885,40 @@ export default function HomePage() {
       </section>
       ) : null}
 
+      <section className="drop-in-item space-y-5">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="section-kicker">New this week</p>
+            <h2 className="mt-2 font-display text-[2rem] font-semibold tracking-[-0.05em] text-ink">
+              Fresh cards that just hit the market
+            </h2>
+            <p className="mt-2 text-sm text-steel">
+              A quick shelf for the newest local posts before they get buried in the main feed.
+            </p>
+          </div>
+          <Link className="inline-flex items-center gap-2 text-sm font-semibold text-navy" to="/market">
+            Browse all new listings
+            <ArrowRight size={14} />
+          </Link>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {newThisWeekListings.length ? (
+            newThisWeekListings.map((listing) => (
+              <ShelfCard
+                key={listing.id}
+                formatCadPrice={formatCadPrice}
+                listing={listing}
+                onOpen={openListing}
+              />
+            ))
+          ) : (
+            <div className="rounded-[24px] border border-dashed border-[rgba(203,220,231,0.92)] bg-white/70 px-5 py-10 text-sm leading-7 text-steel md:col-span-2 xl:col-span-4">
+              New listings from the last seven days will appear here automatically.
+            </div>
+          )}
+        </div>
+      </section>
+
       {(homeSections.showFreshFeed !== false ||
         (homeSections.showFollowedFeed !== false && currentUser && followedSellerIds.length)) ? (
       <section
@@ -885,7 +929,7 @@ export default function HomePage() {
         }`}
       >
         {homeSections.showFreshFeed !== false ? (
-        <article className="drop-in-item console-panel p-5 sm:p-6">
+        <article className="drop-in-item console-panel binder-edge p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Fresh from the feed</p>
@@ -917,7 +961,7 @@ export default function HomePage() {
         ) : null}
 
         {homeSections.showFollowedFeed !== false && currentUser && followedSellerIds.length ? (
-          <article className="drop-in-item console-panel p-5 sm:p-6">
+          <article className="drop-in-item console-panel binder-edge p-5 sm:p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="section-kicker">Following</p>
@@ -948,7 +992,7 @@ export default function HomePage() {
           </article>
         ) : null}
 
-        <aside className="drop-in-item console-panel p-5 sm:p-6">
+        <aside className="drop-in-item console-panel binder-edge p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="section-kicker">Browse by game</p>
@@ -982,7 +1026,7 @@ export default function HomePage() {
       ) : null}
 
       {homeSections.showGameShelves !== false ? (
-      <section className="drop-in-item console-panel p-5 sm:p-6">
+      <section className="drop-in-item console-panel binder-edge p-5 sm:p-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="section-kicker">Game shelves</p>
@@ -1063,7 +1107,7 @@ export default function HomePage() {
       {(homeSections.showEvents !== false || homeSections.showTrustedSellers !== false) ? (
       <section className="drop-in-cluster grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         {homeSections.showEvents !== false ? (
-        <article className="drop-in-item console-panel p-5 sm:p-6">
+        <article className="drop-in-item console-panel binder-edge p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Upcoming events</p>
@@ -1101,7 +1145,7 @@ export default function HomePage() {
         ) : null}
 
         {homeSections.showTrustedSellers !== false ? (
-        <article className="drop-in-item console-panel p-5 sm:p-6">
+        <article className="drop-in-item console-panel binder-edge p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Trusted sellers</p>
@@ -1162,7 +1206,7 @@ export default function HomePage() {
       ) : null}
 
       {homeSections.showStores !== false ? (
-      <section className="drop-in-item console-panel p-5 sm:p-6">
+      <section className="drop-in-item console-panel binder-edge p-5 sm:p-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="section-kicker">Verified meetup spots</p>

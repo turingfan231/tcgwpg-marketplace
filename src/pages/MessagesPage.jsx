@@ -213,11 +213,14 @@ function OfferTimeline({
   }
 
   return (
-    <div className="mx-4 mt-4 rounded-[28px] border border-[rgba(203,220,231,0.88)] bg-[linear-gradient(180deg,rgba(247,251,253,0.96),rgba(241,243,245,0.92))] p-4 shadow-soft sm:mx-6">
+    <div className="mx-4 mt-4 rounded-[28px] border border-[rgba(177,29,35,0.16)] bg-[linear-gradient(180deg,rgba(255,248,248,0.98),rgba(249,240,240,0.94))] p-4 shadow-soft sm:mx-6">
       <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-steel">
         <BellRing size={14} />
-        Offer timeline
+        Deal flow
       </div>
+      <p className="mb-4 max-w-3xl text-sm leading-7 text-steel">
+        Offers stay pinned above the normal conversation so countering, accepting, and meetup details do not get buried in chat.
+      </p>
       <div className="grid gap-3">
         {offers.map((offer) => {
           const isSeller = offer.sellerId === currentUserId;
@@ -510,6 +513,25 @@ export default function MessagesPage() {
           new Date(left.updatedAt || left.createdAt || 0).getTime(),
       );
   }, [activeThread, offersByListingId]);
+
+  const quickReplies = useMemo(() => {
+    if (!activeThread) {
+      return [];
+    }
+
+    const meetupLabel = activeThread.listing?.neighborhood
+      ? `I can meet in ${activeThread.listing.neighborhood}.`
+      : "I can meet this week.";
+
+    return [
+      "Still available?",
+      "Can you send a couple more photos?",
+      meetupLabel,
+      "Would you take an offer on this?",
+      "What condition issues should I know about?",
+      "I can confirm today if timing works.",
+    ];
+  }, [activeThread]);
 
   if (loading && !threadsForCurrentUser.length) {
     return <PageSkeleton cards={2} rows={1} titleWidth="w-48" />;
@@ -823,6 +845,13 @@ export default function MessagesPage() {
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(240,55,55,0.07),transparent_18%),radial-gradient(circle_at_bottom_right,rgba(17,39,56,0.08),transparent_24%)]" />
               <div className="pointer-events-none absolute inset-x-4 inset-y-5 rounded-[30px] border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.28),rgba(255,255,255,0.08))] sm:inset-x-6" />
               <div className="relative flex min-h-full flex-col justify-end gap-3">
+                <div className="mb-1 flex items-center gap-3 px-1 pt-1">
+                  <div className="h-px flex-1 bg-[rgba(177,29,35,0.12)]" />
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-steel">
+                    Conversation
+                  </span>
+                  <div className="h-px flex-1 bg-[rgba(177,29,35,0.12)]" />
+                </div>
                 {activeThread.messages.map((message) => {
                   const mine = message.senderId === currentUserId;
                   const animationKey = `${message.senderId}:${message.body}:${Math.floor(
@@ -916,6 +945,22 @@ export default function MessagesPage() {
               onSubmit={handleSubmit}
             >
               <div className="rounded-[28px] border border-[rgba(203,220,231,0.92)] bg-white/96 p-3 shadow-soft">
+                {quickReplies.length ? (
+                  <div className="mb-3 flex flex-wrap gap-2 px-1">
+                    {quickReplies.map((reply) => (
+                      <button
+                        key={reply}
+                        className="rounded-full border border-[rgba(177,29,35,0.12)] bg-[rgba(240,55,55,0.05)] px-3 py-2 text-xs font-semibold text-navy transition hover:border-[rgba(177,29,35,0.22)] hover:bg-[rgba(240,55,55,0.09)]"
+                        type="button"
+                        onClick={() =>
+                          setDraft((current) => (current.trim() ? `${current.trim()} ${reply}` : reply))
+                        }
+                      >
+                        {reply}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
                 {pendingPhotos.length ? (
                   <div className="mb-3 flex flex-wrap gap-2 px-1">
                     {pendingPhotos.map((photo) => (

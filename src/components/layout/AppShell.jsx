@@ -246,7 +246,7 @@ export default function AppShell() {
               <div>
                 <p className="section-kicker">TCGWPG</p>
                 <h2 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.04em] text-ink">
-                  Local cards, local meetups, less clutter.
+                  Local cards, faster deals.
                 </h2>
                 <p className="mt-4 max-w-lg text-sm leading-7 text-steel">
                   Built for Winnipeg players who want a cleaner way to buy, sell, trade,
@@ -314,7 +314,7 @@ export default function AppShell() {
       </footer>
 
       <div className="border-t border-[rgba(145,38,43,0.12)] bg-[rgba(251,248,248,0.96)] px-4 py-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-steel md:hidden">
-        TCGWPG | Local cards, faster meetups
+        WPG Marketplace | Local cards, faster deals
       </div>
 
       {isCreateListingOpen ? (

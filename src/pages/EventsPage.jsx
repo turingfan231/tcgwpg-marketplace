@@ -1,4 +1,5 @@
 import {
+  BellRing,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
@@ -21,6 +22,11 @@ const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const rangeOptions = [
   { id: "month", label: "This month" },
   { id: "week", label: "Next 14 days" },
+];
+const attendanceOptions = [
+  { id: "going", label: "Going" },
+  { id: "maybe", label: "Maybe" },
+  { id: "trading-there", label: "Trading there" },
 ];
 
 function getMonthKey(dateStr) {
@@ -49,6 +55,35 @@ function normalizeManualEvent(event) {
     ...event,
     source: event.source || "Admin override",
   };
+}
+
+function normalizeStoreName(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function buildEventKey(event) {
+  return `${event.id || "event"}:${event.dateStr || ""}:${event.time || ""}`;
+}
+
+function matchesEventListing(event, listing, sellers, storeSlug) {
+  const gameMatch =
+    String(listing?.game || "").toLowerCase() === String(event?.game || "").toLowerCase();
+  if (!gameMatch) {
+    return false;
+  }
+
+  const seller = sellers.find((user) => String(user.id) === String(listing.sellerId));
+  if (!seller) {
+    return false;
+  }
+
+  const trustedSpotMatch = Array.isArray(seller.trustedMeetupSpots)
+    ? seller.trustedMeetupSpots.includes(storeSlug)
+    : false;
+  const neighborhoodMatch =
+    normalizeStoreName(seller.neighborhood) === normalizeStoreName(event.neighborhood);
+
+  return trustedSpotMatch || neighborhoodMatch;
 }
 
 function daysUntil(dateStr) {
@@ -110,7 +145,16 @@ function downloadEventCalendar(event) {
 }
 
 export default function EventsPage() {
-  const { manualEvents } = useMarketplace();
+  const {
+    activeListings,
+    eventAttendance,
+    eventReminderIds,
+    formatCadPrice,
+    manualEvents,
+    sellers,
+    setEventAttendanceIntent,
+    toggleEventReminder,
+  } = useMarketplace();
   const [remoteEvents, setRemoteEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -271,6 +315,21 @@ export default function EventsPage() {
     }, []);
   }, [eventsForList, rangeMode]);
 
+  const relatedListingsByEvent = useMemo(() => {
+    return eventsForList.reduce((accumulator, event) => {
+      const storeSlug = getStoreSlugByName(event.store);
+      accumulator[buildEventKey(event)] = activeListings
+        .filter((listing) => matchesEventListing(event, listing, sellers, storeSlug))
+        .sort(
+          (left, right) =>
+            Number(right.featured) - Number(left.featured) ||
+            (right.sortTimestamp || 0) - (left.sortTimestamp || 0),
+        )
+        .slice(0, 3);
+      return accumulator;
+    }, {});
+  }, [activeListings, eventsForList, sellers]);
+
   const selectedMonthIndex = monthKeys.indexOf(visibleMonth);
 
   if (loading && !allEvents.length) {
@@ -279,7 +338,7 @@ export default function EventsPage() {
 
   return (
     <div className="space-y-7">
-      <section className="console-shell p-6 sm:p-7">
+      <section className="console-shell binder-edge p-6 sm:p-7">
         <p className="section-kicker">Local Events</p>
         <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-ink sm:text-[3.25rem]">
           Winnipeg tournaments, leagues, and local nights
@@ -289,7 +348,7 @@ export default function EventsPage() {
         </p>
       </section>
 
-      <section className="console-panel space-y-5 p-5 sm:p-6">
+      <section className="console-panel binder-edge space-y-5 p-5 sm:p-6">
         <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-steel">
           <Filter size={14} />
           Filters
@@ -474,7 +533,7 @@ export default function EventsPage() {
           )}
         </article>
 
-        <article className="console-panel p-5 sm:p-6">
+        <article className="console-panel binder-edge p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Upcoming list</p>
@@ -525,6 +584,14 @@ export default function EventsPage() {
                   key={event.id}
                   className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-5"
                 >
+                  {(() => {
+                    const eventKey = buildEventKey(event);
+                    const storeSlug = getStoreSlugByName(event.store);
+                    const selectedIntent = eventAttendance[eventKey] || "";
+                    const reminderEnabled = eventReminderIds.includes(eventKey);
+                    const relatedListings = relatedListingsByEvent[eventKey] || [];
+                    return (
+                      <>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full bg-orange/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-orange">
                       {event.game}
@@ -590,6 +657,74 @@ export default function EventsPage() {
                   {event.note ? (
                     <p className="mt-4 text-sm leading-7 text-steel">{event.note}</p>
                   ) : null}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                        reminderEnabled
+                          ? "border-[rgba(177,29,35,0.24)] bg-[rgba(240,55,55,0.08)] text-navy"
+                          : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
+                      }`}
+                      type="button"
+                      onClick={() => void toggleEventReminder(eventKey)}
+                    >
+                      {reminderEnabled ? "Reminder saved" : "Remind me"}
+                      <BellRing size={14} />
+                    </button>
+                    {attendanceOptions.map((option) => (
+                      <button
+                        key={option.id}
+                        className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                          selectedIntent === option.id
+                            ? "border-[rgba(177,29,35,0.24)] bg-navy text-white"
+                            : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
+                        }`}
+                        type="button"
+                        onClick={() => void setEventAttendanceIntent(eventKey, option.id)}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-5 rounded-[20px] border border-[rgba(177,29,35,0.12)] bg-white/82 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                        Related listings for this event
+                      </p>
+                      {storeSlug ? (
+                        <Link className="text-sm font-semibold text-navy hover:underline" to={`/stores/${storeSlug}`}>
+                          Store page
+                        </Link>
+                      ) : null}
+                    </div>
+                    <div className="mt-3 grid gap-3">
+                      {relatedListings.length ? (
+                        relatedListings.map((listing) => (
+                          <Link
+                            key={listing.id}
+                            className="flex items-center justify-between gap-3 rounded-[18px] border border-slate-200 bg-[#f9f7f7] px-4 py-3 transition hover:border-[rgba(177,29,35,0.18)]"
+                            to={`/listing/${listing.id}`}
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-ink">{listing.title}</p>
+                              <p className="mt-1 text-sm text-steel">
+                                {listing.neighborhood} | {listing.seller?.publicName || listing.seller?.name}
+                              </p>
+                            </div>
+                            <span className="shrink-0 text-sm font-semibold text-navy">
+                              {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
+                            </span>
+                          </Link>
+                        ))
+                      ) : (
+                        <div className="rounded-[16px] border border-dashed border-slate-200 bg-white/72 px-4 py-4 text-sm text-steel">
+                          No active listings are tied to this store and game yet.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                      </>
+                    );
+                  })()}
                 </article>
               ))}
             </div>

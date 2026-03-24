@@ -3,15 +3,14 @@ export default function AppLaunchScreen({ compact = false }) {
     <div className={`launch-screen ${compact ? "launch-screen-compact" : ""}`}>
       <div className="launch-screen-panel">
         <div className="launch-orb" aria-hidden="true" />
-        <div className="brand-pill">
-          <span className="brand-pill-mark">TCG</span>
-          <span className="brand-pill-tag">WPG</span>
+        <div className="collector-strip-mark" aria-hidden="true">
+          <span className="collector-strip-bar">W</span>
+          <span className="collector-strip-bar">P</span>
+          <span className="collector-strip-bar">G</span>
         </div>
         <div className="space-y-2 text-center">
-          <p className="font-display text-2xl font-semibold tracking-[-0.05em] text-ink">
-            Marketplace
-          </p>
-          <p className="text-sm text-steel">Loading your local card market</p>
+          <p className="font-display text-2xl font-semibold tracking-[-0.05em] text-ink">WPG Marketplace</p>
+          <p className="text-sm text-steel">Local cards, faster deals</p>
         </div>
         <div className="launch-meter" aria-hidden="true">
           <span className="launch-meter-bar" />

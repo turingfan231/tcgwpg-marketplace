@@ -31,6 +31,9 @@ const SITE_SETTINGS_STORAGE_KEY = "tcgwpg.siteSettings";
 const COLLECTION_STORAGE_PREFIX = "tcgwpg.collection";
 const AUDIT_LOG_STORAGE_KEY = "tcgwpg.adminAuditLog";
 const VIEW_AS_STORAGE_KEY = "tcgwpg.viewAsUserId";
+const STORE_FOLLOW_STORAGE_PREFIX = "tcgwpg.storeFollows";
+const EVENT_REMINDER_STORAGE_PREFIX = "tcgwpg.eventReminders";
+const EVENT_ATTENDANCE_STORAGE_PREFIX = "tcgwpg.eventAttendance";
 const SUPPORTED_GAME_SLUGS = new Set(["magic", "pokemon", "one-piece"]);
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
 const MEDIA_BUCKET = "listing-media";
@@ -207,6 +210,106 @@ function writeAuditLogStorage(value) {
 
   try {
     window.localStorage.setItem(AUDIT_LOG_STORAGE_KEY, JSON.stringify((value || []).slice(0, 250)));
+  } catch {
+    // Ignore storage write failures in constrained/private browser contexts.
+  }
+}
+
+function getStoreFollowStorageKey(userId) {
+  return `${STORE_FOLLOW_STORAGE_PREFIX}.${userId}`;
+}
+
+function readStoreFollowStorage(userId) {
+  if (typeof window === "undefined" || !userId) {
+    return [];
+  }
+
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(getStoreFollowStorageKey(userId)) || "[]");
+    return Array.isArray(stored) ? stored.filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeStoreFollowStorage(userId, value) {
+  if (typeof window === "undefined" || !userId) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      getStoreFollowStorageKey(userId),
+      JSON.stringify((value || []).filter(Boolean)),
+    );
+  } catch {
+    // Ignore storage write failures in constrained/private browser contexts.
+  }
+}
+
+function getEventReminderStorageKey(userId) {
+  return `${EVENT_REMINDER_STORAGE_PREFIX}.${userId}`;
+}
+
+function readEventReminderStorage(userId) {
+  if (typeof window === "undefined" || !userId) {
+    return [];
+  }
+
+  try {
+    const stored = JSON.parse(
+      window.localStorage.getItem(getEventReminderStorageKey(userId)) || "[]",
+    );
+    return Array.isArray(stored) ? stored.filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeEventReminderStorage(userId, value) {
+  if (typeof window === "undefined" || !userId) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      getEventReminderStorageKey(userId),
+      JSON.stringify((value || []).filter(Boolean)),
+    );
+  } catch {
+    // Ignore storage write failures in constrained/private browser contexts.
+  }
+}
+
+function getEventAttendanceStorageKey(userId) {
+  return `${EVENT_ATTENDANCE_STORAGE_PREFIX}.${userId}`;
+}
+
+function readEventAttendanceStorage(userId) {
+  if (typeof window === "undefined" || !userId) {
+    return {};
+  }
+
+  try {
+    const stored = JSON.parse(
+      window.localStorage.getItem(getEventAttendanceStorageKey(userId)) || "{}",
+    );
+    return stored && typeof stored === "object" ? stored : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeEventAttendanceStorage(userId, value) {
+  if (typeof window === "undefined" || !userId) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      getEventAttendanceStorageKey(userId),
+      JSON.stringify(value && typeof value === "object" ? value : {}),
+    );
   } catch {
     // Ignore storage write failures in constrained/private browser contexts.
   }
@@ -1263,6 +1366,9 @@ export function MarketplaceProvider({ children }) {
   const [collectionItems, setCollectionItems] = useState([]);
   const [adminAuditLog, setAdminAuditLog] = useState(() => readAuditLogStorage());
   const [viewAsUserId, setViewAsUserId] = useState(() => readViewAsStorage());
+  const [followedStoreSlugs, setFollowedStoreSlugs] = useState([]);
+  const [eventReminderIds, setEventReminderIds] = useState([]);
+  const [eventAttendance, setEventAttendance] = useState({});
   const [siteSettings, setSiteSettings] = useState(() =>
     normalizeSiteSettings(
       (isSupabaseConfigured ? cachedState?.siteSettings : seedState.siteSettings) ||
@@ -1302,6 +1408,8 @@ export function MarketplaceProvider({ children }) {
     currentUserRecord?.badges?.includes("beta") || currentUserRecord?.role === "admin",
   );
   const followedSellerIds = currentUserRecord?.followedSellerIds || [];
+  const followedStoreSet = useMemo(() => new Set(followedStoreSlugs), [followedStoreSlugs]);
+  const eventReminderIdSet = useMemo(() => new Set(eventReminderIds), [eventReminderIds]);
   const listingDraft = useMemo(
     () =>
       activeDraftId
@@ -2082,6 +2190,43 @@ export function MarketplaceProvider({ children }) {
   useEffect(() => {
     writeSiteSettingsStorage(siteSettings);
   }, [siteSettings]);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      setFollowedStoreSlugs([]);
+      setEventReminderIds([]);
+      setEventAttendance({});
+      return;
+    }
+
+    setFollowedStoreSlugs(readStoreFollowStorage(currentUserId));
+    setEventReminderIds(readEventReminderStorage(currentUserId));
+    setEventAttendance(readEventAttendanceStorage(currentUserId));
+  }, [currentUserId]);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      return;
+    }
+
+    writeStoreFollowStorage(currentUserId, followedStoreSlugs);
+  }, [currentUserId, followedStoreSlugs]);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      return;
+    }
+
+    writeEventReminderStorage(currentUserId, eventReminderIds);
+  }, [currentUserId, eventReminderIds]);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      return;
+    }
+
+    writeEventAttendanceStorage(currentUserId, eventAttendance);
+  }, [currentUserId, eventAttendance]);
 
   useEffect(() => {
     if (!currentUserId) {
@@ -3233,6 +3378,87 @@ export function MarketplaceProvider({ children }) {
     }
 
     return { ok: true, followed: !alreadyFollowing };
+  }
+
+  async function toggleStoreFollow(storeSlug) {
+    if (!currentUserId || !currentUserRecord) {
+      return { ok: false, error: "You must be logged in to follow a store." };
+    }
+
+    const normalizedSlug = String(storeSlug || "").trim();
+    if (!normalizedSlug) {
+      return { ok: false, error: "Store not found." };
+    }
+
+    const access = ensureAccountActive(
+      "This account is suspended. Store follows are disabled until the suspension is lifted.",
+    );
+    if (!access.ok) {
+      return access;
+    }
+
+    const alreadyFollowing = followedStoreSet.has(normalizedSlug);
+    setFollowedStoreSlugs((current) =>
+      alreadyFollowing ? current.filter((slug) => slug !== normalizedSlug) : [...current, normalizedSlug],
+    );
+    return { ok: true, followed: !alreadyFollowing };
+  }
+
+  async function toggleEventReminder(eventId) {
+    if (!currentUserId || !currentUserRecord) {
+      return { ok: false, error: "You must be logged in to save an event reminder." };
+    }
+
+    const normalizedEventId = String(eventId || "").trim();
+    if (!normalizedEventId) {
+      return { ok: false, error: "Event not found." };
+    }
+
+    const access = ensureAccountActive(
+      "This account is suspended. Event reminders are disabled until the suspension is lifted.",
+    );
+    if (!access.ok) {
+      return access;
+    }
+
+    const alreadyEnabled = eventReminderIdSet.has(normalizedEventId);
+    setEventReminderIds((current) =>
+      alreadyEnabled
+        ? current.filter((id) => id !== normalizedEventId)
+        : [...current, normalizedEventId],
+    );
+    return { ok: true, enabled: !alreadyEnabled };
+  }
+
+  async function setEventAttendanceIntent(eventId, intent) {
+    if (!currentUserId || !currentUserRecord) {
+      return { ok: false, error: "You must be logged in to set event intent." };
+    }
+
+    const normalizedEventId = String(eventId || "").trim();
+    const normalizedIntent = String(intent || "").trim().toLowerCase();
+    if (!normalizedEventId) {
+      return { ok: false, error: "Event not found." };
+    }
+
+    const access = ensureAccountActive(
+      "This account is suspended. Event attendance intent is disabled until the suspension is lifted.",
+    );
+    if (!access.ok) {
+      return access;
+    }
+
+    setEventAttendance((current) => {
+      const next = { ...current };
+      if (!normalizedIntent || next[normalizedEventId] === normalizedIntent) {
+        delete next[normalizedEventId];
+        return next;
+      }
+      next[normalizedEventId] = normalizedIntent;
+      return next;
+    });
+
+    return { ok: true, intent: normalizedIntent || null };
   }
 
   async function addReview(payload) {
@@ -5224,6 +5450,8 @@ export function MarketplaceProvider({ children }) {
     dismissToast,
     editListing,
     enrichedListings,
+    eventAttendance,
+    eventReminderIds,
     featuredMerchandising,
       findOrCreateThread,
       formatCadPrice,
@@ -5274,6 +5502,7 @@ export function MarketplaceProvider({ children }) {
     sellerMap,
     sellers: Object.values(sellerMap),
     sendMessage,
+    setEventAttendanceIntent,
     setGlobalSearch,
     signup,
     submitBugReport,
@@ -5286,8 +5515,10 @@ export function MarketplaceProvider({ children }) {
     toggleListingFeatured,
     toggleListingFlag,
     toggleListingRemoved,
+    toggleEventReminder,
     toggleManualEventPublished,
     toggleSellerFollow,
+    toggleStoreFollow,
     toggleUserAdmin,
     toggleUserBadge,
     toggleUserSuspended,
@@ -5308,6 +5539,7 @@ export function MarketplaceProvider({ children }) {
     wishlistedListings,
     toggleWishlist,
     followedSellerIds,
+    followedStoreSlugs,
     siteSettings,
   };
 

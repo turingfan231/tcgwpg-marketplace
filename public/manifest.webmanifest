@@ -1,11 +1,11 @@
 {
   "name": "TCGWPG Marketplace",
-  "short_name": "TCGWPG",
+  "short_name": "WPG",
   "description": "Local Winnipeg marketplace for Pokemon, Magic, and One Piece players.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f7f3ed",
-  "theme_color": "#1a5b78",
+  "background_color": "#ffffff",
+  "theme_color": "#b11d23",
   "orientation": "portrait",
   "icons": [
     {

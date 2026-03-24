@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="30" fill="#ffffff"/>
+  <g transform="translate(20 20)">
+    <rect width="24" height="88" rx="10" fill="#c92525"/>
+    <rect x="32" width="24" height="88" rx="10" fill="#ef3b33"/>
+    <rect x="64" width="24" height="88" rx="10" fill="#a81b21"/>
+    <text x="12" y="54" fill="#ffffff" font-family="Space Grotesk, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle">W</text>
+    <text x="44" y="54" fill="#ffffff" font-family="Space Grotesk, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle">P</text>
+    <text x="76" y="54" fill="#ffffff" font-family="Space Grotesk, Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle">G</text>
+  </g>
+</svg>

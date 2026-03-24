@@ -1,8 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="116" fill="#f7f3ed"/>
-  <g transform="translate(84 84) rotate(-9 172 172)">
-    <rect x="56" y="56" width="288" height="288" rx="68" fill="#1a5b78"/>
-    <rect x="34" y="34" width="288" height="288" rx="76" fill="none" stroke="#ff9900" stroke-width="24"/>
-    <text x="200" y="240" text-anchor="middle" font-family="Space Grotesk, Arial, sans-serif" font-size="164" font-style="italic" font-weight="700" fill="#ffffff">W</text>
+  <rect width="512" height="512" rx="120" fill="#ffffff"/>
+  <rect x="72" y="64" width="368" height="384" rx="108" fill="#f7f3f3" stroke="#eadfdf" stroke-width="10"/>
+  <g transform="translate(84 108)">
+    <rect width="92" height="292" rx="34" fill="#c92525"/>
+    <rect x="126" width="92" height="292" rx="34" fill="#ef3b33"/>
+    <rect x="252" width="92" height="292" rx="34" fill="#a81b21"/>
+    <text x="46" y="176" fill="#ffffff" font-family="Space Grotesk, Arial, sans-serif" font-size="80" font-weight="700" text-anchor="middle">W</text>
+    <text x="172" y="176" fill="#ffffff" font-family="Space Grotesk, Arial, sans-serif" font-size="80" font-weight="700" text-anchor="middle">P</text>
+    <text x="298" y="176" fill="#ffffff" font-family="Space Grotesk, Arial, sans-serif" font-size="80" font-weight="700" text-anchor="middle">G</text>
   </g>
 </svg>

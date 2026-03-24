@@ -178,8 +178,8 @@ export default function Header() {
           <div className="flex items-center justify-between gap-3">
             <Link className="flex min-w-0 items-center gap-4" to="/">
               <div className="collector-strip-mark shrink-0" aria-hidden="true">
-                <span className="collector-strip-bar">T</span>
-                <span className="collector-strip-bar">C</span>
+                <span className="collector-strip-bar">W</span>
+                <span className="collector-strip-bar">P</span>
                 <span className="collector-strip-bar">G</span>
               </div>
               <div className="min-w-0">
@@ -187,8 +187,8 @@ export default function Header() {
                   WPG Marketplace
                 </p>
                 <p className="hidden text-sm text-navy sm:block">Local cards, faster deals</p>
-                <p className="text-[11px] uppercase tracking-[0.18em] text-steel sm:hidden">
-                  Local cards
+                <p className="text-[11px] uppercase tracking-[0.14em] text-steel sm:hidden">
+                  Local cards, faster deals
                 </p>
               </div>
             </Link>
@@ -373,7 +373,7 @@ export default function Header() {
               <div>
                 <p className="section-kicker">Navigation</p>
                 <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-ink">
-                  TCGWPG
+                  WPG Marketplace
                 </p>
               </div>
               <button
