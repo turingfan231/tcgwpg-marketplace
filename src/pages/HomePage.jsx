@@ -175,9 +175,19 @@ function BannerCard({
         ) : null}
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,13,20,0.94)_0%,rgba(7,18,27,0.92)_32%,rgba(10,24,35,0.66)_58%,rgba(10,24,35,0.34)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.06),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(255,153,0,0.12),transparent_16%)]" />
+        {slide.kind === "listing" && backgroundImage ? (
+          <div className="pointer-events-none absolute bottom-10 right-10 z-[1] hidden lg:flex h-[18.5rem] w-[13.25rem] items-center justify-center rounded-[30px] border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] p-4 shadow-[0_28px_60px_-34px_rgba(0,0,0,0.65)] backdrop-blur-md">
+            <CardArtwork
+              className="aspect-[63/88] h-full rounded-[22px] object-cover shadow-[0_18px_35px_-18px_rgba(0,0,0,0.7)]"
+              game={slide.payload.game}
+              src={backgroundImage}
+              title={slide.title}
+            />
+          </div>
+        ) : null}
 
         <div className="relative z-10 flex h-full flex-col gap-8">
-          <div className="max-w-2xl">
+          <div className={`max-w-2xl ${slide.kind === "listing" ? "lg:max-w-[52%]" : ""}`}>
             <span className="inline-flex rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-300">
               {slide.kicker}
             </span>
