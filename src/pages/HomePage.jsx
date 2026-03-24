@@ -189,14 +189,28 @@ function BannerCard({
     >
       <div className="relative h-full overflow-hidden rounded-[26px] border border-white/10 bg-[#23090b] p-5 text-white shadow-[0_32px_90px_-48px_rgba(80,16,16,0.42)] sm:rounded-[32px] sm:p-10 lg:p-12">
         {heroBackdrop ? (
-          <img
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 h-full w-full object-cover"
-            src={heroBackdrop}
-          />
+          <>
+            <img
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full object-cover sm:hidden"
+              src={heroBackdrop}
+            />
+            <img
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-x-0 bottom-0 z-[1] h-[54%] w-full object-contain object-center opacity-28 sm:hidden"
+              src={heroBackdrop}
+            />
+            <img
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 hidden h-full w-full object-cover sm:block"
+              src={heroBackdrop}
+            />
+          </>
         ) : null}
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(24,7,8,0.97)_0%,rgba(41,10,12,0.95)_34%,rgba(88,20,23,0.72)_60%,rgba(125,28,32,0.36)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(24,7,8,0.96)_0%,rgba(41,10,12,0.9)_42%,rgba(88,20,23,0.68)_70%,rgba(125,28,32,0.34)_100%)] sm:bg-[linear-gradient(90deg,rgba(24,7,8,0.97)_0%,rgba(41,10,12,0.95)_34%,rgba(88,20,23,0.72)_60%,rgba(125,28,32,0.36)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(255,255,255,0.08),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(239,59,51,0.14),transparent_16%)]" />
         {slide.kind === "listing" && backgroundImage ? (
           <div className="pointer-events-none absolute bottom-10 right-10 z-[1] hidden lg:flex h-[18.5rem] w-[13.25rem] items-center justify-center rounded-[30px] border border-white/14 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] p-4 shadow-[0_28px_60px_-34px_rgba(0,0,0,0.65)] backdrop-blur-md">
