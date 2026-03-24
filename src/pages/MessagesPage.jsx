@@ -797,17 +797,9 @@ export default function MessagesPage() {
       >
         {activeThread ? (
           <>
-            <div className="border-b border-slate-200/80 px-4 py-3 sm:px-6 sm:py-5">
-              <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="border-b border-slate-200/80 px-3 py-2.5 sm:px-6 sm:py-5">
+              <div className="hidden flex-wrap items-start justify-between gap-4 sm:flex">
                 <div className="min-w-0">
-                  <button
-                    className="mb-2 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-steel lg:hidden"
-                    type="button"
-                    onClick={() => navigate("/messages")}
-                  >
-                    <ArrowLeft size={14} />
-                    Back to inbox
-                  </button>
                   <div className="flex items-center gap-3">
                     <UserAvatar
                       className="h-12 w-12 border border-white/90 text-sm font-bold shadow-sm"
@@ -851,33 +843,54 @@ export default function MessagesPage() {
                   </button>
                 </div>
               </div>
-            </div>
 
-            {!isDesktop && (activeThread.listing || threadOffers.length) ? (
-              <div className="border-b border-slate-200/80 bg-white/92 px-4 py-2.5 sm:hidden">
-                <div className="flex flex-wrap gap-2">
+              <div className="sm:hidden">
+                <div className="flex items-center gap-2">
+                  <button
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-steel"
+                    type="button"
+                    onClick={() => navigate("/messages")}
+                  >
+                    <ArrowLeft size={16} />
+                  </button>
+                  <UserAvatar
+                    className="h-10 w-10 shrink-0 border border-white/90 text-[0.76rem] font-bold shadow-sm"
+                    user={activeThread.otherParticipant || { name: activeThread.participantLabel }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-display text-[1.05rem] font-semibold tracking-[-0.04em] text-ink">
+                      {activeThread.participantIds.length > 2
+                        ? activeThread.participantLabel || "Support / resolution chat"
+                        : activeThread.otherParticipant?.publicName || "Conversation"}
+                    </p>
+                    <p className="truncate text-[0.8rem] text-steel">
+                      {activeThread.listing?.title || "General thread"}
+                    </p>
+                  </div>
                   {activeThread.listing ? (
-                    <button
-                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition ${
-                        mobileDetailPanel === "listing"
-                          ? "border-navy/20 bg-navy text-white"
-                          : "border-slate-200 bg-white text-steel"
-                      }`}
-                      type="button"
-                      onClick={() =>
-                        setMobileDetailPanel((current) => (current === "listing" ? null : "listing"))
-                      }
+                    <Link
+                      className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-steel"
+                      to={`/listing/${activeThread.listing.id}`}
                     >
-                      Listing
-                      <ChevronDown
-                        size={14}
-                        className={`transition ${mobileDetailPanel === "listing" ? "rotate-180" : ""}`}
-                      />
-                    </button>
+                      Open
+                      <ExternalLink size={12} />
+                    </Link>
                   ) : null}
-                  {threadOffers.length ? (
+                  <button
+                    className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-rose-200 bg-white px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={deletingThread}
+                    type="button"
+                    onClick={() => void handleDeleteThread()}
+                  >
+                    <Trash2 size={12} />
+                    Delete
+                  </button>
+                </div>
+
+                {threadOffers.length ? (
+                  <div className="mt-2 flex items-center gap-2">
                     <button
-                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition ${
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] transition ${
                         mobileDetailPanel === "offers"
                           ? "border-navy/20 bg-navy text-white"
                           : "border-slate-200 bg-white text-steel"
@@ -888,41 +901,27 @@ export default function MessagesPage() {
                       }
                     >
                       Deal flow
-                      {threadOffers.length ? (
-                        <span
-                          className={`inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-bold ${
-                            mobileDetailPanel === "offers" ? "bg-white/20 text-white" : "bg-navy/10 text-navy"
-                          }`}
-                        >
-                          {threadOffers.length}
-                        </span>
-                      ) : null}
+                      <span
+                        className={`inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-bold ${
+                          mobileDetailPanel === "offers" ? "bg-white/20 text-white" : "bg-navy/10 text-navy"
+                        }`}
+                      >
+                        {threadOffers.length}
+                      </span>
                       <ChevronDown
                         size={14}
                         className={`transition ${mobileDetailPanel === "offers" ? "rotate-180" : ""}`}
                       />
                     </button>
-                  ) : null}
-                </div>
-                {activeThread.listing ? (
-                  <div className="mt-2 flex items-center justify-between gap-3 rounded-[16px] border border-slate-200 bg-[#fbfbfc] px-3 py-2">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-ink">{activeThread.listing.title}</p>
-                      <p className="mt-0.5 text-[11px] uppercase tracking-[0.12em] text-steel">
-                        {formatCadPrice(activeThread.listing.price, activeThread.listing.priceCurrency)}
-                      </p>
-                    </div>
-                    <Link
-                      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-steel"
-                      to={`/listing/${activeThread.listing.id}`}
-                    >
-                      Open
-                      <ExternalLink size={12} />
-                    </Link>
+                    <span className="truncate text-[0.72rem] uppercase tracking-[0.12em] text-steel/80">
+                      {activeThread.listing?.price
+                        ? formatCadPrice(activeThread.listing.price, activeThread.listing.priceCurrency)
+                        : activeThread.listing?.game || "Conversation"}
+                    </span>
                   </div>
                 ) : null}
               </div>
-            ) : null}
+            </div>
 
             {showListingPanel ? (
               <ListingThreadCard
@@ -950,8 +949,8 @@ export default function MessagesPage() {
             <div className="relative flex-1 overflow-y-auto px-3 py-3 sm:px-6 sm:py-5">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(240,55,55,0.07),transparent_18%),radial-gradient(circle_at_bottom_right,rgba(17,39,56,0.08),transparent_24%)]" />
               <div className="pointer-events-none absolute inset-x-3 inset-y-4 rounded-[22px] border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.28),rgba(255,255,255,0.08))] sm:inset-x-6 sm:inset-y-5 sm:rounded-[30px]" />
-              <div className="relative flex min-h-full flex-col justify-end gap-3">
-                <div className="mb-1 flex items-center gap-3 px-1 pt-1">
+              <div className="relative flex min-h-full flex-col justify-end gap-2">
+                <div className="mb-1 hidden items-center gap-3 px-1 pt-1 sm:flex">
                   <div className="h-px flex-1 bg-[rgba(177,29,35,0.12)]" />
                   <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-steel">
                     Conversation
@@ -1001,7 +1000,7 @@ export default function MessagesPage() {
                         />
                       ) : null}
                       <div
-                        className={`max-w-[min(44rem,88%)] rounded-[24px] px-4 py-3 shadow-[0_18px_34px_-28px_rgba(17,39,56,0.45)] ${
+                        className={`max-w-[min(44rem,88%)] rounded-[20px] px-3 py-2.5 shadow-[0_18px_34px_-28px_rgba(17,39,56,0.45)] sm:rounded-[24px] sm:px-4 sm:py-3 ${
                           mine
                             ? "bg-[linear-gradient(180deg,#f03737,#d32d2d)] text-white"
                             : "border border-white/70 bg-white/92 text-ink"
@@ -1047,10 +1046,10 @@ export default function MessagesPage() {
             </div>
 
             <form
-              className="border-t border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(241,246,249,0.94))] px-3 py-2.5 sm:px-6 sm:py-4"
+              className="border-t border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(241,246,249,0.94))] px-3 py-2 sm:px-6 sm:py-4"
               onSubmit={handleSubmit}
             >
-              <div className="rounded-[20px] border border-[rgba(203,220,231,0.92)] bg-white/96 p-2.5 shadow-soft sm:rounded-[28px] sm:p-3">
+              <div className="rounded-[18px] border border-[rgba(203,220,231,0.92)] bg-white/96 p-2 shadow-soft sm:rounded-[28px] sm:p-3">
                 {shouldShowQuickReplies && quickReplies.length ? (
                   <div className="mb-3 flex flex-wrap gap-2 px-1">
                     {quickReplies.map((reply) => (
@@ -1091,10 +1090,10 @@ export default function MessagesPage() {
                     ))}
                   </div>
                 ) : null}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                  <div className="flex-1">
+                <div className="flex items-end gap-2">
+                  <div className="flex-1 rounded-[16px] border border-slate-200 bg-[#fbfbfc] px-2.5 py-1.5">
                     <textarea
-                      className="min-h-[52px] w-full resize-none bg-transparent px-2.5 py-2 text-sm leading-6 outline-none sm:min-h-[58px] sm:px-3 sm:leading-7"
+                      className="min-h-[40px] w-full resize-none bg-transparent px-0 py-1.5 text-sm leading-5 outline-none sm:min-h-[58px] sm:px-3 sm:leading-7"
                       disabled={sending}
                       placeholder="Write about condition, trades, meetup timing, or anything else you need to lock the deal in."
                       value={draft}
@@ -1111,21 +1110,21 @@ export default function MessagesPage() {
                     onChange={handlePhotoSelection}
                   />
                   <button
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-steel transition hover:border-navy/20 hover:text-ink"
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-steel transition hover:border-navy/20 hover:text-ink sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-3 sm:text-sm sm:font-semibold"
                     disabled={sending || pendingPhotos.length >= 4}
                     type="button"
                     onClick={() => photoInputRef.current?.click()}
                   >
                     <ImagePlus size={15} />
-                    Photo
+                    <span className="hidden sm:inline">Photo</span>
                   </button>
                   <button
-                    className="inline-flex items-center justify-center gap-2 rounded-full bg-orange px-5 py-3 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-[1px] hover:shadow-lift disabled:cursor-not-allowed disabled:bg-slate-300 sm:self-auto"
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-orange text-white shadow-soft transition hover:-translate-y-[1px] hover:shadow-lift disabled:cursor-not-allowed disabled:bg-slate-300 sm:h-auto sm:w-auto sm:gap-2 sm:px-5 sm:py-3 sm:text-sm sm:font-semibold sm:self-auto"
                     disabled={sending || (!draft.trim() && !pendingPhotos.length)}
                     type="submit"
                   >
                     {sending ? <InlineSpinner className="text-white" size={14} /> : <SendHorizontal size={15} />}
-                    {sending ? "Sending..." : "Send message"}
+                    <span className="hidden sm:inline">{sending ? "Sending..." : "Send message"}</span>
                   </button>
                 </div>
               </div>
