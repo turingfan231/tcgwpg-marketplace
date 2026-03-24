@@ -131,6 +131,11 @@ export default function Header() {
       icon: LayoutDashboard,
     },
     {
+      to: "/collection",
+      label: "My binder",
+      icon: Heart,
+    },
+    {
       to: `/seller/${currentUser?.id}`,
       label: "My seller page",
       icon: Store,

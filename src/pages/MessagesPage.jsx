@@ -2,9 +2,11 @@ import {
   ArrowLeft,
   BellRing,
   ExternalLink,
+  ImagePlus,
   Search,
   SendHorizontal,
   Trash2,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -394,7 +396,9 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false);
   const [threadQuery, setThreadQuery] = useState("");
   const [threadFilter, setThreadFilter] = useState("all");
+  const [pendingPhotos, setPendingPhotos] = useState([]);
   const seenMessageKeysRef = useRef(new Set());
+  const photoInputRef = useRef(null);
   const [isDesktop, setIsDesktop] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(min-width: 1024px)").matches : true,
   );
@@ -478,6 +482,17 @@ export default function MessagesPage() {
     }
   }, [activeThread?.id, markThreadRead]);
 
+  useEffect(
+    () => () => {
+      pendingPhotos.forEach((photo) => {
+        if (photo.previewUrl) {
+          URL.revokeObjectURL(photo.previewUrl);
+        }
+      });
+    },
+    [pendingPhotos],
+  );
+
   const threadOffers = useMemo(() => {
     if (!activeThread?.listingId) {
       return [];
@@ -516,12 +531,26 @@ export default function MessagesPage() {
     }
 
     const messageBody = draft;
+    const files = pendingPhotos.map((item) => item.file);
     setSendError("");
     setSending(true);
     setDraft("");
-    const result = await sendMessage(activeThread.id, messageBody);
+    setPendingPhotos([]);
+    const result = await sendMessage(activeThread.id, {
+      text: messageBody,
+      files,
+    });
     if (!result?.ok) {
       setDraft(messageBody);
+      setPendingPhotos((current) =>
+        current.length
+          ? current
+          : files.map((file) => ({
+              id: `${file.name}-${file.size}-${file.lastModified}`,
+              file,
+              previewUrl: URL.createObjectURL(file),
+            })),
+      );
       setSendError(result?.error || "Message could not be sent.");
       setSending(false);
       return;
@@ -535,11 +564,36 @@ export default function MessagesPage() {
     }
 
     event.preventDefault();
-    if (!draft.trim() || sending) {
+    if ((!draft.trim() && !pendingPhotos.length) || sending) {
       return;
     }
 
     void handleSubmit(event);
+  }
+
+  function handlePhotoSelection(event) {
+    const files = Array.from(event.target.files || []).slice(0, 4);
+    if (!files.length) {
+      return;
+    }
+
+    const nextEntries = files.map((file) => ({
+      id: `${file.name}-${file.size}-${file.lastModified}`,
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+    setPendingPhotos((current) => [...current, ...nextEntries].slice(0, 4));
+    event.target.value = "";
+  }
+
+  function removePendingPhoto(photoId) {
+    setPendingPhotos((current) => {
+      const target = current.find((item) => item.id === photoId);
+      if (target?.previewUrl) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+      return current.filter((item) => item.id !== photoId);
+    });
   }
 
   async function handleDeleteThread() {
@@ -684,7 +738,7 @@ export default function MessagesPage() {
       </section>
 
       <section
-        className={`flex min-h-[72vh] flex-col overflow-hidden rounded-[30px] border border-[rgba(203,220,231,0.9)] bg-[linear-gradient(180deg,rgba(251,253,255,0.97),rgba(241,243,245,0.92))] shadow-soft lg:h-full lg:min-h-0 ${
+        className={`flex min-h-[calc(100dvh-10.5rem)] flex-col overflow-hidden rounded-[30px] border border-[rgba(203,220,231,0.9)] bg-[linear-gradient(180deg,rgba(251,253,255,0.97),rgba(241,243,245,0.92))] shadow-soft lg:h-full lg:min-h-0 ${
           !showMobileThread ? "hidden lg:flex" : "flex"
         }`}
       >
@@ -818,7 +872,35 @@ export default function MessagesPage() {
                             : "border border-white/70 bg-white/92 text-ink"
                         }`}
                       >
-                        <p className="text-sm leading-7">{message.body}</p>
+                        {message.attachments?.length ? (
+                          <div className={`grid gap-2 ${message.attachments.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+                            {message.attachments.map((attachment) => (
+                              <a
+                                key={attachment.id}
+                                className="block overflow-hidden rounded-[18px] border border-white/10"
+                                href={attachment.url}
+                                rel="noreferrer"
+                                target="_blank"
+                              >
+                                <img
+                                  alt={attachment.name || "Chat photo"}
+                                  className="h-40 w-full object-cover"
+                                  loading="lazy"
+                                  src={attachment.url}
+                                />
+                              </a>
+                            ))}
+                          </div>
+                        ) : null}
+                        {message.text ? (
+                          <p className={`${message.attachments?.length ? "mt-3" : ""} text-sm leading-7`}>
+                            {message.text}
+                          </p>
+                        ) : (
+                          !message.attachments?.length ? (
+                            <p className="text-sm leading-7">{message.body}</p>
+                          ) : null
+                        )}
                         <p className={`mt-2 text-[11px] ${mine ? "text-white/70" : "text-steel"}`}>
                           {formatMessageTime(message.sentAt)}
                         </p>
@@ -834,6 +916,30 @@ export default function MessagesPage() {
               onSubmit={handleSubmit}
             >
               <div className="rounded-[28px] border border-[rgba(203,220,231,0.92)] bg-white/96 p-3 shadow-soft">
+                {pendingPhotos.length ? (
+                  <div className="mb-3 flex flex-wrap gap-2 px-1">
+                    {pendingPhotos.map((photo) => (
+                      <div
+                        key={photo.id}
+                        className="relative h-20 w-20 overflow-hidden rounded-[16px] border border-slate-200 bg-[#f7f7f8]"
+                      >
+                        <img
+                          alt={photo.file.name}
+                          className="h-full w-full object-cover"
+                          src={photo.previewUrl}
+                        />
+                        <button
+                          aria-label="Remove photo"
+                          className="absolute right-1 top-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white"
+                          type="button"
+                          onClick={() => removePendingPhoto(photo.id)}
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                   <div className="flex-1">
                     <textarea
@@ -845,9 +951,26 @@ export default function MessagesPage() {
                       onKeyDown={handleDraftKeyDown}
                     />
                   </div>
+                  <input
+                    ref={photoInputRef}
+                    accept="image/*"
+                    className="hidden"
+                    multiple
+                    type="file"
+                    onChange={handlePhotoSelection}
+                  />
+                  <button
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-steel transition hover:border-navy/20 hover:text-ink"
+                    disabled={sending || pendingPhotos.length >= 4}
+                    type="button"
+                    onClick={() => photoInputRef.current?.click()}
+                  >
+                    <ImagePlus size={15} />
+                    Photo
+                  </button>
                   <button
                     className="inline-flex items-center justify-center gap-2 rounded-full bg-orange px-5 py-3 text-sm font-semibold text-white shadow-soft transition hover:-translate-y-[1px] hover:shadow-lift disabled:cursor-not-allowed disabled:bg-slate-300 sm:self-auto"
-                    disabled={sending || !draft.trim()}
+                    disabled={sending || (!draft.trim() && !pendingPhotos.length)}
                     type="submit"
                   >
                     {sending ? <InlineSpinner className="text-white" size={14} /> : <SendHorizontal size={15} />}

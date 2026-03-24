@@ -10,6 +10,7 @@ const AccountPage = lazy(() => import("./pages/AccountPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const BugReportsPage = lazy(() => import("./pages/BugReportsPage"));
+const CollectionPage = lazy(() => import("./pages/CollectionPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const EventsPage = lazy(() => import("./pages/EventsPage"));
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -46,6 +47,7 @@ export default function App() {
                 <Route element={<ProtectedRoute />}>
                   <Route path="/account" element={<AccountPage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/collection" element={<CollectionPage />} />
                   <Route path="/wishlist" element={<WishlistPage />} />
                   <Route path="/notifications" element={<NotificationsPage />} />
                   <Route path="/messages" element={<MessagesPage />} />

@@ -22,9 +22,12 @@ export default function AppShell() {
     currentUser,
     dismissToast,
     isCreateListingOpen,
+    isViewingAs,
     isSuspended,
     siteSettings,
+    stopViewAs,
     toastItems,
+    viewedUserRecord,
   } = useMarketplace();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [installVisible, setInstallVisible] = useState(false);
@@ -206,6 +209,23 @@ export default function AppShell() {
             >
               Appeal or review status
             </Link>
+          </div>
+        </div>
+      ) : null}
+      {isViewingAs && viewedUserRecord ? (
+        <div className="border-b border-[rgba(240,55,55,0.18)] bg-[rgba(240,55,55,0.08)]">
+          <div className="page-shell flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
+            <div className="inline-flex items-center gap-2 font-semibold text-ink">
+              <ShieldCheck size={16} className="text-navy" />
+              View-as mode: public troubleshooting view for {viewedUserRecord.publicName || viewedUserRecord.name}
+            </div>
+            <button
+              className="rounded-full border border-[rgba(240,55,55,0.22)] bg-white px-4 py-2 font-semibold text-ink"
+              type="button"
+              onClick={() => void stopViewAs()}
+            >
+              Exit view-as mode
+            </button>
           </div>
         </div>
       ) : null}

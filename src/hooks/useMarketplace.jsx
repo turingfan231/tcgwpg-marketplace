@@ -28,10 +28,14 @@ const TOAST_SEEN_STORAGE_PREFIX = "tcgwpg.seenToasts";
 const HIDDEN_THREADS_STORAGE_PREFIX = "tcgwpg.hiddenThreads";
 const MARKETPLACE_CACHE_KEY = "tcgwpg.marketplaceCache";
 const SITE_SETTINGS_STORAGE_KEY = "tcgwpg.siteSettings";
+const COLLECTION_STORAGE_PREFIX = "tcgwpg.collection";
+const AUDIT_LOG_STORAGE_KEY = "tcgwpg.adminAuditLog";
+const VIEW_AS_STORAGE_KEY = "tcgwpg.viewAsUserId";
 const SUPPORTED_GAME_SLUGS = new Set(["magic", "pokemon", "one-piece"]);
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
 const MEDIA_BUCKET = "listing-media";
 const FOREGROUND_REFRESH_MS = 12000;
+const RICH_MESSAGE_PREFIX = "[[tcgwpg-message]]";
 const DEFAULT_SITE_SETTINGS = {
   themePreset: "ember-signal",
   customTheme: normalizeCustomTheme({
@@ -152,6 +156,81 @@ function writeHiddenThreadsStorage(userId, value) {
   } catch {
     // Ignore storage write failures in constrained/private browser contexts.
   }
+}
+
+function getCollectionStorageKey(userId) {
+  return `${COLLECTION_STORAGE_PREFIX}.${userId}`;
+}
+
+function readCollectionStorage(userId) {
+  if (typeof window === "undefined" || !userId) {
+    return [];
+  }
+
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(getCollectionStorageKey(userId)) || "[]");
+    return Array.isArray(stored) ? stored.filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCollectionStorage(userId, value) {
+  if (typeof window === "undefined" || !userId) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(getCollectionStorageKey(userId), JSON.stringify(value || []));
+  } catch {
+    // Ignore storage write failures in constrained/private browser contexts.
+  }
+}
+
+function readAuditLogStorage() {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(AUDIT_LOG_STORAGE_KEY) || "[]");
+    return Array.isArray(stored) ? stored.filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeAuditLogStorage(value) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(AUDIT_LOG_STORAGE_KEY, JSON.stringify((value || []).slice(0, 250)));
+  } catch {
+    // Ignore storage write failures in constrained/private browser contexts.
+  }
+}
+
+function readViewAsStorage() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return window.localStorage.getItem(VIEW_AS_STORAGE_KEY) || null;
+}
+
+function writeViewAsStorage(userId) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  if (userId) {
+    window.localStorage.setItem(VIEW_AS_STORAGE_KEY, userId);
+    return;
+  }
+
+  window.localStorage.removeItem(VIEW_AS_STORAGE_KEY);
 }
 
 function normalizeSiteSettings(settings) {
@@ -719,6 +798,116 @@ function normalizeBugReportRecord(report) {
   };
 }
 
+function normalizeCollectionRecord(item) {
+  return {
+    id: item.id || `collection-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    game: item.game || "Pokemon",
+    language: item.language || "english",
+    title: item.title || "Untitled card",
+    setName: item.setName || "",
+    printLabel: item.printLabel || "",
+    rarity: item.rarity || "",
+    condition: item.condition || "NM",
+    quantity: Math.max(1, Number(item.quantity) || 1),
+    marketPrice: Number(item.marketPrice) || 0,
+    marketPriceCurrency: item.marketPriceCurrency || "CAD",
+    sourceLabel: item.sourceLabel || item.providerLabel || item.provider || "Manual entry",
+    imageUrl: item.imageUrl || "",
+    notes: item.notes || "",
+    addedAt: item.addedAt || new Date().toISOString(),
+    updatedAt: item.updatedAt || item.addedAt || new Date().toISOString(),
+  };
+}
+
+function normalizeAuditRecord(entry) {
+  return {
+    id: entry.id || `audit-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    actorId: entry.actorId || "",
+    actorName: entry.actorName || "Admin",
+    action: entry.action || "updated",
+    title: entry.title || "Admin action",
+    details: entry.details || "",
+    targetId: entry.targetId || "",
+    targetType: entry.targetType || "record",
+    createdAt: entry.createdAt || new Date().toISOString(),
+  };
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Image preview failed."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function buildMessageBody({ text = "", attachments = [] }) {
+  const normalizedText = String(text || "");
+  const normalizedAttachments = Array.isArray(attachments)
+    ? attachments
+        .filter(Boolean)
+        .map((attachment) => ({
+          id: attachment.id || `attachment-${Math.random().toString(36).slice(2, 8)}`,
+          url: attachment.url || "",
+          name: attachment.name || "Image",
+          type: attachment.type || "image",
+        }))
+        .filter((attachment) => attachment.url)
+    : [];
+
+  if (!normalizedAttachments.length) {
+    return normalizedText;
+  }
+
+  return `${RICH_MESSAGE_PREFIX}${JSON.stringify({
+    text: normalizedText,
+    attachments: normalizedAttachments,
+  })}`;
+}
+
+function parseMessageBody(body) {
+  const rawBody = String(body || "");
+  if (!rawBody.startsWith(RICH_MESSAGE_PREFIX)) {
+    return {
+      rawBody,
+      text: rawBody,
+      attachments: [],
+      preview: rawBody,
+      isRich: false,
+    };
+  }
+
+  try {
+    const payload = JSON.parse(rawBody.slice(RICH_MESSAGE_PREFIX.length));
+    const text = String(payload?.text || "");
+    const attachments = Array.isArray(payload?.attachments)
+      ? payload.attachments.filter(Boolean).map((attachment, index) => ({
+          id: attachment.id || `attachment-${index + 1}`,
+          url: attachment.url || "",
+          name: attachment.name || "Image",
+          type: attachment.type || "image",
+        }))
+      : [];
+    const preview = text || (attachments.length ? `${attachments.length} photo${attachments.length === 1 ? "" : "s"}` : "");
+    return {
+      rawBody,
+      text,
+      attachments,
+      preview,
+      isRich: true,
+    };
+  } catch {
+    return {
+      rawBody,
+      text: rawBody,
+      attachments: [],
+      preview: rawBody,
+      isRich: false,
+    };
+  }
+}
+
 function normalizeNotificationRecord(notification) {
   return {
     read: false,
@@ -989,13 +1178,20 @@ function buildThreadMap(threadRows, messageRows) {
         (left, right) =>
           new Date(left.created_at).getTime() - new Date(right.created_at).getTime(),
       )
-      .map((message) => ({
-        id: message.id,
-        senderId: message.sender_id,
-        body: message.body,
-        sentAt: message.created_at,
-        readBy: message.read_by || [],
-      })),
+      .map((message) => {
+        const parsedBody = parseMessageBody(message.body);
+        return {
+          id: message.id,
+          senderId: message.sender_id,
+          body: parsedBody.preview,
+          rawBody: parsedBody.rawBody,
+          text: parsedBody.text,
+          attachments: parsedBody.attachments,
+          isRich: parsedBody.isRich,
+          sentAt: message.created_at,
+          readBy: message.read_by || [],
+        };
+      }),
   }));
 }
 
@@ -1014,6 +1210,8 @@ function buildSeedState() {
     listingDrafts: [],
     activeDraftId: null,
     searchHistory: [],
+    collectionItems: [],
+    adminAuditLog: [],
     siteSettings: DEFAULT_SITE_SETTINGS,
   };
 }
@@ -1062,6 +1260,9 @@ export function MarketplaceProvider({ children }) {
   const [searchHistory, setSearchHistory] = useState(() =>
     isSupabaseConfigured ? cachedState?.searchHistory || [] : seedState.searchHistory,
   );
+  const [collectionItems, setCollectionItems] = useState([]);
+  const [adminAuditLog, setAdminAuditLog] = useState(() => readAuditLogStorage());
+  const [viewAsUserId, setViewAsUserId] = useState(() => readViewAsStorage());
   const [siteSettings, setSiteSettings] = useState(() =>
     normalizeSiteSettings(
       (isSupabaseConfigured ? cachedState?.siteSettings : seedState.siteSettings) ||
@@ -1088,6 +1289,14 @@ export function MarketplaceProvider({ children }) {
     () => users.find((user) => user.id === currentUserId) || null,
     [currentUserId, users],
   );
+  const viewedUserRecord = useMemo(
+    () =>
+      currentUserRecord?.role === "admin" && viewAsUserId
+        ? users.find((user) => user.id === viewAsUserId) || null
+        : null,
+    [currentUserRecord?.role, users, viewAsUserId],
+  );
+  const isViewingAs = Boolean(viewedUserRecord);
   const isSuspended = currentUserRecord?.accountStatus === "suspended";
   const isBetaTester = Boolean(
     currentUserRecord?.badges?.includes("beta") || currentUserRecord?.role === "admin",
@@ -1109,6 +1318,29 @@ export function MarketplaceProvider({ children }) {
     [listingDrafts],
   );
   const followedSellerSet = useMemo(() => new Set(followedSellerIds), [followedSellerIds]);
+  const collectionSummary = useMemo(() => {
+    const totalItems = collectionItems.reduce(
+      (sum, item) => sum + Math.max(1, Number(item.quantity) || 1),
+      0,
+    );
+    const estimatedValue = collectionItems.reduce(
+      (sum, item) =>
+        sum + (Number(item.marketPrice) || 0) * Math.max(1, Number(item.quantity) || 1),
+      0,
+    );
+    const gameBreakdown = collectionItems.reduce((accumulator, item) => {
+      const key = slugify(item.game);
+      accumulator[key] = (accumulator[key] || 0) + Math.max(1, Number(item.quantity) || 1);
+      return accumulator;
+    }, {});
+
+    return {
+      totalEntries: collectionItems.length,
+      totalItems,
+      estimatedValue: Number(estimatedValue.toFixed(2)),
+      gameBreakdown,
+    };
+  }, [collectionItems]);
 
   const reviewBadgeCatalog = sellerBadgeCatalog;
 
@@ -1443,6 +1675,54 @@ export function MarketplaceProvider({ children }) {
 
   const dismissToast = useCallback((toastId) => {
     setToastItems((current) => current.filter((item) => item.id !== toastId));
+  }, []);
+
+  const pushAdminAuditEntry = useCallback(
+    ({ action, title, details = "", targetId = "", targetType = "record" }) => {
+      if (!currentUserRecord || currentUserRecord.role !== "admin") {
+        return;
+      }
+
+      setAdminAuditLog((current) => [
+        normalizeAuditRecord({
+          actorId: currentUserRecord.id,
+          actorName: currentUserRecord.publicName || currentUserRecord.name,
+          action,
+          title,
+          details,
+          targetId,
+          targetType,
+          createdAt: new Date().toISOString(),
+        }),
+        ...current,
+      ].slice(0, 200));
+    },
+    [currentUserRecord],
+  );
+
+  const startViewAs = useCallback(
+    (userId) => {
+      if (!currentUserRecord || currentUserRecord.role !== "admin") {
+        return { ok: false, error: "Only admins can use view-as mode." };
+      }
+
+      if (!userId || String(userId) === String(currentUserRecord.id)) {
+        setViewAsUserId(null);
+        writeViewAsStorage(null);
+        return { ok: true, viewingAs: null };
+      }
+
+      setViewAsUserId(userId);
+      writeViewAsStorage(userId);
+      return { ok: true, viewingAs: userId };
+    },
+    [currentUserRecord],
+  );
+
+  const stopViewAs = useCallback(() => {
+    setViewAsUserId(null);
+    writeViewAsStorage(null);
+    return { ok: true };
   }, []);
 
   const ensureAccountActive = useCallback(
@@ -1814,11 +2094,39 @@ export function MarketplaceProvider({ children }) {
 
   useEffect(() => {
     if (!currentUserId) {
+      setCollectionItems([]);
+      return;
+    }
+
+    setCollectionItems(readCollectionStorage(currentUserId).map(normalizeCollectionRecord));
+  }, [currentUserId]);
+
+  useEffect(() => {
+    if (!currentUserId) {
       return;
     }
 
     writeHiddenThreadsStorage(currentUserId, hiddenThreadMap);
   }, [currentUserId, hiddenThreadMap]);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      return;
+    }
+
+    writeCollectionStorage(currentUserId, collectionItems);
+  }, [collectionItems, currentUserId]);
+
+  useEffect(() => {
+    writeAuditLogStorage(adminAuditLog);
+  }, [adminAuditLog]);
+
+  useEffect(() => {
+    if (viewAsUserId && !users.some((user) => user.id === viewAsUserId)) {
+      setViewAsUserId(null);
+      writeViewAsStorage(null);
+    }
+  }, [users, viewAsUserId]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -2011,6 +2319,12 @@ export function MarketplaceProvider({ children }) {
     });
 
     setSiteSettings(nextSettings);
+    pushAdminAuditEntry({
+      action: "storefront-hero",
+      title: "Updated homepage hero controls",
+      details: `Featured listing: ${payload.featuredListingId || "auto"} | Pinned event: ${payload.pinnedEventId || "auto"} | Spotlight game: ${payload.spotlightGameSlug || "auto"}`,
+      targetType: "storefront",
+    });
     return { ok: true, settings: nextSettings };
   }
 
@@ -2033,6 +2347,12 @@ export function MarketplaceProvider({ children }) {
     });
 
     setSiteSettings(nextSettings);
+    pushAdminAuditEntry({
+      action: "storefront-settings",
+      title: "Updated storefront settings",
+      details: "Homepage sections or theme controls were adjusted.",
+      targetType: "storefront",
+    });
     return { ok: true, settings: nextSettings };
   }
 
@@ -2471,6 +2791,67 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: error.message };
     }
 
+    return { ok: true };
+  }
+
+  async function addCollectionItem(payload) {
+    if (!currentUserId) {
+      return { ok: false, error: "You must be logged in to track a collection." };
+    }
+
+    const nextItem = normalizeCollectionRecord({
+      ...payload,
+      addedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    setCollectionItems((current) => [nextItem, ...current.filter((item) => item.id !== nextItem.id)]);
+    return { ok: true, item: nextItem };
+  }
+
+  async function updateCollectionItem(itemId, updates) {
+    if (!currentUserId) {
+      return { ok: false, error: "You must be logged in to track a collection." };
+    }
+
+    let nextItem = null;
+    setCollectionItems((current) =>
+      current.map((item) => {
+        if (item.id !== itemId) {
+          return item;
+        }
+
+        nextItem = normalizeCollectionRecord({
+          ...item,
+          ...updates,
+          id: item.id,
+          addedAt: item.addedAt,
+          updatedAt: new Date().toISOString(),
+        });
+        return nextItem;
+      }),
+    );
+
+    return nextItem
+      ? { ok: true, item: nextItem }
+      : { ok: false, error: "Collection item not found." };
+  }
+
+  async function removeCollectionItem(itemId) {
+    if (!currentUserId) {
+      return { ok: false, error: "You must be logged in to track a collection." };
+    }
+
+    setCollectionItems((current) => current.filter((item) => item.id !== itemId));
+    return { ok: true };
+  }
+
+  async function clearCollection() {
+    if (!currentUserId) {
+      return { ok: false, error: "You must be logged in to track a collection." };
+    }
+
+    setCollectionItems([]);
     return { ok: true };
   }
 
@@ -2940,6 +3321,13 @@ export function MarketplaceProvider({ children }) {
 
     if (!isSupabaseConfigured) {
       setReviews((current) => current.filter((item) => item.id !== reviewId));
+      pushAdminAuditEntry({
+        action: "review-delete",
+        title: "Removed seller review",
+        details: review.comment,
+        targetId: reviewId,
+        targetType: "review",
+      });
       return { ok: true };
     }
 
@@ -2949,11 +3337,87 @@ export function MarketplaceProvider({ children }) {
     }
 
     await refreshMarketplaceData(currentUserId, { silent: true });
+    pushAdminAuditEntry({
+      action: "review-delete",
+      title: "Removed seller review",
+      details: review.comment,
+      targetId: reviewId,
+      targetType: "review",
+    });
     return { ok: true };
   }
 
   function getThreadById(threadId) {
     return threadsForCurrentUser.find((thread) => thread.id === threadId) || null;
+  }
+
+  async function uploadMessagePhotos(threadId, files = []) {
+    const validFiles = Array.isArray(files) ? files.filter(Boolean) : [];
+    if (!validFiles.length) {
+      return { ok: true, attachments: [] };
+    }
+
+    for (const file of validFiles) {
+      if (!String(file.type || "").startsWith("image/")) {
+        return { ok: false, error: "Chat attachments must be image files." };
+      }
+
+      if (Number(file.size || 0) > 4_000_000) {
+        return { ok: false, error: "Each chat photo must be under 4 MB." };
+      }
+    }
+
+    if (!isSupabaseConfigured) {
+      const attachments = await Promise.all(
+        validFiles.map(async (file, index) => ({
+          id: `attachment-${Date.now()}-${index + 1}`,
+          url: await readFileAsDataUrl(file),
+          name: file.name || `Photo ${index + 1}`,
+          type: file.type || "image/jpeg",
+        })),
+      );
+      return { ok: true, attachments };
+    }
+
+    try {
+      const attachments = [];
+      for (const [index, file] of validFiles.entries()) {
+        const extension = getFileExtension(file.name, file.type);
+        const filePath = `chat/${threadId}/${currentUserId}/${Date.now()}-${index + 1}.${extension}`;
+        const uploadResult = await supabase.storage.from(MEDIA_BUCKET).upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: true,
+          contentType: file.type || undefined,
+        });
+
+        if (uploadResult.error) {
+          return {
+            ok: false,
+            error:
+              uploadResult.error.message ||
+              "Photo upload failed. Make sure the listing-media bucket allows authenticated uploads.",
+          };
+        }
+
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(filePath);
+
+        attachments.push({
+          id: `attachment-${Date.now()}-${index + 1}`,
+          url: publicUrl,
+          name: file.name || `Photo ${index + 1}`,
+          type: file.type || "image/jpeg",
+        });
+      }
+
+      return { ok: true, attachments };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error?.message || "Photo upload failed.",
+      };
+    }
   }
 
   async function findOrCreateThreadInternal({ participantIds, listingId = null }) {
@@ -3127,10 +3591,12 @@ export function MarketplaceProvider({ children }) {
   }
 
   async function sendMessage(threadId, body, options = {}) {
-    const trimmed = String(body || "").trim();
-    if (!trimmed) {
-      return { ok: false, error: "Message cannot be empty." };
-    }
+    const messageInput =
+      body && typeof body === "object" && !Array.isArray(body)
+        ? body
+        : { text: String(body || "") };
+    const trimmedText = String(messageInput.text || "").trim();
+    const pendingFiles = Array.isArray(messageInput.files) ? messageInput.files : [];
 
     const access = options.system
       ? { ok: true }
@@ -3146,13 +3612,31 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: "Conversation not found." };
     }
 
+    const uploadResult = await uploadMessagePhotos(threadId, pendingFiles);
+    if (!uploadResult.ok) {
+      return uploadResult;
+    }
+
+    const attachments = uploadResult.attachments || [];
+    if (!trimmedText && !attachments.length) {
+      return { ok: false, error: "Message cannot be empty." };
+    }
+
     const otherParticipantIds = thread.participantIds.filter((id) => id !== currentUserId);
     const createdAt = new Date().toISOString();
     const optimisticMessageId = `message-pending-${Date.now()}`;
+    const encodedBody = buildMessageBody({
+      text: trimmedText,
+      attachments,
+    });
     const optimisticMessage = {
       id: optimisticMessageId,
       senderId: options.senderId || currentUserId,
-      body: trimmed,
+      body: trimmedText || `${attachments.length} photo${attachments.length === 1 ? "" : "s"}`,
+      rawBody: encodedBody,
+      text: trimmedText,
+      attachments,
+      isRich: attachments.length > 0,
       sentAt: createdAt,
       readBy: [currentUserId],
     };
@@ -3179,7 +3663,11 @@ export function MarketplaceProvider({ children }) {
                   {
                     id: `message-${Date.now()}`,
                     senderId: options.senderId || currentUserId,
-                    body: trimmed,
+                    body: trimmedText || `${attachments.length} photo${attachments.length === 1 ? "" : "s"}`,
+                    rawBody: encodedBody,
+                    text: trimmedText,
+                    attachments,
+                    isRich: attachments.length > 0,
                     sentAt: createdAt,
                     readBy: [currentUserId],
                   },
@@ -3208,7 +3696,7 @@ export function MarketplaceProvider({ children }) {
       .insert({
         thread_id: threadId,
         sender_id: options.senderId || currentUserId,
-        body: trimmed,
+        body: encodedBody,
         read_by: [currentUserId],
       })
       .select("*")
@@ -3236,13 +3724,20 @@ export function MarketplaceProvider({ children }) {
               updatedAt: createdAt,
               messages: item.messages.map((message) =>
                 message.id === optimisticMessageId
-                  ? {
-                      id: insertedMessage.id,
-                      senderId: insertedMessage.sender_id,
-                      body: insertedMessage.body,
-                      sentAt: insertedMessage.created_at,
-                      readBy: insertedMessage.read_by || [currentUserId],
-                    }
+                  ? (() => {
+                      const parsedBody = parseMessageBody(insertedMessage.body);
+                      return {
+                        id: insertedMessage.id,
+                        senderId: insertedMessage.sender_id,
+                        body: parsedBody.preview,
+                        rawBody: parsedBody.rawBody,
+                        text: parsedBody.text,
+                        attachments: parsedBody.attachments,
+                        isRich: parsedBody.isRich,
+                        sentAt: insertedMessage.created_at,
+                        readBy: insertedMessage.read_by || [currentUserId],
+                      };
+                    })()
                   : message,
               ),
             }
@@ -3741,6 +4236,13 @@ export function MarketplaceProvider({ children }) {
             : report,
         ),
       );
+      pushAdminAuditEntry({
+        action: "report-status",
+        title: `Marked report ${status}`,
+        details: report?.reason || reportId,
+        targetId: reportId,
+        targetType: "report",
+      });
       return { ok: true };
     }
 
@@ -3774,6 +4276,13 @@ export function MarketplaceProvider({ children }) {
     }
 
     await refreshMarketplaceData(currentUserId);
+    pushAdminAuditEntry({
+      action: "report-status",
+      title: `Marked report ${status}`,
+      details: report?.reason || reportId,
+      targetId: reportId,
+      targetType: "report",
+    });
     return { ok: true };
   }
 
@@ -3905,6 +4414,13 @@ export function MarketplaceProvider({ children }) {
       setBugReports((current) =>
         current.map((item) => (item.id === reportId ? nextBugReport : item)),
       );
+      pushAdminAuditEntry({
+        action: "bug-update",
+        title: "Updated bug report",
+        details: `${report.title} -> ${nextStatus}/${nextSeverity}`,
+        targetId: reportId,
+        targetType: "bug-report",
+      });
       return { ok: true, bugReport: nextBugReport };
     }
 
@@ -3947,6 +4463,13 @@ export function MarketplaceProvider({ children }) {
     }
 
     await refreshMarketplaceData(currentUserId, { silent: true });
+    pushAdminAuditEntry({
+      action: "bug-update",
+      title: "Updated bug report",
+      details: `${report.title} -> ${nextStatus}/${nextSeverity}`,
+      targetId: reportId,
+      targetType: "bug-report",
+    });
     return { ok: true, bugReport: fromBugReportRow(data) };
   }
 
@@ -4111,6 +4634,13 @@ export function MarketplaceProvider({ children }) {
           item.id === listingId ? normalizeListingRecord({ ...item, flagged }) : item,
         ),
       );
+      pushAdminAuditEntry({
+        action: "listing-flag",
+        title: `${flagged ? "Flagged" : "Unflagged"} listing`,
+        details: listing.title,
+        targetId: listingId,
+        targetType: "listing",
+      });
       return { ok: true };
     }
 
@@ -4130,6 +4660,13 @@ export function MarketplaceProvider({ children }) {
     }
 
     await refreshMarketplaceData(currentUserId);
+    pushAdminAuditEntry({
+      action: "listing-flag",
+      title: `${flagged ? "Flagged" : "Unflagged"} listing`,
+      details: listing.title,
+      targetId: listingId,
+      targetType: "listing",
+    });
     return { ok: true };
   }
 
@@ -4153,6 +4690,13 @@ export function MarketplaceProvider({ children }) {
             : item,
         ),
       );
+      pushAdminAuditEntry({
+        action: "listing-status",
+        title: nextStatus === "removed" ? "Removed listing" : "Restored listing",
+        details: listing.title,
+        targetId: listingId,
+        targetType: "listing",
+      });
       return { ok: true };
     }
 
@@ -4166,6 +4710,13 @@ export function MarketplaceProvider({ children }) {
     }
 
     await refreshMarketplaceData(currentUserId);
+    pushAdminAuditEntry({
+      action: "listing-status",
+      title: nextStatus === "removed" ? "Removed listing" : "Restored listing",
+      details: listing.title,
+      targetId: listingId,
+      targetType: "listing",
+    });
     return { ok: true };
   }
 
@@ -4183,6 +4734,13 @@ export function MarketplaceProvider({ children }) {
           item.id === listingId ? normalizeListingRecord({ ...item, featured }) : item,
         ),
       );
+      pushAdminAuditEntry({
+        action: "listing-feature",
+        title: `${featured ? "Featured" : "Unfeatured"} listing`,
+        details: listing.title,
+        targetId: listingId,
+        targetType: "listing",
+      });
       return { ok: true };
     }
 
@@ -4192,6 +4750,13 @@ export function MarketplaceProvider({ children }) {
     }
 
     await refreshMarketplaceData(currentUserId);
+    pushAdminAuditEntry({
+      action: "listing-feature",
+      title: `${featured ? "Featured" : "Unfeatured"} listing`,
+      details: listing.title,
+      targetId: listingId,
+      targetType: "listing",
+    });
     return { ok: true };
   }
 
@@ -4204,6 +4769,13 @@ export function MarketplaceProvider({ children }) {
             : item,
         ),
       );
+      pushAdminAuditEntry({
+        action: "listing-note",
+        title: "Updated listing admin note",
+        details: listings.find((item) => item.id === listingId)?.title || listingId,
+        targetId: listingId,
+        targetType: "listing",
+      });
       return { ok: true };
     }
 
@@ -4217,6 +4789,13 @@ export function MarketplaceProvider({ children }) {
     }
 
     await refreshMarketplaceData(currentUserId);
+    pushAdminAuditEntry({
+      action: "listing-note",
+      title: "Updated listing admin note",
+      details: listings.find((item) => item.id === listingId)?.title || listingId,
+      targetId: listingId,
+      targetType: "listing",
+    });
     return { ok: true };
   }
 
@@ -4236,6 +4815,13 @@ export function MarketplaceProvider({ children }) {
           item.id === userId ? normalizeUserRecord({ ...item, badges }) : item,
         ),
       );
+      pushAdminAuditEntry({
+        action: "user-badge",
+        title: "Updated user badge",
+        details: `${user.name} -> ${badgeId}`,
+        targetId: userId,
+        targetType: "user",
+      });
       return { ok: true };
     }
 
@@ -4245,6 +4831,13 @@ export function MarketplaceProvider({ children }) {
     }
 
     await refreshMarketplaceData(currentUserId);
+    pushAdminAuditEntry({
+      action: "user-badge",
+      title: "Updated user badge",
+      details: `${user.name} -> ${badgeId}`,
+      targetId: userId,
+      targetType: "user",
+    });
     return { ok: true };
   }
 
@@ -4262,6 +4855,13 @@ export function MarketplaceProvider({ children }) {
           item.id === userId ? normalizeUserRecord({ ...item, verified }) : item,
         ),
       );
+      pushAdminAuditEntry({
+        action: "user-verified",
+        title: verified ? "Verified user" : "Removed user verification",
+        details: user.name,
+        targetId: userId,
+        targetType: "user",
+      });
       return { ok: true };
     }
 
@@ -4271,6 +4871,13 @@ export function MarketplaceProvider({ children }) {
     }
 
     await refreshMarketplaceData(currentUserId);
+    pushAdminAuditEntry({
+      action: "user-verified",
+      title: verified ? "Verified user" : "Removed user verification",
+      details: user.name,
+      targetId: userId,
+      targetType: "user",
+    });
     return { ok: true };
   }
 
@@ -4291,6 +4898,13 @@ export function MarketplaceProvider({ children }) {
             : item,
         ),
       );
+      pushAdminAuditEntry({
+        action: "user-suspension",
+        title: accountStatus === "suspended" ? "Suspended user" : "Restored user",
+        details: user.name,
+        targetId: userId,
+        targetType: "user",
+      });
       return { ok: true };
     }
 
@@ -4318,6 +4932,13 @@ export function MarketplaceProvider({ children }) {
     });
 
     await refreshMarketplaceData(currentUserId);
+    pushAdminAuditEntry({
+      action: "user-suspension",
+      title: accountStatus === "suspended" ? "Suspended user" : "Restored user",
+      details: user.name,
+      targetId: userId,
+      targetType: "user",
+    });
     return { ok: true };
   }
 
@@ -4335,6 +4956,13 @@ export function MarketplaceProvider({ children }) {
           item.id === userId ? normalizeUserRecord({ ...item, role }) : item,
         ),
       );
+      pushAdminAuditEntry({
+        action: "user-role",
+        title: role === "admin" ? "Granted admin" : "Removed admin",
+        details: user.name,
+        targetId: userId,
+        targetType: "user",
+      });
       return { ok: true };
     }
 
@@ -4344,6 +4972,13 @@ export function MarketplaceProvider({ children }) {
     }
 
     await refreshMarketplaceData(currentUserId);
+    pushAdminAuditEntry({
+      action: "user-role",
+      title: role === "admin" ? "Granted admin" : "Removed admin",
+      details: user.name,
+      targetId: userId,
+      targetType: "user",
+    });
     return { ok: true };
   }
 
@@ -4400,6 +5035,13 @@ export function MarketplaceProvider({ children }) {
       });
 
       await refreshMarketplaceData(currentUserId);
+      pushAdminAuditEntry({
+        action: "user-delete",
+        title: "Deleted user account",
+        details: users.find((user) => user.id === userId)?.name || userId,
+        targetId: userId,
+        targetType: "user",
+      });
       return { ok: true };
     } catch (error) {
       return {
@@ -4433,6 +5075,13 @@ export function MarketplaceProvider({ children }) {
         published: true,
       });
       setManualEvents((current) => [event, ...current]);
+      pushAdminAuditEntry({
+        action: "event-create",
+        title: "Added manual event",
+        details: payload.title,
+        targetId: event.id,
+        targetType: "event",
+      });
       return { ok: true, event };
     }
 
@@ -4460,6 +5109,13 @@ export function MarketplaceProvider({ children }) {
     }
 
     await refreshMarketplaceData(currentUserId);
+    pushAdminAuditEntry({
+      action: "event-create",
+      title: "Added manual event",
+      details: payload.title,
+      targetId: data.id,
+      targetType: "event",
+    });
     return { ok: true, event: fromEventRow(data) };
   }
 
@@ -4477,6 +5133,13 @@ export function MarketplaceProvider({ children }) {
           item.id === eventId ? normalizeManualEventRecord({ ...item, published }) : item,
         ),
       );
+      pushAdminAuditEntry({
+        action: "event-publish",
+        title: published ? "Published event" : "Unpublished event",
+        details: event.title,
+        targetId: eventId,
+        targetType: "event",
+      });
       return { ok: true };
     }
 
@@ -4490,12 +5153,27 @@ export function MarketplaceProvider({ children }) {
     }
 
     await refreshMarketplaceData(currentUserId);
+    pushAdminAuditEntry({
+      action: "event-publish",
+      title: published ? "Published event" : "Unpublished event",
+      details: event.title,
+      targetId: eventId,
+      targetType: "event",
+    });
     return { ok: true };
   }
 
   async function removeManualEvent(eventId) {
+    const event = manualEvents.find((item) => item.id === eventId);
     if (!isSupabaseConfigured) {
       setManualEvents((current) => current.filter((item) => item.id !== eventId));
+      pushAdminAuditEntry({
+        action: "event-delete",
+        title: "Deleted manual event",
+        details: event?.title || eventId,
+        targetId: eventId,
+        targetType: "event",
+      });
       return { ok: true };
     }
 
@@ -4505,6 +5183,13 @@ export function MarketplaceProvider({ children }) {
     }
 
     await refreshMarketplaceData(currentUserId);
+    pushAdminAuditEntry({
+      action: "event-delete",
+      title: "Deleted manual event",
+      details: event?.title || eventId,
+      targetId: eventId,
+      targetType: "event",
+    });
     return { ok: true };
   }
 
@@ -4512,14 +5197,19 @@ export function MarketplaceProvider({ children }) {
     addListing,
     addManualEvent,
     addReview,
+    addCollectionItem,
     adminOverview,
+    adminAuditLog,
     authReady,
     activeListings,
     bumpListing,
     changeCurrentUserPassword,
     clearListingDraft,
+    clearCollection,
     clearSearchHistory,
     closeCreateListing,
+    collectionItems,
+    collectionSummary,
     createOffer,
     createListingPreset,
     currentUser,
@@ -4573,6 +5263,7 @@ export function MarketplaceProvider({ children }) {
     recordSearchQuery,
     refreshMarketplaceData,
     removeManualEvent,
+    removeCollectionItem,
     reports,
     respondToOffer,
     reviewBadgeCatalog,
@@ -4588,6 +5279,8 @@ export function MarketplaceProvider({ children }) {
     submitBugReport,
     submitReport,
     submitSuspensionAppeal,
+    startViewAs,
+    stopViewAs,
     toastItems,
     threadsForCurrentUser,
     toggleListingFeatured,
@@ -4602,12 +5295,15 @@ export function MarketplaceProvider({ children }) {
     unreadMessageCount,
     unreadNotificationCount,
     updateBugReport,
+    updateCollectionItem,
     updateCurrentUserProfile,
     updateHomeHeroSettings,
     updateStorefrontSettings,
     updateListingAdminNote,
     updateReportStatus,
     users: Object.values(sellerMap),
+    viewedUserRecord,
+    isViewingAs,
     wishlist: normalizedWishlist,
     wishlistedListings,
     toggleWishlist,

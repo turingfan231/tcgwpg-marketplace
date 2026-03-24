@@ -645,6 +645,39 @@ a {
   }
 }
 
+@media (max-width: 640px) {
+  .surface-card,
+  .panel,
+  .app-pane,
+  .console-panel,
+  .console-shell {
+    border-radius: 1.5rem;
+  }
+
+  .surface-muted,
+  .console-well,
+  .handheld-module {
+    border-radius: 1.25rem;
+  }
+
+  .brand-pill {
+    height: 2.45rem;
+    padding: 0 0.62rem 0 0.72rem;
+  }
+
+  .brand-pill-mark {
+    font-size: 0.98rem;
+  }
+
+  .brand-pill-tag {
+    min-width: 2rem;
+  }
+
+  .section-title {
+    font-size: 1.7rem;
+  }
+}
+
 ::selection {
   background: rgba(109, 134, 240, 0.18);
   color: #5a1c1c;

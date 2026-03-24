@@ -2,9 +2,11 @@ import {
   Activity,
   Bug,
   CalendarCog,
+  Eye,
   ExternalLink,
   Flag,
   Home,
+  ScrollText,
   ShieldCheck,
   SwatchBook,
   Trash2,
@@ -186,15 +188,19 @@ export default function AdminPage() {
   const navigate = useNavigate();
   const {
     adminOverview,
+    adminAuditLog,
     adminBugReports,
     deleteUserAccount,
     enrichedListings,
     formatCadPrice,
+    isViewingAs,
     manualEvents,
     openReportResolutionThread,
     openReports,
     reviewBadgeCatalog,
     siteSettings,
+    startViewAs,
+    stopViewAs,
     toggleListingFeatured,
     toggleListingFlag,
     toggleListingRemoved,
@@ -209,6 +215,7 @@ export default function AdminPage() {
     updateListingAdminNote,
     updateReportStatus,
     users,
+    viewedUserRecord,
     addManualEvent,
     removeManualEvent,
   } = useMarketplace();
@@ -395,6 +402,7 @@ export default function AdminPage() {
     { id: "listings", label: "Listings", count: sortedListings.length },
     { id: "users", label: "Users", count: sortedUsers.length },
     { id: "events", label: "Events", count: manualEvents.length },
+    { id: "audit", label: "Audit", count: adminAuditLog.length },
     { id: "theme", label: "Theme Lab" },
     { id: "storefront", label: "Storefront" },
   ];
@@ -428,7 +436,7 @@ export default function AdminPage() {
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <p className="section-kicker">Admin Console</p>
-            <h1 className="mt-3 font-display text-5xl font-semibold tracking-[-0.05em] text-ink">
+            <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-ink sm:text-5xl">
               Admin controls
             </h1>
             <p className="mt-4 max-w-4xl text-base leading-8 text-steel">
@@ -864,6 +872,25 @@ export default function AdminPage() {
           </div>
 
           <div className="mt-5 space-y-4">
+            {isViewingAs && viewedUserRecord ? (
+              <div className="rounded-[22px] border border-[rgba(240,55,55,0.18)] bg-[rgba(240,55,55,0.08)] px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                  Active troubleshooting mode
+                </p>
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+                  <p className="font-semibold text-ink">
+                    Viewing the public storefront as {viewedUserRecord.publicName || viewedUserRecord.name}
+                  </p>
+                  <button
+                    className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
+                    type="button"
+                    onClick={() => void stopViewAs()}
+                  >
+                    Exit view-as
+                  </button>
+                </div>
+              </div>
+            ) : null}
             <div className="flex flex-wrap gap-2">
               {[
                 { id: "all", label: "All" },
@@ -1068,6 +1095,17 @@ export default function AdminPage() {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
+                      <button
+                        className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
+                        type="button"
+                        onClick={() => {
+                          void startViewAs(user.id);
+                          navigate(`/seller/${user.id}`);
+                        }}
+                      >
+                        <Eye size={14} className="mr-2 inline" />
+                        {String(viewedUserRecord?.id || "") === String(user.id) ? "Viewing as" : "View as"}
+                      </button>
                       <button
                         className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
                         type="button"
@@ -1281,6 +1319,61 @@ export default function AdminPage() {
               ))
             ) : (
               <EmptyAdminState>No manual event overrides yet.</EmptyAdminState>
+            )}
+          </div>
+        </section>
+      ) : null}
+
+      {activeSection === "audit" ? (
+        <section className="surface-card p-6">
+          <div className="flex items-center gap-3">
+            <ScrollText className="text-orange" size={20} />
+            <div>
+              <p className="section-kicker">Admin audit log</p>
+              <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                Recent control-room actions
+              </h2>
+            </div>
+          </div>
+          <p className="mt-4 max-w-4xl text-sm leading-7 text-steel">
+            Track moderation, merchandising, role changes, manual events, and storefront edits from this admin console.
+          </p>
+
+          <div className="mt-6 space-y-3">
+            {adminAuditLog.length ? (
+              adminAuditLog.map((entry) => (
+                <article
+                  key={entry.id}
+                  className="rounded-[22px] border border-slate-200 bg-[#f7f7f8] px-4 py-4"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="font-semibold text-ink">{entry.title}</p>
+                      <p className="mt-1 text-sm text-steel">
+                        {entry.actorName} | {new Date(entry.createdAt).toLocaleString("en-CA", {
+                          month: "short",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                      {entry.details ? (
+                        <p className="mt-2 text-sm leading-7 text-steel">{entry.details}</p>
+                      ) : null}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                        {entry.targetType}
+                      </span>
+                      <span className="rounded-full bg-navy/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">
+                        {entry.action}
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              ))
+            ) : (
+              <EmptyAdminState>No audit entries yet in this browser session.</EmptyAdminState>
             )}
           </div>
         </section>
