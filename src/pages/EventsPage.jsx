@@ -337,28 +337,28 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="space-y-7">
-      <section className="console-shell binder-edge p-6 sm:p-7">
+    <div className="space-y-5 sm:space-y-7">
+      <section className="console-shell binder-edge p-4 sm:p-7">
         <p className="section-kicker">Local Events</p>
-        <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-ink sm:text-[3.25rem]">
+        <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.05em] text-ink sm:text-[3.25rem]">
           Winnipeg tournaments, leagues, and local nights
         </h1>
-        <p className="mt-4 max-w-3xl text-base leading-8 text-steel">
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-steel sm:mt-4 sm:text-base sm:leading-8">
           Filter by game, store, and date range, then jump straight to the event page when a direct link is available.
         </p>
       </section>
 
-      <section className="console-panel binder-edge space-y-5 p-5 sm:p-6">
-        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+      <section className="console-panel binder-edge space-y-4 p-4 sm:space-y-5 sm:p-6">
+        <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-xs sm:tracking-[0.18em]">
           <Filter size={14} />
           Filters
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="header-chip-scroll -mx-1 flex gap-2 overflow-x-auto px-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
           {storeOptions.map((store) => (
             <button
               key={store}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+              className={`shrink-0 rounded-full px-3 py-2 text-[0.82rem] font-semibold transition sm:px-4 sm:text-sm ${
                 selectedStore === store
                   ? "bg-navy text-white shadow-soft"
                   : "border border-[rgba(203,220,231,0.92)] bg-white/82 text-steel hover:border-slate-300 hover:text-ink"
@@ -371,11 +371,11 @@ export default function EventsPage() {
           ))}
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_auto]">
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,0.9fr)_auto] sm:gap-4">
           <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-steel">Game</span>
+            <span className="mb-2 block text-[0.82rem] font-semibold text-steel sm:text-sm">Game</span>
             <select
-              className="w-full rounded-[20px] border border-[rgba(203,220,231,0.92)] bg-[rgba(249,252,255,0.84)] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              className="w-full rounded-[18px] border border-[rgba(203,220,231,0.92)] bg-[rgba(249,252,255,0.84)] px-3.5 py-3 text-[0.92rem] outline-none transition focus:border-navy focus:bg-white sm:rounded-[20px] sm:px-4"
               value={selectedGame}
               onChange={(event) => setSelectedGame(event.target.value)}
             >
@@ -386,11 +386,11 @@ export default function EventsPage() {
           </label>
 
           <div className="flex items-end gap-2">
-            <div className="inline-flex rounded-full bg-[rgba(255,255,255,0.56)] p-1">
+            <div className="inline-flex w-full rounded-full bg-[rgba(255,255,255,0.56)] p-1 sm:w-auto">
               {rangeOptions.map((option) => (
                 <button
                   key={option.id}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  className={`flex-1 rounded-full px-3 py-2 text-[0.82rem] font-semibold transition sm:flex-none sm:px-4 sm:text-sm ${
                     rangeMode === option.id ? "bg-white text-ink shadow-sm" : "text-steel"
                   }`}
                   type="button"
@@ -404,7 +404,7 @@ export default function EventsPage() {
         </div>
       </section>
 
-      <section className="grid gap-7 xl:grid-cols-[1.05fr_0.95fr]">
+      <section className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr] sm:gap-7">
         <article className="console-panel hidden p-6 md:block">
           {rangeMode === "month" ? (
             <>
@@ -533,11 +533,11 @@ export default function EventsPage() {
           )}
         </article>
 
-        <article className="console-panel binder-edge p-5 sm:p-6">
+        <article className="console-panel binder-edge p-4 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="section-kicker">Upcoming list</p>
-              <h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-ink sm:text-3xl">
+              <h2 className="mt-2 font-display text-[1.55rem] font-semibold tracking-[-0.04em] text-ink sm:text-3xl">
                 {eventsForList.length} matching event{eventsForList.length === 1 ? "" : "s"}
               </h2>
             </div>
@@ -578,11 +578,11 @@ export default function EventsPage() {
           ) : null}
 
           {eventsForList.length ? (
-            <div className="header-chip-scroll mt-5 space-y-4 overflow-y-auto pr-1 md:max-h-[46.25rem]">
+            <div className="header-chip-scroll mt-4 space-y-3 overflow-y-auto pr-1 md:mt-5 md:space-y-4 md:max-h-[46.25rem]">
               {eventsForList.map((event) => (
                 <article
                   key={event.id}
-                  className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-5"
+                  className="rounded-[20px] border border-slate-200 bg-[#f7f7f8] p-4 sm:rounded-[24px] sm:p-5"
                 >
                   {(() => {
                     const eventKey = buildEventKey(event);
@@ -592,22 +592,22 @@ export default function EventsPage() {
                     const relatedListings = relatedListingsByEvent[eventKey] || [];
                     return (
                       <>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-orange/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-orange">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <span className="rounded-full bg-orange/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-orange sm:px-3 sm:text-xs sm:tracking-[0.18em]">
                       {event.game}
                     </span>
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+                    <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 sm:px-3 sm:text-xs sm:tracking-[0.18em]">
                       {event.store}
                     </span>
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+                    <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 sm:px-3 sm:text-xs sm:tracking-[0.18em]">
                       {event.source}
                     </span>
                   </div>
 
-                  <h3 className="mt-4 font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
+                  <h3 className="mt-3 font-display text-[1.45rem] font-semibold tracking-[-0.03em] text-ink sm:mt-4 sm:text-2xl">
                     {event.title}
                   </h3>
-                  <div className="mt-4 grid gap-3 text-sm text-steel">
+                  <div className="mt-3 grid gap-2 text-[0.84rem] text-steel sm:mt-4 sm:gap-3 sm:text-sm">
                     <span className="inline-flex items-center gap-2">
                       <Store size={16} />
                       {getStoreSlugByName(event.store) ? (
@@ -633,10 +633,10 @@ export default function EventsPage() {
                       </span>
                     ) : null}
                   </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mt-3 flex flex-wrap gap-2 sm:mt-4">
                     {event.sourceUrl ? (
                       <a
-                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-navy transition hover:border-slate-300"
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-[0.82rem] font-semibold text-navy transition hover:border-slate-300 sm:px-4 sm:text-sm"
                         href={event.sourceUrl}
                         rel="noreferrer"
                         target="_blank"
@@ -646,7 +646,7 @@ export default function EventsPage() {
                       </a>
                     ) : null}
                     <button
-                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-[0.82rem] font-semibold text-steel transition hover:border-slate-300 hover:text-ink sm:px-4 sm:text-sm"
                       type="button"
                       onClick={() => downloadEventCalendar(event)}
                     >
@@ -655,11 +655,11 @@ export default function EventsPage() {
                     </button>
                   </div>
                   {event.note ? (
-                    <p className="mt-4 text-sm leading-7 text-steel">{event.note}</p>
+                    <p className="mt-3 text-[0.84rem] leading-6 text-steel sm:mt-4 sm:text-sm sm:leading-7">{event.note}</p>
                   ) : null}
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mt-3 flex flex-wrap gap-2 sm:mt-4">
                     <button
-                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[0.82rem] font-semibold transition sm:px-4 sm:text-sm ${
                         reminderEnabled
                           ? "border-[rgba(177,29,35,0.24)] bg-[rgba(240,55,55,0.08)] text-navy"
                           : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
@@ -673,7 +673,7 @@ export default function EventsPage() {
                     {attendanceOptions.map((option) => (
                       <button
                         key={option.id}
-                        className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                        className={`rounded-full border px-3 py-2 text-[0.82rem] font-semibold transition sm:px-4 sm:text-sm ${
                           selectedIntent === option.id
                             ? "border-[rgba(177,29,35,0.24)] bg-navy text-white"
                             : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
@@ -685,38 +685,38 @@ export default function EventsPage() {
                       </button>
                     ))}
                   </div>
-                  <div className="mt-5 rounded-[20px] border border-[rgba(177,29,35,0.12)] bg-white/82 p-4">
+                  <div className="mt-4 rounded-[18px] border border-[rgba(177,29,35,0.12)] bg-white/82 p-3.5 sm:mt-5 sm:rounded-[20px] sm:p-4">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-xs sm:tracking-[0.18em]">
                         Related listings for this event
                       </p>
                       {storeSlug ? (
-                        <Link className="text-sm font-semibold text-navy hover:underline" to={`/stores/${storeSlug}`}>
+                        <Link className="text-[0.82rem] font-semibold text-navy hover:underline sm:text-sm" to={`/stores/${storeSlug}`}>
                           Store page
                         </Link>
                       ) : null}
                     </div>
-                    <div className="mt-3 grid gap-3">
+                    <div className="mt-3 grid gap-2.5 sm:gap-3">
                       {relatedListings.length ? (
                         relatedListings.map((listing) => (
                           <Link
                             key={listing.id}
-                            className="flex items-center justify-between gap-3 rounded-[18px] border border-slate-200 bg-[#f9f7f7] px-4 py-3 transition hover:border-[rgba(177,29,35,0.18)]"
+                            className="flex items-center justify-between gap-3 rounded-[16px] border border-slate-200 bg-[#f9f7f7] px-3 py-3 transition hover:border-[rgba(177,29,35,0.18)] sm:rounded-[18px] sm:px-4"
                             to={`/listing/${listing.id}`}
                           >
                             <div className="min-w-0">
-                              <p className="truncate font-semibold text-ink">{listing.title}</p>
-                              <p className="mt-1 text-sm text-steel">
+                              <p className="truncate text-[0.92rem] font-semibold text-ink sm:text-base">{listing.title}</p>
+                              <p className="mt-0.5 text-[0.78rem] text-steel sm:mt-1 sm:text-sm">
                                 {listing.neighborhood} | {listing.seller?.publicName || listing.seller?.name}
                               </p>
                             </div>
-                            <span className="shrink-0 text-sm font-semibold text-navy">
+                            <span className="shrink-0 text-[0.82rem] font-semibold text-navy sm:text-sm">
                               {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
                             </span>
                           </Link>
                         ))
                       ) : (
-                        <div className="rounded-[16px] border border-dashed border-slate-200 bg-white/72 px-4 py-4 text-sm text-steel">
+                        <div className="rounded-[16px] border border-dashed border-slate-200 bg-white/72 px-3 py-3 text-[0.82rem] text-steel sm:px-4 sm:py-4 sm:text-sm">
                           No active listings are tied to this store and game yet.
                         </div>
                       )}

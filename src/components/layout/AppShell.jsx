@@ -176,6 +176,14 @@ export default function AppShell() {
     return undefined;
   }, [appBooted, authReady]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [location.pathname, location.search]);
+
   const showLaunchScreen = !appBooted;
   const showOnboarding =
     authReady &&

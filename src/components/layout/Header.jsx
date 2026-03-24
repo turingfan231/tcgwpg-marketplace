@@ -175,25 +175,22 @@ export default function Header() {
       <header className="sticky top-0 z-40 border-b border-[rgba(145,38,43,0.12)] bg-[rgba(251,248,248,0.9)] backdrop-blur-2xl">
         <div className="page-shell py-2.5 sm:py-4">
           <div className="console-panel px-2.5 py-2.5 sm:px-4 sm:py-4">
-          <div className="flex items-center justify-between gap-2.5">
-            <Link className="flex min-w-0 items-center gap-3" to="/">
+          <div className="flex items-center justify-between gap-2 sm:gap-2.5">
+            <Link className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3" to="/">
               <div className="collector-strip-mark shrink-0" aria-hidden="true">
                 <span className="collector-strip-bar">W</span>
                 <span className="collector-strip-bar">P</span>
                 <span className="collector-strip-bar">G</span>
               </div>
-              <div className="min-w-0">
-                <p className="truncate font-display text-[1.05rem] font-semibold tracking-[-0.04em] text-ink sm:text-[1.7rem]">
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-display text-[0.96rem] font-semibold leading-none tracking-[-0.045em] text-ink sm:text-[1.7rem]">
                   WPG Marketplace
                 </p>
                 <p className="hidden text-sm text-navy sm:block">Local cards, faster deals</p>
-                <p className="text-[10px] uppercase tracking-[0.12em] text-steel sm:hidden">
-                  Local cards
-                </p>
               </div>
             </Link>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex shrink-0 items-center gap-1.5">
               <Link
                 className="relative inline-flex items-center justify-center rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 p-2.5 text-steel transition hover:border-slate-300 hover:text-ink md:px-4 md:py-2.5"
                 to="/messages"
