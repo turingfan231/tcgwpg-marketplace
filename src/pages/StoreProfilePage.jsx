@@ -118,6 +118,18 @@ export default function StoreProfilePage() {
     ).length;
   }, [sellers, store]);
 
+  const storeFollowerCount = useMemo(() => {
+    if (!store) {
+      return 0;
+    }
+
+    return sellers.filter((seller) =>
+      Array.isArray(seller.followedStoreSlugs)
+        ? seller.followedStoreSlugs.includes(store.slug)
+        : false,
+    ).length;
+  }, [sellers, store]);
+
   if (loading && !store) {
     return <PageSkeleton cards={4} titleWidth="w-80" />;
   }
@@ -156,6 +168,10 @@ export default function StoreProfilePage() {
                 <span className="inline-flex items-center gap-2">
                   <Store size={16} />
                   {sellerCount} seller{sellerCount === 1 ? "" : "s"} use this spot
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <Heart size={16} />
+                  {storeFollowerCount} follower{storeFollowerCount === 1 ? "" : "s"}
                 </span>
               </div>
               <div className="mt-3 flex flex-wrap gap-2 sm:mt-5 sm:gap-3">

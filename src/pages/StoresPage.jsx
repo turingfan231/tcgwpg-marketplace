@@ -1,8 +1,22 @@
 import { ArrowRight, CalendarRange, MapPin, ShieldCheck } from "lucide-react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { storeProfiles } from "../data/storefrontData";
+import { useMarketplace } from "../hooks/useMarketplace";
 
 export default function StoresPage() {
+  const { sellers } = useMarketplace();
+  const storeFollowerCounts = useMemo(
+    () =>
+      sellers.reduce((accumulator, seller) => {
+        (seller.followedStoreSlugs || []).forEach((slug) => {
+          accumulator[slug] = (accumulator[slug] || 0) + 1;
+        });
+        return accumulator;
+      }, {}),
+    [sellers],
+  );
+
   return (
     <div className="space-y-6 sm:space-y-8">
       <section className="console-shell p-4 sm:p-7">
@@ -54,6 +68,10 @@ export default function StoresPage() {
                 <span className="inline-flex items-center gap-2">
                   <CalendarRange size={16} />
                   Local event page and featured market listings
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <ShieldCheck size={16} />
+                  {storeFollowerCounts[store.slug] || 0} follower{storeFollowerCounts[store.slug] === 1 ? "" : "s"}
                 </span>
               </div>
 

@@ -616,6 +616,10 @@ function omitMissingProfileColumns(payload, error) {
     delete nextPayload.followed_seller_ids;
   }
 
+  if (isMissingColumnError(error, "followed_store_slugs")) {
+    delete nextPayload.followed_store_slugs;
+  }
+
   return nextPayload;
 }
 
@@ -789,6 +793,7 @@ function normalizeUserRecord(user) {
   const publicName = username || user.publicName || getPublicName(user.name);
   const favoriteGames = Array.isArray(user.favoriteGames) ? user.favoriteGames : [];
   const followedSellerIds = Array.isArray(user.followedSellerIds) ? user.followedSellerIds : [];
+  const followedStoreSlugs = Array.isArray(user.followedStoreSlugs) ? user.followedStoreSlugs : [];
   const defaultListingGame = user.defaultListingGame || favoriteGames[0] || "Pokemon";
   const trustedMeetupSpots =
     Array.isArray(user.trustedMeetupSpots) && user.trustedMeetupSpots.length
@@ -810,6 +815,7 @@ function normalizeUserRecord(user) {
     postalCode: normalizePostalCode(user.postalCode),
     favoriteGames,
     followedSellerIds,
+    followedStoreSlugs,
     trustedMeetupSpots,
     meetupPreferences: meetupData.notes,
     defaultListingGame,
@@ -1125,6 +1131,7 @@ function fromProfileRow(row) {
     bannerStyle: row.banner_style,
     favoriteGames: row.favorite_games || [],
     followedSellerIds: row.followed_seller_ids || [],
+    followedStoreSlugs: row.followed_store_slugs || [],
     meetupPreferences: row.meetup_preferences,
     responseTime: row.response_time,
     completedDeals: row.completed_deals || 0,
@@ -1296,6 +1303,8 @@ function mergeAuthedProfileMetadata(profileRow, authUser) {
       "",
     followed_seller_ids:
       profileRow.followed_seller_ids || authUser?.user_metadata?.followed_seller_ids || [],
+    followed_store_slugs:
+      profileRow.followed_store_slugs || authUser?.user_metadata?.followed_store_slugs || [],
     meetup_preferences:
       profileRow.meetup_preferences ||
       buildMeetupPreferenceValue(
@@ -1993,7 +2002,12 @@ export function MarketplaceProvider({ children }) {
           return fromProfileRow(updateResult.data);
         }
 
-        if (!isMissingColumnError(updateResult.error, "username") && !isMissingColumnError(updateResult.error, "avatar_url")) {
+        if (
+          !isMissingColumnError(updateResult.error, "username") &&
+          !isMissingColumnError(updateResult.error, "avatar_url") &&
+          !isMissingColumnError(updateResult.error, "followed_seller_ids") &&
+          !isMissingColumnError(updateResult.error, "default_listing_game")
+        ) {
           throw updateResult.error;
         }
 
@@ -2055,7 +2069,13 @@ export function MarketplaceProvider({ children }) {
       .select("*")
       .single();
 
-    if (insertResult.error && (isMissingColumnError(insertResult.error, "username") || isMissingColumnError(insertResult.error, "avatar_url"))) {
+    if (
+      insertResult.error &&
+      (isMissingColumnError(insertResult.error, "username") ||
+        isMissingColumnError(insertResult.error, "avatar_url") ||
+        isMissingColumnError(insertResult.error, "followed_seller_ids") ||
+        isMissingColumnError(insertResult.error, "default_listing_game"))
+    ) {
       const legacyProfilePayload = omitMissingProfileColumns(profilePayload, insertResult.error);
       insertResult = await supabase
         .from("profiles")
@@ -3527,9 +3547,48 @@ export function MarketplaceProvider({ children }) {
     }
 
     const alreadyFollowing = followedStoreSet.has(normalizedSlug);
-    setFollowedStoreSlugs((current) =>
-      alreadyFollowing ? current.filter((slug) => slug !== normalizedSlug) : [...current, normalizedSlug],
+    const nextFollowedStoreSlugs = alreadyFollowing
+      ? followedStoreSlugs.filter((slug) => slug !== normalizedSlug)
+      : [...followedStoreSlugs, normalizedSlug];
+
+    setFollowedStoreSlugs(nextFollowedStoreSlugs);
+    setUsers((current) =>
+      current.map((user) =>
+        user.id === currentUserId
+          ? normalizeUserRecord({ ...user, followedStoreSlugs: nextFollowedStoreSlugs })
+          : user,
+      ),
     );
+
+    if (isSupabaseConfigured) {
+      await supabase.auth.updateUser({
+        data: {
+          followed_store_slugs: nextFollowedStoreSlugs,
+        },
+      });
+
+      const profilePayload = {
+        followed_store_slugs: nextFollowedStoreSlugs,
+        updated_at: new Date().toISOString(),
+      };
+
+      let updateResult = await supabase
+        .from("profiles")
+        .update(profilePayload)
+        .eq("id", currentUserId);
+
+      if (
+        updateResult.error &&
+        isMissingColumnError(updateResult.error, "followed_store_slugs")
+      ) {
+        const legacyProfilePayload = omitMissingProfileColumns(profilePayload, updateResult.error);
+        updateResult = await supabase
+          .from("profiles")
+          .update(legacyProfilePayload)
+          .eq("id", currentUserId);
+      }
+    }
+
     return { ok: true, followed: !alreadyFollowing };
   }
 

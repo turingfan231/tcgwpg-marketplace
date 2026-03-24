@@ -37,6 +37,7 @@ export default function SellerProfilePage() {
     reviewBadgeCatalog,
     reviews,
     sellerMap,
+    sellers,
     toggleSellerFollow,
   } = useMarketplace();
   const [isReviewModalOpen, setReviewModalOpen] = useState(false);
@@ -51,6 +52,15 @@ export default function SellerProfilePage() {
   const sellerListings = useMemo(
     () => activeListings.filter((listing) => listing.sellerId === sellerId),
     [activeListings, sellerId],
+  );
+  const followerCount = useMemo(
+    () =>
+      sellers.filter((candidate) =>
+        Array.isArray(candidate.followedSellerIds)
+          ? candidate.followedSellerIds.includes(sellerId)
+          : false,
+      ).length,
+    [sellerId, sellers],
   );
   const isOwnProfile = String(currentUser?.id || "") === String(sellerId || "");
   const isAdmin = currentUser?.role === "admin";
@@ -115,6 +125,9 @@ export default function SellerProfilePage() {
                     <RatingStars size={18} value={seller.overallRating} />
                     <span className="text-[0.8rem] text-white/80 sm:text-sm">
                       {seller.overallRating.toFixed(1)} overall from {seller.reviewCount} reviews
+                    </span>
+                    <span className="text-[0.8rem] text-white/80 sm:text-sm">
+                      {followerCount} follower{followerCount === 1 ? "" : "s"}
                     </span>
                     <span className="text-[0.8rem] text-white/80 sm:text-sm">
                       {seller.neighborhood}
@@ -199,6 +212,15 @@ export default function SellerProfilePage() {
             <p className="mt-1.5 inline-flex items-center gap-2 text-[0.95rem] font-semibold text-ink sm:mt-2 sm:text-lg">
               <Store size={16} className="text-navy" />
               {seller.completedDeals}
+            </p>
+          </div>
+          <div className="console-well p-3 sm:p-5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-xs sm:tracking-[0.18em]">
+              Followers
+            </p>
+            <p className="mt-1.5 inline-flex items-center gap-2 text-[0.95rem] font-semibold text-ink sm:mt-2 sm:text-lg">
+              <BellRing size={16} className="text-navy" />
+              {followerCount}
             </p>
           </div>
           <div className="console-well p-3 sm:p-5">

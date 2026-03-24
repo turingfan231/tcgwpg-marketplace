@@ -244,15 +244,15 @@ function BannerCard({
           </div>
         ) : null}
 
-        <div className="relative z-10 flex h-full flex-col justify-between gap-5 sm:gap-8">
+        <div className="relative z-10 flex h-full flex-col justify-between gap-4 pb-7 sm:gap-8 sm:pb-0">
           <div className={`max-w-xl sm:max-w-2xl ${slide.kind === "listing" ? "lg:max-w-[52%]" : ""}`}>
             <span className="inline-flex rounded-full bg-white/12 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/80">
               {slide.kicker}
             </span>
-            <h1 className="mt-3 max-w-[16rem] font-display text-[1.72rem] font-semibold leading-[0.94] tracking-[-0.07em] sm:mt-5 sm:max-w-3xl sm:text-[4rem]">
+            <h1 className="mt-3 max-w-[14.75rem] font-display text-[1.46rem] font-semibold leading-[0.96] tracking-[-0.07em] sm:mt-5 sm:max-w-3xl sm:text-[4rem]">
               {slide.title}
             </h1>
-            <p className="mt-2 max-w-[16.5rem] text-[0.86rem] leading-5 text-white/76 sm:mt-4 sm:max-w-2xl sm:text-base sm:leading-7">
+            <p className="mt-2 max-w-[15.5rem] text-[0.78rem] leading-5 text-white/76 sm:mt-4 sm:max-w-2xl sm:text-base sm:leading-7">
               {slide.description}
             </p>
 
@@ -277,7 +277,7 @@ function BannerCard({
 
             <div className="mt-4 flex flex-wrap gap-3 sm:mt-8">
               <button
-                className={`rounded-full px-4 py-2.5 text-[0.82rem] font-semibold shadow-soft transition duration-300 hover:-translate-y-0.5 hover:shadow-lift sm:px-5 sm:py-3 sm:text-sm ${
+                className={`rounded-full px-3.5 py-2 text-[0.78rem] font-semibold shadow-soft transition duration-300 hover:-translate-y-0.5 hover:shadow-lift sm:px-5 sm:py-3 sm:text-sm ${
                   slide.kind === "event" ? "bg-orange text-white" : "bg-white text-navy"
                 }`}
                 type="button"
@@ -462,6 +462,26 @@ export default function HomePage() {
   const safeHotListings = Array.isArray(hotListings) ? hotListings.filter(Boolean) : [];
   const safeManualEvents = Array.isArray(manualEvents) ? manualEvents.filter(Boolean) : [];
   const safeSellers = Array.isArray(sellers) ? sellers.filter(Boolean) : [];
+  const sellerFollowerCounts = useMemo(
+    () =>
+      safeSellers.reduce((accumulator, seller) => {
+        (seller.followedSellerIds || []).forEach((followedId) => {
+          accumulator[followedId] = (accumulator[followedId] || 0) + 1;
+        });
+        return accumulator;
+      }, {}),
+    [safeSellers],
+  );
+  const storeFollowerCounts = useMemo(
+    () =>
+      safeSellers.reduce((accumulator, seller) => {
+        (seller.followedStoreSlugs || []).forEach((slug) => {
+          accumulator[slug] = (accumulator[slug] || 0) + 1;
+        });
+        return accumulator;
+      }, {}),
+    [safeSellers],
+  );
   const featuredCategories = (Array.isArray(gameCatalog) ? gameCatalog : []).filter(
     (game) => game?.slug && game.slug !== "all",
   );
@@ -824,7 +844,7 @@ export default function HomePage() {
               ))}
 
               {bannerSlides.length > 1 ? (
-                <div className="absolute bottom-4 right-4 z-10 flex gap-2 sm:bottom-6 sm:right-6">
+                <div className="absolute bottom-3 right-3 z-10 flex gap-2 sm:bottom-6 sm:right-6">
                   {bannerSlides.map((slide, index) => (
                     <button
                       key={slide.id}
@@ -1218,6 +1238,7 @@ export default function HomePage() {
                     <p className="mt-0.5 text-[0.78rem] text-steel sm:mt-1 sm:text-sm">
                       {seller.completedDeals || 0} deals
                       {seller.overallRating ? ` | ${seller.overallRating.toFixed(1)} rating` : ""}
+                      {` | ${sellerFollowerCounts[seller.id] || 0} followers`}
                     </p>
                   </div>
                 </div>
@@ -1292,6 +1313,9 @@ export default function HomePage() {
                 <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   <span className="rounded-full bg-navy/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-navy sm:px-3 sm:text-[11px] sm:tracking-[0.16em]">
                     {store.activeCount} listings
+                  </span>
+                  <span className="rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-700 sm:px-3 sm:text-[11px] sm:tracking-[0.16em]">
+                    {storeFollowerCounts[store.slug] || 0} followers
                   </span>
                   <span className="rounded-full bg-orange/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-orange sm:px-3 sm:text-[11px] sm:tracking-[0.16em]">
                     Approved

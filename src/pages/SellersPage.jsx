@@ -12,6 +12,17 @@ export default function SellersPage() {
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState("deals");
 
+  const sellerFollowerCounts = useMemo(
+    () =>
+      sellers.reduce((accumulator, seller) => {
+        (seller.followedSellerIds || []).forEach((followedId) => {
+          accumulator[followedId] = (accumulator[followedId] || 0) + 1;
+        });
+        return accumulator;
+      }, {}),
+    [sellers],
+  );
+
   const filteredSellers = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     const results = sellers.filter((seller) => {
@@ -167,6 +178,15 @@ export default function SellersPage() {
                 <p className="mt-1.5 inline-flex items-center gap-2 text-sm font-semibold text-ink sm:mt-2 sm:text-base">
                   <Star size={15} className="text-navy" />
                   {seller.overallRating.toFixed(1)}
+                </p>
+              </div>
+              <div className="console-well px-3 py-2.5 sm:px-4 sm:py-3 sm:col-span-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-[11px] sm:tracking-[0.18em]">
+                  Followers
+                </p>
+                <p className="mt-1.5 inline-flex items-center gap-2 text-sm font-semibold text-ink sm:mt-2 sm:text-base">
+                  <Store size={15} className="text-navy" />
+                  {sellerFollowerCounts[seller.id] || 0}
                 </p>
               </div>
             </div>
