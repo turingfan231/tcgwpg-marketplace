@@ -178,12 +178,12 @@ export default function Header() {
           <div className="flex items-center justify-between gap-2 sm:gap-2.5">
             <Link className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3" to="/">
               <div className="collector-strip-mark shrink-0" aria-hidden="true">
-                <span className="collector-strip-bar">W</span>
-                <span className="collector-strip-bar">P</span>
+                <span className="collector-strip-bar">T</span>
+                <span className="collector-strip-bar">C</span>
                 <span className="collector-strip-bar">G</span>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-display text-[0.96rem] font-semibold leading-none tracking-[-0.045em] text-ink sm:text-[1.7rem]">
+                <p className="truncate font-display text-[0.84rem] font-semibold leading-none tracking-[-0.05em] text-ink sm:text-[1.7rem]">
                   WPG Marketplace
                 </p>
                 <p className="hidden text-sm text-navy sm:block">Local cards, faster deals</p>
@@ -192,7 +192,7 @@ export default function Header() {
 
             <div className="flex shrink-0 items-center gap-1.5">
               <Link
-                className="relative inline-flex items-center justify-center rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 p-2.5 text-steel transition hover:border-slate-300 hover:text-ink md:px-4 md:py-2.5"
+                className="relative inline-flex items-center justify-center rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 p-2 text-steel transition hover:border-slate-300 hover:text-ink md:px-4 md:py-2.5"
                 to="/messages"
               >
                 <MessageCircle size={18} />
@@ -205,7 +205,7 @@ export default function Header() {
               </Link>
 
               <button
-                className="rounded-full bg-orange px-3.5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-[#d8332d] sm:px-5 sm:py-2.5"
+                className="rounded-full bg-orange px-3 py-2 text-[0.88rem] font-semibold text-white shadow-soft transition hover:bg-[#d8332d] sm:px-5 sm:py-2.5 sm:text-sm"
                 type="button"
                 onClick={() => openListing("WTS", "/dashboard")}
               >
@@ -215,7 +215,7 @@ export default function Header() {
 
               <button
                 aria-label="Open navigation menu"
-                className="inline-flex items-center justify-center rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 p-2.5 text-steel transition hover:border-slate-300 hover:text-ink lg:hidden"
+                className="inline-flex items-center justify-center rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 p-2 text-steel transition hover:border-slate-300 hover:text-ink lg:hidden"
                 type="button"
                 onClick={() => setMobileDrawerOpen(true)}
               >

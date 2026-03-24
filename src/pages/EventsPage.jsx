@@ -582,7 +582,7 @@ export default function EventsPage() {
               {eventsForList.map((event) => (
                 <article
                   key={event.id}
-                  className="rounded-[20px] border border-slate-200 bg-[#f7f7f8] p-4 sm:rounded-[24px] sm:p-5"
+                  className="rounded-[18px] border border-slate-200 bg-[#f7f7f8] p-3 sm:rounded-[24px] sm:p-5"
                 >
                   {(() => {
                     const eventKey = buildEventKey(event);
@@ -604,10 +604,10 @@ export default function EventsPage() {
                     </span>
                   </div>
 
-                  <h3 className="mt-3 font-display text-[1.45rem] font-semibold tracking-[-0.03em] text-ink sm:mt-4 sm:text-2xl">
+                  <h3 className="mt-2.5 font-display text-[1.18rem] font-semibold tracking-[-0.03em] text-ink sm:mt-4 sm:text-2xl">
                     {event.title}
                   </h3>
-                  <div className="mt-3 grid gap-2 text-[0.84rem] text-steel sm:mt-4 sm:gap-3 sm:text-sm">
+                  <div className="mt-2.5 grid gap-1.5 text-[0.78rem] text-steel sm:mt-4 sm:gap-3 sm:text-sm">
                     <span className="inline-flex items-center gap-2">
                       <Store size={16} />
                       {getStoreSlugByName(event.store) ? (
@@ -633,33 +633,35 @@ export default function EventsPage() {
                       </span>
                     ) : null}
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2 sm:mt-4">
+                  <div className="mt-2.5 flex flex-wrap gap-1.5 sm:mt-4 sm:gap-2">
                     {event.sourceUrl ? (
                       <a
-                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-[0.82rem] font-semibold text-navy transition hover:border-slate-300 sm:px-4 sm:text-sm"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-navy transition hover:border-slate-300 sm:px-4 sm:py-2 sm:text-sm sm:tracking-[0]"
                         href={event.sourceUrl}
                         rel="noreferrer"
                         target="_blank"
                       >
-                        View event page
+                        <span className="sm:hidden">Source</span>
+                        <span className="hidden sm:inline">View event page</span>
                         <ExternalLink size={14} />
                       </a>
                     ) : null}
                     <button
-                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-[0.82rem] font-semibold text-steel transition hover:border-slate-300 hover:text-ink sm:px-4 sm:text-sm"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-steel transition hover:border-slate-300 hover:text-ink sm:px-4 sm:py-2 sm:text-sm sm:tracking-[0]"
                       type="button"
                       onClick={() => downloadEventCalendar(event)}
                     >
-                      Add to calendar
+                      <span className="sm:hidden">Calendar</span>
+                      <span className="hidden sm:inline">Add to calendar</span>
                       <CalendarDays size={14} />
                     </button>
                   </div>
                   {event.note ? (
-                    <p className="mt-3 text-[0.84rem] leading-6 text-steel sm:mt-4 sm:text-sm sm:leading-7">{event.note}</p>
+                    <p className="mt-2.5 text-[0.78rem] leading-5 text-steel sm:mt-4 sm:text-sm sm:leading-7">{event.note}</p>
                   ) : null}
-                  <div className="mt-3 flex flex-wrap gap-2 sm:mt-4">
+                  <div className="mt-2.5 flex flex-wrap gap-1.5 sm:mt-4 sm:gap-2">
                     <button
-                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[0.82rem] font-semibold transition sm:px-4 sm:text-sm ${
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] transition sm:px-4 sm:py-2 sm:text-sm sm:tracking-[0] ${
                         reminderEnabled
                           ? "border-[rgba(177,29,35,0.24)] bg-[rgba(240,55,55,0.08)] text-navy"
                           : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
@@ -673,7 +675,7 @@ export default function EventsPage() {
                     {attendanceOptions.map((option) => (
                       <button
                         key={option.id}
-                        className={`rounded-full border px-3 py-2 text-[0.82rem] font-semibold transition sm:px-4 sm:text-sm ${
+                        className={`rounded-full border px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] transition sm:px-4 sm:py-2 sm:text-sm sm:tracking-[0] ${
                           selectedIntent === option.id
                             ? "border-[rgba(177,29,35,0.24)] bg-navy text-white"
                             : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
@@ -685,7 +687,7 @@ export default function EventsPage() {
                       </button>
                     ))}
                   </div>
-                  <div className="mt-4 rounded-[18px] border border-[rgba(177,29,35,0.12)] bg-white/82 p-3.5 sm:mt-5 sm:rounded-[20px] sm:p-4">
+                  <div className="mt-3 rounded-[16px] border border-[rgba(177,29,35,0.12)] bg-white/82 p-3 sm:mt-5 sm:rounded-[20px] sm:p-4">
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-xs sm:tracking-[0.18em]">
                         Related listings for this event
@@ -696,27 +698,27 @@ export default function EventsPage() {
                         </Link>
                       ) : null}
                     </div>
-                    <div className="mt-3 grid gap-2.5 sm:gap-3">
+                    <div className="mt-2.5 grid gap-2 sm:mt-3 sm:gap-3">
                       {relatedListings.length ? (
                         relatedListings.map((listing) => (
                           <Link
                             key={listing.id}
-                            className="flex items-center justify-between gap-3 rounded-[16px] border border-slate-200 bg-[#f9f7f7] px-3 py-3 transition hover:border-[rgba(177,29,35,0.18)] sm:rounded-[18px] sm:px-4"
+                            className="flex items-center justify-between gap-2.5 rounded-[14px] border border-slate-200 bg-[#f9f7f7] px-3 py-2.5 transition hover:border-[rgba(177,29,35,0.18)] sm:rounded-[18px] sm:px-4 sm:py-3"
                             to={`/listing/${listing.id}`}
                           >
                             <div className="min-w-0">
-                              <p className="truncate text-[0.92rem] font-semibold text-ink sm:text-base">{listing.title}</p>
-                              <p className="mt-0.5 text-[0.78rem] text-steel sm:mt-1 sm:text-sm">
+                              <p className="truncate text-[0.84rem] font-semibold text-ink sm:text-base">{listing.title}</p>
+                              <p className="mt-0.5 text-[0.72rem] text-steel sm:mt-1 sm:text-sm">
                                 {listing.neighborhood} | {listing.seller?.publicName || listing.seller?.name}
                               </p>
                             </div>
-                            <span className="shrink-0 text-[0.82rem] font-semibold text-navy sm:text-sm">
+                            <span className="shrink-0 text-[0.76rem] font-semibold text-navy sm:text-sm">
                               {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
                             </span>
                           </Link>
                         ))
                       ) : (
-                        <div className="rounded-[16px] border border-dashed border-slate-200 bg-white/72 px-3 py-3 text-[0.82rem] text-steel sm:px-4 sm:py-4 sm:text-sm">
+                        <div className="rounded-[14px] border border-dashed border-slate-200 bg-white/72 px-3 py-3 text-[0.78rem] text-steel sm:px-4 sm:py-4 sm:text-sm">
                           No active listings are tied to this store and game yet.
                         </div>
                       )}
