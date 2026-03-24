@@ -14,6 +14,11 @@ function hexToRgb(hex) {
   return `${red}, ${green}, ${blue}`;
 }
 
+function normalizeHexColor(value, fallback) {
+  const trimmed = String(value || "").trim();
+  return /^#[0-9a-fA-F]{6}$/.test(trimmed) ? trimmed.toLowerCase() : fallback;
+}
+
 function createPreset(id, name, description, primary, accent) {
   return {
     id,
@@ -55,4 +60,31 @@ export const themePresetMap = Object.fromEntries(
 
 export function resolveThemePreset(id) {
   return themePresetMap[id] || themePresetMap["ember-signal"] || themePresets[0];
+}
+
+export function normalizeCustomTheme(theme = {}) {
+  const fallback = resolveThemePreset("ember-signal");
+  const primary = normalizeHexColor(theme.primary, fallback.primary);
+  const accent = normalizeHexColor(theme.accent, fallback.accent);
+
+  return {
+    primary,
+    accent,
+    primaryRgb: hexToRgb(primary),
+    accentRgb: hexToRgb(accent),
+  };
+}
+
+export function resolveThemeSelection(id, customTheme) {
+  if (id === "custom") {
+    const normalized = normalizeCustomTheme(customTheme);
+    return {
+      id: "custom",
+      name: "Custom",
+      description: "Your own live theme colors.",
+      ...normalized,
+    };
+  }
+
+  return resolveThemePreset(id);
 }

@@ -1,7 +1,7 @@
 import { AlertTriangle, Clock3, MapPin, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { resolveThemePreset } from "../../data/themePresets";
+import { resolveThemeSelection } from "../../data/themePresets";
 import { useMarketplace } from "../../hooks/useMarketplace";
 import CreateListingModal from "../modals/CreateListingModal";
 import OnboardingModal from "../modals/OnboardingModal";
@@ -118,8 +118,8 @@ export default function AppShell() {
   }, [deferredPrompt, installVisible, isStandalone]);
 
   const activeTheme = useMemo(
-    () => resolveThemePreset(siteSettings?.themePreset),
-    [siteSettings?.themePreset],
+    () => resolveThemeSelection(siteSettings?.themePreset, siteSettings?.customTheme),
+    [siteSettings?.customTheme, siteSettings?.themePreset],
   );
 
   const themeStyle = useMemo(

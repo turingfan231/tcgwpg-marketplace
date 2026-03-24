@@ -13,7 +13,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { neighborhoods } from "../data/mockData";
-import { themePresets } from "../data/themePresets";
+import { normalizeCustomTheme, themePresets } from "../data/themePresets";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { fetchLocalEvents } from "../services/cardDatabase";
 
@@ -140,6 +140,127 @@ function ThemePreviewCard({ active, onApply, preset }) {
   );
 }
 
+function CustomThemeCard({ customThemeDraft, isActive, onApply, onChange }) {
+  const previewTheme = normalizeCustomTheme(customThemeDraft);
+
+  return (
+    <div
+      className={`rounded-[26px] border p-4 transition ${
+        isActive ? "border-navy bg-white shadow-soft" : "border-slate-200 bg-white/90"
+      }`}
+      style={{
+        "--theme-primary": previewTheme.primary,
+        "--theme-primary-rgb": previewTheme.primaryRgb,
+        "--theme-accent": previewTheme.accent,
+        "--theme-accent-rgb": previewTheme.accentRgb,
+      }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-display text-xl font-semibold tracking-[-0.03em] text-ink">
+            Custom
+          </p>
+          <p className="mt-2 text-sm leading-6 text-steel">
+            Pick your own primary and accent colors and apply them live.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="h-4 w-4 rounded-full bg-navy" />
+          <span className="h-4 w-4 rounded-full bg-orange" />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+            Primary
+          </span>
+          <div className="flex items-center gap-3 rounded-[18px] border border-slate-200 bg-[#f7f7f8] px-3 py-3">
+            <input
+              className="h-11 w-14 rounded-xl border border-slate-200 bg-white p-1"
+              type="color"
+              value={previewTheme.primary}
+              onChange={(event) => onChange("primary", event.target.value)}
+            />
+            <input
+              className="w-full rounded-[14px] border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-ink outline-none transition focus:border-navy"
+              type="text"
+              value={customThemeDraft.primary}
+              onChange={(event) => onChange("primary", event.target.value)}
+            />
+          </div>
+        </label>
+
+        <label className="block">
+          <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+            Accent
+          </span>
+          <div className="flex items-center gap-3 rounded-[18px] border border-slate-200 bg-[#f7f7f8] px-3 py-3">
+            <input
+              className="h-11 w-14 rounded-xl border border-slate-200 bg-white p-1"
+              type="color"
+              value={previewTheme.accent}
+              onChange={(event) => onChange("accent", event.target.value)}
+            />
+            <input
+              className="w-full rounded-[14px] border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-ink outline-none transition focus:border-navy"
+              type="text"
+              value={customThemeDraft.accent}
+              onChange={(event) => onChange("accent", event.target.value)}
+            />
+          </div>
+        </label>
+      </div>
+
+      <div className="mt-4 rounded-[22px] border border-slate-200 bg-[#f7f7f8] p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="brand-pill">
+            <span className="brand-pill-mark">TCG</span>
+            <span className="brand-pill-tag">WPG</span>
+          </div>
+          <div className="flex gap-2">
+            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-steel">
+              Search
+            </span>
+            <span className="rounded-full bg-orange px-3 py-1 text-[11px] font-semibold text-white">
+              Sell
+            </span>
+          </div>
+        </div>
+        <div className="mt-4 rounded-[18px] bg-navy/10 p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy/65">
+            Hero preview
+          </p>
+          <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
+            Local TCG hub
+          </p>
+          <div className="mt-3 flex gap-2">
+            <span className="rounded-full bg-navy px-3 py-1 text-[11px] font-semibold text-white">
+              Primary
+            </span>
+            <span className="rounded-full bg-orange/15 px-3 py-1 text-[11px] font-semibold text-orange">
+              Accent
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+          {isActive ? "Active theme" : "Apply custom theme"}
+        </p>
+        <button
+          className="rounded-full bg-navy px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white"
+          type="button"
+          onClick={onApply}
+        >
+          {isActive ? "Update live theme" : "Apply custom"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const navigate = useNavigate();
   const {
@@ -199,6 +320,9 @@ export default function AdminPage() {
   const [sectionSettingsDraft, setSectionSettingsDraft] = useState(
     siteSettings?.homeSections || {},
   );
+  const [customThemeDraft, setCustomThemeDraft] = useState(
+    siteSettings?.customTheme || normalizeCustomTheme(),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -236,6 +360,10 @@ export default function AdminPage() {
   useEffect(() => {
     setSectionSettingsDraft(siteSettings?.homeSections || {});
   }, [siteSettings]);
+
+  useEffect(() => {
+    setCustomThemeDraft(siteSettings?.customTheme || normalizeCustomTheme());
+  }, [siteSettings?.customTheme]);
 
   const sortedUsers = useMemo(
     () =>
@@ -364,6 +492,13 @@ export default function AdminPage() {
       neighborhood: "North Kildonan",
       note: "",
     });
+  }
+
+  function handleCustomThemeChange(field, value) {
+    setCustomThemeDraft((current) => ({
+      ...current,
+      [field]: value,
+    }));
   }
 
   return (
@@ -1248,6 +1383,17 @@ export default function AdminPage() {
           </p>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+            <CustomThemeCard
+              customThemeDraft={customThemeDraft}
+              isActive={siteSettings?.themePreset === "custom"}
+              onApply={() =>
+                void updateStorefrontSettings({
+                  themePreset: "custom",
+                  customTheme: normalizeCustomTheme(customThemeDraft),
+                })
+              }
+              onChange={handleCustomThemeChange}
+            />
             {themePresets.map((preset) => (
               <ThemePreviewCard
                 key={preset.id}

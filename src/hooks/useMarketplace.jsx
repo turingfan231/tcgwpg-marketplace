@@ -18,6 +18,7 @@ import {
   sellers as seedUsers,
 } from "../data/mockData";
 import { storeProfiles } from "../data/storefrontData";
+import { normalizeCustomTheme } from "../data/themePresets";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
 import { average, formatCurrency, slugify } from "../utils/formatters";
 
@@ -33,6 +34,10 @@ const MEDIA_BUCKET = "listing-media";
 const FOREGROUND_REFRESH_MS = 12000;
 const DEFAULT_SITE_SETTINGS = {
   themePreset: "ember-signal",
+  customTheme: normalizeCustomTheme({
+    primary: "#f03737",
+    accent: "#6d86f0",
+  }),
   homeHero: {
     featuredListingId: null,
     pinnedEventId: null,
@@ -154,6 +159,7 @@ function normalizeSiteSettings(settings) {
   const homeSections = settings?.homeSections || {};
   return {
     themePreset: String(settings?.themePreset || DEFAULT_SITE_SETTINGS.themePreset),
+    customTheme: normalizeCustomTheme(settings?.customTheme || DEFAULT_SITE_SETTINGS.customTheme),
     homeHero: {
       featuredListingId: homeHero.featuredListingId || null,
       pinnedEventId: homeHero.pinnedEventId || null,
