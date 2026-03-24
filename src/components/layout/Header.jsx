@@ -186,9 +186,9 @@ export default function Header() {
                 <p className="truncate font-display text-[1.2rem] font-semibold tracking-[-0.04em] text-ink sm:text-[1.7rem]">
                   WPG Marketplace
                 </p>
-                <p className="hidden text-sm text-navy sm:block">Collector strip system</p>
+                <p className="hidden text-sm text-navy sm:block">Local cards, faster deals</p>
                 <p className="text-[11px] uppercase tracking-[0.18em] text-steel sm:hidden">
-                  Collector strip
+                  Local cards
                 </p>
               </div>
             </Link>
