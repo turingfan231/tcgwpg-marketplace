@@ -47,7 +47,7 @@ export default function OfferModal({ listing, onClose }) {
       onClose={onClose}
     >
       <form className="space-y-6 p-6" onSubmit={handleSubmit}>
-        <div className="rounded-[24px] bg-[#edf3f7] p-5">
+        <div className="rounded-[24px] bg-[#f2f3f5] p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
             Asking price
           </p>
@@ -83,7 +83,7 @@ export default function OfferModal({ listing, onClose }) {
             <input
               min="0"
               step="0.01"
-              className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
               type="number"
               value={cashAmount}
               onChange={(event) => setCashAmount(event.target.value)}
@@ -95,7 +95,7 @@ export default function OfferModal({ listing, onClose }) {
           <label className="block">
             <span className="mb-2 block text-sm font-semibold text-steel">Trade items</span>
             <textarea
-              className="min-h-32 w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              className="min-h-32 w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
               placeholder="One item per line. Example: 4x Arid Mesa&#10;1x Van Gogh Pikachu"
               value={tradeItems}
               onChange={(event) => setTradeItems(event.target.value)}
@@ -106,7 +106,7 @@ export default function OfferModal({ listing, onClose }) {
         <label className="block">
           <span className="mb-2 block text-sm font-semibold text-steel">Offer note</span>
           <textarea
-            className="min-h-28 w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+            className="min-h-28 w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
             placeholder="Meetup timing, condition assumptions, or counter flexibility."
             value={note}
             onChange={(event) => setNote(event.target.value)}
@@ -138,4 +138,5 @@ export default function OfferModal({ listing, onClose }) {
     </ModalShell>
   );
 }
+
 

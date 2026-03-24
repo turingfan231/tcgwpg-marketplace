@@ -168,7 +168,7 @@ export default function StoreProfilePage() {
           <div className="mt-5 space-y-3">
             {matchingEvents.length ? (
               matchingEvents.map((event) => (
-                <div key={event.id} className="rounded-[22px] border border-slate-200 bg-[#fbf8f1] p-4">
+                <div key={event.id} className="rounded-[22px] border border-slate-200 bg-[#f7f7f8] p-4">
                   <p className="font-semibold text-ink">{event.title}</p>
                   <p className="mt-2 text-sm text-steel">
                     {event.dateStr} | {event.time} | {event.game}
@@ -241,3 +241,4 @@ export default function StoreProfilePage() {
     </div>
   );
 }
+

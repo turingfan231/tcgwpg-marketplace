@@ -3195,14 +3195,18 @@ export function MarketplaceProvider({ children }) {
       ),
     );
 
-    const { error: messageError } = await supabase.from("messages").insert({
-      thread_id: threadId,
-      sender_id: options.senderId || currentUserId,
-      body: trimmed,
-      read_by: [currentUserId],
-    });
+    const { data: insertedMessage, error: messageError } = await supabase
+      .from("messages")
+      .insert({
+        thread_id: threadId,
+        sender_id: options.senderId || currentUserId,
+        body: trimmed,
+        read_by: [currentUserId],
+      })
+      .select("*")
+      .single();
 
-    if (messageError) {
+    if (messageError || !insertedMessage) {
       setThreads((current) =>
         current.map((item) =>
           item.id === threadId
@@ -3215,6 +3219,28 @@ export function MarketplaceProvider({ children }) {
       );
       return { ok: false, error: messageError.message };
     }
+
+    setThreads((current) =>
+      current.map((item) =>
+        item.id === threadId
+          ? {
+              ...item,
+              updatedAt: createdAt,
+              messages: item.messages.map((message) =>
+                message.id === optimisticMessageId
+                  ? {
+                      id: insertedMessage.id,
+                      senderId: insertedMessage.sender_id,
+                      body: insertedMessage.body,
+                      sentAt: insertedMessage.created_at,
+                      readBy: insertedMessage.read_by || [currentUserId],
+                    }
+                  : message,
+              ),
+            }
+          : item,
+      ),
+    );
 
     const { error: threadError } = await supabase
       .from("message_threads")
@@ -3247,7 +3273,9 @@ export function MarketplaceProvider({ children }) {
       ),
     );
 
-    await refreshMarketplaceData(currentUserId, { silent: true });
+    window.setTimeout(() => {
+      void refreshMarketplaceData(currentUserId, { silent: true });
+    }, 250);
     return { ok: true };
   }
 

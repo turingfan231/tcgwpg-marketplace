@@ -284,7 +284,7 @@ function BestSellerCard({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
           <button
             aria-label={listing.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
             className={`inline-flex items-center justify-center rounded-full p-2 ${
-              listing.wishlisted ? "bg-orange/15 text-orange" : "bg-[#edf3f7] text-steel"
+              listing.wishlisted ? "bg-orange/15 text-orange" : "bg-[#f2f3f5] text-steel"
             }`}
             type="button"
             onClick={() => onToggleWishlist(listing.id)}
@@ -1222,3 +1222,4 @@ export default function HomePage() {
     </div>
   );
 }
+

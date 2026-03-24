@@ -161,7 +161,7 @@ export default function AuthPage() {
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-steel">Email</span>
                 <input
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   type="email"
                   value={loginForm.email}
                   onChange={(event) =>
@@ -175,7 +175,7 @@ export default function AuthPage() {
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-steel">Password</span>
                 <input
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   type="password"
                   value={loginForm.password}
                   onChange={(event) =>
@@ -201,7 +201,7 @@ export default function AuthPage() {
                 <input
                   required
                   maxLength={24}
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   placeholder="localcardguy"
                   value={signupForm.username}
                   onChange={(event) =>
@@ -218,7 +218,7 @@ export default function AuthPage() {
                 </span>
                 <input
                   required
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={signupForm.name}
                   onChange={(event) =>
                     setSignupForm((current) => ({
@@ -232,7 +232,7 @@ export default function AuthPage() {
                 <span className="mb-2 block text-sm font-semibold text-steel">Email</span>
                 <input
                   required
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   type="email"
                   value={signupForm.email}
                   onChange={(event) =>
@@ -246,7 +246,7 @@ export default function AuthPage() {
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-steel">Neighborhood</span>
                 <select
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   value={signupForm.neighborhood}
                   onChange={(event) =>
                     setSignupForm((current) => ({
@@ -266,7 +266,7 @@ export default function AuthPage() {
                 </span>
                 <input
                   maxLength={3}
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   placeholder="R2P"
                   value={signupForm.postalCode}
                   onChange={(event) =>
@@ -281,7 +281,7 @@ export default function AuthPage() {
                 <span className="mb-2 block text-sm font-semibold text-steel">Password</span>
                 <input
                   required
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
                   type="password"
                   value={signupForm.password}
                   onChange={(event) =>
@@ -308,4 +308,5 @@ export default function AuthPage() {
     </div>
   );
 }
+
 

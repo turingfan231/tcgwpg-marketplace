@@ -389,7 +389,7 @@ export default function EventsPage() {
                   day ? (
                     <div
                       key={day.dateStr}
-                      className="min-h-[8.25rem] rounded-[20px] border border-slate-200 bg-[#fbf8f1] p-3"
+                      className="min-h-[8.25rem] rounded-[20px] border border-slate-200 bg-[#f7f7f8] p-3"
                     >
                       <div className="text-sm font-semibold text-ink">{day.day}</div>
                       <div className="mt-3 space-y-2">
@@ -444,7 +444,7 @@ export default function EventsPage() {
                   groupedUpcomingEvents.map((group) => (
                     <div
                       key={group.dateStr}
-                      className="rounded-[22px] border border-slate-200 bg-[#fbf8f1] p-4"
+                      className="rounded-[22px] border border-slate-200 bg-[#f7f7f8] p-4"
                     >
                       <p className="text-sm font-semibold uppercase tracking-[0.18em] text-steel">
                         {formatLongDate(group.dateStr)}
@@ -523,7 +523,7 @@ export default function EventsPage() {
               {eventsForList.map((event) => (
                 <article
                   key={event.id}
-                  className="rounded-[24px] border border-slate-200 bg-[#fbf8f1] p-5"
+                  className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-5"
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full bg-orange/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-orange">
@@ -604,3 +604,4 @@ export default function EventsPage() {
     </div>
   );
 }
+

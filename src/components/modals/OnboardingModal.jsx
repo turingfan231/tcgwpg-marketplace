@@ -74,7 +74,7 @@ export default function OnboardingModal({ onClose }) {
           <input
             required
             maxLength={24}
-            className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+            className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
             value={form.username}
             onChange={(event) =>
               setForm((current) => ({ ...current, username: event.target.value }))
@@ -85,7 +85,7 @@ export default function OnboardingModal({ onClose }) {
         <label className="block">
           <span className="mb-2 block text-sm font-semibold text-steel">Default listing game</span>
           <select
-            className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+            className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
             value={form.defaultListingGame}
             onChange={(event) =>
               setForm((current) => ({
@@ -106,7 +106,7 @@ export default function OnboardingModal({ onClose }) {
         <label className="block">
           <span className="mb-2 block text-sm font-semibold text-steel">Neighborhood</span>
           <select
-            className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+            className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
             value={form.neighborhood}
             onChange={(event) =>
               setForm((current) => ({ ...current, neighborhood: event.target.value }))
@@ -122,7 +122,7 @@ export default function OnboardingModal({ onClose }) {
           <span className="mb-2 block text-sm font-semibold text-steel">Postal prefix</span>
           <input
             maxLength={3}
-            className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+            className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
             placeholder="R2P"
             value={form.postalCode}
             onChange={(event) =>
@@ -167,7 +167,7 @@ export default function OnboardingModal({ onClose }) {
         <label className="block sm:col-span-2">
           <span className="mb-2 block text-sm font-semibold text-steel">Meetup preference</span>
           <textarea
-            className="min-h-28 w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+            className="min-h-28 w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
             placeholder="Add anything useful about timing, stores, or how you like to meet."
             value={form.meetupPreferences}
             onChange={(event) =>
@@ -207,3 +207,4 @@ export default function OnboardingModal({ onClose }) {
     </ModalShell>
   );
 }
+

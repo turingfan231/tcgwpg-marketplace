@@ -72,7 +72,7 @@ export default function WishlistPage() {
             size={16}
           />
           <input
-            className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] py-3 pl-11 pr-4 outline-none transition focus:border-navy focus:bg-white"
+            className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] py-3 pl-11 pr-4 outline-none transition focus:border-navy focus:bg-white"
             placeholder="Search saved listings"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -95,4 +95,5 @@ export default function WishlistPage() {
     </div>
   );
 }
+
 

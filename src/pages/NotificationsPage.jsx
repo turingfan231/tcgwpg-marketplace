@@ -113,7 +113,7 @@ export default function NotificationsPage() {
             key={notification.id}
             className={`block rounded-[28px] border p-5 shadow-soft transition hover:-translate-y-0.5 ${
               notification.read
-                ? "border-[rgba(203,220,231,0.92)] bg-[linear-gradient(180deg,rgba(250,253,255,0.94),rgba(232,240,245,0.88))]"
+                ? "border-[rgba(203,220,231,0.92)] bg-[linear-gradient(180deg,rgba(250,253,255,0.94),rgba(241,243,245,0.88))]"
                 : "border-orange/30 bg-[linear-gradient(180deg,rgba(255,248,236,0.96),rgba(255,240,214,0.84))]"
             }`}
           >
@@ -153,3 +153,4 @@ export default function NotificationsPage() {
     </div>
   );
 }
+

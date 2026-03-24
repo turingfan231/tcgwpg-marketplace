@@ -6,7 +6,7 @@ import {
   SendHorizontal,
   Trash2,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import CardArtwork from "../components/shared/CardArtwork";
 import UserAvatar from "../components/shared/UserAvatar";
@@ -211,7 +211,7 @@ function OfferTimeline({
   }
 
   return (
-    <div className="mx-4 mt-4 rounded-[28px] border border-[rgba(203,220,231,0.88)] bg-[linear-gradient(180deg,rgba(247,251,253,0.96),rgba(232,240,245,0.92))] p-4 shadow-soft sm:mx-6">
+    <div className="mx-4 mt-4 rounded-[28px] border border-[rgba(203,220,231,0.88)] bg-[linear-gradient(180deg,rgba(247,251,253,0.96),rgba(241,243,245,0.92))] p-4 shadow-soft sm:mx-6">
       <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-steel">
         <BellRing size={14} />
         Offer timeline
@@ -394,6 +394,7 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false);
   const [threadQuery, setThreadQuery] = useState("");
   const [threadFilter, setThreadFilter] = useState("all");
+  const seenMessageKeysRef = useRef(new Set());
   const [isDesktop, setIsDesktop] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(min-width: 1024px)").matches : true,
   );
@@ -457,6 +458,19 @@ export default function MessagesPage() {
 
   const activeThread = useMemo(() => getThreadById(threadId) || null, [getThreadById, threadId]);
   const showMobileThread = Boolean(threadId && activeThread);
+
+  useEffect(() => {
+    if (!activeThread?.id) {
+      seenMessageKeysRef.current = new Set();
+      return;
+    }
+
+    seenMessageKeysRef.current = new Set(
+      activeThread.messages.map((message) =>
+        `${message.senderId}:${message.body}:${Math.floor(new Date(message.sentAt).getTime() / 1000)}`,
+      ),
+    );
+  }, [activeThread?.id]);
 
   useEffect(() => {
     if (activeThread?.id) {
@@ -603,7 +617,7 @@ export default function MessagesPage() {
   return (
     <div className="grid gap-5 lg:h-[calc(100dvh-12.5rem)] lg:grid-cols-[23rem_minmax(0,1fr)]">
       <section
-        className={`overflow-hidden rounded-[30px] border border-[rgba(203,220,231,0.9)] bg-[linear-gradient(180deg,rgba(251,253,255,0.96),rgba(232,240,245,0.9))] shadow-soft lg:h-full ${
+        className={`overflow-hidden rounded-[30px] border border-[rgba(203,220,231,0.9)] bg-[linear-gradient(180deg,rgba(251,253,255,0.96),rgba(241,243,245,0.9))] shadow-soft lg:h-full ${
           showMobileThread ? "hidden lg:block" : "block"
         }`}
       >
@@ -670,7 +684,7 @@ export default function MessagesPage() {
       </section>
 
       <section
-        className={`flex min-h-[72vh] flex-col overflow-hidden rounded-[30px] border border-[rgba(203,220,231,0.9)] bg-[linear-gradient(180deg,rgba(251,253,255,0.97),rgba(232,240,245,0.92))] shadow-soft lg:h-full lg:min-h-0 ${
+        className={`flex min-h-[72vh] flex-col overflow-hidden rounded-[30px] border border-[rgba(203,220,231,0.9)] bg-[linear-gradient(180deg,rgba(251,253,255,0.97),rgba(241,243,245,0.92))] shadow-soft lg:h-full lg:min-h-0 ${
           !showMobileThread ? "hidden lg:flex" : "flex"
         }`}
       >
@@ -757,13 +771,23 @@ export default function MessagesPage() {
               <div className="relative flex min-h-full flex-col justify-end gap-3">
                 {activeThread.messages.map((message) => {
                   const mine = message.senderId === currentUserId;
+                  const animationKey = `${message.senderId}:${message.body}:${Math.floor(
+                    new Date(message.sentAt).getTime() / 1000,
+                  )}`;
+                  const shouldAnimate = !seenMessageKeysRef.current.has(animationKey);
+                  if (shouldAnimate) {
+                    seenMessageKeysRef.current.add(animationKey);
+                  }
                   const isSystemSupportThread =
                     activeThread.participantIds.length > 2 &&
                     String(message.body || "").toLowerCase().startsWith("report ");
 
                   if (isSystemSupportThread) {
                     return (
-                      <div key={message.id} className="message-pop mx-auto w-full max-w-2xl">
+                      <div
+                        key={message.id}
+                        className={`${shouldAnimate ? "message-pop" : ""} mx-auto w-full max-w-2xl`}
+                      >
                         <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 shadow-sm">
                           <p className="text-sm leading-7">{message.body}</p>
                           <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700/80">
@@ -777,7 +801,7 @@ export default function MessagesPage() {
                   return (
                     <div
                       key={message.id}
-                      className={`message-pop flex items-end gap-3 ${
+                      className={`${shouldAnimate ? "message-pop" : ""} flex items-end gap-3 ${
                         mine ? "justify-end" : "justify-start"
                       }`}
                     >
@@ -843,3 +867,4 @@ export default function MessagesPage() {
     </div>
   );
 }
+

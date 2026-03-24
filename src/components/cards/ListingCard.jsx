@@ -21,7 +21,7 @@ export default function ListingCard({ listing }) {
 
   return (
     <Link
-      className="group block overflow-hidden rounded-[32px] border border-[rgba(203,220,231,0.92)] bg-[linear-gradient(180deg,rgba(250,253,255,0.94),rgba(232,240,245,0.88))] shadow-soft transition duration-300 hover:-translate-y-1 hover:border-navy/20 hover:shadow-lift"
+      className="group block overflow-hidden rounded-[32px] border border-[rgba(203,220,231,0.92)] bg-[linear-gradient(180deg,rgba(250,253,255,0.94),rgba(241,243,245,0.88))] shadow-soft transition duration-300 hover:-translate-y-1 hover:border-navy/20 hover:shadow-lift"
       to={`/listing/${listing.id}`}
     >
       <div className="relative border-b border-[rgba(203,220,231,0.78)] bg-[linear-gradient(180deg,#f7fbfe_0%,#e4eef4_100%)] px-4 pb-4 pt-4">
@@ -154,3 +154,4 @@ export default function ListingCard({ listing }) {
     </Link>
   );
 }
+

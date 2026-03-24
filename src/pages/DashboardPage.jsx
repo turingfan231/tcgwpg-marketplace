@@ -194,7 +194,7 @@ export default function DashboardPage() {
                 <div
                   key={draft.id}
                   className={`rounded-[24px] border p-5 ${
-                    isActive ? "border-navy bg-navy/5" : "border-slate-200 bg-[#fbf8f1]"
+                    isActive ? "border-navy bg-navy/5" : "border-slate-200 bg-[#f7f7f8]"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -260,7 +260,7 @@ export default function DashboardPage() {
               Sort listings
             </span>
             <select
-              className="w-full rounded-[18px] border border-slate-200 bg-[#fbf8f1] px-4 py-3 text-sm font-semibold text-ink outline-none transition focus:border-navy"
+              className="w-full rounded-[18px] border border-slate-200 bg-[#f7f7f8] px-4 py-3 text-sm font-semibold text-ink outline-none transition focus:border-navy"
               value={listingSort}
               onChange={(event) => setListingSort(event.target.value)}
             >
@@ -278,7 +278,7 @@ export default function DashboardPage() {
             dashboardActiveListings.map((listing) => (
               <div
                 key={listing.id}
-                className={`grid gap-4 rounded-[28px] border border-slate-200 bg-[#fbf8f1] p-5 lg:grid-cols-[10rem_minmax(0,1fr)_auto] ${listing.status === "sold" ? "opacity-70" : ""}`}
+                className={`grid gap-4 rounded-[28px] border border-slate-200 bg-[#f7f7f8] p-5 lg:grid-cols-[10rem_minmax(0,1fr)_auto] ${listing.status === "sold" ? "opacity-70" : ""}`}
               >
                 <CardArtwork
                   alt={listing.title}
@@ -446,7 +446,7 @@ export default function DashboardPage() {
             {soldListings.map((listing) => (
               <div
                 key={listing.id}
-                className="flex flex-wrap items-center justify-between gap-4 rounded-[24px] border border-slate-200 bg-[#fbf8f1] p-4"
+                className="flex flex-wrap items-center justify-between gap-4 rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-4"
               >
                 <div>
                   <p className="font-semibold text-ink">{listing.title}</p>
@@ -478,7 +478,7 @@ export default function DashboardPage() {
             sellerOffers.map((offer) => (
               <div
                 key={offer.id}
-                className="rounded-[24px] border border-slate-200 bg-[#fbf8f1] p-4"
+                className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-4"
               >
                 {(() => {
                   const counterDraft = counterDrafts[offer.id];
@@ -539,7 +539,7 @@ export default function DashboardPage() {
                               Counter type
                             </span>
                             <select
-                              className="w-full rounded-[18px] border border-slate-200 bg-[#fbf8f1] px-4 py-3 text-sm outline-none transition focus:border-navy"
+                              className="w-full rounded-[18px] border border-slate-200 bg-[#f7f7f8] px-4 py-3 text-sm outline-none transition focus:border-navy"
                               value={counterDraft.offerType}
                               onChange={(event) =>
                                 setCounterDrafts((current) => ({
@@ -565,7 +565,7 @@ export default function DashboardPage() {
                               <input
                                 min="0"
                                 step="0.01"
-                                className="w-full rounded-[18px] border border-slate-200 bg-[#fbf8f1] px-4 py-3 text-sm outline-none transition focus:border-navy"
+                                className="w-full rounded-[18px] border border-slate-200 bg-[#f7f7f8] px-4 py-3 text-sm outline-none transition focus:border-navy"
                                 type="number"
                                 value={counterDraft.cashAmount}
                                 onChange={(event) =>
@@ -587,7 +587,7 @@ export default function DashboardPage() {
                                 Trade items
                               </span>
                               <textarea
-                                className="min-h-24 w-full rounded-[18px] border border-slate-200 bg-[#fbf8f1] px-4 py-3 text-sm outline-none transition focus:border-navy"
+                                className="min-h-24 w-full rounded-[18px] border border-slate-200 bg-[#f7f7f8] px-4 py-3 text-sm outline-none transition focus:border-navy"
                                 value={counterDraft.tradeItems}
                                 onChange={(event) =>
                                   setCounterDrafts((current) => ({
@@ -607,7 +607,7 @@ export default function DashboardPage() {
                               Counter note
                             </span>
                             <textarea
-                              className="min-h-24 w-full rounded-[18px] border border-slate-200 bg-[#fbf8f1] px-4 py-3 text-sm outline-none transition focus:border-navy"
+                              className="min-h-24 w-full rounded-[18px] border border-slate-200 bg-[#f7f7f8] px-4 py-3 text-sm outline-none transition focus:border-navy"
                               value={counterDraft.note}
                               onChange={(event) =>
                                 setCounterDrafts((current) => ({
@@ -764,7 +764,7 @@ export default function DashboardPage() {
             </div>
 
             {editingId === listing.id ? (
-              <div className="mt-5 grid gap-4 rounded-[24px] border border-slate-200 bg-[#fbf8f1] p-5 md:grid-cols-2">
+              <div className="mt-5 grid gap-4 rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-5 md:grid-cols-2">
                 <label className="block">
                   <span className="mb-2 block text-sm font-semibold text-steel">Price</span>
                   <input
@@ -850,3 +850,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

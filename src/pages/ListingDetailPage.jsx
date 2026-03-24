@@ -329,7 +329,7 @@ export default function ListingDetailPage() {
                 </div>
 
                 {listing.bundleItems?.length ? (
-                  <div className="rounded-[24px] border border-slate-200 bg-[#edf3f7] p-4">
+                  <div className="rounded-[24px] border border-slate-200 bg-[#f2f3f5] p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
                       Bundle contents
                     </p>
@@ -386,7 +386,7 @@ export default function ListingDetailPage() {
             </div>
 
             {!canLookupSourceSales ? (
-              <p className="mt-5 rounded-[20px] border border-slate-200 bg-[#fbf8f1] px-4 py-3 text-sm text-steel">
+              <p className="mt-5 rounded-[20px] border border-slate-200 bg-[#f7f7f8] px-4 py-3 text-sm text-steel">
                 Last solds are only available for listings that were autofilled from a supported
                 source.
               </p>
@@ -421,7 +421,7 @@ export default function ListingDetailPage() {
                             target: "_blank",
                           }
                         : {})}
-                      className={`block rounded-[24px] border border-slate-200 bg-[#fbf8f1] p-4 transition ${
+                      className={`block rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-4 transition ${
                         sale.sourceUrl ? "hover:border-slate-300 hover:bg-white" : ""
                       }`}
                     >
@@ -733,7 +733,7 @@ export default function ListingDetailPage() {
                   </span>
                 </div>
                 <textarea
-                  className="mt-4 min-h-[120px] w-full rounded-[20px] border border-slate-200 bg-[#fbf8f1] px-4 py-3 text-sm leading-7 text-ink outline-none transition focus:border-navy"
+                  className="mt-4 min-h-[120px] w-full rounded-[20px] border border-slate-200 bg-[#f7f7f8] px-4 py-3 text-sm leading-7 text-ink outline-none transition focus:border-navy"
                   placeholder="Internal moderation note"
                   value={adminNoteDraft}
                   onChange={(event) => setAdminNoteDraft(event.target.value)}
@@ -850,7 +850,7 @@ export default function ListingDetailPage() {
                   listingOffers.map((offer) => (
                     <div
                       key={offer.id}
-                      className="rounded-[24px] border border-slate-200 bg-[#fbf8f1] p-4"
+                      className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-4"
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
@@ -925,7 +925,7 @@ export default function ListingDetailPage() {
                 {listing.editHistory.map((entry) => (
                   <div
                     key={entry.id}
-                    className="rounded-[24px] border border-slate-200 bg-[#fbf8f1] p-4"
+                    className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-4"
                   >
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
                       {new Date(entry.createdAt).toLocaleString("en-CA", {
@@ -991,4 +991,5 @@ export default function ListingDetailPage() {
     </div>
   );
 }
+
 

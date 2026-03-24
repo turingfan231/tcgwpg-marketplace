@@ -367,7 +367,7 @@ export default function AdminPage() {
               </div>
 
               <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <div className="rounded-[24px] bg-[#edf3f7] p-5">
+                <div className="rounded-[24px] bg-[#f2f3f5] p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
                     Open reports
                   </p>
@@ -378,7 +378,7 @@ export default function AdminPage() {
                     Buyer, seller, and listing disputes waiting for review.
                   </p>
                 </div>
-                <div className="rounded-[24px] bg-[#edf3f7] p-5">
+                <div className="rounded-[24px] bg-[#f2f3f5] p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
                     Open beta bugs
                   </p>
@@ -389,7 +389,7 @@ export default function AdminPage() {
                     Tester issues reported from the live beta build.
                   </p>
                 </div>
-                <div className="rounded-[24px] bg-[#edf3f7] p-5">
+                <div className="rounded-[24px] bg-[#f2f3f5] p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
                     Featured listings
                   </p>
@@ -397,7 +397,7 @@ export default function AdminPage() {
                     {adminOverview.featuredListings}
                   </p>
                 </div>
-                <div className="rounded-[24px] bg-[#edf3f7] p-5">
+                <div className="rounded-[24px] bg-[#f2f3f5] p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
                     Manual events
                   </p>
@@ -419,7 +419,7 @@ export default function AdminPage() {
                 </div>
               </div>
               <div className="mt-5 grid gap-4 lg:grid-cols-3">
-                <div className="rounded-[24px] bg-[#edf3f7] p-5">
+                <div className="rounded-[24px] bg-[#f2f3f5] p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
                     Flagged listing rate
                   </p>
@@ -427,7 +427,7 @@ export default function AdminPage() {
                     {adminOverview.flaggedRate}%
                   </p>
                 </div>
-                <div className="rounded-[24px] bg-[#edf3f7] p-5">
+                <div className="rounded-[24px] bg-[#f2f3f5] p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
                     Top neighborhoods
                   </p>
@@ -440,7 +440,7 @@ export default function AdminPage() {
                     ))}
                   </div>
                 </div>
-                <div className="rounded-[24px] bg-[#edf3f7] p-5">
+                <div className="rounded-[24px] bg-[#f2f3f5] p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
                     Top searches
                   </p>
@@ -516,7 +516,7 @@ export default function AdminPage() {
                 openReports.map((report) => (
                   <article
                     key={report.id}
-                    className="rounded-[26px] border border-slate-200 bg-[#fbf8f1] p-5"
+                    className="rounded-[26px] border border-slate-200 bg-[#f7f7f8] p-5"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
@@ -583,7 +583,7 @@ export default function AdminPage() {
                 adminBugReports.map((report) => (
                   <article
                     key={report.id}
-                    className="rounded-[26px] border border-slate-200 bg-[#fbf8f1] p-5"
+                    className="rounded-[26px] border border-slate-200 bg-[#f7f7f8] p-5"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
@@ -718,7 +718,7 @@ export default function AdminPage() {
             </div>
 
             <input
-              className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 text-sm outline-none transition focus:border-navy lg:max-w-sm"
+              className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 text-sm outline-none transition focus:border-navy lg:max-w-sm"
               placeholder="Search listings, sellers, neighborhoods..."
               value={listingSearch}
               onChange={(event) => setListingSearch(event.target.value)}
@@ -754,7 +754,7 @@ export default function AdminPage() {
               filteredListings.map((listing) => (
                 <article
                   key={listing.id}
-                  className="rounded-[26px] border border-slate-200 bg-[#fbf8f1] p-5"
+                  className="rounded-[26px] border border-slate-200 bg-[#f7f7f8] p-5"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
@@ -866,7 +866,7 @@ export default function AdminPage() {
             </div>
 
             <input
-              className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 text-sm outline-none transition focus:border-navy lg:max-w-sm"
+              className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 text-sm outline-none transition focus:border-navy lg:max-w-sm"
               placeholder="Search users, email, role, neighborhood..."
               value={userSearch}
               onChange={(event) => setUserSearch(event.target.value)}
@@ -902,7 +902,7 @@ export default function AdminPage() {
               filteredUsers.map((user) => (
                 <article
                   key={user.id}
-                  className="rounded-[24px] border border-slate-200 bg-[#fbf8f1] p-5"
+                  className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-5"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
@@ -1005,7 +1005,7 @@ export default function AdminPage() {
           <form className="mt-5 grid gap-4 md:grid-cols-2" onSubmit={handleAddEvent}>
             <input
               required
-              className="rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy"
+              className="rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
               placeholder="Event title"
               value={eventForm.title}
               onChange={(event) =>
@@ -1013,7 +1013,7 @@ export default function AdminPage() {
               }
             />
             <select
-              className="rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy"
+              className="rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
               value={eventForm.store}
               onChange={(event) =>
                 setEventForm((current) => ({ ...current, store: event.target.value }))
@@ -1025,7 +1025,7 @@ export default function AdminPage() {
             </select>
             <input
               required
-              className="rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy"
+              className="rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
               type="date"
               value={eventForm.dateStr}
               onChange={(event) =>
@@ -1034,7 +1034,7 @@ export default function AdminPage() {
             />
             <input
               required
-              className="rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy"
+              className="rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
               placeholder="6:30 PM"
               value={eventForm.time}
               onChange={(event) =>
@@ -1042,7 +1042,7 @@ export default function AdminPage() {
               }
             />
             <select
-              className="rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy"
+              className="rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
               value={eventForm.game}
               onChange={(event) =>
                 setEventForm((current) => ({ ...current, game: event.target.value }))
@@ -1053,7 +1053,7 @@ export default function AdminPage() {
               ))}
             </select>
             <input
-              className="rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy"
+              className="rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
               placeholder="Entry fee"
               value={eventForm.fee}
               onChange={(event) =>
@@ -1061,7 +1061,7 @@ export default function AdminPage() {
               }
             />
             <select
-              className="rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy"
+              className="rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
               value={eventForm.neighborhood}
               onChange={(event) =>
                 setEventForm((current) => ({ ...current, neighborhood: event.target.value }))
@@ -1072,7 +1072,7 @@ export default function AdminPage() {
               ))}
             </select>
             <input
-              className="rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy"
+              className="rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
               placeholder="Source URL"
               value={eventForm.sourceUrl}
               onChange={(event) =>
@@ -1080,7 +1080,7 @@ export default function AdminPage() {
               }
             />
             <textarea
-              className="min-h-24 rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy md:col-span-2"
+              className="min-h-24 rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy md:col-span-2"
               placeholder="Why this override exists"
               value={eventForm.note}
               onChange={(event) =>
@@ -1167,7 +1167,7 @@ export default function AdminPage() {
             <label className="block">
               <span className="mb-2 block text-sm font-semibold text-steel">Featured listing</span>
               <select
-                className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy"
+                className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
                 value={heroSettingsDraft.featuredListingId || ""}
                 onChange={(event) =>
                   setHeroSettingsDraft((current) => ({
@@ -1190,7 +1190,7 @@ export default function AdminPage() {
             <label className="block">
               <span className="mb-2 block text-sm font-semibold text-steel">Pinned event</span>
               <select
-                className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy"
+                className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
                 value={heroSettingsDraft.pinnedEventId || ""}
                 onChange={(event) =>
                   setHeroSettingsDraft((current) => ({
@@ -1211,7 +1211,7 @@ export default function AdminPage() {
             <label className="block">
               <span className="mb-2 block text-sm font-semibold text-steel">Spotlight game</span>
               <select
-                className="w-full rounded-[20px] border border-slate-200 bg-[#edf3f7] px-4 py-3 outline-none transition focus:border-navy"
+                className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
                 value={heroSettingsDraft.spotlightGameSlug || ""}
                 onChange={(event) =>
                   setHeroSettingsDraft((current) => ({
@@ -1334,4 +1334,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
 

@@ -51,7 +51,7 @@ export default function WantToBuyPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <div className="rounded-[24px] bg-[#edf3f7] px-5 py-4">
+            <div className="rounded-[24px] bg-[#f2f3f5] px-5 py-4">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
                 Active WTB posts
               </p>
@@ -84,4 +84,5 @@ export default function WantToBuyPage() {
     </div>
   );
 }
+
 
