@@ -365,7 +365,7 @@ function getOnePieceImageUrl(card) {
   }
 
   return card.card_set_id
-    ? `https://images.onepiece-cardgame.dev/cards/${card.card_set_id}.webp`
+    ? `https://en.onepiece-cardgame.com/images/cardlist/card/${String(card.card_set_id).toUpperCase()}.png`
     : "";
 }
 
