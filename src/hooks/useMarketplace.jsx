@@ -2236,9 +2236,7 @@ export function MarketplaceProvider({ children }) {
           })),
         );
       } finally {
-        if (!options.silent) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     },
     [currentUserId],
@@ -2410,6 +2408,7 @@ export function MarketplaceProvider({ children }) {
       } catch (error) {
         console.error("Supabase auth hydration failed:", error);
         if (mounted) {
+          setLoading(false);
           setAuthReady(true);
         }
       }
