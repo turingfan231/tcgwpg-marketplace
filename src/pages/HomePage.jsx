@@ -14,7 +14,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import CardArtwork from "../components/shared/CardArtwork";
 import UserAvatar from "../components/shared/UserAvatar";
-import PageSkeleton from "../components/ui/PageSkeleton";
 import { storeProfiles } from "../data/storefrontData";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { fetchLocalEvents } from "../services/cardDatabase";
@@ -814,10 +813,6 @@ export default function HomePage() {
     if (!opened) {
       navigate("/auth", { state: { from: fallbackPath } });
     }
-  }
-
-  if (loading && !safeListings.length) {
-    return <PageSkeleton cards={4} titleWidth="w-80" />;
   }
 
   return (
