@@ -421,6 +421,10 @@ export default function MessagesPage() {
   const [threadQuery, setThreadQuery] = useState("");
   const [threadFilter, setThreadFilter] = useState("all");
   const [mobileDetailPanel, setMobileDetailPanel] = useState(null);
+  const [desktopDetailPanels, setDesktopDetailPanels] = useState({
+    listing: false,
+    offers: false,
+  });
   const [pendingPhotos, setPendingPhotos] = useState([]);
   const seenMessageKeysRef = useRef(new Set());
   const messagesScrollRef = useRef(null);
@@ -511,6 +515,7 @@ export default function MessagesPage() {
 
   useEffect(() => {
     setMobileDetailPanel(null);
+    setDesktopDetailPanels({ listing: false, offers: false });
   }, [threadId]);
 
   useEffect(() => {
@@ -576,8 +581,12 @@ export default function MessagesPage() {
 
   const shouldShowQuickReplies = Boolean(activeThread) && activeThread.messages.length <= 1;
 
-  const showListingPanel = Boolean(activeThread?.listing) && (isDesktop || mobileDetailPanel === "listing");
-  const showOfferPanel = Boolean(threadOffers.length) && (isDesktop || mobileDetailPanel === "offers");
+  const showListingPanel =
+    Boolean(activeThread?.listing) &&
+    (isDesktop ? desktopDetailPanels.listing : mobileDetailPanel === "listing");
+  const showOfferPanel =
+    Boolean(threadOffers.length) &&
+    (isDesktop ? desktopDetailPanels.offers : mobileDetailPanel === "offers");
   const shouldShowLoading = !authReady || (loading && isAuthenticated);
 
   if (shouldShowLoading && !threadsForCurrentUser.length) {
@@ -814,7 +823,7 @@ export default function MessagesPage() {
       >
         {activeThread ? (
           <>
-            <div className="border-b border-slate-200/80 px-3 py-2.5 sm:px-6 sm:py-5">
+            <div className="border-b border-slate-200/80 px-3 py-2.5 sm:px-6 sm:py-4">
               <div className="hidden flex-wrap items-start justify-between gap-4 sm:flex">
                 <div className="min-w-0">
                   <div className="flex items-center gap-3">
@@ -824,12 +833,12 @@ export default function MessagesPage() {
                     />
                     <div className="min-w-0">
                       <p className="section-kicker">Conversation</p>
-                      <h2 className="mt-1 truncate font-display text-[1.26rem] font-semibold tracking-[-0.04em] text-ink sm:text-[1.75rem]">
+                      <h2 className="mt-1 truncate font-display text-[1.18rem] font-semibold tracking-[-0.04em] text-ink sm:text-[1.45rem]">
                         {activeThread.participantIds.length > 2
                           ? activeThread.participantLabel || "Support / resolution chat"
                           : activeThread.otherParticipant?.publicName || "Conversation"}
                       </h2>
-                      <p className="mt-0.5 text-[0.82rem] text-steel sm:mt-1 sm:text-sm">
+                      <p className="mt-0.5 text-[0.8rem] text-steel sm:mt-1 sm:text-sm">
                         {activeThread.listing?.title || "General thread"}
                       </p>
                     </div>
@@ -837,20 +846,8 @@ export default function MessagesPage() {
                 </div>
 
                 <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-                  {activeThread.listing ? (
-                    <Link
-                      className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-navy/20 hover:text-ink sm:inline-flex"
-                      to={`/listing/${activeThread.listing.id}`}
-                    >
-                      {formatCadPrice(
-                        activeThread.listing.price,
-                        activeThread.listing.priceCurrency,
-                      )}
-                      <ExternalLink size={14} />
-                    </Link>
-                  ) : null}
                   <button
-                    className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-white px-3.5 py-2 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={deletingThread}
                     type="button"
                     onClick={() => void handleDeleteThread()}
@@ -939,6 +936,79 @@ export default function MessagesPage() {
                 ) : null}
               </div>
             </div>
+
+            {isDesktop ? (
+              <div className="border-b border-slate-200/70 bg-white/55 px-6 py-3">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {activeThread.listing ? (
+                    <>
+                      <button
+                        className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-semibold transition ${
+                          desktopDetailPanels.listing
+                            ? "border-navy/20 bg-navy text-white"
+                            : "border-slate-200 bg-white text-steel hover:border-navy/20 hover:text-ink"
+                        }`}
+                        type="button"
+                        onClick={() =>
+                          setDesktopDetailPanels((current) => ({
+                            ...current,
+                            listing: !current.listing,
+                          }))
+                        }
+                      >
+                        Listing
+                        <ChevronDown
+                          size={14}
+                          className={`transition ${desktopDetailPanels.listing ? "rotate-180" : ""}`}
+                        />
+                      </button>
+                      <Link
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-steel transition hover:border-navy/20 hover:text-ink"
+                        to={`/listing/${activeThread.listing.id}`}
+                      >
+                        {formatCadPrice(
+                          activeThread.listing.price,
+                          activeThread.listing.priceCurrency,
+                        )}
+                        <ExternalLink size={14} />
+                      </Link>
+                    </>
+                  ) : null}
+                  {threadOffers.length ? (
+                    <button
+                      className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-semibold transition ${
+                        desktopDetailPanels.offers
+                          ? "border-navy/20 bg-navy text-white"
+                          : "border-slate-200 bg-white text-steel hover:border-navy/20 hover:text-ink"
+                      }`}
+                      type="button"
+                      onClick={() =>
+                        setDesktopDetailPanels((current) => ({
+                          ...current,
+                          offers: !current.offers,
+                        }))
+                      }
+                    >
+                      Deal flow
+                      <span
+                        className={`inline-flex h-5 min-w-[1.2rem] items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
+                          desktopDetailPanels.offers ? "bg-white/20 text-white" : "bg-navy/10 text-navy"
+                        }`}
+                      >
+                        {threadOffers.length}
+                      </span>
+                      <ChevronDown
+                        size={14}
+                        className={`transition ${desktopDetailPanels.offers ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                  ) : null}
+                  <span className="ml-auto text-[11px] font-semibold uppercase tracking-[0.14em] text-steel/80">
+                    {activeThread.messages.length} message{activeThread.messages.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+              </div>
+            ) : null}
 
             {showListingPanel ? (
               <ListingThreadCard
