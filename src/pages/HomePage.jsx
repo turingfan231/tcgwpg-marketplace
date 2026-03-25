@@ -2,6 +2,8 @@ import {
   ArrowRight,
   BellRing,
   CalendarRange,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   Heart,
   MapPin,
@@ -815,6 +817,18 @@ export default function HomePage() {
     }
   }
 
+  function showPreviousBanner() {
+    setActiveBannerIndex((current) =>
+      bannerSlides.length ? (current - 1 + bannerSlides.length) % bannerSlides.length : 0,
+    );
+  }
+
+  function showNextBanner() {
+    setActiveBannerIndex((current) =>
+      bannerSlides.length ? (current + 1) % bannerSlides.length : 0,
+    );
+  }
+
   return (
     <div className="stagger-stack space-y-6 sm:space-y-8 lg:space-y-14">
       {homeSections.showHero !== false ? (
@@ -839,7 +853,15 @@ export default function HomePage() {
               ))}
 
               {bannerSlides.length > 1 ? (
-                <div className="absolute bottom-3 right-3 z-10 flex gap-2 sm:bottom-6 sm:right-6">
+                <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2 sm:bottom-6 sm:right-6 sm:gap-3">
+                  <button
+                    aria-label="Show previous banner"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/18 bg-white/10 text-white backdrop-blur transition hover:bg-white/18 sm:h-10 sm:w-10"
+                    type="button"
+                    onClick={showPreviousBanner}
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
                   {bannerSlides.map((slide, index) => (
                     <button
                       key={slide.id}
@@ -853,6 +875,14 @@ export default function HomePage() {
                       onClick={() => setActiveBannerIndex(index)}
                     />
                   ))}
+                  <button
+                    aria-label="Show next banner"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/18 bg-white/10 text-white backdrop-blur transition hover:bg-white/18 sm:h-10 sm:w-10"
+                    type="button"
+                    onClick={showNextBanner}
+                  >
+                    <ChevronRight size={18} />
+                  </button>
                 </div>
               ) : null}
             </div>
