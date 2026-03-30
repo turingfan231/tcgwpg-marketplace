@@ -52,6 +52,7 @@ const GALAXY_EVENTS_PAGE = "https://www.galaxy-comics.ca/index.php/calendar/";
 const GALAXY_FACEBOOK_EVENTS_PAGE = "https://www.facebook.com/galaxycomicscollectibles/events";
 const FUSION_WORLD_CARDLIST_PAGE = "https://www.dbs-cardgame.com/fw/en/cardlist/";
 const UNION_ARENA_CARDLIST_PAGE = "https://www.unionarena-tcg.com/na/cardlist/";
+const TCGCSV_BASE = "https://tcgcsv.com/tcgplayer";
 const SERVER_TIMEOUT_MS = 15000;
 const FX_TIMEOUT_MS = 2500;
 const IMAGE_PROXY_ALLOWED_HOSTS = new Set(["en.onepiece-cardgame.com"]);
@@ -129,6 +130,8 @@ let exchangeRateCache = {
 
 const tcgdexCardCache = new Map();
 const onePieceVariantImageCache = new Map();
+const tcgcsvGroupCache = new Map();
+const tcgcsvGroupDetailCache = new Map();
 
 app.use(cors());
 app.use(express.json());
@@ -881,6 +884,209 @@ async function searchTcgplayerCatalog(game, query, limit) {
       ]
         .filter(Boolean)
         .join(" | "),
+    };
+  });
+}
+
+async function fetchTcgcsvJson(pathname) {
+  const response = await fetchWithTimeout(`${TCGCSV_BASE}${pathname}`, {
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "TCGWPG/0.2 (local marketplace development)",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`TCGCSV request failed (${response.status}).`);
+  }
+
+  return response.json();
+}
+
+async function getTcgcsvGroups(categoryId) {
+  if (tcgcsvGroupCache.has(categoryId)) {
+    return tcgcsvGroupCache.get(categoryId);
+  }
+
+  const data = await fetchTcgcsvJson(`/${categoryId}/groups`);
+  const groups = Array.isArray(data?.results) ? data.results : [];
+  tcgcsvGroupCache.set(categoryId, groups);
+  return groups;
+}
+
+async function getTcgcsvGroupCatalog(categoryId, group) {
+  const cacheKey = `${categoryId}:${group.groupId}`;
+  if (tcgcsvGroupDetailCache.has(cacheKey)) {
+    return tcgcsvGroupDetailCache.get(cacheKey);
+  }
+
+  const [productsData, pricesData] = await Promise.all([
+    fetchTcgcsvJson(`/${categoryId}/${group.groupId}/products`),
+    fetchTcgcsvJson(`/${categoryId}/${group.groupId}/prices`),
+  ]);
+
+  const priceMap = new Map(
+    (pricesData?.results || []).map((entry) => [entry.productId, entry]),
+  );
+
+  const merged = (productsData?.results || []).map((product) => ({
+    ...product,
+    groupName: group.name,
+    groupAbbreviation: group.abbreviation,
+    pricing: priceMap.get(product.productId) || null,
+  }));
+
+  tcgcsvGroupDetailCache.set(cacheKey, merged);
+  return merged;
+}
+
+async function searchTcgcsvCatalog(game, query, limit) {
+  const categoryId = getCategoryId(game);
+
+  if (!categoryId) {
+    throw new Error("Unsupported TCGCSV search category.");
+  }
+
+  const groups = await getTcgcsvGroups(categoryId);
+  const sortedGroups = [...groups].sort((left, right) => {
+    const rightScore = rankSearchMatch([right.name, right.abbreviation], query);
+    const leftScore = rankSearchMatch([left.name, left.abbreviation], query);
+
+    if (rightScore !== leftScore) {
+      return rightScore - leftScore;
+    }
+
+    return (
+      new Date(right.publishedOn || right.modifiedOn || 0).getTime() -
+      new Date(left.publishedOn || left.modifiedOn || 0).getTime()
+    );
+  });
+
+  const matches = [];
+
+  for (let index = 0; index < sortedGroups.length; index += 6) {
+    const batch = sortedGroups.slice(index, index + 6);
+    const batchResults = (
+      await Promise.allSettled(
+        batch.map((group) => getTcgcsvGroupCatalog(categoryId, group)),
+      )
+    )
+      .filter((result) => result.status === "fulfilled")
+      .flatMap((result) => result.value || []);
+
+    for (const product of batchResults) {
+      const score = rankSearchMatch(
+        [product.name, product.cleanName, product.groupName, product.groupAbbreviation],
+        query,
+      );
+
+      if (score < 45) {
+        continue;
+      }
+
+      matches.push({
+        product,
+        score,
+      });
+    }
+
+    const rankedMatches = uniqueBy(
+      matches.sort((left, right) => {
+        if (right.score !== left.score) {
+          return right.score - left.score;
+        }
+
+        const rightPrice =
+          right.product.pricing?.marketPrice ??
+          right.product.pricing?.midPrice ??
+          right.product.pricing?.lowPrice ??
+          0;
+        const leftPrice =
+          left.product.pricing?.marketPrice ??
+          left.product.pricing?.midPrice ??
+          left.product.pricing?.lowPrice ??
+          0;
+
+        return rightPrice - leftPrice;
+      }),
+      (entry) => entry.product.productId,
+    );
+
+    if (
+      rankedMatches.length >= limit &&
+      rankedMatches.slice(0, limit).every((entry) => entry.score >= 60)
+    ) {
+      return rankedMatches.slice(0, limit).map(({ product }) => {
+        const pricing = product.pricing;
+        const usdPrice =
+          pricing?.marketPrice ?? pricing?.midPrice ?? pricing?.lowPrice ?? null;
+
+        return {
+          id: `tcgcsv-${product.productId}`,
+          provider: "tcgcsv",
+          providerLabel: "TCGCSV / TCGplayer",
+          title: product.name,
+          setName: product.groupName || "Unknown set",
+          rarity: pricing?.subTypeName || "Unknown",
+          imageUrl: product.imageUrl || "",
+          marketPrice: toCad(usdPrice, exchangeRateCache.usdToCadRate),
+          marketPriceCurrency: "CAD",
+          originalMarketPriceUsd: usdPrice,
+          originalMarketPriceCurrency: "USD",
+          priceHistory: [],
+          language: "English",
+          sourceUrl: product.url || "",
+          printLabel: pricing?.subTypeName || product.groupAbbreviation || "Normal",
+          description: [product.groupName, product.groupAbbreviation].filter(Boolean).join(" | "),
+        };
+      });
+    }
+  }
+
+  const rankedMatches = uniqueBy(
+    matches.sort((left, right) => {
+      if (right.score !== left.score) {
+        return right.score - left.score;
+      }
+
+      const rightPrice =
+        right.product.pricing?.marketPrice ??
+        right.product.pricing?.midPrice ??
+        right.product.pricing?.lowPrice ??
+        0;
+      const leftPrice =
+        left.product.pricing?.marketPrice ??
+        left.product.pricing?.midPrice ??
+        left.product.pricing?.lowPrice ??
+        0;
+
+      return rightPrice - leftPrice;
+    }),
+    (entry) => entry.product.productId,
+  );
+
+  return rankedMatches.slice(0, limit).map(({ product }) => {
+    const pricing = product.pricing;
+    const usdPrice =
+      pricing?.marketPrice ?? pricing?.midPrice ?? pricing?.lowPrice ?? null;
+
+    return {
+      id: `tcgcsv-${product.productId}`,
+      provider: "tcgcsv",
+      providerLabel: "TCGCSV / TCGplayer",
+      title: product.name,
+      setName: product.groupName || "Unknown set",
+      rarity: pricing?.subTypeName || "Unknown",
+      imageUrl: product.imageUrl || "",
+      marketPrice: toCad(usdPrice, exchangeRateCache.usdToCadRate),
+      marketPriceCurrency: "CAD",
+      originalMarketPriceUsd: usdPrice,
+      originalMarketPriceCurrency: "USD",
+      priceHistory: [],
+      language: "English",
+      sourceUrl: product.url || "",
+      printLabel: pricing?.subTypeName || product.groupAbbreviation || "Normal",
+      description: [product.groupName, product.groupAbbreviation].filter(Boolean).join(" | "),
     };
   });
 }
@@ -2536,20 +2742,32 @@ app.get("/api/live/search", async (req, res) => {
         providerLabel = "TCGplayer API";
         results = await searchTcgplayerCatalog(game, query, limit);
       } else {
-        providerLabel = "Fusion World Official";
-        results = await searchFusionWorldCards(query, limit);
-        note =
-          "Fusion World results are sourced from the official card database. Market pricing is not exposed by the official source yet.";
+        try {
+          providerLabel = "TCGCSV / TCGplayer";
+          results = await searchTcgcsvCatalog(game, query, limit);
+          note = `Fusion World results are using TCGplayer market data through TCGCSV and normalized to CAD using USD/CAD ${exchangeRate.usdToCadRate}.`;
+        } catch {
+          providerLabel = "Fusion World Official";
+          results = await searchFusionWorldCards(query, limit);
+          note =
+            "Fusion World results are sourced from the official card database. Market pricing is not exposed by the official source yet.";
+        }
       }
     } else if (game === "union-arena") {
       if (tcgplayerEnabled()) {
         providerLabel = "TCGplayer API";
         results = await searchTcgplayerCatalog(game, query, limit);
       } else {
-        providerLabel = "Union Arena Official";
-        results = await searchUnionArenaCards(query, limit);
-        note =
-          "Union Arena results are sourced from the official card list. Market pricing is not exposed by the official source yet.";
+        try {
+          providerLabel = "TCGCSV / TCGplayer";
+          results = await searchTcgcsvCatalog(game, query, limit);
+          note = `Union Arena results are using TCGplayer market data through TCGCSV and normalized to CAD using USD/CAD ${exchangeRate.usdToCadRate}.`;
+        } catch {
+          providerLabel = "Union Arena Official";
+          results = await searchUnionArenaCards(query, limit);
+          note =
+            "Union Arena results are sourced from the official card list. Market pricing is not exposed by the official source yet.";
+        }
       }
     } else {
       note = "Live search is currently implemented for Pokemon, Magic, One Piece, Fusion World, and Union Arena.";
