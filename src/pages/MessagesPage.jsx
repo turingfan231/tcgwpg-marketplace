@@ -426,6 +426,7 @@ export default function MessagesPage() {
     offers: false,
   });
   const [pendingPhotos, setPendingPhotos] = useState([]);
+  const [previewAttachment, setPreviewAttachment] = useState(null);
   const seenMessageKeysRef = useRef(new Set());
   const messagesScrollRef = useRef(null);
   const photoInputRef = useRef(null);
@@ -1099,12 +1100,11 @@ export default function MessagesPage() {
                         {message.attachments?.length ? (
                           <div className={`grid gap-2 ${message.attachments.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
                             {message.attachments.map((attachment) => (
-                              <a
+                              <button
                                 key={attachment.id}
                                 className="block overflow-hidden rounded-[18px] border border-white/10"
-                                href={attachment.url}
-                                rel="noreferrer"
-                                target="_blank"
+                                type="button"
+                                onClick={() => setPreviewAttachment(attachment)}
                               >
                                 <img
                                   alt={attachment.name || "Chat photo"}
@@ -1112,7 +1112,7 @@ export default function MessagesPage() {
                                   loading="lazy"
                                   src={attachment.url}
                                 />
-                              </a>
+                              </button>
                             ))}
                           </div>
                         ) : null}
@@ -1227,6 +1227,42 @@ export default function MessagesPage() {
           </div>
         )}
       </section>
+
+      {previewAttachment ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/82 p-4 backdrop-blur-sm">
+          <button
+            aria-label="Close image preview"
+            className="absolute right-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/16 bg-white/10 text-white transition hover:bg-white/16"
+            type="button"
+            onClick={() => setPreviewAttachment(null)}
+          >
+            <X size={18} />
+          </button>
+          <div className="flex max-h-full w-full max-w-5xl flex-col gap-4">
+            <div className="overflow-hidden rounded-[24px] border border-white/12 bg-black/30 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.7)]">
+              <img
+                alt={previewAttachment.name || "Chat photo"}
+                className="max-h-[78vh] w-full object-contain"
+                src={previewAttachment.url}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <p className="truncate text-sm text-white/78">
+                {previewAttachment.name || "Chat photo"}
+              </p>
+              <a
+                className="inline-flex items-center gap-2 rounded-full border border-white/16 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/16"
+                href={previewAttachment.url}
+                rel="noreferrer"
+                target="_blank"
+              >
+                Open in new tab
+                <ExternalLink size={14} />
+              </a>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

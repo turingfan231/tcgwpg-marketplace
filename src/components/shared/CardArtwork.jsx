@@ -1,9 +1,33 @@
 import { useEffect, useState } from "react";
 
+const DEPLOY_API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "")
+  .trim()
+  .replace(/\/$/, "");
+
+function buildImageProxyUrl(src) {
+  const rawSrc = String(src || "").trim();
+
+  if (!rawSrc) {
+    return "";
+  }
+
+  if (/^https:\/\/en\.onepiece-cardgame\.com\/images\/cardlist\/card\//i.test(rawSrc)) {
+    const baseUrl =
+      DEPLOY_API_BASE_URL ||
+      (typeof window !== "undefined" ? window.location.origin : "");
+
+    return baseUrl
+      ? `${baseUrl}/api/live/image-proxy?url=${encodeURIComponent(rawSrc)}`
+      : rawSrc;
+  }
+
+  return rawSrc;
+}
+
 export default function CardArtwork({ src, title, game, className = "" }) {
   const [hasError, setHasError] = useState(false);
   const shouldSkipRemoteImage = String(src || "").includes("images.onepiece-cardgame.dev");
-  const displaySrc = shouldSkipRemoteImage ? "" : src;
+  const displaySrc = shouldSkipRemoteImage ? "" : buildImageProxyUrl(src);
 
   useEffect(() => {
     setHasError(false);

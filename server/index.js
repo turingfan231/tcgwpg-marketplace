@@ -52,6 +52,7 @@ const GALAXY_EVENTS_PAGE = "https://www.galaxy-comics.ca/index.php/calendar/";
 const GALAXY_FACEBOOK_EVENTS_PAGE = "https://www.facebook.com/galaxycomicscollectibles/events";
 const SERVER_TIMEOUT_MS = 15000;
 const FX_TIMEOUT_MS = 2500;
+const IMAGE_PROXY_ALLOWED_HOSTS = new Set(["en.onepiece-cardgame.com"]);
 
 const CATEGORY_IDS = {
   magic: 1,
@@ -2052,6 +2053,50 @@ app.get("/api/live/exchange-rate", async (_req, res) => {
     asOf: exchangeRate.asOf,
     source: exchangeRate.source,
   });
+});
+
+app.get("/api/live/image-proxy", async (req, res) => {
+  const rawUrl = String(req.query.url || "").trim();
+
+  if (!rawUrl) {
+    return res.status(400).json({ error: "Image URL is required." });
+  }
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(rawUrl);
+  } catch {
+    return res.status(400).json({ error: "Invalid image URL." });
+  }
+
+  if (!IMAGE_PROXY_ALLOWED_HOSTS.has(parsedUrl.hostname)) {
+    return res.status(403).json({ error: "Image host is not allowed." });
+  }
+
+  if (!parsedUrl.pathname.startsWith("/images/cardlist/card/")) {
+    return res.status(403).json({ error: "Image path is not allowed." });
+  }
+
+  try {
+    const response = await fetchWithTimeout(parsedUrl.toString(), {
+      headers: {
+        Accept: "image/*",
+      },
+    });
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: "Image fetch failed." });
+    }
+
+    const contentType = response.headers.get("content-type") || "image/png";
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    res.set("Content-Type", contentType);
+    res.set("Cache-Control", "public, max-age=86400");
+    return res.send(buffer);
+  } catch (error) {
+    return res.status(502).json({ error: error.message || "Image proxy failed." });
+  }
 });
 
 app.get("/api/live/search", async (req, res) => {
