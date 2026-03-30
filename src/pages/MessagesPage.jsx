@@ -1250,15 +1250,25 @@ export default function MessagesPage() {
               <p className="truncate text-sm text-white/78">
                 {previewAttachment.name || "Chat photo"}
               </p>
-              <a
-                className="inline-flex items-center gap-2 rounded-full border border-white/16 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/16"
-                href={previewAttachment.url}
-                rel="noreferrer"
-                target="_blank"
-              >
-                Open in new tab
-                <ExternalLink size={14} />
-              </a>
+              <div className="flex items-center gap-2">
+                <button
+                  className="inline-flex items-center gap-2 rounded-full border border-white/16 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/16"
+                  type="button"
+                  onClick={() => setPreviewAttachment(null)}
+                >
+                  Exit preview
+                  <X size={14} />
+                </button>
+                <a
+                  className="inline-flex items-center gap-2 rounded-full border border-white/16 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/16"
+                  href={previewAttachment.url}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Open in new tab
+                  <ExternalLink size={14} />
+                </a>
+              </div>
             </div>
           </div>
         </div>

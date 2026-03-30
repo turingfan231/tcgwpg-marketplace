@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { adminRoadmap } from "../data/adminRoadmap";
 import { neighborhoods } from "../data/mockData";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { fetchLocalEvents } from "../services/cardDatabase";
@@ -273,6 +274,7 @@ export default function AdminPage() {
     { id: "users", label: "Users", count: sortedUsers.length },
     { id: "events", label: "Events", count: manualEvents.length },
     { id: "audit", label: "Audit", count: adminAuditLog.length },
+    { id: "roadmap", label: "Roadmap" },
     { id: "storefront", label: "Storefront" },
   ];
 
@@ -500,6 +502,10 @@ export default function AdminPage() {
               <button className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-slate-300" type="button" onClick={() => setActiveSection("storefront")}>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">Storefront</p>
                 <p className="mt-2 font-semibold text-ink">Hero controls and homepage curation</p>
+              </button>
+              <button className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-slate-300" type="button" onClick={() => setActiveSection("roadmap")}>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">Roadmap</p>
+                <p className="mt-2 font-semibold text-ink">See what got pushed + what we're working on</p>
               </button>
             </div>
           </section>
@@ -1239,6 +1245,125 @@ export default function AdminPage() {
             )}
           </div>
         </section>
+      ) : null}
+
+      {activeSection === "roadmap" ? (
+        <div className="space-y-8">
+          <section className="surface-card p-6">
+            <div className="flex items-center gap-3">
+              <ScrollText className="text-navy" size={20} />
+              <div>
+                <p className="section-kicker">Roadmap</p>
+                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                  what got pushed + what we doing next
+                </h2>
+              </div>
+            </div>
+            <p className="mt-4 max-w-4xl text-sm leading-7 text-steel">
+              quick admin dev feed so u can see what changed, what still needs work, and what is probably next without digging through github every time.
+            </p>
+
+            <div className="mt-5 grid gap-4 lg:grid-cols-2">
+              {adminRoadmap.currentFocus.map((item) => (
+                <article key={item.id} className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
+                      {item.title}
+                    </h3>
+                    <span className="rounded-full bg-navy/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">
+                      {item.status}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm leading-7 text-steel">{item.detail}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="surface-card p-6">
+            <div className="flex items-center gap-3">
+              <Activity className="text-orange" size={20} />
+              <div>
+                <p className="section-kicker">Recent pushes</p>
+                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                  latest stuff that got shipped
+                </h2>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-4">
+              {adminRoadmap.recentPushes.map((item) => (
+                <article key={item.id} className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
+                        {item.title}
+                      </h3>
+                      <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                        {item.status}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                        {item.date}
+                      </span>
+                      <a
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-steel transition hover:border-navy/20 hover:text-ink"
+                        href={`https://github.com/turingfan231/tcgwpg-marketplace/commit/${item.id}`}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        {item.id}
+                        <ExternalLink size={12} />
+                      </a>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-sm leading-7 text-steel">{item.summary}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="grid gap-8 xl:grid-cols-[1fr_0.8fr]">
+            <section className="surface-card p-6">
+              <div className="flex items-center gap-3">
+                <CalendarCog className="text-navy" size={20} />
+                <div>
+                  <p className="section-kicker">Next up</p>
+                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                    probable next passes
+                  </h2>
+                </div>
+              </div>
+              <div className="mt-5 space-y-3">
+                {adminRoadmap.nextUp.map((item) => (
+                  <div key={item} className="rounded-[22px] border border-slate-200 bg-[#f7f7f8] px-4 py-4 text-sm leading-7 text-steel">
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="surface-card p-6">
+              <div className="flex items-center gap-3">
+                <Home className="text-navy" size={20} />
+                <div>
+                  <p className="section-kicker">Notes</p>
+                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                    how this section works
+                  </h2>
+                </div>
+              </div>
+              <div className="mt-5 space-y-3">
+                {adminRoadmap.notes.map((item) => (
+                  <div key={item} className="rounded-[22px] border border-slate-200 bg-[#f7f7f8] px-4 py-4 text-sm leading-7 text-steel">
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </section>
+          </section>
+        </div>
       ) : null}
 
       {activeSection === "storefront" ? (
