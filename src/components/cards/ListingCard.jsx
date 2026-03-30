@@ -21,21 +21,21 @@ export default function ListingCard({ listing }) {
 
   return (
     <Link
-      className="group block overflow-hidden rounded-[24px] border border-[rgba(203,220,231,0.92)] bg-[linear-gradient(180deg,rgba(250,253,255,0.94),rgba(241,243,245,0.88))] shadow-soft transition duration-300 hover:-translate-y-1 hover:border-navy/20 hover:shadow-lift sm:rounded-[32px]"
+      className="group block overflow-hidden rounded-[22px] border border-[rgba(203,220,231,0.92)] bg-[linear-gradient(180deg,rgba(250,253,255,0.94),rgba(241,243,245,0.88))] shadow-soft transition duration-300 hover:-translate-y-1 hover:border-navy/20 hover:shadow-lift sm:rounded-[28px]"
       to={`/listing/${listing.id}`}
     >
-      <div className="flex gap-3 p-3 sm:block sm:p-0">
-        <div className="relative flex w-[6.1rem] shrink-0 items-center justify-center rounded-[18px] border border-[rgba(203,220,231,0.82)] bg-[linear-gradient(180deg,#f7fbfe_0%,#e4eef4_100%)] p-2 sm:w-auto sm:rounded-none sm:border-0 sm:border-b sm:border-[rgba(203,220,231,0.78)] sm:px-4 sm:pb-4 sm:pt-4">
+      <div className="flex gap-2.5 p-2.5 sm:block sm:p-0">
+        <div className="relative flex w-[5.5rem] shrink-0 items-center justify-center rounded-[16px] border border-[rgba(203,220,231,0.82)] bg-[linear-gradient(180deg,#f7fbfe_0%,#e4eef4_100%)] p-2 sm:w-auto sm:rounded-none sm:border-0 sm:border-b sm:border-[rgba(203,220,231,0.78)] sm:px-3 sm:pb-3 sm:pt-3">
           <CardArtwork
-            className="aspect-[63/88] w-full rounded-[14px] object-cover shadow-sm sm:w-[9.75rem] sm:max-w-full sm:rounded-[20px] sm:shadow-soft"
+            className="aspect-[63/88] w-full rounded-[12px] object-cover shadow-sm sm:w-[8.75rem] sm:max-w-full sm:rounded-[18px] sm:shadow-soft"
             game={listing.game}
             src={listing.imageUrl}
             title={listing.title}
           />
         </div>
 
-        <div className="min-w-0 flex-1 space-y-2.5 sm:space-y-4 sm:p-4">
-          <div className="flex items-start justify-between gap-2 sm:gap-3">
+        <div className="min-w-0 flex-1 space-y-2 sm:space-y-3 sm:p-3.5">
+          <div className="flex items-start justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <span
               className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] sm:px-3 sm:text-[11px] sm:tracking-[0.16em] ${getListingTypeClasses(
@@ -60,7 +60,7 @@ export default function ListingCard({ listing }) {
 
             <button
               aria-label="Toggle wishlist"
-              className="rounded-full bg-white/90 p-2 text-steel shadow-sm transition hover:text-orange"
+              className="rounded-full bg-white/90 p-1.5 text-steel shadow-sm transition hover:text-orange sm:p-2"
               type="button"
               onClick={(event) => {
                 event.preventDefault();
@@ -75,19 +75,19 @@ export default function ListingCard({ listing }) {
             </button>
           </div>
 
-          <div className="flex items-start justify-between gap-2 sm:gap-3">
-            <div className="min-w-0 space-y-1.5 sm:space-y-2">
-            <h3 className="line-clamp-2 font-display text-[1.02rem] font-semibold leading-tight tracking-[-0.03em] text-ink sm:text-[1.35rem]">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 space-y-1 sm:space-y-1.5">
+            <h3 className="line-clamp-2 font-display text-[0.97rem] font-semibold leading-tight tracking-[-0.03em] text-ink sm:text-[1.22rem]">
               {listing.title}
             </h3>
-            <div className="flex items-center gap-2 text-[0.82rem] text-steel sm:text-sm">
+            <div className="flex items-center gap-2 text-[0.76rem] text-steel sm:text-sm">
               <UserAvatar className="h-6 w-6 text-[0.62rem] font-bold sm:h-7 sm:w-7 sm:text-[0.7rem]" user={listing.seller} />
               <span className="truncate">
                 {listing.seller?.publicName || listing.seller?.name} | {listing.timeAgo}
               </span>
             </div>
           </div>
-            <ArrowUpRight className="mt-0.5 h-4 w-4 text-slate-300 transition group-hover:text-navy sm:mt-1 sm:h-5 sm:w-5" />
+            <ArrowUpRight className="mt-0.5 h-4 w-4 text-slate-300 transition group-hover:text-navy" />
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5 text-[10px] sm:gap-2 sm:text-xs">
@@ -115,15 +115,15 @@ export default function ListingCard({ listing }) {
           ) : null}
           </div>
 
-          <div className="flex items-end justify-between gap-3 border-t border-[rgba(203,220,231,0.75)] pt-2.5 sm:gap-4 sm:pt-3">
+          <div className="flex items-end justify-between gap-3 border-t border-[rgba(203,220,231,0.75)] pt-2 sm:gap-4 sm:pt-2.5">
             <div className="space-y-0.5 sm:space-y-1">
             <div className="flex items-center gap-2">
               {hasSalePrice ? (
-                <span className="text-sm font-semibold text-slate-400 line-through sm:text-lg">
+                <span className="text-xs font-semibold text-slate-400 line-through sm:text-base">
                   {formatCadPrice(listing.previousPrice, listing.priceCurrency || "CAD")}
                 </span>
               ) : null}
-              <span className="font-display text-[1.35rem] font-semibold tracking-[-0.03em] text-ink sm:text-[2rem]">
+              <span className="font-display text-[1.18rem] font-semibold tracking-[-0.03em] text-ink sm:text-[1.72rem]">
                 {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
               </span>
               {listing.marketPrice ? (
@@ -143,7 +143,7 @@ export default function ListingCard({ listing }) {
                 </div>
               ) : null}
             </div>
-            <p className="text-[0.75rem] text-steel sm:text-sm">
+            <p className="text-[0.7rem] text-steel sm:text-sm">
               {listing.views} views | {listing.offers} offers
             </p>
           </div>

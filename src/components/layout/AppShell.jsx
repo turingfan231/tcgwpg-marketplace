@@ -1,9 +1,7 @@
 import { AlertTriangle, Clock3, MapPin, ShieldCheck } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useMarketplace } from "../../hooks/useMarketplace";
-import CreateListingModal from "../modals/CreateListingModal";
-import OnboardingModal from "../modals/OnboardingModal";
 import AppLaunchScreen from "../ui/AppLaunchScreen";
 import InstallPrompt from "../ui/InstallPrompt";
 import ToastStack from "../ui/ToastStack";
@@ -12,6 +10,8 @@ import MobileTabBar from "./MobileTabBar";
 
 const INSTALL_DISMISS_KEY = "tcgwpg.installPromptDismissed";
 const ONBOARDING_DISMISS_KEY = "tcgwpg.onboardingDismissed";
+const CreateListingModal = lazy(() => import("../modals/CreateListingModal"));
+const OnboardingModal = lazy(() => import("../modals/OnboardingModal"));
 
 export default function AppShell() {
   const location = useLocation();
@@ -348,10 +348,12 @@ export default function AppShell() {
         WPG Marketplace | Local cards, faster deals
       </div>
 
-      {isCreateListingOpen ? (
-        <CreateListingModal onClose={closeCreateListing} />
-      ) : null}
-      {showOnboarding ? <OnboardingModal onClose={handleCloseOnboarding} /> : null}
+      <Suspense fallback={null}>
+        {isCreateListingOpen ? (
+          <CreateListingModal onClose={closeCreateListing} />
+        ) : null}
+        {showOnboarding ? <OnboardingModal onClose={handleCloseOnboarding} /> : null}
+      </Suspense>
       <InstallPrompt
         installState={installState}
         onDismiss={dismissInstallPrompt}

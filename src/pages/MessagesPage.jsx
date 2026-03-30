@@ -139,10 +139,10 @@ function ListingThreadCard({ formatCadPrice, listing, otherParticipant }) {
   }
 
   return (
-    <div className="mx-4 mt-4 rounded-[28px] border border-[rgba(203,220,231,0.88)] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(238,245,249,0.92))] p-4 shadow-soft sm:mx-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+    <div className="mx-4 mt-4 rounded-[24px] border border-[rgba(203,220,231,0.88)] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(238,245,249,0.92))] p-3 shadow-soft sm:mx-6 sm:rounded-[28px] sm:p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <CardArtwork
-          className="h-24 w-20 shrink-0 rounded-[22px] object-cover sm:h-28 sm:w-24"
+          className="h-20 w-16 shrink-0 rounded-[18px] object-cover sm:h-28 sm:w-24 sm:rounded-[22px]"
           game={listing.game}
           src={listing.primaryImage || listing.imageUrl}
           title={listing.title}
@@ -174,7 +174,7 @@ function ListingThreadCard({ formatCadPrice, listing, otherParticipant }) {
 
           <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <p className="truncate font-display text-[1.35rem] font-semibold tracking-[-0.04em] text-ink">
+              <p className="truncate font-display text-[1.1rem] font-semibold tracking-[-0.04em] text-ink sm:text-[1.35rem]">
                 {listing.title}
               </p>
               <p className="mt-1 text-sm text-steel">

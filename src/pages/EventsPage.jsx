@@ -144,6 +144,15 @@ function downloadEventCalendar(event) {
   URL.revokeObjectURL(href);
 }
 
+function EventMetaItem({ children, icon: Icon }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[0.76rem] text-steel sm:text-sm">
+      <Icon size={15} />
+      {children}
+    </span>
+  );
+}
+
 export default function EventsPage() {
   const {
     activeListings,
@@ -344,7 +353,7 @@ export default function EventsPage() {
           Winnipeg tournaments, leagues, and local nights
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-steel sm:mt-4 sm:text-base sm:leading-8">
-          Filter by game, store, and date range, then jump straight to the event page when a direct link is available.
+          Filter by game, store, and date range, then jump straight to the source page or save the event to your calendar.
         </p>
       </section>
 
@@ -607,9 +616,8 @@ export default function EventsPage() {
                   <h3 className="mt-2 font-display text-[1rem] font-semibold tracking-[-0.03em] text-ink sm:mt-4 sm:text-2xl">
                     {event.title}
                   </h3>
-                  <div className="mt-2 grid gap-1 text-[0.76rem] text-steel sm:mt-4 sm:gap-3 sm:text-sm">
-                    <span className="inline-flex items-center gap-2">
-                      <Store size={16} />
+                  <div className="mt-2 grid gap-1.5 text-[0.76rem] text-steel sm:mt-4 sm:gap-2.5 sm:text-sm">
+                    <EventMetaItem icon={Store}>
                       {getStoreSlugByName(event.store) ? (
                         <Link className="font-semibold text-navy hover:underline" to={`/stores/${getStoreSlugByName(event.store)}`}>
                           {event.store}
@@ -617,23 +625,20 @@ export default function EventsPage() {
                       ) : (
                         event.store
                       )}
-                    </span>
-                    <span className="inline-flex items-center gap-2">
-                      <CalendarDays size={16} />
+                    </EventMetaItem>
+                    <EventMetaItem icon={CalendarDays}>
                       {formatLongDate(event.dateStr)}
-                    </span>
-                    <span className="inline-flex items-center gap-2">
-                      <Clock3 size={16} />
+                    </EventMetaItem>
+                    <EventMetaItem icon={Clock3}>
                       {event.time} | Entry {event.fee}
-                    </span>
+                    </EventMetaItem>
                     {event.neighborhood ? (
-                      <span className="inline-flex items-center gap-2">
-                        <MapPin size={16} />
+                      <EventMetaItem icon={MapPin}>
                         {event.neighborhood}
-                      </span>
+                      </EventMetaItem>
                     ) : null}
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-1.5 sm:mt-4 sm:gap-2">
+                  <div className="mt-2.5 flex flex-wrap gap-1.5 sm:mt-4 sm:gap-2">
                     {event.sourceUrl ? (
                       <a
                         className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-navy transition hover:border-slate-300 sm:px-4 sm:py-2 sm:text-sm sm:tracking-[0]"
@@ -655,6 +660,11 @@ export default function EventsPage() {
                       <span className="hidden sm:inline">Add to calendar</span>
                       <CalendarDays size={14} />
                     </button>
+                  </div>
+                  <div className="mt-2.5 hidden sm:block">
+                    <p className="line-clamp-2 text-sm leading-6 text-steel">
+                      {event.note || "Source page will have the latest organizer details and any format-specific rules."}
+                    </p>
                   </div>
                   <div className="mt-2 grid grid-cols-3 gap-1.5 sm:hidden">
                     <button
@@ -683,9 +693,6 @@ export default function EventsPage() {
                       </button>
                     ))}
                   </div>
-                  {event.note ? (
-                    <p className="mt-2.5 hidden text-[0.78rem] leading-5 text-steel sm:mt-4 sm:block sm:text-sm sm:leading-7">{event.note}</p>
-                  ) : null}
                   <div className="mt-2.5 hidden flex-wrap gap-1.5 sm:mt-4 sm:flex sm:gap-2">
                     <button
                       className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] transition sm:px-4 sm:py-2 sm:text-sm sm:tracking-[0] ${

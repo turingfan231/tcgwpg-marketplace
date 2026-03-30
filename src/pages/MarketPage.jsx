@@ -190,7 +190,7 @@ export default function MarketPage() {
             <h1 className="mt-1 truncate font-display text-[1.55rem] font-semibold tracking-[-0.05em] text-ink">
               {selectedGame?.name || "All listings"}
             </h1>
-            <p className="mt-1 text-sm text-steel">Live local listings.</p>
+            <p className="mt-1 text-sm text-steel">{filteredListings.length} live matches.</p>
           </div>
           <button
             className="shrink-0 rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-white shadow-soft"
@@ -200,39 +200,34 @@ export default function MarketPage() {
             Sell
           </button>
         </div>
-        <div className="hidden gap-5 p-5 sm:grid sm:p-7 xl:grid-cols-[1.15fr_0.85fr] xl:items-end">
+        <div className="hidden gap-5 p-5 sm:grid sm:p-7 xl:grid-cols-[1.3fr_0.7fr] xl:items-end">
           <div>
             <p className="section-kicker">Market feed</p>
             <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-ink sm:text-[3.25rem]">
               {selectedGame?.name || "All Listings"}
             </h1>
-            <p className="mt-4 max-w-3xl text-base leading-8 text-steel">
+            <p className="mt-4 max-w-2xl text-base leading-8 text-steel">
               {selectedGame?.description ||
-                "Search by card, seller, neighborhood, or condition without relying on the global header alone."}
+                "Search by card, seller, neighborhood, or condition without leaving the market feed."}
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="console-well p-4">
-              <p className="text-sm text-steel">Matches</p>
-              <p className="mt-2 font-display text-4xl font-semibold tracking-[-0.04em] text-ink">
-                {filteredListings.length}
-              </p>
-            </div>
-            <div className="console-well p-4">
-              <p className="text-sm text-steel">Current area</p>
-              <p className="mt-2 text-lg font-semibold text-ink">{selectedNeighborhood}</p>
-            </div>
-            <div className="console-well p-4">
-              <p className="text-sm text-steel">Saved filters</p>
-              <p className="mt-2 text-lg font-semibold text-ink">{savedFilters.length}</p>
-            </div>
+          <div className="flex flex-wrap justify-end gap-2">
+            <span className="inline-flex rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 px-4 py-2 text-sm font-semibold text-ink">
+              {filteredListings.length} matches
+            </span>
+            <span className="inline-flex rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 px-4 py-2 text-sm font-semibold text-ink">
+              {selectedNeighborhood}
+            </span>
+            <span className="inline-flex rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 px-4 py-2 text-sm font-semibold text-ink">
+              {savedFilters.length} saved
+            </span>
           </div>
         </div>
       </section>
 
-      <section className="console-panel space-y-5 p-5 lg:p-6">
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,0.75fr)_minmax(0,0.6fr)_auto]">
+      <section className="console-panel space-y-4 p-4 sm:space-y-5 sm:p-5 lg:p-6">
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,0.75fr)_minmax(0,0.6fr)_auto]">
           <label className="block">
             <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-steel">
               <Search size={16} />
@@ -344,7 +339,7 @@ export default function MarketPage() {
       </section>
 
       {filteredListings.length ? (
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {filteredListings.map((listing) => (
             <ListingCard key={listing.id} listing={listing} />
           ))}
