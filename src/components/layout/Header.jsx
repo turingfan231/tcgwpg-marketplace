@@ -187,8 +187,63 @@ export default function Header({
     <>
       <header className="app-header-chrome sticky top-0 z-40 border-b backdrop-blur-2xl">
         <div className="page-shell py-0.5 sm:py-1">
-          <div className="console-panel px-2.5 py-0.5 sm:px-4 sm:py-1.5">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-2 sm:gap-3">
+          <div className="console-panel px-2.5 py-2 sm:px-4 sm:py-1.5">
+          <div className="relative flex items-center justify-between gap-2 sm:hidden">
+            <div className="shrink-0">
+              {onToggleColorMode ? (
+                <button
+                  aria-label={colorMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                  className="inline-flex h-12 w-12 items-center justify-center rounded-[18px] border border-[rgba(145,38,43,0.12)] bg-[var(--surface-solid)] text-steel transition hover:border-slate-300 hover:text-ink"
+                  type="button"
+                  onClick={onToggleColorMode}
+                >
+                  <ColorModeIcon size={18} />
+                </button>
+              ) : (
+                <div className="h-12 w-12" />
+              )}
+            </div>
+
+            <Link className="pointer-events-auto absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" to="/">
+              <BrandLogo
+                className="inline-flex"
+                imgClassName="h-[3.25rem] w-auto max-w-[11.5rem] object-contain"
+              />
+            </Link>
+
+            <div className="flex shrink-0 items-center justify-end gap-1.5">
+              <Link
+                className="relative inline-flex h-12 w-12 items-center justify-center rounded-[18px] border border-[rgba(203,220,231,0.92)] bg-[var(--surface-solid)] text-steel transition hover:border-slate-300 hover:text-ink"
+                to="/messages"
+              >
+                <MessageCircle size={18} />
+                {safeUnreadMessageCount ? (
+                  <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-orange px-1 text-[0.65rem] font-semibold text-white">
+                    {safeUnreadMessageCount}
+                  </span>
+                ) : null}
+              </Link>
+
+              <button
+                className="rounded-[18px] bg-orange px-5 py-3 text-[1rem] font-semibold text-white shadow-soft transition hover:bg-[#d8332d]"
+                type="button"
+                onClick={() => openListing("WTS", "/dashboard")}
+              >
+                Sell
+              </button>
+
+              <button
+                aria-label="Open navigation menu"
+                className="inline-flex h-12 w-12 items-center justify-center rounded-[18px] border border-[rgba(203,220,231,0.92)] bg-[var(--surface-solid)] text-steel transition hover:border-slate-300 hover:text-ink"
+                type="button"
+                onClick={() => setMobileDrawerOpen(true)}
+              >
+                <Menu size={18} />
+              </button>
+            </div>
+          </div>
+
+          <div className="hidden grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-3 sm:grid">
             <div className="flex min-w-0 items-start pl-1 pt-1 sm:pl-2 sm:pt-2">
               {onToggleColorMode ? (
                 <>
@@ -240,8 +295,7 @@ export default function Header({
                 type="button"
                 onClick={() => openListing("WTS", "/dashboard")}
               >
-                <span className="sm:hidden">Sell</span>
-                <span className="hidden sm:inline">Sell cards</span>
+                <span>Sell cards</span>
               </button>
 
               <button
@@ -338,7 +392,7 @@ export default function Header({
               size={18}
             />
             <input
-            className="w-full rounded-[18px] border border-[rgba(145,38,43,0.12)] bg-[var(--input-bg)] py-2.5 pl-11 pr-4 text-sm text-ink outline-none transition focus:border-navy focus:bg-[var(--surface-solid)] sm:rounded-[20px] sm:py-3.5"
+            className="w-full rounded-[18px] border border-[rgba(145,38,43,0.12)] bg-[var(--input-bg)] py-3 pl-11 pr-4 text-sm text-ink outline-none transition focus:border-navy focus:bg-[var(--surface-solid)] sm:rounded-[20px] sm:py-3.5"
               placeholder="Search cards, set codes, variants, or sellers"
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}

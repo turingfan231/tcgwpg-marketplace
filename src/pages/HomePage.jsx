@@ -258,7 +258,7 @@ function BannerCard({
 
   function renderMeta(extraClassName = "") {
     return (
-      <div className={`flex flex-wrap gap-1.5 sm:gap-2 ${extraClassName}`}>
+        <div className={`flex flex-wrap gap-1.5 sm:gap-2 ${extraClassName}`}>
         {compactMeta.map((item) => (
           <span
             key={item}
@@ -280,39 +280,39 @@ function BannerCard({
   }
 
   return (
-    <article
-      className={`absolute inset-0 transition-all duration-700 ease-out ${
-        active
-          ? "translate-y-0 opacity-100"
-          : "pointer-events-none translate-y-4 opacity-0"
-      }`}
-    >
-      <div className="relative h-full overflow-hidden rounded-[26px] border border-white/10 bg-[#23090b] text-white shadow-[0_32px_90px_-48px_rgba(80,16,16,0.42)] sm:rounded-[32px]">
-        <div className="relative h-full p-4 sm:p-8 lg:p-10">
-            {heroBackdrop ? (
-              <img
-                alt=""
-                aria-hidden="true"
-                className={`absolute inset-0 h-full w-full scale-[1.04] object-cover ${overlayHeroClass}`}
-                src={heroBackdrop}
-              />
-            ) : null}
-            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(17,20,25,0.82)_0%,rgba(17,20,25,0.64)_28%,rgba(17,20,25,0.28)_54%,rgba(17,20,25,0.06)_78%,rgba(17,20,25,0)_100%)]" />
-            <div className="relative z-10 flex h-full items-center">
-              <div className="max-w-[31rem]">
-                <span className="inline-flex rounded-[10px] border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/86">
+      <article
+        className={`absolute inset-0 transition-all duration-700 ease-out ${
+          active
+            ? "translate-y-0 opacity-100"
+            : "pointer-events-none translate-y-4 opacity-0"
+        }`}
+      >
+        <div className="relative h-full overflow-hidden rounded-[26px] border border-white/10 bg-[#23090b] text-white shadow-[0_32px_90px_-48px_rgba(80,16,16,0.42)] sm:rounded-[32px]">
+          <div className="relative h-full p-3.5 pb-16 sm:p-8 lg:p-10">
+              {heroBackdrop ? (
+                <img
+                  alt=""
+                  aria-hidden="true"
+                  className={`absolute inset-0 h-full w-full scale-[1.04] object-cover ${overlayHeroClass}`}
+                  src={heroBackdrop}
+                />
+              ) : null}
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(17,20,25,0.18)_0%,rgba(17,20,25,0.34)_48%,rgba(17,20,25,0.7)_100%),linear-gradient(90deg,rgba(17,20,25,0.84)_0%,rgba(17,20,25,0.72)_38%,rgba(17,20,25,0.22)_74%,rgba(17,20,25,0)_100%)] sm:bg-[linear-gradient(90deg,rgba(17,20,25,0.82)_0%,rgba(17,20,25,0.64)_28%,rgba(17,20,25,0.28)_54%,rgba(17,20,25,0.06)_78%,rgba(17,20,25,0)_100%)]" />
+            <div className="relative z-10 flex h-full items-start sm:items-center">
+              <div className="max-w-[14rem] sm:max-w-[31rem]">
+                <span className="inline-flex rounded-[10px] border border-white/10 bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/86 sm:px-3 sm:text-[11px] sm:tracking-[0.18em]">
                   {slide.kicker}
                 </span>
-                <h1 className="mt-3 max-w-[16rem] font-display text-[1.55rem] font-semibold leading-[0.96] tracking-[-0.07em] sm:max-w-2xl sm:text-[2.65rem] lg:text-[3rem]">
+                <h1 className="mt-3 max-w-[13rem] font-display text-[1.05rem] font-semibold leading-[0.92] tracking-[-0.06em] sm:max-w-2xl sm:text-[2.65rem] lg:text-[3rem]">
                   {slide.title}
                 </h1>
-                <p className="mt-3 max-w-2xl text-[0.82rem] leading-6 text-white/76 sm:text-sm sm:leading-7 lg:text-[0.98rem]">
+                <p className="mt-2.5 max-w-[14rem] text-[0.74rem] leading-5 text-white/76 sm:mt-3 sm:max-w-2xl sm:text-sm sm:leading-7 lg:text-[0.98rem]">
                   {slide.description}
                 </p>
-                <div className="mt-4">{renderMeta()}</div>
-                <div className="mt-5">
+                <div className="mt-3 sm:mt-4">{renderMeta()}</div>
+                <div className="mt-3.5 sm:mt-5">
                   <button
-                    className={`rounded-[11px] px-4 py-2.5 text-[0.82rem] font-semibold shadow-soft transition duration-300 hover:-translate-y-0.5 hover:shadow-lift sm:px-5 sm:text-sm ${
+                    className={`rounded-[10px] px-3.5 py-2 text-[0.78rem] font-semibold shadow-soft transition duration-300 hover:-translate-y-0.5 hover:shadow-lift sm:rounded-[11px] sm:px-5 sm:py-2.5 sm:text-sm ${
                       slide.kind === "event" ? "bg-orange text-white" : "bg-white text-navy"
                     }`}
                     type="button"
@@ -871,7 +871,7 @@ export default function HomePage() {
       <section className="drop-in-item space-y-3 sm:space-y-4">
         <div>
           {bannerSlides.length ? (
-            <div className="relative min-h-[15.75rem] overflow-hidden rounded-[26px] sm:min-h-[33rem] sm:rounded-[36px] lg:min-h-[31rem]">
+            <div className="relative min-h-[13.5rem] overflow-hidden rounded-[26px] sm:min-h-[33rem] sm:rounded-[36px] lg:min-h-[31rem]">
               {bannerSlides.map((slide, index) => (
                 <BannerCard
                   key={slide.id}
@@ -890,14 +890,14 @@ export default function HomePage() {
               ))}
 
               {bannerSlides.length > 1 ? (
-                <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2 sm:bottom-6 sm:right-6 sm:gap-3">
+                <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-white/12 bg-[rgba(17,20,25,0.44)] px-1.5 py-1 backdrop-blur sm:bottom-6 sm:left-auto sm:right-6 sm:translate-x-0 sm:gap-3 sm:border-transparent sm:bg-transparent sm:px-0 sm:py-0">
                   <button
                     aria-label="Show previous banner"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/18 bg-white/10 text-white backdrop-blur transition hover:bg-white/18 sm:h-10 sm:w-10"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/18 bg-white/10 text-white backdrop-blur transition hover:bg-white/18 sm:h-10 sm:w-10"
                     type="button"
                     onClick={showPreviousBanner}
                   >
-                    <ChevronLeft size={18} />
+                    <ChevronLeft size={16} />
                   </button>
                   {bannerSlides.map((slide, index) => (
                     <button
@@ -905,8 +905,8 @@ export default function HomePage() {
                       aria-label={`Show banner ${index + 1}`}
                       className={`h-2.5 rounded-full transition-all ${
                         activeBannerIndex === index
-                          ? "w-10 bg-white shadow-sm"
-                          : "w-2.5 bg-white/45"
+                          ? "w-8 bg-white shadow-sm sm:w-10"
+                          : "w-2 bg-white/45 sm:w-2.5"
                       }`}
                       type="button"
                       onClick={() => setActiveBannerIndex(index)}
@@ -914,11 +914,11 @@ export default function HomePage() {
                   ))}
                   <button
                     aria-label="Show next banner"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/18 bg-white/10 text-white backdrop-blur transition hover:bg-white/18 sm:h-10 sm:w-10"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/18 bg-white/10 text-white backdrop-blur transition hover:bg-white/18 sm:h-10 sm:w-10"
                     type="button"
                     onClick={showNextBanner}
                   >
-                    <ChevronRight size={18} />
+                    <ChevronRight size={16} />
                   </button>
                 </div>
               ) : null}
