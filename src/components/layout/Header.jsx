@@ -191,14 +191,24 @@ export default function Header({
           <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-2 sm:gap-3">
             <div className="flex min-w-0 items-start pl-1 pt-1 sm:pl-2 sm:pt-2">
               {onToggleColorMode ? (
-                <button
-                  className="hidden items-center gap-2 rounded-full border border-[rgba(145,38,43,0.12)] bg-white/82 px-4 py-2.5 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink sm:inline-flex"
-                  type="button"
-                  onClick={onToggleColorMode}
-                >
-                  <ColorModeIcon size={16} />
-                  {colorModeLabel}
-                </button>
+                <>
+                  <button
+                    aria-label={colorMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                    className="inline-flex items-center justify-center rounded-full border border-[rgba(145,38,43,0.12)] bg-white/82 p-2 text-steel transition hover:border-slate-300 hover:text-ink sm:hidden"
+                    type="button"
+                    onClick={onToggleColorMode}
+                  >
+                    <ColorModeIcon size={16} />
+                  </button>
+                  <button
+                    className="hidden items-center gap-2 rounded-full border border-[rgba(145,38,43,0.12)] bg-white/82 px-4 py-2.5 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink sm:inline-flex"
+                    type="button"
+                    onClick={onToggleColorMode}
+                  >
+                    <ColorModeIcon size={16} />
+                    {colorModeLabel}
+                  </button>
+                </>
               ) : null}
             </div>
 
@@ -206,7 +216,7 @@ export default function Header({
               <div className="inline-flex pt-1 sm:pt-1.5">
                 <BrandLogo
                   className="inline-flex"
-                  imgClassName="h-12 w-auto max-w-[12rem] object-contain sm:h-[4.25rem] sm:max-w-[20rem] lg:h-[4.75rem] lg:max-w-[24rem]"
+                  imgClassName="h-9 w-auto max-w-[9.75rem] object-contain sm:h-[4.25rem] sm:max-w-[20rem] lg:h-[4.75rem] lg:max-w-[24rem]"
                 />
               </div>
             </Link>
@@ -328,7 +338,7 @@ export default function Header({
               size={18}
             />
             <input
-            className="w-full rounded-[20px] border border-[rgba(145,38,43,0.12)] bg-[var(--input-bg)] py-2.5 pl-11 pr-4 text-sm text-ink outline-none transition focus:border-navy focus:bg-[var(--surface-solid)] sm:py-3.5"
+            className="w-full rounded-[18px] border border-[rgba(145,38,43,0.12)] bg-[var(--input-bg)] py-2.5 pl-11 pr-4 text-sm text-ink outline-none transition focus:border-navy focus:bg-[var(--surface-solid)] sm:rounded-[20px] sm:py-3.5"
               placeholder="Search cards, set codes, variants, or sellers"
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
