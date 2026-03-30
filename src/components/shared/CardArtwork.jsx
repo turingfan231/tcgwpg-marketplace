@@ -11,7 +11,11 @@ function buildImageProxyUrl(src) {
     return "";
   }
 
-  if (/^https:\/\/en\.onepiece-cardgame\.com\/images\/cardlist\/card\//i.test(rawSrc)) {
+  const shouldProxy =
+    /^https:\/\/en\.onepiece-cardgame\.com\/images\/cardlist\/card\//i.test(rawSrc) ||
+    /^https:\/\/storage\.googleapis\.com\/images\.pricecharting\.com\//i.test(rawSrc);
+
+  if (shouldProxy) {
     const baseUrl =
       DEPLOY_API_BASE_URL ||
       (typeof window !== "undefined" ? window.location.origin : "");

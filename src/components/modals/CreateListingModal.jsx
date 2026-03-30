@@ -852,11 +852,11 @@ export default function CreateListingModal({ onClose }) {
                 </span>
               </div>
 
-              <div className="grid max-h-[45dvh] gap-3 overflow-y-auto pr-1 sm:max-h-[34rem] sm:gap-4">
+              <div className="grid max-h-[45dvh] gap-2.5 overflow-y-auto pr-1 sm:max-h-[34rem] sm:gap-3">
                 {searchResults.map((printing) => (
                   <button
                     key={printing.id}
-                    className={`grid gap-0 overflow-hidden rounded-[20px] border bg-white text-left transition lg:grid-cols-[160px_minmax(0,1fr)] ${
+                    className={`grid grid-cols-[88px_minmax(0,1fr)] gap-0 overflow-hidden rounded-[18px] border bg-white text-left transition sm:grid-cols-[108px_minmax(0,1fr)] ${
                       selectedPrintingId === printing.id
                         ? "border-navy shadow-soft ring-2 ring-navy/10"
                         : "border-slate-200 hover:border-slate-300 hover:shadow-soft"
@@ -864,62 +864,62 @@ export default function CreateListingModal({ onClose }) {
                     type="button"
                     onClick={() => applyPrinting(printing)}
                   >
-                      <div className="flex items-center justify-center bg-[linear-gradient(180deg,#faf7f0_0%,#f3efe7_100%)] p-2.5 sm:p-3">
+                      <div className="flex items-center justify-center bg-[linear-gradient(180deg,#f7f8fb_0%,#eef1f5_100%)] p-2 sm:p-2.5">
                         <CardArtwork
-                        className="aspect-[63/88] w-full max-w-[5.5rem] rounded-[14px] object-cover sm:max-w-[8.5rem] sm:rounded-[18px]"
+                        className="aspect-[63/88] w-full max-w-[4.5rem] rounded-[12px] object-cover sm:max-w-[5.5rem] sm:rounded-[14px]"
                         game={form.game}
                         src={printing.imageUrl}
                         title={printing.title}
                       />
                     </div>
 
-                    <div className="flex min-w-0 flex-col justify-between gap-3 p-3 sm:gap-4 sm:p-4">
-                      <div className="space-y-2 sm:space-y-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                    <div className="flex min-w-0 flex-col justify-between gap-2 p-3 sm:gap-2.5 sm:p-3.5">
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
                             {printing.printLabel || printing.providerLabel}
                           </span>
-                          <span className="rounded-full bg-orange/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-orange">
+                          <span className="rounded-full bg-orange/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-orange">
                             {printing.setName}
                           </span>
-                          <span className="rounded-full bg-navy/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">
+                          <span className="hidden rounded-full bg-navy/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-navy sm:inline-flex">
                             {printing.rarity}
                           </span>
                           {printing.language ? (
-                            <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                            <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
                               {printing.language}
                             </span>
                           ) : null}
                           {printing.priceHistory?.length ? (
-                            <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                            <span className="hidden rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-700 sm:inline-flex">
                               Recent solds
                             </span>
                           ) : null}
                           {selectedPrintingId === printing.id ? (
-                            <span className="rounded-full bg-navy/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">
+                            <span className="rounded-full bg-navy/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-navy">
                               Selected
                             </span>
                           ) : null}
                         </div>
                         <div>
-                          <h4 className="font-display text-[1.05rem] font-semibold tracking-[-0.03em] text-ink sm:text-xl">
+                          <h4 className="font-display text-[1rem] font-semibold tracking-[-0.03em] text-ink sm:text-[1.08rem]">
                             {printing.title}
                           </h4>
-                          <p className="mt-2 text-sm leading-7 text-steel">
-                            {printing.setName} | {printing.rarity}
+                          <p className="mt-1 text-[0.82rem] leading-6 text-steel">
+                            {printing.setName} {printing.rarity ? `| ${printing.rarity}` : ""}
                           </p>
-                          <p className="mt-2 hidden text-xs leading-6 text-slate-500 sm:block">
+                          <p className="mt-1 hidden text-[11px] leading-5 text-slate-500 sm:block">
                             {printing.description}
                           </p>
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3 sm:pt-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
                         <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-steel">
                             Market reference
                           </p>
-                          <p className="mt-1 font-display text-[1.25rem] font-semibold tracking-[-0.03em] text-ink sm:text-2xl">
+                          <p className="mt-0.5 font-display text-[1.05rem] font-semibold tracking-[-0.03em] text-ink sm:text-[1.2rem]">
                             {printing.marketPrice
                               ? formatCurrency(
                                   printing.marketPrice,
@@ -928,7 +928,7 @@ export default function CreateListingModal({ onClose }) {
                               : "No market"}
                           </p>
                         </div>
-                        <span className="inline-flex items-center rounded-full bg-orange/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-orange">
+                        <span className="inline-flex items-center rounded-full bg-orange/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-orange">
                           Tap to autofill
                         </span>
                       </div>

@@ -1282,6 +1282,10 @@ function fromEventRow(row) {
   });
 }
 
+function fromSiteSettingsRow(row) {
+  return normalizeSiteSettings(row?.payload || DEFAULT_SITE_SETTINGS);
+}
+
 function mergeAuthedProfileMetadata(profileRow, authUser) {
   if (!profileRow) {
     return profileRow;
@@ -1367,6 +1371,7 @@ function buildThreadMap(threadRows, messageRows) {
     id: thread.id,
     participantIds: thread.participant_ids || [],
     listingId: thread.listing_id,
+    hiddenBy: thread.hidden_by || {},
     createdAt: thread.created_at,
     updatedAt: thread.updated_at,
     messages: (messageRows || [])
@@ -1690,7 +1695,7 @@ export function MarketplaceProvider({ children }) {
         };
       })
       .filter((thread) => {
-        const hiddenAt = hiddenThreadMap[thread.id];
+        const hiddenAt = hiddenThreadMap[thread.id] || thread.hiddenBy?.[currentUserId];
         if (!hiddenAt) {
           return true;
         }
@@ -2116,17 +2121,22 @@ export function MarketplaceProvider({ children }) {
           authUser = authResult.data?.user || null;
         }
 
-        const [profilesRes, listingsRes, reviewsRes, manualEventsRes] = await Promise.all([
+        const [profilesRes, listingsRes, reviewsRes, manualEventsRes, siteSettingsRes] =
+          await Promise.all([
           supabase.from("profiles").select("*"),
           supabase.from("listings").select("*"),
           supabase.from("reviews").select("*"),
           supabase.from("manual_events").select("*"),
+          supabase.from("site_settings").select("*").eq("key", "global").maybeSingle(),
         ]);
 
         if (profilesRes.error) throw profilesRes.error;
         if (listingsRes.error) throw listingsRes.error;
         if (reviewsRes.error) throw reviewsRes.error;
         if (manualEventsRes.error) throw manualEventsRes.error;
+        if (siteSettingsRes.error && !isMissingTableError(siteSettingsRes.error, "site_settings")) {
+          throw siteSettingsRes.error;
+        }
 
         const normalizedProfiles = (profilesRes.data || [])
           .map((row) => mergeAuthedProfileMetadata(row, authUser))
@@ -2136,6 +2146,9 @@ export function MarketplaceProvider({ children }) {
         setListings((listingsRes.data || []).map(fromListingRow).filter(isSupportedListing));
         setReviews((reviewsRes.data || []).map(fromReviewRow));
         setManualEvents((manualEventsRes.data || []).map(fromEventRow));
+        if (!siteSettingsRes.error && siteSettingsRes.data) {
+          setSiteSettings(fromSiteSettingsRow(siteSettingsRes.data));
+        }
 
         if (!authedUserId) {
           setWishlist([]);
@@ -2568,6 +2581,26 @@ export function MarketplaceProvider({ children }) {
     });
 
     setSiteSettings(nextSettings);
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from("site_settings")
+        .upsert({
+          key: "global",
+          payload: nextSettings,
+          updated_at: new Date().toISOString(),
+        })
+        .select("*")
+        .single();
+
+      if (error && !isMissingTableError(error, "site_settings")) {
+        return { ok: false, error: error.message };
+      }
+
+      if (data) {
+        setSiteSettings(fromSiteSettingsRow(data));
+      }
+    }
+
     pushAdminAuditEntry({
       action: "storefront-hero",
       title: "Updated homepage hero controls",
@@ -2596,6 +2629,26 @@ export function MarketplaceProvider({ children }) {
     });
 
     setSiteSettings(nextSettings);
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from("site_settings")
+        .upsert({
+          key: "global",
+          payload: nextSettings,
+          updated_at: new Date().toISOString(),
+        })
+        .select("*")
+        .single();
+
+      if (error && !isMissingTableError(error, "site_settings")) {
+        return { ok: false, error: error.message };
+      }
+
+      if (data) {
+        setSiteSettings(fromSiteSettingsRow(data));
+      }
+    }
+
     pushAdminAuditEntry({
       action: "storefront-settings",
       title: "Updated storefront settings",
@@ -4223,10 +4276,29 @@ export function MarketplaceProvider({ children }) {
     }
 
     const hiddenAt = new Date().toISOString();
+    const targetThread = threads.find((thread) => thread.id === threadId) || null;
+    const nextHiddenBy = {
+      ...(targetThread?.hiddenBy || {}),
+      [currentUserId]: hiddenAt,
+    };
+
     setHiddenThreadMap((current) => ({
       ...current,
       [threadId]: hiddenAt,
     }));
+    setThreads((current) =>
+      current.map((thread) =>
+        thread.id === threadId
+          ? {
+              ...thread,
+              hiddenBy: {
+                ...(thread.hiddenBy || {}),
+                [currentUserId]: hiddenAt,
+              },
+            }
+          : thread,
+      ),
+    );
     setNotifications((current) =>
       current.filter(
         (notification) =>
@@ -4239,15 +4311,27 @@ export function MarketplaceProvider({ children }) {
     );
 
     if (isSupabaseConfigured) {
-      const { error } = await supabase
-        .from("notifications")
-        .update({ read: true })
-        .eq("user_id", currentUserId)
-        .eq("type", "message")
-        .eq("entity_id", threadId);
+      const [threadUpdate, notificationUpdate] = await Promise.all([
+        supabase
+          .from("message_threads")
+          .update({
+            hidden_by: nextHiddenBy,
+          })
+          .eq("id", threadId),
+        supabase
+          .from("notifications")
+          .update({ read: true })
+          .eq("user_id", currentUserId)
+          .eq("type", "message")
+          .eq("entity_id", threadId),
+      ]);
 
-      if (error) {
-        return { ok: false, error: error.message };
+      if (threadUpdate.error && !isMissingColumnError(threadUpdate.error, "hidden_by")) {
+        return { ok: false, error: threadUpdate.error.message };
+      }
+
+      if (notificationUpdate.error) {
+        return { ok: false, error: notificationUpdate.error.message };
       }
     }
 

@@ -75,6 +75,7 @@ create table public.message_threads (
   id uuid primary key default gen_random_uuid(),
   listing_id uuid references public.listings(id) on delete set null,
   participant_ids uuid[] not null,
+  hidden_by jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -118,6 +119,7 @@ alter table public.profiles add column if not exists username text;
 create unique index if not exists profiles_username_key on public.profiles (username);
 alter table public.profiles add column if not exists avatar_url text;
 alter table public.profiles add column if not exists followed_seller_ids uuid[] not null default '{}';
+alter table public.message_threads add column if not exists hidden_by jsonb not null default '{}'::jsonb;
 alter table public.reviews add column if not exists image_url text;
 
 create table public.reports (
@@ -187,6 +189,12 @@ create table public.search_history (
   created_at timestamptz not null default now()
 );
 
+create table public.site_settings (
+  key text primary key,
+  payload jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
 alter table public.profiles enable row level security;
 alter table public.listings enable row level security;
 alter table public.wishlists enable row level security;
@@ -200,6 +208,7 @@ alter table public.notifications enable row level security;
 alter table public.bug_reports enable row level security;
 alter table public.manual_events enable row level security;
 alter table public.search_history enable row level security;
+alter table public.site_settings enable row level security;
 
 create policy "profiles are readable by everyone"
 on public.profiles for select using (true);
@@ -401,6 +410,27 @@ on public.manual_events for all using (
 
 create policy "users manage own search history"
 on public.search_history for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "site settings are readable by everyone"
+on public.site_settings for select using (true);
+
+create policy "admins can insert site settings"
+on public.site_settings for insert with check (
+  exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid() and p.role = 'admin'
+  )
+);
+
+create policy "admins can update site settings"
+on public.site_settings for update using (
+  exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid() and p.role = 'admin'
+  )
+);
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (

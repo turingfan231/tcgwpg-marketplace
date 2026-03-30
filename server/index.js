@@ -55,7 +55,10 @@ const UNION_ARENA_CARDLIST_PAGE = "https://www.unionarena-tcg.com/na/cardlist/";
 const TCGCSV_BASE = "https://tcgcsv.com/tcgplayer";
 const SERVER_TIMEOUT_MS = 15000;
 const FX_TIMEOUT_MS = 2500;
-const IMAGE_PROXY_ALLOWED_HOSTS = new Set(["en.onepiece-cardgame.com"]);
+const IMAGE_PROXY_ALLOWED_HOSTS = new Set([
+  "en.onepiece-cardgame.com",
+  "storage.googleapis.com",
+]);
 
 const CATEGORY_IDS = {
   magic: 1,
@@ -579,7 +582,11 @@ function buildRequestOrigin(req) {
 function rewriteSearchImageUrlForClient(req, rawUrl) {
   const imageUrl = String(rawUrl || "").trim();
 
-  if (!/^https:\/\/en\.onepiece-cardgame\.com\/images\/cardlist\/card\//i.test(imageUrl)) {
+  const shouldProxy =
+    /^https:\/\/en\.onepiece-cardgame\.com\/images\/cardlist\/card\//i.test(imageUrl) ||
+    /^https:\/\/storage\.googleapis\.com\/images\.pricecharting\.com\//i.test(imageUrl);
+
+  if (!shouldProxy) {
     return imageUrl;
   }
 
@@ -1611,6 +1618,15 @@ function extractPriceChartingCurrentUsdPrice(html) {
 }
 
 function extractPriceChartingImageUrl(html) {
+  const dialogImage =
+    html.match(
+      /<div id="js-dialog-large-image"[\s\S]*?<img[^>]+src=['"](https:\/\/storage\.googleapis\.com\/images\.pricecharting\.com\/[^'"]+\.(?:png|jpe?g|webp))['"]/i,
+    )?.[1] || "";
+
+  if (dialogImage) {
+    return dialogImage;
+  }
+
   const imageMatches = [
     ...html.matchAll(
       /https:\/\/storage\.googleapis\.com\/images\.pricecharting\.com\/[^"'\\s)]+\.(?:png|jpe?g|webp)/gi,
@@ -1755,7 +1771,7 @@ async function searchPriceChartingProducts({
           return null;
         }
 
-        if (pathname.includes("/game/one-piece")) {
+        if (pathname.includes("/game/one-piece") && !builtResult.imageUrl) {
           const code = extractOnePieceCode(
             builtResult.title,
             pathname,
@@ -2674,7 +2690,14 @@ app.get("/api/live/image-proxy", async (req, res) => {
     return res.status(403).json({ error: "Image host is not allowed." });
   }
 
-  if (!parsedUrl.pathname.startsWith("/images/cardlist/card/")) {
+  const allowedPath =
+    parsedUrl.hostname === "en.onepiece-cardgame.com"
+      ? parsedUrl.pathname.startsWith("/images/cardlist/card/")
+      : parsedUrl.hostname === "storage.googleapis.com"
+        ? parsedUrl.pathname.startsWith("/images.pricecharting.com/")
+        : false;
+
+  if (!allowedPath) {
     return res.status(403).json({ error: "Image path is not allowed." });
   }
 
