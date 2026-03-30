@@ -59,6 +59,8 @@ const IMAGE_PROXY_ALLOWED_HOSTS = new Set(["en.onepiece-cardgame.com"]);
 const CATEGORY_IDS = {
   magic: 1,
   pokemon: 3,
+  "dragon-ball-fusion-world": 80,
+  "union-arena": 81,
 };
 
 const SCRYFALL_HEADERS = {
@@ -185,6 +187,20 @@ function getExtendedValue(product, fieldName) {
 function parseNumber(value) {
   const numericValue = Number(value);
   return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function isUsableOnePieceImageUrl(url) {
+  const normalized = String(url || "").trim();
+
+  if (!normalized) {
+    return false;
+  }
+
+  if (/images\.onepiece-cardgame\.dev/i.test(normalized)) {
+    return false;
+  }
+
+  return /^https?:\/\//i.test(normalized);
 }
 
 function toCad(value, usdToCadRate) {
@@ -389,6 +405,10 @@ function buildOnePieceQueryVariants(query) {
 }
 
 function getOnePieceImageUrl(card) {
+  if (isUsableOnePieceImageUrl(card.card_image)) {
+    return card.card_image;
+  }
+
   const code = extractOnePieceCode(
     card.card_image_id,
     card.card_set_id,
@@ -1285,9 +1305,12 @@ function buildPriceChartingResult(
   const onePieceCode = normalizedPath.includes("/game/one-piece")
     ? extractOnePieceCode(title, productSlug, headingText)
     : "";
-  const imageUrl = onePieceCode
-    ? `https://en.onepiece-cardgame.com/images/cardlist/card/${onePieceCode}.png`
-    : extractPriceChartingImageUrl(html);
+  const extractedImageUrl = extractPriceChartingImageUrl(html);
+  const imageUrl =
+    extractedImageUrl ||
+    (onePieceCode
+      ? `https://en.onepiece-cardgame.com/images/cardlist/card/${onePieceCode}.png`
+      : "");
   const score = rankSearchMatch([title, setName, productSlug], query);
 
   if (!title) {
@@ -2347,13 +2370,25 @@ app.get("/api/live/search", async (req, res) => {
       providerLabel = "OPTCG API";
       results = await searchOnePieceCards(query, limit, exchangeRate.usdToCadRate);
     } else if (game === "dragon-ball-fusion-world") {
-      providerLabel = "Fusion World Official";
-      results = await searchFusionWorldCards(query, limit);
-      note = "Fusion World results are sourced from the official card database. Market pricing is not exposed by the official source yet.";
+      if (tcgplayerEnabled()) {
+        providerLabel = "TCGplayer API";
+        results = await searchTcgplayerCatalog(game, query, limit);
+      } else {
+        providerLabel = "Fusion World Official";
+        results = await searchFusionWorldCards(query, limit);
+        note =
+          "Fusion World results are sourced from the official card database. Market pricing is not exposed by the official source yet.";
+      }
     } else if (game === "union-arena") {
-      providerLabel = "Union Arena Official";
-      results = await searchUnionArenaCards(query, limit);
-      note = "Union Arena results are sourced from the official card list. Market pricing is not exposed by the official source yet.";
+      if (tcgplayerEnabled()) {
+        providerLabel = "TCGplayer API";
+        results = await searchTcgplayerCatalog(game, query, limit);
+      } else {
+        providerLabel = "Union Arena Official";
+        results = await searchUnionArenaCards(query, limit);
+        note =
+          "Union Arena results are sourced from the official card list. Market pricing is not exposed by the official source yet.";
+      }
     } else {
       note = "Live search is currently implemented for Pokemon, Magic, One Piece, Fusion World, and Union Arena.";
     }

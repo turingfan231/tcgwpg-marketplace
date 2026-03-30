@@ -138,6 +138,20 @@ function parseNumber(value) {
   return Number.isFinite(numericValue) ? numericValue : null;
 }
 
+function isUsableOnePieceImageUrl(url) {
+  const normalized = String(url || "").trim();
+
+  if (!normalized) {
+    return false;
+  }
+
+  if (/images\.onepiece-cardgame\.dev/i.test(normalized)) {
+    return false;
+  }
+
+  return /^https?:\/\//i.test(normalized);
+}
+
 function toCad(value, usdToCadRate = FALLBACK_USD_TO_CAD_RATE) {
   const numericValue = parseNumber(value);
   return numericValue ? Number((numericValue * usdToCadRate).toFixed(2)) : null;
@@ -527,6 +541,10 @@ function buildOnePieceQueryVariants(query) {
 }
 
 function getOnePieceImageUrl(card) {
+  if (isUsableOnePieceImageUrl(card.card_image)) {
+    return card.card_image;
+  }
+
   const code = extractOnePieceCode(
     card.card_image_id,
     card.card_set_id,
