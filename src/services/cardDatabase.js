@@ -454,6 +454,20 @@ function normalizeOnePieceCode(value) {
     .replace(/[^A-Z0-9_-]/g, "");
 }
 
+function extractOnePieceCode(...values) {
+  for (const value of values) {
+    const match = String(value || "")
+      .toUpperCase()
+      .match(/[A-Z]{2,}\d{2}-\d+/);
+
+    if (match?.[0]) {
+      return normalizeOnePieceCode(match[0]);
+    }
+  }
+
+  return "";
+}
+
 function looksLikeCardCode(value) {
   return /[A-Z]{2,}\d{2}-\d+/i.test(String(value || ""));
 }
@@ -501,13 +515,19 @@ function buildOnePieceQueryVariants(query) {
 }
 
 function getOnePieceImageUrl(card) {
-  if (card.card_image) {
-    return card.card_image;
+  const code = extractOnePieceCode(
+    card.card_image_id,
+    card.card_set_id,
+    card.printLabel,
+    card.title,
+    card.description,
+  );
+
+  if (code) {
+    return `https://en.onepiece-cardgame.com/images/cardlist/card/${code}.png`;
   }
 
-  return card.card_set_id
-    ? `https://en.onepiece-cardgame.com/images/cardlist/card/${String(card.card_set_id).toUpperCase()}.png`
-    : "";
+  return card.card_image || "";
 }
 
 async function searchOnePieceEndpoint(endpointCandidates, params) {
