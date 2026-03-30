@@ -32,6 +32,7 @@ export default function CardArtwork({ src, title, game, className = "" }) {
   const [hasError, setHasError] = useState(false);
   const shouldSkipRemoteImage = String(src || "").includes("images.onepiece-cardgame.dev");
   const displaySrc = shouldSkipRemoteImage ? "" : buildImageProxyUrl(src);
+  const compactGameLabel = String(game || "TCG").replace("Dragon Ball Super Fusion World", "Fusion");
 
   useEffect(() => {
     setHasError(false);
@@ -41,7 +42,7 @@ export default function CardArtwork({ src, title, game, className = "" }) {
     return (
       <img
         alt={title}
-        className={className}
+        className={`${className} bg-[var(--surface-hover)] object-top`}
         loading="lazy"
         referrerPolicy="no-referrer"
         src={displaySrc}
@@ -52,19 +53,21 @@ export default function CardArtwork({ src, title, game, className = "" }) {
 
   return (
     <div
-      className={`relative overflow-hidden bg-[linear-gradient(160deg,#f03737_0%,#bf2c2c_48%,#7f1d1d_100%)] ${className}`}
+      className={`relative overflow-hidden bg-[var(--surface-hover)] ${className}`}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(109,134,240,0.28),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.12),transparent_32%)]" />
-      <div className="absolute inset-4 rounded-[20px] border border-white/15 bg-white/5" />
-      <div className="relative flex h-full flex-col justify-between p-5 text-white">
-        <span className="w-fit rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/80">
-          {game}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(240,55,55,0.16),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(17,36,56,0.08),transparent_28%)]" />
+      <div className="absolute inset-[10%] rounded-[10px] border border-[var(--line)] bg-[color-mix(in_srgb,var(--surface-solid)_76%,transparent)]" />
+      <div className="relative flex h-full flex-col justify-between p-2.5 text-ink sm:p-5">
+        <span className="w-fit rounded-full border border-[rgba(177,29,35,0.12)] bg-white/76 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-[0.16em] text-navy sm:px-3 sm:py-1 sm:text-[10px] sm:tracking-[0.22em]">
+          {compactGameLabel}
         </span>
-        <div>
-          <p className="font-display text-2xl font-semibold tracking-[-0.03em]">
-            {game || "TCG"}
+        <div className="space-y-1">
+          <p className="font-display text-[0.95rem] font-semibold leading-none tracking-[-0.03em] sm:text-2xl">
+            {compactGameLabel || "TCG"}
           </p>
-          <p className="mt-2 max-w-[12rem] text-sm text-white/75">{title}</p>
+          <p className="line-clamp-3 max-w-[12rem] text-[10px] leading-4 text-steel sm:text-sm sm:leading-5">
+            {title}
+          </p>
         </div>
       </div>
     </div>

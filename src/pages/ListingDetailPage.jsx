@@ -269,11 +269,11 @@ export default function ListingDetailPage() {
   }
 
   return (
-    <div className="space-y-5 sm:space-y-10">
-      <section className="grid gap-5 xl:grid-cols-[1.06fr_0.94fr] sm:gap-6">
-        <div className="space-y-4 sm:space-y-5">
-          <div className="console-shell p-3 sm:p-6">
-            <div className="grid gap-4 lg:grid-cols-[minmax(290px,380px)_minmax(0,1fr)] sm:gap-5">
+    <div className="space-y-4 sm:space-y-7">
+      <section className="grid gap-4 xl:grid-cols-[1.03fr_0.97fr] sm:gap-5">
+        <div className="space-y-3.5 sm:space-y-4">
+          <div className="console-shell p-3 sm:p-4.5">
+            <div className="grid gap-3.5 lg:grid-cols-[minmax(270px,360px)_minmax(0,1fr)] sm:gap-4">
               <div className="mx-auto w-full max-w-[380px]">
                 <button
                   className="block w-full"
@@ -291,7 +291,7 @@ export default function ListingDetailPage() {
                 </button>
               </div>
 
-              <div className="space-y-3 sm:space-y-4">
+              <div className="space-y-2.5 sm:space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-sm sm:tracking-[0.18em]">
@@ -308,7 +308,7 @@ export default function ListingDetailPage() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <div className="grid grid-cols-3 gap-2">
                   {listing.imageGallery.map((image, index) => (
                     <button
                       key={`${image}-${index}`}
@@ -330,7 +330,7 @@ export default function ListingDetailPage() {
                 </div>
 
                 {listing.bundleItems?.length ? (
-                  <div className="rounded-[18px] border border-slate-200 bg-[#f2f3f5] p-3 sm:rounded-[24px] sm:p-4">
+                  <div className="rounded-[16px] border border-slate-200 bg-[#f2f3f5] p-3 sm:rounded-[18px] sm:p-3.5">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-xs sm:tracking-[0.18em]">
                       Bundle contents
                     </p>
@@ -350,7 +350,7 @@ export default function ListingDetailPage() {
             </div>
           </div>
 
-          <div className="console-panel p-3 sm:p-6">
+          <div className="console-panel p-3 sm:p-4.5">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="section-kicker">Recent Source Sales</p>
@@ -466,8 +466,8 @@ export default function ListingDetailPage() {
           </div>
         </div>
 
-        <div className="space-y-4 sm:space-y-5">
-          <div className="console-shell p-4 sm:p-7">
+        <div className="space-y-3.5 sm:space-y-4">
+          <div className="console-shell p-3.5 sm:p-5">
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] sm:px-3 sm:text-[11px] sm:tracking-[0.18em] ${getListingTypeClasses(
@@ -502,8 +502,8 @@ export default function ListingDetailPage() {
             </h1>
             <p className="mt-2 text-[0.84rem] leading-5 text-steel sm:mt-4 sm:text-base sm:leading-8">{listing.description}</p>
 
-            <div className="mt-3 grid gap-2.5 sm:mt-6 sm:gap-4 sm:grid-cols-2">
-              <div className="rounded-[16px] bg-slate-50 p-3 sm:rounded-[26px] sm:p-5">
+            <div className="mt-3 grid gap-2.5 sm:mt-4 sm:gap-3 sm:grid-cols-2">
+              <div className="rounded-[14px] bg-slate-50 p-3 sm:rounded-[16px] sm:p-4">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-sm sm:tracking-[0.2em]">
                   Asking price
                 </p>
@@ -522,7 +522,7 @@ export default function ListingDetailPage() {
                   {listing.postalCode ? ` | ${listing.postalCode}` : ""}
                 </p>
               </div>
-              <div className="rounded-[16px] bg-navy/8 p-3 sm:rounded-[26px] sm:p-5">
+              <div className="rounded-[14px] bg-navy/8 p-3 sm:rounded-[16px] sm:p-4">
                 <p className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-navy sm:text-sm sm:tracking-[0.2em]">
                   <TrendingUp size={16} />
                   Market average
@@ -540,14 +540,14 @@ export default function ListingDetailPage() {
               </div>
             </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-6 sm:gap-3 sm:grid-cols-4">
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-4 sm:gap-2.5 sm:grid-cols-4">
               {[
                 { label: "Views", value: listing.views },
                 { label: "Offers", value: listing.offers },
                 { label: "Posted", value: listing.timeAgo },
                 { label: "Format", value: listing.listingFormat || "single" },
               ].map((stat) => (
-                <div key={stat.label} className="rounded-[16px] border border-slate-200 px-3 py-2.5 sm:rounded-[24px] sm:px-4 sm:py-4">
+                <div key={stat.label} className="rounded-[14px] border border-slate-200 px-3 py-2.5 sm:rounded-[16px] sm:px-3.5 sm:py-3">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-sm sm:tracking-[0.2em]">
                     {stat.label}
                   </p>
@@ -558,7 +558,7 @@ export default function ListingDetailPage() {
               ))}
             </div>
 
-            <div className="mt-3 grid grid-cols-3 gap-2 sm:mt-6 sm:flex sm:flex-wrap sm:gap-3">
+            <div className="mt-3 grid grid-cols-3 gap-2 sm:mt-4 sm:flex sm:flex-wrap sm:gap-2.5">
               {!isOwner ? (
                 <button
                   aria-label="Make offer"

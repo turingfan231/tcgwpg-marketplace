@@ -50,10 +50,8 @@ export const storeProfiles = [
     address: "Winnipeg, MB",
     siteUrl: "https://www.arcticriftcards.ca/",
     eventsUrl: "https://www.arcticriftcards.ca/",
-    logoUrl:
-      "https://www.arcticriftcards.ca/cdn/shop/files/Untitled_design.png?height=628&pad_color=ffffff&v=1730944237&width=1200",
-    bannerUrl:
-      "https://www.arcticriftcards.ca/cdn/shop/files/Untitled_design.png?height=628&pad_color=ffffff&v=1730944237&width=1200",
+    logoUrl: "/brand/arctic-rift-logo.png",
+    bannerUrl: "/brand/arctic-rift-logo.png",
     approvedMeetup: true,
     tone: "ice",
   },

@@ -164,16 +164,26 @@ export default function AuthPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <section className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
-        <div className="rounded-[36px] bg-[#17394a] p-8 text-white shadow-lift">
-          <p className="section-kicker text-white/70">Access your account</p>
-          <h1 className="mt-3 font-display text-5xl font-semibold leading-tight tracking-[-0.05em]">
-            Login or create a local account.
+      <section className="grid gap-4 xl:grid-cols-[0.78fr_1.22fr] xl:items-start">
+        <div className="console-panel p-5 sm:p-6">
+          <p className="section-kicker">Account access</p>
+          <h1 className="mt-2 font-display text-[2rem] font-semibold leading-[1.02] tracking-[-0.05em] text-ink sm:text-[2.4rem]">
+            Sign in or create your account
           </h1>
-          <p className="mt-4 leading-8 text-white/82">
-            Sign in to message locally, manage listings, save cards, and keep your deals
-            moving inside one account.
+          <p className="mt-3 max-w-lg text-[0.96rem] leading-7 text-steel">
+            Use one account for messages, listings, saved cards, and offers.
           </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="rounded-full border border-[rgba(203,220,231,0.92)] bg-white px-3 py-1.5 text-[0.76rem] font-semibold text-ink">
+              Local messages
+            </span>
+            <span className="rounded-full border border-[rgba(203,220,231,0.92)] bg-white px-3 py-1.5 text-[0.76rem] font-semibold text-ink">
+              Listing tools
+            </span>
+            <span className="rounded-full border border-[rgba(203,220,231,0.92)] bg-white px-3 py-1.5 text-[0.76rem] font-semibold text-ink">
+              Faster deals
+            </span>
+          </div>
         </div>
 
         <div className="surface-card p-7">

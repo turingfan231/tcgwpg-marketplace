@@ -21,38 +21,38 @@ export default function ListingCard({ listing }) {
 
   return (
     <Link
-      className="group block overflow-hidden rounded-[22px] border border-[rgba(203,220,231,0.92)] bg-[linear-gradient(180deg,rgba(250,253,255,0.94),rgba(241,243,245,0.88))] shadow-soft transition duration-300 hover:-translate-y-1 hover:border-navy/20 hover:shadow-lift sm:rounded-[28px]"
+      className="group block overflow-hidden rounded-[12px] border border-[var(--line)] bg-[var(--surface-solid)] shadow-soft transition duration-300 hover:-translate-y-0.5 hover:border-navy/20 hover:shadow-lift"
       to={`/listing/${listing.id}`}
     >
-      <div className="flex gap-2.5 p-2.5 sm:block sm:p-0">
-        <div className="relative flex w-[5.5rem] shrink-0 items-center justify-center rounded-[16px] border border-[rgba(203,220,231,0.82)] bg-[linear-gradient(180deg,#f7fbfe_0%,#e4eef4_100%)] p-2 sm:w-auto sm:rounded-none sm:border-0 sm:border-b sm:border-[rgba(203,220,231,0.78)] sm:px-3 sm:pb-3 sm:pt-3">
+      <div className="flex gap-3 p-2.5 sm:gap-3.5 sm:p-3.5">
+        <div className="relative flex w-[6.2rem] shrink-0 self-start items-center justify-center overflow-hidden rounded-[10px] border border-[var(--line)] bg-[var(--surface-hover)] p-1 sm:w-[6.8rem]">
           <CardArtwork
-            className="aspect-[63/88] w-full rounded-[12px] object-cover shadow-sm sm:w-[8.75rem] sm:max-w-full sm:rounded-[18px] sm:shadow-soft"
+            className="aspect-[63/88] h-full w-full rounded-[8px] object-contain bg-white shadow-sm"
             game={listing.game}
             src={listing.imageUrl}
             title={listing.title}
           />
         </div>
 
-        <div className="min-w-0 flex-1 space-y-2 sm:space-y-3 sm:p-3.5">
+        <div className="min-w-0 flex-1 space-y-2 sm:space-y-2.5">
           <div className="flex items-start justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <div className="flex flex-wrap items-center gap-1">
             <span
-              className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] sm:px-3 sm:text-[11px] sm:tracking-[0.16em] ${getListingTypeClasses(
+              className={`rounded-[8px] px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] sm:text-[10px] ${getListingTypeClasses(
                 listing.type,
               )}`}
             >
               {listing.type}
             </span>
             <span
-              className={`rounded-full px-2.5 py-1 text-[10px] font-semibold sm:px-3 sm:text-[11px] ${getGameClasses(
+              className={`rounded-[8px] px-2 py-1 text-[9px] font-semibold sm:text-[10px] ${getGameClasses(
                 listing.game,
               )}`}
             >
               {listing.game}
             </span>
             {listing.listingFormat && listing.listingFormat !== "single" ? (
-              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-700 sm:px-3 sm:text-[11px] sm:tracking-[0.16em]">
+              <span className="rounded-[8px] bg-[var(--surface-hover)] px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-steel sm:text-[10px]">
                 {listing.listingFormat}
               </span>
             ) : null}
@@ -60,7 +60,7 @@ export default function ListingCard({ listing }) {
 
             <button
               aria-label="Toggle wishlist"
-              className="rounded-full bg-white/90 p-1.5 text-steel shadow-sm transition hover:text-orange sm:p-2"
+              className="rounded-[8px] bg-white/90 p-1.5 text-steel shadow-sm transition hover:text-orange"
               type="button"
               onClick={(event) => {
                 event.preventDefault();
@@ -76,12 +76,12 @@ export default function ListingCard({ listing }) {
           </div>
 
           <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 space-y-1 sm:space-y-1.5">
-            <h3 className="line-clamp-2 font-display text-[0.97rem] font-semibold leading-tight tracking-[-0.03em] text-ink sm:text-[1.22rem]">
+            <div className="min-w-0 space-y-1">
+            <h3 className="line-clamp-2 font-display text-[0.92rem] font-semibold leading-tight tracking-[-0.03em] text-ink sm:text-[1rem]">
               {listing.title}
             </h3>
-            <div className="flex items-center gap-2 text-[0.76rem] text-steel sm:text-sm">
-              <UserAvatar className="h-6 w-6 text-[0.62rem] font-bold sm:h-7 sm:w-7 sm:text-[0.7rem]" user={listing.seller} />
+            <div className="flex items-center gap-1.5 text-[0.72rem] text-steel sm:text-[0.78rem]">
+              <UserAvatar className="h-5 w-5 text-[0.56rem] font-bold sm:h-6 sm:w-6 sm:text-[0.62rem]" user={listing.seller} />
               <span className="truncate">
                 {listing.seller?.publicName || listing.seller?.name} | {listing.timeAgo}
               </span>
@@ -90,40 +90,40 @@ export default function ListingCard({ listing }) {
             <ArrowUpRight className="mt-0.5 h-4 w-4 text-slate-300 transition group-hover:text-navy" />
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5 text-[10px] sm:gap-2 sm:text-xs">
+          <div className="flex flex-wrap items-center gap-1.5 text-[9px] sm:gap-1.5 sm:text-[10px]">
           <span
-            className={`rounded-full px-2.5 py-1 font-semibold uppercase tracking-[0.14em] sm:px-3 sm:tracking-[0.16em] ${getConditionClasses(
+            className={`rounded-[8px] px-2 py-1 font-semibold uppercase tracking-[0.12em] ${getConditionClasses(
               listing.condition,
             )}`}
           >
             {listing.condition}
           </span>
-          <span className="flex items-center gap-1 rounded-full bg-white/78 px-2.5 py-1 font-semibold text-slate-600 sm:px-3">
+          <span className="flex items-center gap-1 rounded-[8px] bg-[var(--surface-hover)] px-2 py-1 font-semibold text-steel">
             <MapPin size={12} />
             {listing.neighborhood}
           </span>
           {listing.acceptsTrade ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-navy px-2.5 py-1 font-semibold uppercase tracking-[0.14em] text-white sm:px-3 sm:tracking-[0.16em]">
+            <span className="inline-flex items-center gap-1 rounded-[8px] bg-navy px-2 py-1 font-semibold uppercase tracking-[0.12em] text-white">
               <Repeat2 size={11} />
               Trades
             </span>
           ) : null}
           {listing.quantity > 1 ? (
-            <span className="rounded-full bg-orange/10 px-2.5 py-1 font-semibold text-orange sm:px-3">
+            <span className="rounded-[8px] bg-orange/10 px-2 py-1 font-semibold text-orange">
               {listing.quantity}x available
             </span>
           ) : null}
           </div>
 
-          <div className="flex items-end justify-between gap-3 border-t border-[rgba(203,220,231,0.75)] pt-2 sm:gap-4 sm:pt-2.5">
-            <div className="space-y-0.5 sm:space-y-1">
+          <div className="flex items-end justify-between gap-2 border-t border-[var(--line)] pt-2 sm:gap-3 sm:pt-2.5">
+            <div className="space-y-1">
             <div className="flex items-center gap-2">
               {hasSalePrice ? (
-                <span className="text-xs font-semibold text-slate-400 line-through sm:text-base">
+                <span className="text-[0.7rem] font-semibold text-slate-400 line-through sm:text-[0.78rem]">
                   {formatCadPrice(listing.previousPrice, listing.priceCurrency || "CAD")}
                 </span>
               ) : null}
-              <span className="font-display text-[1.18rem] font-semibold tracking-[-0.03em] text-ink sm:text-[1.72rem]">
+              <span className="font-display text-[1rem] font-semibold tracking-[-0.03em] text-ink sm:text-[1.12rem]">
                 {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
               </span>
               {listing.marketPrice ? (
@@ -143,7 +143,7 @@ export default function ListingCard({ listing }) {
                 </div>
               ) : null}
             </div>
-            <p className="text-[0.7rem] text-steel sm:text-sm">
+            <p className="text-[0.64rem] text-steel sm:text-[0.72rem]">
               {listing.views} views | {listing.offers} offers
             </p>
           </div>

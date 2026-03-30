@@ -202,8 +202,8 @@ export default function StoreProfilePage() {
               </div>
             </div>
 
-            <div className="rounded-[16px] border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))] p-2 backdrop-blur-sm sm:rounded-[28px] sm:p-4">
-              <div className="flex h-full min-h-[4.75rem] items-center justify-center rounded-[14px] border border-[rgba(255,255,255,0.82)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,243,243,0.96))] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.74),0_14px_34px_rgba(80,16,16,0.12)] sm:min-h-[9rem] sm:rounded-[22px] sm:px-5 sm:py-4">
+            <div className="rounded-[16px] border border-white/14 bg-[rgba(255,255,255,0.08)] p-2 sm:rounded-[28px] sm:p-4">
+              <div className="flex h-full min-h-[4.75rem] items-center justify-center rounded-[14px] bg-[#f6f7f8] px-3 py-2 sm:min-h-[9rem] sm:rounded-[22px] sm:px-5 sm:py-4">
                 {store.logoUrl ? (
                 <img alt={store.name} className="h-12 w-full object-contain sm:h-24" src={store.logoUrl} />
                 ) : null}

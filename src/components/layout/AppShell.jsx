@@ -10,6 +10,7 @@ import MobileTabBar from "./MobileTabBar";
 
 const INSTALL_DISMISS_KEY = "tcgwpg.installPromptDismissed";
 const ONBOARDING_DISMISS_KEY = "tcgwpg.onboardingDismissed";
+const COLOR_MODE_KEY = "tcgwpg.colorMode";
 const CreateListingModal = lazy(() => import("../modals/CreateListingModal"));
 const OnboardingModal = lazy(() => import("../modals/OnboardingModal"));
 
@@ -31,6 +32,18 @@ export default function AppShell() {
   const [installVisible, setInstallVisible] = useState(false);
   const [appBooted, setAppBooted] = useState(false);
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
+  const [colorMode, setColorMode] = useState(() => {
+    if (typeof window === "undefined") {
+      return "light";
+    }
+
+    const storedMode = window.localStorage.getItem(COLOR_MODE_KEY);
+    if (storedMode === "light" || storedMode === "dark") {
+      return storedMode;
+    }
+
+    return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ? "dark" : "light";
+  });
 
   const isStandalone = useMemo(() => {
     if (typeof window === "undefined") {
@@ -161,6 +174,21 @@ export default function AppShell() {
   }, [activeTheme]);
 
   useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      return undefined;
+    }
+
+    const root = document.documentElement;
+    const body = document.body;
+    root.dataset.colorMode = colorMode;
+    body.dataset.colorMode = colorMode;
+    root.style.colorScheme = colorMode;
+    window.localStorage.setItem(COLOR_MODE_KEY, colorMode);
+
+    return undefined;
+  }, [colorMode]);
+
+  useEffect(() => {
     const timeout = window.setTimeout(() => setAppBooted(true), 1400);
     return () => window.clearTimeout(timeout);
   }, []);
@@ -208,21 +236,36 @@ export default function AppShell() {
     }
   }
 
+  function toggleColorMode() {
+    setColorMode((currentMode) => (currentMode === "dark" ? "light" : "dark"));
+  }
+
   const isMobileThreadRoute = /^\/messages\/[^/]+/.test(location.pathname);
 
   return (
     <div
-      className="min-h-screen bg-transparent"
+      className="square-preview min-h-screen bg-transparent"
+      data-color-mode={colorMode}
       data-theme-preset={activeTheme.id}
       style={themeStyle}
     >
       {showLaunchScreen ? <AppLaunchScreen /> : null}
       {isMobileThreadRoute ? (
         <div className="hidden lg:block">
-          <Header canInstallApp={installState.visible || !isStandalone} onOpenInstallPrompt={openInstallPrompt} />
+          <Header
+            canInstallApp={installState.visible || !isStandalone}
+            colorMode={colorMode}
+            onOpenInstallPrompt={openInstallPrompt}
+            onToggleColorMode={toggleColorMode}
+          />
         </div>
       ) : (
-        <Header canInstallApp={installState.visible || !isStandalone} onOpenInstallPrompt={openInstallPrompt} />
+        <Header
+          canInstallApp={installState.visible || !isStandalone}
+          colorMode={colorMode}
+          onOpenInstallPrompt={openInstallPrompt}
+          onToggleColorMode={toggleColorMode}
+        />
       )}
       {isSuspended ? (
         <div className="border-b border-rose-200 bg-rose-50">
@@ -270,7 +313,7 @@ export default function AppShell() {
         </div>
       </main>
 
-      <footer className="hidden border-t border-[rgba(145,38,43,0.12)] bg-transparent md:block">
+      <footer className="app-footer-chrome hidden border-t md:block">
         <div className="page-shell py-10">
           <div className="console-shell px-6 py-7 sm:px-8">
             <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr_0.8fr]">
@@ -344,8 +387,8 @@ export default function AppShell() {
         </div>
       </footer>
 
-      <div className={`${isMobileThreadRoute ? "hidden" : "block"} border-t border-[rgba(145,38,43,0.12)] bg-[rgba(251,248,248,0.96)] px-4 py-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-steel md:hidden`}>
-        WPG Marketplace | Local cards, faster deals
+      <div className={`${isMobileThreadRoute ? "hidden" : "block"} app-footer-chrome border-t px-4 py-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-steel md:hidden`}>
+        TCG Wpg Marketplace | Local cards, faster deals
       </div>
 
       <Suspense fallback={null}>

@@ -10,6 +10,8 @@
   --theme-primary-rgb: 177, 29, 35;
   --theme-accent: #ef3b33;
   --theme-accent-rgb: 239, 59, 51;
+  --ink: #23262d;
+  --steel: #6f727b;
   --paper: #f5efef;
   --paper-strong: rgba(255, 255, 255, 0.88);
   --line: rgba(145, 38, 43, 0.12);
@@ -18,11 +20,57 @@
   --glass-fill: rgba(247, 242, 242, 0.96);
   --shimmer-base: rgba(232, 224, 224, 0.9);
   --shimmer-highlight: rgba(255, 255, 255, 0.98);
+  --page-start: #fbf8f8;
+  --page-mid: #f5efef;
+  --page-end: #f9f5f5;
+  --chrome-bg: rgba(251, 248, 248, 0.9);
+  --footer-bg: rgba(251, 248, 248, 0.96);
+  --panel-top: rgba(255, 255, 255, 0.97);
+  --panel-bottom: rgba(245, 239, 239, 0.95);
+  --well-top: rgba(252, 249, 249, 0.96);
+  --well-bottom: rgba(243, 237, 237, 0.94);
+  --handheld-top: rgba(254, 252, 252, 0.96);
+  --handheld-bottom: rgba(245, 239, 239, 0.94);
+  --drawer-bg: linear-gradient(180deg, #fbf8f8 0%, #f3ecec 100%);
+  --input-bg: rgba(255, 255, 255, 0.88);
+  --surface-solid: rgba(255, 255, 255, 0.98);
+  --surface-alt: rgba(250, 250, 251, 0.98);
+  --surface-hover: rgba(245, 247, 250, 0.9);
+}
+
+:root[data-color-mode="dark"] {
+  color-scheme: dark;
+  --ink: #f5f7fb;
+  --steel: #a4abb8;
+  --paper: #111317;
+  --paper-strong: rgba(20, 22, 27, 0.92);
+  --line: rgba(255, 255, 255, 0.1);
+  --ink-shadow: 0 30px 80px -48px rgba(0, 0, 0, 0.48);
+  --glass-highlight: rgba(30, 33, 39, 0.96);
+  --glass-fill: rgba(20, 22, 27, 0.96);
+  --shimmer-base: rgba(37, 41, 49, 0.92);
+  --shimmer-highlight: rgba(63, 69, 80, 0.98);
+  --page-start: #0d0f13;
+  --page-mid: #13161c;
+  --page-end: #0f1217;
+  --chrome-bg: rgba(12, 14, 18, 0.9);
+  --footer-bg: rgba(10, 12, 16, 0.96);
+  --panel-top: rgba(24, 27, 33, 0.98);
+  --panel-bottom: rgba(18, 20, 25, 0.96);
+  --well-top: rgba(28, 31, 37, 0.94);
+  --well-bottom: rgba(21, 24, 29, 0.92);
+  --handheld-top: rgba(25, 28, 34, 0.96);
+  --handheld-bottom: rgba(19, 22, 27, 0.94);
+  --drawer-bg: linear-gradient(180deg, #12151a 0%, #0f1217 100%);
+  --input-bg: rgba(19, 22, 27, 0.9);
+  --surface-solid: rgba(20, 22, 27, 0.98);
+  --surface-alt: rgba(25, 28, 34, 0.98);
+  --surface-hover: rgba(255, 255, 255, 0.04);
 }
 
 html {
   scroll-behavior: smooth;
-  background: #f7f2f2;
+  background: var(--page-start);
   overflow-x: clip;
 }
 
@@ -33,7 +81,8 @@ body {
   background:
     radial-gradient(circle at top left, rgba(var(--theme-primary-rgb), 0.07), transparent 24%),
     radial-gradient(circle at top right, rgba(var(--theme-accent-rgb), 0.05), transparent 24%),
-    linear-gradient(180deg, #fbf8f8 0%, #f5efef 48%, #f9f5f5 100%);
+    linear-gradient(180deg, var(--page-start) 0%, var(--page-mid) 48%, var(--page-end) 100%);
+  color: var(--ink);
 }
 
 a {
@@ -58,7 +107,7 @@ a {
 .panel {
   @apply rounded-[28px] border bg-white shadow-soft;
   border-color: var(--line);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 242, 242, 0.94));
+  background: linear-gradient(180deg, var(--panel-top), var(--panel-bottom));
   box-shadow: var(--ink-shadow);
 }
 
@@ -84,8 +133,7 @@ a {
 .surface-muted {
   @apply rounded-[28px] border shadow-soft;
   border-color: var(--line);
-  background:
-    linear-gradient(180deg, rgba(252, 249, 249, 0.96), rgba(243, 236, 236, 0.94));
+  background: linear-gradient(180deg, var(--well-top), var(--well-bottom));
   box-shadow: var(--ink-shadow);
 }
 
@@ -226,7 +274,7 @@ a {
   border-color: var(--line);
   background:
     radial-gradient(circle at top right, rgba(255, 255, 255, 0.88), transparent 25%),
-    linear-gradient(180deg, rgba(252, 249, 249, 0.94), rgba(243, 237, 237, 0.92));
+    linear-gradient(180deg, var(--well-top), var(--well-bottom));
   backdrop-filter: blur(20px);
 }
 
@@ -236,7 +284,7 @@ a {
   background:
     radial-gradient(circle at top left, rgba(255, 255, 255, 0.92), transparent 24%),
     radial-gradient(circle at bottom right, rgba(var(--theme-primary-rgb), 0.12), transparent 24%),
-    linear-gradient(180deg, rgba(251, 247, 247, 0.98), rgba(241, 232, 232, 0.94));
+    linear-gradient(180deg, var(--handheld-top), var(--handheld-bottom));
   box-shadow:
     0 30px 80px -46px rgba(91, 22, 22, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.76);
@@ -247,7 +295,7 @@ a {
   border-radius: 1.8rem;
   background:
     radial-gradient(circle at top left, rgba(255, 255, 255, 0.72), transparent 30%),
-    linear-gradient(180deg, rgba(254, 252, 252, 0.96), rgba(245, 239, 239, 0.94));
+    linear-gradient(180deg, var(--handheld-top), var(--handheld-bottom));
   box-shadow:
     0 22px 52px -42px rgba(91, 22, 22, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.78);
@@ -260,7 +308,7 @@ a {
   background:
     radial-gradient(circle at top left, rgba(255, 255, 255, 0.88), transparent 26%),
     radial-gradient(circle at bottom right, rgba(var(--theme-primary-rgb), 0.1), transparent 24%),
-    linear-gradient(180deg, rgba(252, 249, 249, 0.98), rgba(244, 238, 238, 0.96));
+    linear-gradient(180deg, var(--panel-top), var(--panel-bottom));
   box-shadow:
     0 34px 90px -54px rgba(91, 22, 22, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
@@ -271,7 +319,7 @@ a {
   border-color: rgba(145, 38, 43, 0.12);
   background:
     radial-gradient(circle at top right, rgba(255, 255, 255, 0.84), transparent 24%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(245, 239, 239, 0.95));
+    linear-gradient(180deg, var(--panel-top), var(--panel-bottom));
   box-shadow:
     0 24px 56px -44px rgba(91, 22, 22, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
@@ -281,8 +329,7 @@ a {
 .console-well {
   @apply rounded-[24px] border;
   border-color: rgba(145, 38, 43, 0.12);
-  background:
-    linear-gradient(180deg, rgba(252, 249, 249, 0.96), rgba(243, 237, 237, 0.94));
+  background: linear-gradient(180deg, var(--well-top), var(--well-bottom));
 }
 
 .binder-edge {
@@ -458,7 +505,62 @@ a {
   @apply rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em];
   border-color: rgba(145, 38, 43, 0.12);
   background: rgba(255, 255, 255, 0.74);
-  color: #7a4d4d;
+  color: color-mix(in srgb, var(--theme-primary) 70%, var(--ink) 30%);
+}
+
+.app-header-chrome {
+  border-color: var(--line);
+  background: var(--chrome-bg);
+}
+
+.app-footer-chrome {
+  border-color: var(--line);
+  background: var(--footer-bg);
+}
+
+.app-drawer-chrome {
+  background: var(--drawer-bg);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in srgb, var(--steel) 88%, transparent);
+}
+
+.text-ink {
+  color: var(--ink) !important;
+}
+
+.text-steel {
+  color: var(--steel) !important;
+}
+
+.bg-white {
+  background-color: var(--surface-solid) !important;
+}
+
+.bg-white\/82 {
+  background-color: color-mix(in srgb, var(--surface-solid) 82%, transparent) !important;
+}
+
+.bg-white\/55 {
+  background-color: color-mix(in srgb, var(--surface-solid) 55%, transparent) !important;
+}
+
+.bg-gray-50 {
+  background-color: transparent !important;
+}
+
+.border-slate-100 {
+  border-color: color-mix(in srgb, var(--ink) 8%, transparent) !important;
+}
+
+.border-slate-200 {
+  border-color: color-mix(in srgb, var(--ink) 12%, transparent) !important;
+}
+
+.hover\:bg-slate-50:hover {
+  background-color: var(--surface-hover) !important;
 }
 
 .shelf-divider {
@@ -540,7 +642,7 @@ a {
   background:
     radial-gradient(circle at 20% 10%, rgba(var(--theme-primary-rgb), 0.08), transparent 24%),
     radial-gradient(circle at 80% 12%, rgba(var(--theme-accent-rgb), 0.1), transparent 24%),
-    rgba(247, 242, 242, 0.94);
+    color-mix(in srgb, var(--page-start) 94%, transparent);
   backdrop-filter: blur(22px);
 }
 
@@ -559,7 +661,7 @@ a {
   padding: 2rem 1.4rem;
   border: 1px solid rgba(145, 38, 43, 0.08);
   border-radius: 2rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 243, 243, 0.84));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface-solid) 94%, transparent), color-mix(in srgb, var(--panel-bottom) 86%, transparent));
   box-shadow: 0 32px 80px -48px rgba(91, 22, 22, 0.16);
   backdrop-filter: blur(26px);
 }
@@ -749,6 +851,110 @@ a {
 
 .message-pop {
   animation: message-pop 260ms cubic-bezier(0.2, 0.82, 0.2, 1) both;
+}
+
+.square-preview {
+  --square-radius: 8px;
+  --square-radius-tight: 6px;
+  --square-shadow: 0 10px 26px -22px rgba(27, 31, 38, 0.14);
+}
+
+.square-preview :is(
+  .panel,
+  .surface-card,
+  .surface-muted,
+  .app-pane,
+  .handheld-shell,
+  .handheld-module,
+  .console-shell,
+  .console-panel,
+  .console-well,
+  [class*="rounded-"]
+) {
+  border-radius: var(--square-radius) !important;
+}
+
+.square-preview :is(
+  button,
+  input,
+  select,
+  textarea
+) {
+  border-radius: var(--square-radius-tight) !important;
+}
+
+.square-preview :is(
+  .panel,
+  .surface-card,
+  .surface-muted,
+  .app-pane,
+  .handheld-shell,
+  .handheld-module,
+  .console-shell,
+  .console-panel,
+  .console-well
+) {
+  box-shadow: var(--square-shadow) !important;
+  backdrop-filter: none !important;
+}
+
+.square-preview .collector-strip-bar {
+  border-radius: 0.45rem !important;
+}
+
+.square-preview .launch-meter,
+.square-preview .launch-meter-bar,
+.square-preview .app-top-loader {
+  border-radius: 0.25rem !important;
+}
+
+.square-preview .binder-edge::before {
+  display: none !important;
+}
+
+.square-preview body,
+.square-preview .surface-card,
+.square-preview .surface-muted,
+.square-preview .panel,
+.square-preview .app-pane,
+.square-preview .handheld-shell,
+.square-preview .handheld-module,
+.square-preview .console-shell,
+.square-preview .console-panel,
+.square-preview .console-well {
+  background-image: none !important;
+}
+
+.square-preview .surface-card,
+.square-preview .surface-muted,
+.square-preview .panel,
+.square-preview .app-pane,
+.square-preview .console-shell,
+.square-preview .console-panel,
+.square-preview .console-well {
+  background-color: var(--surface-solid) !important;
+  border-color: var(--line) !important;
+}
+
+.square-preview .handheld-shell,
+.square-preview .handheld-module {
+  background-color: var(--surface-alt) !important;
+  border-color: var(--line) !important;
+}
+
+.square-preview .console-chip,
+.square-preview .section-kicker {
+  letter-spacing: 0.14em !important;
+}
+
+.square-preview .group:hover,
+.square-preview button:hover,
+.square-preview a:hover {
+  transform: none !important;
+}
+
+.square-preview .collector-strip-mark {
+  gap: 0.25rem;
 }
 
 @keyframes message-pop {

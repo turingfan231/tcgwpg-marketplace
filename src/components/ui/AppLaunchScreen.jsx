@@ -1,15 +1,12 @@
+import BrandLogo from "../shared/BrandLogo";
+
 export default function AppLaunchScreen({ compact = false }) {
   return (
     <div className={`launch-screen ${compact ? "launch-screen-compact" : ""}`}>
       <div className="launch-screen-panel">
         <div className="launch-orb" aria-hidden="true" />
-        <div className="collector-strip-mark" aria-hidden="true">
-          <span className="collector-strip-bar">T</span>
-          <span className="collector-strip-bar">C</span>
-          <span className="collector-strip-bar">G</span>
-        </div>
+        <BrandLogo imgClassName="h-20 w-auto max-w-[18rem] object-contain sm:h-24 sm:max-w-[21rem]" />
         <div className="space-y-2 text-center">
-          <p className="font-display text-2xl font-semibold tracking-[-0.05em] text-ink">WPG Marketplace</p>
           <p className="text-sm text-steel">Local cards, faster deals</p>
         </div>
         <div className="launch-meter" aria-hidden="true">

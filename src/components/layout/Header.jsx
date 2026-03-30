@@ -8,15 +8,18 @@ import {
   LogOut,
   Menu,
   MessageCircle,
+  Moon,
   Search,
   Shield,
   Store,
+  SunMedium,
   UserRound,
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useMarketplace } from "../../hooks/useMarketplace";
+import BrandLogo from "../shared/BrandLogo";
 import UserAvatar from "../shared/UserAvatar";
 
 const browseLinks = [
@@ -36,7 +39,12 @@ const utilityLinks = [
   { to: "/events", label: "Events" },
 ];
 
-export default function Header({ canInstallApp = false, onOpenInstallPrompt = null }) {
+export default function Header({
+  canInstallApp = false,
+  colorMode = "light",
+  onOpenInstallPrompt = null,
+  onToggleColorMode = null,
+}) {
   const navigate = useNavigate();
   const accountMenuRef = useRef(null);
   const mobileDrawerRef = useRef(null);
@@ -122,6 +130,8 @@ export default function Header({ canInstallApp = false, onOpenInstallPrompt = nu
   }
 
   const menuNotificationCount = safeUnreadNotificationCount;
+  const colorModeLabel = colorMode === "dark" ? "Dark mode" : "Light mode";
+  const ColorModeIcon = colorMode === "dark" ? SunMedium : Moon;
   const accountMenuItems = [
     {
       to: "/account",
@@ -175,33 +185,33 @@ export default function Header({ canInstallApp = false, onOpenInstallPrompt = nu
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-[rgba(145,38,43,0.12)] bg-[rgba(251,248,248,0.9)] backdrop-blur-2xl">
-        <div className="page-shell py-2.5 sm:py-4">
-          <div className="console-panel px-2.5 py-2.5 sm:px-4 sm:py-4">
-          <div className="flex items-center justify-between gap-2 sm:gap-2.5">
-            <Link className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3" to="/">
-              <div className="collector-strip-mark shrink-0" aria-hidden="true">
-                <span className="collector-strip-bar">T</span>
-                <span className="collector-strip-bar">C</span>
-                <span className="collector-strip-bar">G</span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="hidden truncate font-display text-[1.7rem] font-semibold leading-none tracking-[-0.05em] text-ink sm:block">
-                  WPG Marketplace
-                </p>
-                <div className="sm:hidden pr-1">
-                  <p className="font-display text-[0.78rem] font-semibold leading-none tracking-[-0.05em] text-ink">
-                    WPG
-                  </p>
-                  <p className="font-display text-[0.78rem] font-semibold leading-none tracking-[-0.05em] text-ink">
-                    Marketplace
-                  </p>
-                </div>
-                <p className="hidden text-sm text-navy sm:block">Local cards, faster deals</p>
+      <header className="app-header-chrome sticky top-0 z-40 border-b backdrop-blur-2xl">
+        <div className="page-shell py-0.5 sm:py-1">
+          <div className="console-panel px-2.5 py-0.5 sm:px-4 sm:py-1.5">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-2 sm:gap-3">
+            <div className="flex min-w-0 items-start pl-1 pt-1 sm:pl-2 sm:pt-2">
+              {onToggleColorMode ? (
+                <button
+                  className="hidden items-center gap-2 rounded-full border border-[rgba(145,38,43,0.12)] bg-white/82 px-4 py-2.5 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink sm:inline-flex"
+                  type="button"
+                  onClick={onToggleColorMode}
+                >
+                  <ColorModeIcon size={16} />
+                  {colorModeLabel}
+                </button>
+              ) : null}
+            </div>
+
+            <Link className="flex min-w-0 justify-center" to="/">
+              <div className="inline-flex pt-1 sm:pt-1.5">
+                <BrandLogo
+                  className="inline-flex"
+                  imgClassName="h-12 w-auto max-w-[12rem] object-contain sm:h-[4.25rem] sm:max-w-[20rem] lg:h-[4.75rem] lg:max-w-[24rem]"
+                />
               </div>
             </Link>
 
-            <div className="flex shrink-0 items-center gap-1.5">
+            <div className="flex shrink-0 items-center justify-end gap-1.5 self-start pt-1 sm:pt-2">
               <Link
                 className="relative inline-flex items-center justify-center rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 p-2 text-steel transition hover:border-slate-300 hover:text-ink md:px-4 md:py-2.5"
                 to="/messages"
@@ -312,13 +322,13 @@ export default function Header({ canInstallApp = false, onOpenInstallPrompt = nu
             </div>
           </div>
 
-          <form className="relative mt-2.5 min-w-0" onSubmit={handleSubmit}>
+          <form className="relative mt-0 min-w-0" onSubmit={handleSubmit}>
             <Search
               className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-steel"
               size={18}
             />
             <input
-            className="w-full rounded-[20px] border border-[rgba(145,38,43,0.12)] bg-[rgba(255,255,255,0.88)] py-2.5 pl-11 pr-4 text-sm text-ink outline-none transition focus:border-navy focus:bg-white sm:py-3.5"
+            className="w-full rounded-[20px] border border-[rgba(145,38,43,0.12)] bg-[var(--input-bg)] py-2.5 pl-11 pr-4 text-sm text-ink outline-none transition focus:border-navy focus:bg-[var(--surface-solid)] sm:py-3.5"
               placeholder="Search cards, set codes, variants, or sellers"
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
@@ -375,14 +385,12 @@ export default function Header({ canInstallApp = false, onOpenInstallPrompt = nu
           />
           <div
             ref={mobileDrawerRef}
-            className="absolute right-0 top-0 flex h-full w-full max-w-[22rem] flex-col bg-[linear-gradient(180deg,#fbf8f8_0%,#f3ecec_100%)] shadow-lift"
+            className="app-drawer-chrome absolute right-0 top-0 flex h-full w-full max-w-[22rem] flex-col shadow-lift"
           >
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
               <div>
                 <p className="section-kicker">Navigation</p>
-                <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-ink">
-                  WPG Marketplace
-                </p>
+                <BrandLogo className="mt-3" imgClassName="h-10 w-auto max-w-[11rem] object-contain" />
               </div>
               <button
                 className="rounded-full border border-slate-200 p-2 text-steel"
@@ -522,6 +530,25 @@ export default function Header({ canInstallApp = false, onOpenInstallPrompt = nu
                   </Link>
                 )}
               </div>
+
+              {onToggleColorMode ? (
+                <div className="mt-6 border-t border-slate-200 pt-6">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                    Appearance
+                  </p>
+                  <button
+                    className="mt-3 inline-flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-ink"
+                    type="button"
+                    onClick={() => {
+                      onToggleColorMode();
+                      setMobileDrawerOpen(false);
+                    }}
+                  >
+                    <ColorModeIcon size={16} />
+                    {colorMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                  </button>
+                </div>
+              ) : null}
 
               {canInstallApp ? (
                 <div className="mt-6 border-t border-slate-200 pt-6">

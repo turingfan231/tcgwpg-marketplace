@@ -182,64 +182,64 @@ export default function MarketPage() {
   }
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-4 sm:space-y-5">
       <section className="console-shell overflow-hidden">
-        <div className="flex items-center justify-between gap-4 p-4 sm:hidden">
+        <div className="flex items-center justify-between gap-3 p-3.5 sm:hidden">
           <div className="min-w-0">
             <p className="section-kicker">Market</p>
-            <h1 className="mt-1 truncate font-display text-[1.55rem] font-semibold tracking-[-0.05em] text-ink">
+            <h1 className="mt-1 truncate font-display text-[1.38rem] font-semibold tracking-[-0.05em] text-ink">
               {selectedGame?.name || "All listings"}
             </h1>
-            <p className="mt-1 text-sm text-steel">{filteredListings.length} live matches.</p>
+            <p className="mt-0.5 text-[0.82rem] text-steel">{filteredListings.length} live matches.</p>
           </div>
           <button
-            className="shrink-0 rounded-full bg-navy px-4 py-2.5 text-sm font-semibold text-white shadow-soft"
+            className="shrink-0 rounded-full bg-navy px-3.5 py-2 text-[0.82rem] font-semibold text-white shadow-soft"
             type="button"
             onClick={() => openCreateListing({ type: "WTS" })}
           >
             Sell
           </button>
         </div>
-        <div className="hidden gap-5 p-5 sm:grid sm:p-7 xl:grid-cols-[1.3fr_0.7fr] xl:items-end">
+        <div className="hidden gap-4 p-4 sm:grid sm:p-5 xl:grid-cols-[1.25fr_0.75fr] xl:items-end">
           <div>
             <p className="section-kicker">Market feed</p>
-            <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-ink sm:text-[3.25rem]">
+            <h1 className="mt-2 font-display text-[2.5rem] font-semibold tracking-[-0.05em] text-ink">
               {selectedGame?.name || "All Listings"}
             </h1>
-            <p className="mt-4 max-w-2xl text-base leading-8 text-steel">
+            <p className="mt-3 max-w-xl text-[0.95rem] leading-7 text-steel">
               {selectedGame?.description ||
                 "Search by card, seller, neighborhood, or condition without leaving the market feed."}
             </p>
           </div>
 
           <div className="flex flex-wrap justify-end gap-2">
-            <span className="inline-flex rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 px-4 py-2 text-sm font-semibold text-ink">
+            <span className="inline-flex rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 px-3.5 py-1.5 text-[0.82rem] font-semibold text-ink">
               {filteredListings.length} matches
             </span>
-            <span className="inline-flex rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 px-4 py-2 text-sm font-semibold text-ink">
+            <span className="inline-flex rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 px-3.5 py-1.5 text-[0.82rem] font-semibold text-ink">
               {selectedNeighborhood}
             </span>
-            <span className="inline-flex rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 px-4 py-2 text-sm font-semibold text-ink">
+            <span className="inline-flex rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 px-3.5 py-1.5 text-[0.82rem] font-semibold text-ink">
               {savedFilters.length} saved
             </span>
           </div>
         </div>
       </section>
 
-      <section className="console-panel space-y-4 p-4 sm:space-y-5 sm:p-5 lg:p-6">
-        <div className="grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,0.75fr)_minmax(0,0.6fr)_auto]">
+      <section className="console-panel space-y-3.5 p-3.5 sm:space-y-4 sm:p-4.5 lg:p-5">
+        <div className="grid gap-2.5 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,0.72fr)_minmax(0,0.58fr)_auto]">
           <label className="block">
-            <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-steel">
+            <span className="mb-1.5 flex items-center gap-2 text-[0.82rem] font-semibold text-steel">
               <Search size={16} />
               Search the market
             </span>
             <div className="relative">
               <Search
-                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-steel"
-                size={16}
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-steel"
+                size={15}
               />
               <input
-              className="w-full rounded-[20px] border border-[rgba(203,220,231,0.92)] bg-[rgba(249,252,255,0.84)] py-3 pl-11 pr-4 outline-none transition focus:border-navy focus:bg-white"
+                className="w-full rounded-[16px] border border-[rgba(203,220,231,0.92)] bg-[rgba(249,252,255,0.84)] py-2.5 pl-10 pr-3.5 text-[0.92rem] outline-none transition focus:border-navy focus:bg-white"
                 placeholder="Card, set code, seller, condition"
                 value={marketSearch}
                 onChange={(event) => handleSearchChange(event.target.value)}
@@ -248,12 +248,12 @@ export default function MarketPage() {
           </label>
 
           <label className="block">
-            <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-steel">
+            <span className="mb-1.5 flex items-center gap-2 text-[0.82rem] font-semibold text-steel">
               <MapPin size={16} />
               Neighborhood
             </span>
             <select
-              className="w-full rounded-[20px] border border-[rgba(203,220,231,0.92)] bg-[rgba(249,252,255,0.84)] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              className="w-full rounded-[16px] border border-[rgba(203,220,231,0.92)] bg-[rgba(249,252,255,0.84)] px-3.5 py-2.5 text-[0.92rem] outline-none transition focus:border-navy focus:bg-white"
               value={selectedNeighborhood}
               onChange={(event) => setSelectedNeighborhood(event.target.value)}
             >
@@ -264,12 +264,12 @@ export default function MarketPage() {
           </label>
 
           <label className="block">
-            <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-steel">
+            <span className="mb-1.5 flex items-center gap-2 text-[0.82rem] font-semibold text-steel">
               <ArrowUpDown size={16} />
               Sort
             </span>
             <select
-              className="w-full rounded-[20px] border border-[rgba(203,220,231,0.92)] bg-[rgba(249,252,255,0.84)] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              className="w-full rounded-[16px] border border-[rgba(203,220,231,0.92)] bg-[rgba(249,252,255,0.84)] px-3.5 py-2.5 text-[0.92rem] outline-none transition focus:border-navy focus:bg-white"
               value={sortBy}
               onChange={(event) => setSortBy(event.target.value)}
             >
@@ -282,7 +282,7 @@ export default function MarketPage() {
 
           <div className="flex flex-col justify-end gap-2 sm:flex-row xl:flex-col">
             <button
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-navy px-4 py-3 text-sm font-semibold text-white"
+              className="inline-flex items-center justify-center gap-2 rounded-[16px] bg-navy px-3.5 py-2.5 text-[0.84rem] font-semibold text-white"
               type="button"
               onClick={saveCurrentFilter}
             >
@@ -290,7 +290,7 @@ export default function MarketPage() {
               Save filter
             </button>
             <button
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+              className="inline-flex items-center justify-center gap-2 rounded-[16px] border border-slate-200 bg-white px-3.5 py-2.5 text-[0.84rem] font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
               type="button"
               onClick={clearFilters}
             >
@@ -301,15 +301,15 @@ export default function MarketPage() {
         </div>
 
         {activeFilterChips.length ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-steel">
               <SlidersHorizontal size={14} />
               Active
             </span>
             {activeFilterChips.map((chip) => (
               <span
                 key={chip}
-                className="rounded-full border border-[rgba(203,220,231,0.92)] bg-white/75 px-3 py-1.5 text-sm font-semibold text-ink"
+                className="rounded-full border border-[rgba(203,220,231,0.92)] bg-white/75 px-2.5 py-1 text-[0.78rem] font-semibold text-ink"
               >
                 {chip}
               </span>
@@ -318,15 +318,15 @@ export default function MarketPage() {
         ) : null}
 
         {savedFilters.length ? (
-          <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+          <div className="space-y-2.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-steel">
               Saved searches
             </p>
             <div className="header-chip-scroll flex gap-2 overflow-x-auto pb-1">
               {savedFilters.map((filter) => (
                 <button
                   key={filter.id}
-                  className="whitespace-nowrap rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 px-4 py-2 text-sm font-semibold text-ink transition hover:border-slate-300 hover:bg-[rgba(250,253,255,0.95)]"
+                  className="whitespace-nowrap rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 px-3 py-1.5 text-[0.8rem] font-semibold text-ink transition hover:border-slate-300 hover:bg-[rgba(250,253,255,0.95)]"
                   type="button"
                   onClick={() => applySavedFilter(filter)}
                 >
@@ -339,7 +339,7 @@ export default function MarketPage() {
       </section>
 
       {filteredListings.length ? (
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        <section className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {filteredListings.map((listing) => (
             <ListingCard key={listing.id} listing={listing} />
           ))}

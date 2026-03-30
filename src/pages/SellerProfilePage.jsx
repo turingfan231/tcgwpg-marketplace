@@ -22,15 +22,15 @@ const bannerToneMap = {
 
 const sellerBannerArtMap = {
   pokemon:
-    "https://bouncycastlenetwork-res.cloudinary.com/image/upload/f_auto,q_auto,c_limit,w_1000/ff36cb86b0aefad50ddd401ff138fde5",
+    "https://www.metagames.toys/cdn/shop/collections/Imagens_das_categorias_1880_x_500_px_b14a0c20-da0b-49e9-8d5c-d2dc020a6e1a.png?v=1718376850&width=1100",
   magic:
-    "https://shikdartrading.com/cdn/shop/files/MTG_Banner_2.jpg?v=1730184513&width=3840",
+    "https://static.posters.cz/image/hp/77610.jpg",
   "one-piece":
-    "https://www.toei-animation.com/wp-content/uploads/2019/02/collage-1920x595.png",
+    "https://www.beserk.com.au/cdn/shop/files/2023_Header_One-Piece.jpg?v=1693436857&width=1500",
   "dragon-ball-fusion-world":
-    "https://www.dbs-cardgame.com/fw/renewal01/images/ogp.png",
+    "https://www.gametrade.it/images/testate/dbsfusion_testata.jpg",
   "union-arena":
-    "https://www.unionarena-tcg.com/na/ogp.png?v0",
+    "https://www.japangoodz.com/cdn/shop/files/UNION_ARENA_BANNER__PC__JAPANGOODZ.jpg?v=1745136537&width=1849",
 };
 
 export default function SellerProfilePage() {

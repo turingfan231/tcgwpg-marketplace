@@ -1,6 +1,6 @@
 {
-  "name": "TCGWPG Marketplace",
-  "short_name": "WPG",
+  "name": "TCG Wpg Marketplace",
+  "short_name": "TCGWPG",
   "description": "Local Winnipeg marketplace for Pokemon, Magic, and One Piece players.",
   "start_url": "/",
   "display": "standalone",
@@ -9,16 +9,16 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/brand/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon-maskable.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
+      "src": "/brand/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

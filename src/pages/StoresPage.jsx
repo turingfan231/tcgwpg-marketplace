@@ -36,9 +36,8 @@ export default function StoresPage() {
             className="console-panel overflow-hidden p-0 transition hover:-translate-y-0.5 hover:shadow-lift"
             to={`/stores/${store.slug}`}
           >
-            <div className="relative h-28 overflow-hidden border-b border-[rgba(145,38,43,0.12)] bg-[linear-gradient(135deg,#4d0f13,#7a181d)] p-4 sm:h-48 sm:p-6">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(255,255,255,0.09),transparent_22%),radial-gradient(circle_at_78%_18%,rgba(239,59,51,0.12),transparent_24%)]" />
-              <div className="relative z-10 flex h-full items-center justify-center rounded-[18px] border border-[rgba(255,255,255,0.82)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,243,243,0.96))] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.74),0_20px_50px_rgba(80,16,16,0.14)] sm:rounded-[28px] sm:px-8 sm:py-6">
+            <div className="h-28 overflow-hidden border-b border-[rgba(203,220,231,0.92)] bg-[#f6f7f8] p-4 sm:h-48 sm:p-6">
+              <div className="flex h-full items-center justify-center rounded-[18px] bg-[#f6f7f8] px-4 py-3 sm:rounded-[24px] sm:px-8 sm:py-6">
               {store.bannerUrl ? (
                 <img alt={store.name} className="h-full w-full object-contain" src={store.bannerUrl} />
               ) : null}
