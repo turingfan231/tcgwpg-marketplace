@@ -213,13 +213,13 @@ export default function MarketPage() {
           </div>
 
           <div className="flex flex-wrap justify-end gap-2">
-            <span className="inline-flex rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 px-3.5 py-1.5 text-[0.82rem] font-semibold text-ink">
+            <span className="inline-flex rounded-full border border-[var(--line)] bg-[var(--surface-solid)] px-3.5 py-1.5 text-[0.82rem] font-semibold text-ink">
               {filteredListings.length} matches
             </span>
-            <span className="inline-flex rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 px-3.5 py-1.5 text-[0.82rem] font-semibold text-ink">
+            <span className="inline-flex rounded-full border border-[var(--line)] bg-[var(--surface-solid)] px-3.5 py-1.5 text-[0.82rem] font-semibold text-ink">
               {selectedNeighborhood}
             </span>
-            <span className="inline-flex rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 px-3.5 py-1.5 text-[0.82rem] font-semibold text-ink">
+            <span className="inline-flex rounded-full border border-[var(--line)] bg-[var(--surface-solid)] px-3.5 py-1.5 text-[0.82rem] font-semibold text-ink">
               {savedFilters.length} saved
             </span>
           </div>
@@ -239,7 +239,7 @@ export default function MarketPage() {
                 size={15}
               />
               <input
-                className="w-full rounded-[16px] border border-[rgba(203,220,231,0.92)] bg-[rgba(249,252,255,0.84)] py-2.5 pl-10 pr-3.5 text-[0.92rem] outline-none transition focus:border-navy focus:bg-white"
+                className="w-full rounded-[16px] border border-[var(--line)] bg-[var(--input-bg)] py-2.5 pl-10 pr-3.5 text-[0.92rem] text-ink outline-none transition focus:border-navy focus:bg-[var(--surface-solid)]"
                 placeholder="Card, set code, seller, condition"
                 value={marketSearch}
                 onChange={(event) => handleSearchChange(event.target.value)}
@@ -253,7 +253,7 @@ export default function MarketPage() {
               Neighborhood
             </span>
             <select
-              className="w-full rounded-[16px] border border-[rgba(203,220,231,0.92)] bg-[rgba(249,252,255,0.84)] px-3.5 py-2.5 text-[0.92rem] outline-none transition focus:border-navy focus:bg-white"
+              className="w-full rounded-[16px] border border-[var(--line)] bg-[var(--input-bg)] px-3.5 py-2.5 text-[0.92rem] text-ink outline-none transition focus:border-navy focus:bg-[var(--surface-solid)]"
               value={selectedNeighborhood}
               onChange={(event) => setSelectedNeighborhood(event.target.value)}
             >
@@ -269,7 +269,7 @@ export default function MarketPage() {
               Sort
             </span>
             <select
-              className="w-full rounded-[16px] border border-[rgba(203,220,231,0.92)] bg-[rgba(249,252,255,0.84)] px-3.5 py-2.5 text-[0.92rem] outline-none transition focus:border-navy focus:bg-white"
+              className="w-full rounded-[16px] border border-[var(--line)] bg-[var(--input-bg)] px-3.5 py-2.5 text-[0.92rem] text-ink outline-none transition focus:border-navy focus:bg-[var(--surface-solid)]"
               value={sortBy}
               onChange={(event) => setSortBy(event.target.value)}
             >
@@ -290,7 +290,7 @@ export default function MarketPage() {
               Save filter
             </button>
             <button
-              className="inline-flex items-center justify-center gap-2 rounded-[16px] border border-slate-200 bg-white px-3.5 py-2.5 text-[0.84rem] font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+              className="inline-flex items-center justify-center gap-2 rounded-[16px] border border-[var(--line)] bg-[var(--surface-solid)] px-3.5 py-2.5 text-[0.84rem] font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
               type="button"
               onClick={clearFilters}
             >
@@ -309,7 +309,7 @@ export default function MarketPage() {
             {activeFilterChips.map((chip) => (
               <span
                 key={chip}
-                className="rounded-full border border-[rgba(203,220,231,0.92)] bg-white/75 px-2.5 py-1 text-[0.78rem] font-semibold text-ink"
+                className="rounded-full border border-[var(--line)] bg-[var(--surface-solid)] px-2.5 py-1 text-[0.78rem] font-semibold text-ink"
               >
                 {chip}
               </span>
@@ -326,7 +326,7 @@ export default function MarketPage() {
               {savedFilters.map((filter) => (
                 <button
                   key={filter.id}
-                  className="whitespace-nowrap rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 px-3 py-1.5 text-[0.8rem] font-semibold text-ink transition hover:border-slate-300 hover:bg-[rgba(250,253,255,0.95)]"
+                  className="whitespace-nowrap rounded-full border border-[var(--line)] bg-[var(--surface-solid)] px-3 py-1.5 text-[0.8rem] font-semibold text-ink transition hover:border-slate-300 hover:bg-[var(--surface-hover)]"
                   type="button"
                   onClick={() => applySavedFilter(filter)}
                 >
