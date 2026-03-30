@@ -788,8 +788,31 @@ function normalizeListingMedia(record) {
   };
 }
 
+function normalizeSupportedGameSlug(value) {
+  const rawSlug = slugify(String(value || ""));
+
+  if (SUPPORTED_GAME_SLUGS.has(rawSlug)) {
+    return rawSlug;
+  }
+
+  if (
+    rawSlug === "dragon-ball-super-fusion-world" ||
+    rawSlug === "dragonball-super-fusion-world" ||
+    rawSlug === "fusion-world" ||
+    rawSlug === "dbs-fusion-world"
+  ) {
+    return "dragon-ball-fusion-world";
+  }
+
+  if (rawSlug === "one-piece-card-game") {
+    return "one-piece";
+  }
+
+  return rawSlug;
+}
+
 function isSupportedListing(listing) {
-  const gameSlug = slugify(String(listing?.gameSlug || listing?.game || ""));
+  const gameSlug = normalizeSupportedGameSlug(listing?.gameSlug || listing?.game || "");
   return SUPPORTED_GAME_SLUGS.has(gameSlug);
 }
 
@@ -842,7 +865,9 @@ function normalizeUserRecord(user) {
 }
 
 function normalizeListingRecord(listing) {
-  const normalizedGameSlug = slugify(String(listing.gameSlug || listing.game || ""));
+  const normalizedGameSlug = normalizeSupportedGameSlug(
+    listing.gameSlug || listing.game || "",
+  );
   const normalizedPrice = Number(listing.price) || 0;
   const marketPriceCad =
     listing.marketPriceCurrency === "USD"
@@ -1331,12 +1356,13 @@ function toListingPayload(payload, seller) {
   const price = Number(payload.price) || 0;
   const marketPrice = Number(payload.marketPrice) || null;
   const now = new Date().toISOString();
+  const normalizedGameSlug = normalizeSupportedGameSlug(payload.game);
 
   return {
     seller_id: seller.id,
     type: payload.type || "WTS",
     game: payload.game,
-    game_slug: slugify(payload.game),
+    game_slug: normalizedGameSlug,
     title: payload.title,
     price,
     price_currency: "CAD",
@@ -1536,7 +1562,7 @@ export function MarketplaceProvider({ children }) {
       0,
     );
     const gameBreakdown = collectionItems.reduce((accumulator, item) => {
-      const key = slugify(item.game);
+      const key = normalizeSupportedGameSlug(item.game);
       accumulator[key] = (accumulator[key] || 0) + Math.max(1, Number(item.quantity) || 1);
       return accumulator;
     }, {});
