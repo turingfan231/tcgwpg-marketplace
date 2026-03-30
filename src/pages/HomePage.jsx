@@ -38,6 +38,12 @@ function normalizeGameKey(value) {
   if (normalized.includes("magic")) {
     return "magic";
   }
+  if (normalized.includes("dragon ball") || normalized.includes("fusion world")) {
+    return "dragon-ball-fusion-world";
+  }
+  if (normalized.includes("union arena")) {
+    return "union-arena";
+  }
   return normalized || null;
 }
 
@@ -85,6 +91,18 @@ const GAME_SHELF_THEMES = {
   "one-piece": {
     header:
       "bg-[linear-gradient(180deg,rgba(204,38,38,0.16)_0%,rgba(239,59,51,0.12)_100%)]",
+    badge: "text-navy",
+    button: "text-navy",
+  },
+  "dragon-ball-fusion-world": {
+    header:
+      "bg-[linear-gradient(180deg,rgba(239,59,51,0.12)_0%,rgba(127,29,29,0.08)_100%)]",
+    badge: "text-navy",
+    button: "text-navy",
+  },
+  "union-arena": {
+    header:
+      "bg-[linear-gradient(180deg,rgba(109,134,240,0.12)_0%,rgba(177,29,35,0.08)_100%)]",
     badge: "text-navy",
     button: "text-navy",
   },
@@ -717,7 +735,7 @@ export default function HomePage() {
   const marketPulse = [
     { label: "Live listings", value: formatNumber(safeListings.length) },
     { label: "Verified sellers", value: formatNumber(verifiedSellerCount) },
-    { label: "Games", value: "3", detail: "Pokemon, Magic, One Piece" },
+    { label: "Games", value: "5", detail: "Pokemon, Magic, One Piece, Fusion World, Union Arena" },
     { label: "Next meetup", value: nextEvent?.store || "Events", detail: nextEvent?.dateStr || "Calendar ready" },
   ];
   const promoFeature = useMemo(() => {

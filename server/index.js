@@ -50,6 +50,8 @@ const ARCTIC_MAHINA_ENDPOINT = "https://mahina.app/app/5d7678.myshopify.com";
 const ARCTIC_EVENTS_PAGE = ARCTIC_HOME_PAGE;
 const GALAXY_EVENTS_PAGE = "https://www.galaxy-comics.ca/index.php/calendar/";
 const GALAXY_FACEBOOK_EVENTS_PAGE = "https://www.facebook.com/galaxycomicscollectibles/events";
+const FUSION_WORLD_CARDLIST_PAGE = "https://www.dbs-cardgame.com/fw/en/cardlist/";
+const UNION_ARENA_CARDLIST_PAGE = "https://www.unionarena-tcg.com/na/cardlist/";
 const SERVER_TIMEOUT_MS = 15000;
 const FX_TIMEOUT_MS = 2500;
 const IMAGE_PROXY_ALLOWED_HOSTS = new Set(["en.onepiece-cardgame.com"]);
@@ -147,6 +149,18 @@ function normalizeGameName(game) {
 
   if (rawValue.includes("one piece")) {
     return "one-piece";
+  }
+
+  if (
+    rawValue.includes("dragon ball") ||
+    rawValue.includes("fusion world") ||
+    rawValue.includes("dbs")
+  ) {
+    return "dragon-ball-fusion-world";
+  }
+
+  if (rawValue.includes("union arena")) {
+    return "union-arena";
   }
 
   return rawValue.replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -390,11 +404,180 @@ function getOnePieceImageUrl(card) {
   return card.card_image || "";
 }
 
+function buildRequestOrigin(req) {
+  const forwardedProto = String(req.headers["x-forwarded-proto"] || "")
+    .split(",")[0]
+    .trim();
+  const forwardedHost = String(req.headers["x-forwarded-host"] || "")
+    .split(",")[0]
+    .trim();
+  const protocol = forwardedProto || req.protocol || "https";
+  const host = forwardedHost || req.get("host");
+
+  return host ? `${protocol}://${host}` : "";
+}
+
+function rewriteSearchImageUrlForClient(req, rawUrl) {
+  const imageUrl = String(rawUrl || "").trim();
+
+  if (!/^https:\/\/en\.onepiece-cardgame\.com\/images\/cardlist\/card\//i.test(imageUrl)) {
+    return imageUrl;
+  }
+
+  const requestOrigin = buildRequestOrigin(req);
+  return requestOrigin
+    ? `${requestOrigin}/api/live/image-proxy?url=${encodeURIComponent(imageUrl)}`
+    : imageUrl;
+}
+
 function rankOnePieceMatch(card, query) {
   return rankSearchMatch(
     [card.card_name, card.card_set_id, card.card_image_id, card.set_name],
     query,
   );
+}
+
+function makeAbsoluteUrl(baseUrl, path) {
+  try {
+    return new URL(path, baseUrl).toString();
+  } catch {
+    return "";
+  }
+}
+
+function parseCardCodeAndTitle(altText) {
+  const normalized = String(altText || "").trim();
+  const match = normalized.match(/^(\S+)\s+(.+)$/);
+
+  if (!match) {
+    return {
+      code: normalized,
+      title: normalized,
+    };
+  }
+
+  return {
+    code: match[1],
+    title: match[2],
+  };
+}
+
+async function searchFusionWorldCards(query, limit) {
+  const url = new URL(FUSION_WORLD_CARDLIST_PAGE);
+  url.searchParams.set("search", "true");
+  url.searchParams.set("q", query);
+
+  const response = await fetchWithTimeout(url, {
+    headers: {
+      Accept: "text/html",
+      "User-Agent": "TCGWPG/0.2 (local marketplace development)",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Fusion World search failed (${response.status}).`);
+  }
+
+  const html = await response.text();
+  const matches = [
+    ...html.matchAll(
+      /<li class="cardItem"><a[^>]+data-src="detail\.php\?card_no=([^"]+)"[^>]*><img[^>]+data-src="([^"]+)"[^>]+alt="([^"]+)"/gi,
+    ),
+  ];
+
+  const results = uniqueBy(
+    matches.map((match) => {
+      const [, cardNo, imagePath, altText] = match;
+      const { code, title } = parseCardCodeAndTitle(altText);
+
+      return {
+        id: `fusion-world-${code}`,
+        provider: "dbs-fusion-world-official",
+        providerLabel: "Fusion World Official Card List",
+        title,
+        setName: "Dragon Ball Super Fusion World",
+        rarity: "Official print",
+        imageUrl: makeAbsoluteUrl(FUSION_WORLD_CARDLIST_PAGE, imagePath),
+        marketPrice: null,
+        marketPriceCurrency: "CAD",
+        originalMarketPriceUsd: null,
+        originalMarketPriceCurrency: "USD",
+        priceHistory: [],
+        language: "English",
+        sourceUrl: makeAbsoluteUrl(FUSION_WORLD_CARDLIST_PAGE, `detail.php?card_no=${encodeURIComponent(cardNo)}`),
+        printLabel: code,
+        description: `Dragon Ball Super Fusion World | ${code}`,
+      };
+    }),
+    (item) => item.id,
+  );
+
+  if (!results.length) {
+    throw new Error("Fusion World returned no matches.");
+  }
+
+  return results.slice(0, limit);
+}
+
+async function searchUnionArenaCards(query, limit) {
+  const response = await fetchWithTimeout(`${UNION_ARENA_CARDLIST_PAGE}index.php?search=true`, {
+    method: "POST",
+    headers: {
+      Accept: "text/html",
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": "TCGWPG/0.2 (local marketplace development)",
+    },
+    body: new URLSearchParams({
+      freewords: query,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Union Arena search failed (${response.status}).`);
+  }
+
+  const html = await response.text();
+  const matches = [
+    ...html.matchAll(
+      /<li class="cardImgCol"><a[^>]+href="\.\/detail_iframe\.php\?card_no=([^"]+)"[^>]*><img[^>]+data-src="([^"]+)"[^>]+alt="([^"]+)"/gi,
+    ),
+  ];
+
+  const results = uniqueBy(
+    matches.map((match) => {
+      const [, cardNo, imagePath, altText] = match;
+      const { code, title } = parseCardCodeAndTitle(altText);
+
+      return {
+        id: `union-arena-${code.replace(/[^a-z0-9]+/gi, "-")}`,
+        provider: "union-arena-official",
+        providerLabel: "Union Arena Official Card List",
+        title,
+        setName: "Union Arena",
+        rarity: "Official print",
+        imageUrl: makeAbsoluteUrl(UNION_ARENA_CARDLIST_PAGE, imagePath),
+        marketPrice: null,
+        marketPriceCurrency: "CAD",
+        originalMarketPriceUsd: null,
+        originalMarketPriceCurrency: "USD",
+        priceHistory: [],
+        language: "English",
+        sourceUrl: makeAbsoluteUrl(
+          UNION_ARENA_CARDLIST_PAGE,
+          `detail_iframe.php?card_no=${encodeURIComponent(cardNo)}`,
+        ),
+        printLabel: code,
+        description: `Union Arena | ${code}`,
+      };
+    }),
+    (item) => item.id,
+  );
+
+  if (!results.length) {
+    throw new Error("Union Arena returned no matches.");
+  }
+
+  return results.slice(0, limit);
 }
 
 async function fetchWithTimeout(url, init = {}, timeoutMs = SERVER_TIMEOUT_MS) {
@@ -2163,9 +2346,22 @@ app.get("/api/live/search", async (req, res) => {
     } else if (game === "one-piece") {
       providerLabel = "OPTCG API";
       results = await searchOnePieceCards(query, limit, exchangeRate.usdToCadRate);
+    } else if (game === "dragon-ball-fusion-world") {
+      providerLabel = "Fusion World Official";
+      results = await searchFusionWorldCards(query, limit);
+      note = "Fusion World results are sourced from the official card database. Market pricing is not exposed by the official source yet.";
+    } else if (game === "union-arena") {
+      providerLabel = "Union Arena Official";
+      results = await searchUnionArenaCards(query, limit);
+      note = "Union Arena results are sourced from the official card list. Market pricing is not exposed by the official source yet.";
     } else {
-      note = "Live search is currently implemented for Pokemon, Magic, and One Piece.";
+      note = "Live search is currently implemented for Pokemon, Magic, One Piece, Fusion World, and Union Arena.";
     }
+
+    results = results.map((result) => ({
+      ...result,
+      imageUrl: rewriteSearchImageUrlForClient(req, result.imageUrl),
+    }));
 
     return res.json({
       providerLabel,

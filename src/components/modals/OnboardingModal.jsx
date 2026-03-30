@@ -4,6 +4,14 @@ import { approvedMeetupSpots } from "../../data/storefrontData";
 import { useMarketplace } from "../../hooks/useMarketplace";
 import ModalShell from "../ui/ModalShell";
 
+const GAME_OPTIONS = [
+  "Pokemon",
+  "Magic",
+  "One Piece",
+  "Dragon Ball Super Fusion World",
+  "Union Arena",
+];
+
 function normalizePostalInput(value) {
   return String(value || "")
     .toUpperCase()
@@ -97,9 +105,11 @@ export default function OnboardingModal({ onClose }) {
               }))
             }
           >
-            <option value="Pokemon">Pokemon</option>
-            <option value="Magic">Magic</option>
-            <option value="One Piece">One Piece</option>
+            {GAME_OPTIONS.map((game) => (
+              <option key={game} value={game}>
+                {game}
+              </option>
+            ))}
           </select>
         </label>
 

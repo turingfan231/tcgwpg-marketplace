@@ -20,7 +20,13 @@ import { fetchLocalEvents } from "../services/cardDatabase";
 
 const badgeIds = ["fast", "trusted", "verified", "community", "power", "judge", "beta"];
 const storeOptions = ["Fusion Gaming", "Galaxy Comics", "A Muse N Games", "Arctic Rift Cards", "Other"];
-const gameOptions = ["Magic", "Pokemon", "One Piece"];
+const gameOptions = [
+  "Magic",
+  "Pokemon",
+  "One Piece",
+  "Dragon Ball Super Fusion World",
+  "Union Arena",
+];
 function formatEventDate(dateStr) {
   try {
     return new Date(`${dateStr}T12:00:00`).toLocaleDateString("en-CA", {

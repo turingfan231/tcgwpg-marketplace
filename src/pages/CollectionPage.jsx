@@ -6,7 +6,13 @@ import InlineSpinner from "../components/ui/InlineSpinner";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { searchCardPrintings } from "../services/cardDatabase";
 
-const gameOptions = ["Pokemon", "Magic", "One Piece"];
+const gameOptions = [
+  "Pokemon",
+  "Magic",
+  "One Piece",
+  "Dragon Ball Super Fusion World",
+  "Union Arena",
+];
 
 function SummaryTile({ label, value, detail }) {
   return (

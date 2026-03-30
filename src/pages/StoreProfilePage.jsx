@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import ListingCard from "../components/cards/ListingCard";
 import EmptyState from "../components/ui/EmptyState";
 import PageSkeleton from "../components/ui/PageSkeleton";
+import { gameCatalog } from "../data/mockData";
 import { getStoreBySlug } from "../data/storefrontData";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { fetchLocalEvents } from "../services/cardDatabase";
@@ -93,11 +94,11 @@ export default function StoreProfilePage() {
   }, [activeListings, sellers, store]);
 
   const listingsByGame = useMemo(() => {
-    const groups = {
-      Pokemon: [],
-      Magic: [],
-      "One Piece": [],
-    };
+    const groups = Object.fromEntries(
+      gameCatalog
+        .filter((game) => game.slug !== "all")
+        .map((game) => [game.name, []]),
+    );
 
     featuredListings.forEach((listing) => {
       if (groups[listing.game]) {

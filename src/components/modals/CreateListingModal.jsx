@@ -40,6 +40,14 @@ const initialFormState = {
   conditionImages: [],
 };
 
+const GAME_OPTIONS = [
+  "Pokemon",
+  "Magic",
+  "One Piece",
+  "Dragon Ball Super Fusion World",
+  "Union Arena",
+];
+
 function FieldLabel({ children }) {
   return <span className="mb-2 block text-sm font-semibold text-steel">{children}</span>;
 }
@@ -393,9 +401,9 @@ export default function CreateListingModal({ onClose }) {
                   value={form.game}
                   onChange={(event) => updateField("game", event.target.value)}
                 >
-                  <option>Pokemon</option>
-                  <option>Magic</option>
-                  <option>One Piece</option>
+                  {GAME_OPTIONS.map((game) => (
+                    <option key={game}>{game}</option>
+                  ))}
                 </select>
               </label>
 
@@ -611,8 +619,8 @@ export default function CreateListingModal({ onClose }) {
               <>
             <div className="mt-5">
               <p className="mb-2 text-sm font-semibold text-steel">Search game</p>
-              <div className="grid grid-cols-3 gap-2">
-                {["Pokemon", "Magic", "One Piece"].map((game) => (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {GAME_OPTIONS.map((game) => (
                   <button
                     key={game}
                     className={`rounded-full px-3 py-2.5 text-sm font-semibold transition ${
@@ -628,7 +636,11 @@ export default function CreateListingModal({ onClose }) {
                       setSearchError("");
                     }}
                   >
-                    {game === "One Piece" ? "OP" : game}
+                    {game === "One Piece"
+                      ? "OP"
+                      : game === "Dragon Ball Super Fusion World"
+                        ? "DBSFW"
+                        : game}
                   </button>
                 ))}
               </div>
@@ -637,7 +649,11 @@ export default function CreateListingModal({ onClose }) {
             <div className="mt-4">
               <p className="mb-2 text-sm font-semibold text-steel">Search language</p>
               <div className="grid gap-2 sm:inline-flex sm:flex-wrap">
-                {["English", "Japanese"].map((language) => (
+                {(
+                  ["Pokemon", "Magic", "One Piece"].includes(form.game)
+                    ? ["English", "Japanese"]
+                    : ["English"]
+                ).map((language) => (
                   <button
                     key={language}
                     className={`rounded-full px-4 py-2.5 text-sm font-semibold transition ${
@@ -705,7 +721,7 @@ export default function CreateListingModal({ onClose }) {
               <span className="mx-2 text-slate-300">|</span>
               {liveSearchSupported
                 ? searchError || searchNote
-                : "Live search is available only for Magic, Pokemon, and One Piece."}
+                : "Live search is available only for the supported game channels."}
             </div>
 
             {recentQueries.length ? (

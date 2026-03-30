@@ -24,6 +24,8 @@ const browseLinks = [
   { to: "/market/pokemon", label: "Pokemon", clearSearch: true },
   { to: "/market/magic", label: "Magic", clearSearch: true },
   { to: "/market/one-piece", label: "One Piece", clearSearch: true },
+  { to: "/market/dragon-ball-fusion-world", label: "Fusion World", clearSearch: true },
+  { to: "/market/union-arena", label: "Union Arena", clearSearch: true },
   { to: "/wtb", label: "WTB", clearSearch: true },
 ];
 

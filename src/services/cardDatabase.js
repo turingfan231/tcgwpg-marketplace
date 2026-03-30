@@ -113,6 +113,18 @@ function normalizeGameName(game) {
     return "one-piece";
   }
 
+  if (
+    rawValue.includes("dragon ball") ||
+    rawValue.includes("fusion world") ||
+    rawValue.includes("dbs")
+  ) {
+    return "dragon-ball-fusion-world";
+  }
+
+  if (rawValue.includes("union arena")) {
+    return "union-arena";
+  }
+
   return rawValue.replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
@@ -663,7 +675,13 @@ async function searchViaProxy(game, query, limit, language = "english") {
 }
 
 export function supportsLiveSearch(game) {
-  return ["pokemon", "magic", "one-piece"].includes(normalizeGameName(game));
+  return [
+    "pokemon",
+    "magic",
+    "one-piece",
+    "dragon-ball-fusion-world",
+    "union-arena",
+  ].includes(normalizeGameName(game));
 }
 
 export async function fetchExchangeRate() {

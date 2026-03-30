@@ -16,6 +16,8 @@ const bannerToneMap = {
   pokemon: "from-[#631216]/96 via-[#8c1c22]/94 to-[#3b0a0c]/96",
   magic: "from-[#4b0d10]/96 via-[#6d161a]/94 to-[#250607]/96",
   "one-piece": "from-[#6a1418]/96 via-[#911e24]/94 to-[#35080a]/96",
+  "dragon-ball-fusion-world": "from-[#5a1013]/96 via-[#8d1f21]/94 to-[#2f0809]/96",
+  "union-arena": "from-[#47101b]/96 via-[#6a1828]/94 to-[#26070e]/96",
 };
 
 const sellerBannerArtMap = {
@@ -25,6 +27,10 @@ const sellerBannerArtMap = {
     "https://shikdartrading.com/cdn/shop/files/MTG_Banner_2.jpg?v=1730184513&width=3840",
   "one-piece":
     "https://www.toei-animation.com/wp-content/uploads/2019/02/collage-1920x595.png",
+  "dragon-ball-fusion-world":
+    "https://www.dbs-cardgame.com/fw/renewal01/images/ogp.png",
+  "union-arena":
+    "https://www.unionarena-tcg.com/na/ogp.png?v0",
 };
 
 export default function SellerProfilePage() {

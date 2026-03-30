@@ -74,6 +74,8 @@ export function getGameClasses(game) {
     Magic: "bg-navy/10 text-navy",
     Pokemon: "bg-orange/10 text-orange",
     "One Piece": "bg-navy/8 text-navy",
+    "Dragon Ball Super Fusion World": "bg-red-50 text-red-700",
+    "Union Arena": "bg-indigo-50 text-indigo-700",
   };
 
   return toneMap[game] || "bg-slate-100 text-slate-700";

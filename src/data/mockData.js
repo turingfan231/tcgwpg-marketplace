@@ -31,7 +31,7 @@ export const gameCatalog = [
     slug: "all",
     name: "All Listings",
     shortName: "All",
-    description: "Browse every active Magic, Pokemon, and One Piece listing in Winnipeg.",
+    description: "Browse every active local listing across the games running through Winnipeg right now.",
   },
   {
     slug: "magic",
@@ -53,6 +53,20 @@ export const gameCatalog = [
     shortName: "One Piece",
     description:
       "Alt arts, premium printings, and tournament staples moving locally without shipping delays.",
+  },
+  {
+    slug: "dragon-ball-fusion-world",
+    name: "Dragon Ball Super Fusion World",
+    shortName: "Fusion World",
+    description:
+      "Fusion World singles, alt arts, and event cards lined up for local pickup instead of long shipping waits.",
+  },
+  {
+    slug: "union-arena",
+    name: "Union Arena",
+    shortName: "Union Arena",
+    description:
+      "Union Arena hits, alt arts, and title-specific pickups from local sellers in one place.",
   },
 ];
 

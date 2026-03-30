@@ -6,6 +6,14 @@ import { approvedMeetupSpots } from "../data/storefrontData";
 import { useMarketplace } from "../hooks/useMarketplace";
 import UserAvatar from "../components/shared/UserAvatar";
 
+const GAME_OPTIONS = [
+  "Magic",
+  "Pokemon",
+  "One Piece",
+  "Dragon Ball Super Fusion World",
+  "Union Arena",
+];
+
 function normalizePostalInput(value) {
   return String(value || "")
     .toUpperCase()
@@ -354,9 +362,11 @@ export default function AccountPage() {
                     updateProfileFormField("defaultListingGame", event.target.value)
                   }
                 >
-                  <option value="Pokemon">Pokemon</option>
-                  <option value="Magic">Magic</option>
-                  <option value="One Piece">One Piece</option>
+                  {GAME_OPTIONS.map((game) => (
+                    <option key={game} value={game}>
+                      {game}
+                    </option>
+                  ))}
                 </select>
               </label>
 
@@ -392,7 +402,7 @@ export default function AccountPage() {
               <div className="block sm:col-span-2">
                 <span className="mb-2 block text-sm font-semibold text-steel">Favorite games</span>
                 <div className="flex flex-wrap gap-2">
-                  {["Magic", "Pokemon", "One Piece"].map((game) => {
+                  {GAME_OPTIONS.map((game) => {
                     const active = profileForm.favoriteGames.includes(game);
                     return (
                       <button
@@ -432,6 +442,8 @@ export default function AccountPage() {
                   <option value="magic">Magic</option>
                   <option value="pokemon">Pokemon</option>
                   <option value="one-piece">One Piece</option>
+                  <option value="dragon-ball-fusion-world">Dragon Ball Super Fusion World</option>
+                  <option value="union-arena">Union Arena</option>
                 </select>
               </label>
 

@@ -34,7 +34,13 @@ const VIEW_AS_STORAGE_KEY = "tcgwpg.viewAsUserId";
 const STORE_FOLLOW_STORAGE_PREFIX = "tcgwpg.storeFollows";
 const EVENT_REMINDER_STORAGE_PREFIX = "tcgwpg.eventReminders";
 const EVENT_ATTENDANCE_STORAGE_PREFIX = "tcgwpg.eventAttendance";
-const SUPPORTED_GAME_SLUGS = new Set(["magic", "pokemon", "one-piece"]);
+const SUPPORTED_GAME_SLUGS = new Set([
+  "magic",
+  "pokemon",
+  "one-piece",
+  "dragon-ball-fusion-world",
+  "union-arena",
+]);
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
 const MEDIA_BUCKET = "listing-media";
 const FOREGROUND_REFRESH_MS = 12000;
