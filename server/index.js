@@ -128,6 +128,7 @@ let exchangeRateCache = {
 };
 
 const tcgdexCardCache = new Map();
+const onePieceVariantImageCache = new Map();
 
 app.use(cors());
 app.use(express.json());
@@ -422,6 +423,141 @@ function getOnePieceImageUrl(card) {
   }
 
   return card.card_image || "";
+}
+
+function detectOnePieceVariantProfile(value) {
+  const text = String(value || "").toLowerCase();
+
+  return {
+    manga: /\bmanga\b/.test(text),
+    wanted: /\bwanted\b|\bposter\b/.test(text),
+    parallel: /\bparallel\b/.test(text),
+    sp: /\bsp\b|\bspecial\b/.test(text),
+    alt: /\balt\b|\balternate\b/.test(text),
+    superAlt: /\bsuper alternate art\b/.test(text),
+    redSuperAlt: /\bred super alternate art\b|\bred manga\b/.test(text),
+  };
+}
+
+function scoreOnePieceVariantCandidate(candidate, referenceText, code) {
+  const text = `${candidate.card_name || ""} ${candidate.card_image_id || ""}`.toLowerCase();
+  const profile = detectOnePieceVariantProfile(referenceText);
+  let score = 0;
+
+  if (!candidate.card_image) {
+    return -10_000;
+  }
+
+  const candidateCode = extractOnePieceCode(
+    candidate.card_image_id,
+    candidate.card_set_id,
+    candidate.card_name,
+  );
+
+  if (candidateCode && code && candidateCode === code) {
+    score += 60;
+  }
+
+  if (profile.manga) {
+    if (/\bred super alternate art\b/.test(text)) {
+      score += 140;
+    } else if (/\bsuper alternate art\b/.test(text)) {
+      score += 110;
+    } else if (/\bmanga\b/.test(text)) {
+      score += 90;
+    } else {
+      score -= 120;
+    }
+
+    if (/\bparallel\b/.test(text)) {
+      score -= 40;
+    }
+
+    if (/\bwanted poster\b/.test(text)) {
+      score -= 70;
+    }
+  }
+
+  if (profile.wanted) {
+    score += /\bwanted poster\b/.test(text) ? 120 : -80;
+  }
+
+  if (profile.parallel && !profile.manga) {
+    score += /\bparallel\b/.test(text) ? 95 : -60;
+  }
+
+  if (profile.sp) {
+    score += /\bsp\b|\bspecial\b/.test(text) ? 95 : -60;
+  }
+
+  if ((profile.alt || profile.superAlt) && !profile.manga && !profile.parallel && !profile.wanted) {
+    score += /\balternate art\b|\bparallel\b|\bsuper alternate art\b/.test(text) ? 50 : 0;
+  }
+
+  if (
+    !profile.manga &&
+    !profile.wanted &&
+    !profile.parallel &&
+    !profile.sp &&
+    !profile.alt &&
+    !profile.superAlt
+  ) {
+    if (!/\bparallel\b|\bwanted poster\b|\bsuper alternate art\b|\bsp\b|\bspecial\b/.test(text)) {
+      score += 40;
+    } else {
+      score -= 30;
+    }
+  }
+
+  return score;
+}
+
+async function searchOnePieceOfficialVariantImage(code, referenceText) {
+  const normalizedCode = normalizeOnePieceCode(code);
+  const cacheKey = `${normalizedCode}::${String(referenceText || "").toLowerCase()}`;
+
+  if (onePieceVariantImageCache.has(cacheKey)) {
+    return onePieceVariantImageCache.get(cacheKey);
+  }
+
+  const queryVariants = [
+    { card_image_id: normalizedCode },
+    { card_set_id: normalizedCode },
+  ];
+  const endpoints = [
+    OPTCG_ENDPOINT_CANDIDATES.sets,
+    OPTCG_ENDPOINT_CANDIDATES.promos,
+    OPTCG_ENDPOINT_CANDIDATES.decks,
+  ];
+
+  const responses = await Promise.allSettled(
+    endpoints.flatMap((endpoint) =>
+      queryVariants.map((params) => searchOnePieceEndpoint(endpoint, params)),
+    ),
+  );
+
+  const candidates = uniqueBy(
+    responses
+      .filter((result) => result.status === "fulfilled")
+      .flatMap((result) => result.value || [])
+      .filter((candidate) => candidate && candidate.card_image),
+    (candidate) => candidate.card_image_id || candidate.card_name,
+  );
+
+  if (!candidates.length) {
+    onePieceVariantImageCache.set(cacheKey, "");
+    return "";
+  }
+
+  const ranked = [...candidates].sort(
+    (left, right) =>
+      scoreOnePieceVariantCandidate(right, referenceText, normalizedCode) -
+      scoreOnePieceVariantCandidate(left, referenceText, normalizedCode),
+  );
+
+  const selectedImage = ranked[0]?.card_image || "";
+  onePieceVariantImageCache.set(cacheKey, selectedImage);
+  return selectedImage;
 }
 
 function buildRequestOrigin(req) {
@@ -1403,11 +1539,37 @@ async function searchPriceChartingProducts({
         }
 
         const productHtml = await productResponse.text();
-        return buildPriceChartingResult(pathname, productHtml, query, usdToCadRate, {
+        const builtResult = buildPriceChartingResult(pathname, productHtml, query, usdToCadRate, {
           language,
           descriptionLabel,
           rarity,
         });
+
+        if (!builtResult) {
+          return null;
+        }
+
+        if (pathname.includes("/game/one-piece")) {
+          const code = extractOnePieceCode(
+            builtResult.title,
+            pathname,
+            builtResult.printLabel,
+            builtResult.description,
+          );
+
+          if (code) {
+            const variantImage = await searchOnePieceOfficialVariantImage(
+              code,
+              `${builtResult.title} ${pathname}`,
+            );
+
+            if (variantImage) {
+              builtResult.imageUrl = variantImage;
+            }
+          }
+        }
+
+        return builtResult;
       }),
     )
   )
