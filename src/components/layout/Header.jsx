@@ -2,6 +2,7 @@ import {
   Bell,
   CalendarRange,
   ChevronDown,
+  Download,
   Heart,
   LayoutDashboard,
   LogOut,
@@ -35,7 +36,7 @@ const utilityLinks = [
   { to: "/events", label: "Events" },
 ];
 
-export default function Header() {
+export default function Header({ canInstallApp = false, onOpenInstallPrompt = null }) {
   const navigate = useNavigate();
   const accountMenuRef = useRef(null);
   const mobileDrawerRef = useRef(null);
@@ -521,6 +522,25 @@ export default function Header() {
                   </Link>
                 )}
               </div>
+
+              {canInstallApp ? (
+                <div className="mt-6 border-t border-slate-200 pt-6">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
+                    App
+                  </p>
+                  <button
+                    className="mt-3 inline-flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-ink"
+                    type="button"
+                    onClick={() => {
+                      setMobileDrawerOpen(false);
+                      onOpenInstallPrompt?.();
+                    }}
+                  >
+                    <Download size={16} />
+                    Install app
+                  </button>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

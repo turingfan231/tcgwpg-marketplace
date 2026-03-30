@@ -88,6 +88,13 @@ export default function AppShell() {
     }
   }
 
+  function openInstallPrompt() {
+    setInstallVisible(true);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(INSTALL_DISMISS_KEY);
+    }
+  }
+
   async function handleInstall() {
     if (!deferredPrompt) {
       dismissInstallPrompt();
@@ -210,7 +217,13 @@ export default function AppShell() {
       style={themeStyle}
     >
       {showLaunchScreen ? <AppLaunchScreen /> : null}
-      {isMobileThreadRoute ? <div className="hidden lg:block"><Header /></div> : <Header />}
+      {isMobileThreadRoute ? (
+        <div className="hidden lg:block">
+          <Header canInstallApp={installState.visible || !isStandalone} onOpenInstallPrompt={openInstallPrompt} />
+        </div>
+      ) : (
+        <Header canInstallApp={installState.visible || !isStandalone} onOpenInstallPrompt={openInstallPrompt} />
+      )}
       {isSuspended ? (
         <div className="border-b border-rose-200 bg-rose-50">
           <div className="page-shell flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
