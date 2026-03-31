@@ -170,6 +170,34 @@ test("posting wizard draft can be saved, restored, and cleared", async ({ page }
   await expect(page.getByText(/playwright draft listing/i)).toHaveCount(0);
 });
 
+test("mobile finder stays open while the search field is focused", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await loginAsSeedSeller(page);
+
+  await page.getByRole("button", { name: /new listing/i }).click({ force: true });
+  await expect(page.getByRole("dialog", { name: /create listing/i })).toBeVisible({
+    timeout: 10000,
+  });
+
+  const openFinderButton = page.getByRole("button", { name: /open finder/i });
+  await openFinderButton.click();
+
+  const finderSearch = page.getByRole("combobox", {
+    name: /search (pokemon|magic|one piece|dragon ball super fusion world|union arena) card database/i,
+  });
+  await expect(finderSearch).toBeVisible({ timeout: 10000 });
+  await finderSearch.click();
+
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("resize"));
+  });
+
+  await expect(finderSearch).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole("button", { name: /hide finder/i })).toBeVisible({
+    timeout: 10000,
+  });
+});
+
 test("seed inbox thread allows sending a message", async ({ page }) => {
   await loginAsSeedSeller(page);
 

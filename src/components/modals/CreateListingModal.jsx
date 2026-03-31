@@ -154,17 +154,24 @@ export default function CreateListingModal({ onClose }) {
   );
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
       return undefined;
     }
 
-    function syncSearchVisibility() {
-      setSearchExpanded(window.innerWidth >= 1280);
+    const finderDesktopQuery = window.matchMedia("(min-width: 1280px)");
+    const syncSearchVisibility = (event) => {
+      setSearchExpanded(event.matches);
+    };
+
+    syncSearchVisibility(finderDesktopQuery);
+
+    if (typeof finderDesktopQuery.addEventListener === "function") {
+      finderDesktopQuery.addEventListener("change", syncSearchVisibility);
+      return () => finderDesktopQuery.removeEventListener("change", syncSearchVisibility);
     }
 
-    syncSearchVisibility();
-    window.addEventListener("resize", syncSearchVisibility);
-    return () => window.removeEventListener("resize", syncSearchVisibility);
+    finderDesktopQuery.addListener(syncSearchVisibility);
+    return () => finderDesktopQuery.removeListener(syncSearchVisibility);
   }, []);
 
   useEffect(() => {
