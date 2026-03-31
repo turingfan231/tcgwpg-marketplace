@@ -811,7 +811,7 @@ export default function MessagesPage() {
       />
       <main className="grid gap-4 overflow-hidden overscroll-none lg:h-[calc(100dvh-12.5rem)] lg:grid-cols-[23rem_minmax(0,1fr)]">
       <section
-        className={`min-h-[calc(100dvh-9.1rem)] overflow-hidden rounded-none border-0 bg-transparent shadow-none sm:rounded-[30px] sm:border sm:border-[rgba(203,220,231,0.9)] sm:bg-[linear-gradient(180deg,rgba(251,253,255,0.96),rgba(241,243,245,0.9))] sm:shadow-soft lg:h-full lg:min-h-0 ${
+        className={`min-h-[calc(100dvh-9.1rem)] overflow-hidden rounded-none border-0 bg-transparent shadow-none sm:rounded-[30px] sm:border sm:border-[var(--line)] sm:bg-[linear-gradient(180deg,var(--panel-top),var(--panel-bottom))] sm:shadow-soft lg:h-full lg:min-h-0 ${
           showMobileThread ? "hidden lg:block" : "block"
         }`}
       >
@@ -874,7 +874,7 @@ export default function MessagesPage() {
               ))}
             </div>
           ) : (
-            <div className="mx-1 rounded-[20px] border border-dashed border-slate-300 bg-white/80 px-5 py-10 text-sm text-steel sm:mx-0 sm:rounded-[24px]">
+            <div className="mx-1 rounded-[20px] border border-dashed border-slate-300 bg-[var(--surface-alt)] px-5 py-10 text-sm text-steel sm:mx-0 sm:rounded-[24px]">
               No inbox threads match this search.
             </div>
           )}
@@ -882,13 +882,13 @@ export default function MessagesPage() {
       </section>
 
       <section
-        className={`flex ${immersiveMobileThread ? "h-[100dvh] rounded-none border-0 shadow-none overflow-y-auto overscroll-contain [touch-action:pan-y]" : "h-[calc(100dvh-8.6rem)] rounded-[22px] border border-[rgba(203,220,231,0.9)] shadow-soft overflow-y-auto overscroll-contain [touch-action:pan-y] sm:overflow-hidden sm:overscroll-none"} flex-col bg-[linear-gradient(180deg,rgba(251,253,255,0.97),rgba(241,243,245,0.92))] sm:rounded-[30px] sm:min-h-[calc(100dvh-9.6rem)] sm:h-auto lg:h-full lg:min-h-0 ${
+        className={`flex ${immersiveMobileThread ? "h-[100dvh] rounded-none border-0 shadow-none overflow-y-auto overscroll-contain [touch-action:pan-y]" : "h-[calc(100dvh-8.6rem)] rounded-[22px] border border-[var(--line)] shadow-soft overflow-y-auto overscroll-contain [touch-action:pan-y] sm:overflow-hidden sm:overscroll-none"} flex-col bg-[linear-gradient(180deg,var(--panel-top),var(--panel-bottom))] sm:rounded-[30px] sm:min-h-[calc(100dvh-9.6rem)] sm:h-auto lg:h-full lg:min-h-0 ${
           !showMobileThread ? "hidden lg:flex" : "flex"
         }`}
       >
         {activeThread ? (
           <>
-              <div className="sticky top-0 z-10 border-b border-slate-200/80 bg-[linear-gradient(180deg,rgba(251,253,255,0.97),rgba(241,243,245,0.94))] px-3 py-2.5 backdrop-blur-xl sm:static sm:bg-transparent sm:px-6 sm:py-4 sm:backdrop-blur-0">
+              <div className="sticky top-0 z-10 border-b border-slate-200/80 bg-[linear-gradient(180deg,var(--surface-solid),var(--surface-alt))] px-3 py-2.5 backdrop-blur-xl sm:static sm:bg-transparent sm:px-6 sm:py-4 sm:backdrop-blur-0">
               <div className="hidden flex-wrap items-start justify-between gap-4 sm:flex">
                 <div className="min-w-0">
                   <div className="flex items-center gap-3">
@@ -912,7 +912,7 @@ export default function MessagesPage() {
 
                 <div className="flex w-full flex-wrap gap-2 sm:w-auto">
                   <button
-                    className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-white px-3.5 py-2 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-[var(--surface-solid)] px-3.5 py-2 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={deletingThread}
                     type="button"
                     onClick={() => void handleDeleteThread()}
@@ -956,7 +956,7 @@ export default function MessagesPage() {
                     </Link>
                   ) : null}
                   <button
-                    className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-rose-200 bg-white px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-rose-200 bg-[var(--surface-solid)] px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={deletingThread}
                     type="button"
                     onClick={() => void handleDeleteThread()}
@@ -972,7 +972,7 @@ export default function MessagesPage() {
                       className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] transition ${
                         mobileDetailPanel === "offers"
                           ? "border-navy/20 bg-navy text-white"
-                          : "border-slate-200 bg-white text-steel"
+                          : "border-slate-200 bg-[var(--surface-solid)] text-steel"
                       }`}
                       type="button"
                       onClick={() =>
@@ -1011,7 +1011,7 @@ export default function MessagesPage() {
                         className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-semibold transition ${
                           desktopDetailPanels.listing
                             ? "border-navy/20 bg-navy text-white"
-                            : "border-slate-200 bg-white text-steel hover:border-navy/20 hover:text-ink"
+                            : "border-slate-200 bg-[var(--surface-solid)] text-steel hover:border-navy/20 hover:text-ink"
                         }`}
                         type="button"
                         onClick={() =>
@@ -1044,7 +1044,7 @@ export default function MessagesPage() {
                       className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-semibold transition ${
                         desktopDetailPanels.offers
                           ? "border-navy/20 bg-navy text-white"
-                          : "border-slate-200 bg-white text-steel hover:border-navy/20 hover:text-ink"
+                          : "border-slate-200 bg-[var(--surface-solid)] text-steel hover:border-navy/20 hover:text-ink"
                       }`}
                       type="button"
                       onClick={() =>
@@ -1121,7 +1121,7 @@ export default function MessagesPage() {
                 className="relative flex-none px-3 py-3 sm:flex-1 sm:overflow-y-auto sm:overscroll-contain sm:[touch-action:pan-y] sm:px-6 sm:py-5"
               >
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(240,55,55,0.07),transparent_18%),radial-gradient(circle_at_bottom_right,rgba(17,39,56,0.08),transparent_24%)]" />
-              <div className="pointer-events-none absolute inset-x-3 inset-y-4 rounded-[22px] border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.28),rgba(255,255,255,0.08))] sm:inset-x-6 sm:inset-y-5 sm:rounded-[30px]" />
+              <div className="pointer-events-none absolute inset-x-3 inset-y-4 rounded-[22px] border border-[color-mix(in_srgb,var(--line)_78%,white_22%)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface-solid)_38%,transparent),color-mix(in_srgb,var(--surface-alt)_12%,transparent))] sm:inset-x-6 sm:inset-y-5 sm:rounded-[30px]" />
               <div className="relative flex min-h-full flex-col justify-end gap-2">
                 <div className="mb-1 hidden items-center gap-3 px-1 pt-1 sm:flex">
                   <div className="h-px flex-1 bg-[rgba(177,29,35,0.12)]" />
