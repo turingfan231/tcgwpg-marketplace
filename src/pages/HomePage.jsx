@@ -1,25 +1,19 @@
 import {
   ArrowRight,
-  BellRing,
   CalendarRange,
   ChevronLeft,
   ChevronRight,
-  Clock3,
   Heart,
-  MapPin,
-  MessageCircleMore,
   Shield,
-  Store,
-  Users,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import SeoHead from "../components/seo/SeoHead";
 import CardArtwork from "../components/shared/CardArtwork";
 import UserAvatar from "../components/shared/UserAvatar";
 import { storeProfiles } from "../data/storefrontData";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { fetchLocalEvents } from "../services/cardDatabase";
-import { formatNumber } from "../utils/formatters";
 
 function sortByUpcomingDate(events) {
   return [...events].sort(
@@ -48,137 +42,12 @@ function normalizeGameKey(value) {
 }
 
 const CURATED_HERO_ART = {
-  pokemon:
-    "https://www.metagames.toys/cdn/shop/collections/Imagens_das_categorias_1880_x_500_px_b14a0c20-da0b-49e9-8d5c-d2dc020a6e1a.png?v=1718376850&width=1100",
-  "one-piece":
-    "https://www.beserk.com.au/cdn/shop/files/2023_Header_One-Piece.jpg?v=1693436857&width=1500",
-  magic:
-    "https://static.posters.cz/image/hp/77610.jpg",
-  "dragon-ball-fusion-world":
-    "https://www.gametrade.it/images/testate/dbsfusion_testata.jpg",
-  "union-arena":
-    "https://www.japangoodz.com/cdn/shop/files/UNION_ARENA_BANNER__PC__JAPANGOODZ.jpg?v=1745136537&width=1849",
+  pokemon: "/hero/pokemon-hero.png",
+  "one-piece": "/hero/one-piece-hero.jpg",
+  magic: "/hero/magic-hero.jpg",
+  "dragon-ball-fusion-world": "/hero/fusion-world-hero.jpg",
+  "union-arena": "/hero/union-arena-hero.jpg",
 };
-
-const HERO_BACKDROP_POSITION = {
-  pokemon: {
-    mobile: "object-[56%_center]",
-    desktop: "object-center",
-  },
-  "one-piece": {
-    mobile: "object-[60%_center]",
-    desktop: "object-center",
-  },
-  magic: {
-    mobile: "object-[62%_center]",
-    desktop: "object-center",
-  },
-  "dragon-ball-fusion-world": {
-    mobile: "object-[54%_center]",
-    desktop: "object-center",
-  },
-  "union-arena": {
-    mobile: "object-[56%_center]",
-    desktop: "object-center",
-  },
-  default: {
-    mobile: "object-center",
-    desktop: "object-center",
-  },
-};
-
-const GAME_SHELF_THEMES = {
-  pokemon: {
-    header:
-      "bg-[linear-gradient(180deg,rgba(239,59,51,0.16)_0%,rgba(177,29,35,0.08)_100%)]",
-    badge: "text-navy",
-    button: "text-navy",
-  },
-  magic: {
-    header:
-      "bg-[linear-gradient(180deg,rgba(177,29,35,0.18)_0%,rgba(90,24,24,0.1)_100%)]",
-    badge: "text-navy",
-    button: "text-navy",
-  },
-  "one-piece": {
-    header:
-      "bg-[linear-gradient(180deg,rgba(204,38,38,0.16)_0%,rgba(239,59,51,0.12)_100%)]",
-    badge: "text-navy",
-    button: "text-navy",
-  },
-  "dragon-ball-fusion-world": {
-    header:
-      "bg-[linear-gradient(180deg,rgba(239,59,51,0.12)_0%,rgba(127,29,29,0.08)_100%)]",
-    badge: "text-navy",
-    button: "text-navy",
-  },
-  "union-arena": {
-    header:
-      "bg-[linear-gradient(180deg,rgba(109,134,240,0.12)_0%,rgba(177,29,35,0.08)_100%)]",
-    badge: "text-navy",
-    button: "text-navy",
-  },
-};
-
-function QuickActionButton({ children, tone = "light", ...props }) {
-  return (
-    <button
-      className={`rounded-[18px] px-4 py-3 text-sm font-semibold transition duration-300 hover:-translate-y-0.5 ${
-        tone === "primary"
-          ? "bg-navy text-white shadow-soft hover:shadow-lift"
-          : tone === "orange"
-            ? "bg-orange text-white shadow-soft hover:shadow-lift"
-            : "border border-[rgba(203,220,231,0.92)] bg-white/80 text-ink hover:border-slate-300 hover:shadow-soft"
-      }`}
-      type="button"
-      {...props}
-    >
-      {children}
-    </button>
-  );
-}
-
-function PulseTile({ label, value, detail }) {
-  return (
-    <div className="console-well px-3 py-3 sm:px-4 sm:py-4">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy/65">{label}</p>
-      <p className="mt-1.5 font-display text-[1.45rem] font-semibold tracking-[-0.04em] text-ink sm:mt-2 sm:text-[1.9rem]">{value}</p>
-      {detail ? <p className="mt-1 text-[0.82rem] text-steel sm:text-sm">{detail}</p> : null}
-    </div>
-  );
-}
-
-function FeedRow({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
-  return (
-    <div className="flex w-full min-w-0 items-start gap-2.5 overflow-hidden rounded-[18px] border border-[var(--line)] bg-[var(--surface-solid)] px-3 py-3 shadow-[0_14px_32px_-28px_rgba(26,91,120,0.55)] transition duration-300 hover:-translate-y-0.5 hover:border-navy/16 hover:shadow-soft sm:gap-3 sm:rounded-[22px] sm:px-4 sm:py-4">
-      <button className="min-w-0 flex-1 text-left" type="button" onClick={() => onOpen(listing.id)}>
-        <p className="truncate text-[0.95rem] font-semibold text-ink sm:text-base">{listing.title}</p>
-        <p className="mt-0.5 text-[0.78rem] text-steel sm:mt-1 sm:text-sm">
-          {listing.game} | {listing.neighborhood}
-        </p>
-      </button>
-      <div className="text-right">
-        <p className="text-[0.95rem] font-semibold text-ink sm:text-base">
-          {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
-        </p>
-        <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-steel sm:mt-1 sm:text-xs sm:tracking-[0.16em]">{listing.timeAgo}</p>
-      </div>
-      <button
-        aria-label={listing.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-        className={`inline-flex items-center justify-center rounded-full p-2 ${
-          listing.wishlisted ? "bg-orange/15 text-orange" : "bg-[var(--surface-hover)] text-steel"
-        }`}
-        type="button"
-        onClick={(event) => {
-          event.stopPropagation();
-          onToggleWishlist(listing.id);
-        }}
-      >
-        <Heart fill={listing.wishlisted ? "currentColor" : "none"} size={15} />
-      </button>
-    </div>
-  );
-}
 
 function ShelfCard({ listing, formatCadPrice, onOpen }) {
   return (
@@ -195,7 +64,7 @@ function ShelfCard({ listing, formatCadPrice, onOpen }) {
       />
       <div className="min-w-0 flex-1">
         <p className="line-clamp-2 text-[0.84rem] font-semibold leading-5 text-ink sm:text-[0.9rem]">{listing.title}</p>
-        <p className="mt-0.5 text-[0.72rem] text-steel sm:text-[0.76rem]">
+        <p className="mt-0.5 text-[0.72rem] text-slate-700 sm:text-[0.76rem]">
           {listing.neighborhood} | {listing.seller?.publicName || listing.seller?.name}
         </p>
       </div>
@@ -209,8 +78,7 @@ function ShelfCard({ listing, formatCadPrice, onOpen }) {
 function BannerCard({
   slide,
   active,
-  layoutMode = "current",
-  formatCadPrice,
+  shouldLoad = false,
   onOpenListing,
   onOpenEvent,
   onOpenSeller,
@@ -227,9 +95,6 @@ function BannerCard({
     slide.payload.heroBackdrop ||
     CURATED_HERO_ART[heroGameKey] ||
     null;
-  const backgroundImage =
-    slide.payload.backgroundImage || listingGallery[0] || slide.payload.imageUrl || null;
-  const heroBackdropPosition = HERO_BACKDROP_POSITION[heroGameKey] || HERO_BACKDROP_POSITION.default;
   const overlayHeroClass =
     heroGameKey === "pokemon"
       ? "object-[56%_center] sm:object-center"
@@ -289,11 +154,13 @@ function BannerCard({
       >
         <div className="relative h-full overflow-hidden rounded-[26px] border border-white/10 bg-[#23090b] text-white shadow-[0_32px_90px_-48px_rgba(80,16,16,0.42)] sm:rounded-[32px]">
           <div className="relative h-full p-3.5 pb-16 sm:p-8 lg:p-10">
-              {heroBackdrop ? (
+              {heroBackdrop && shouldLoad ? (
                 <img
                   alt=""
                   aria-hidden="true"
                   className={`absolute inset-0 h-full w-full scale-[1.04] object-cover ${overlayHeroClass}`}
+                  fetchpriority={active ? "high" : "auto"}
+                  loading={active ? "eager" : "lazy"}
                   src={heroBackdrop}
                 />
               ) : null}
@@ -351,7 +218,7 @@ function BestSellerCard({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="line-clamp-2 text-[0.86rem] font-semibold leading-5 text-ink">{listing.title}</p>
-              <p className="mt-0.5 text-[0.72rem] leading-4 text-steel">
+              <p className="mt-0.5 text-[0.72rem] leading-4 text-slate-700">
                 {listing.game} | {listing.neighborhood}
               </p>
             </div>
@@ -359,7 +226,7 @@ function BestSellerCard({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
               aria-label={listing.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
               className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] border ${
                 listing.wishlisted
-                  ? "border-orange/25 bg-orange/10 text-orange"
+                  ? "border-rose-200 bg-rose-100 text-rose-800"
                   : "border-[var(--line)] bg-[var(--surface-hover)] text-steel"
               }`}
               type="button"
@@ -386,105 +253,14 @@ function BestSellerCard({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
   );
 }
 
-function SecondaryPromo({ feature, formatCadPrice, onOpenListing, onOpenEvent, onOpenGame }) {
-  if (!feature) {
-    return null;
-  }
-
-  return (
-    <section className="overflow-hidden rounded-[30px] border border-[rgba(145,38,43,0.14)] bg-[linear-gradient(120deg,#4f0f14_0%,#74161b_56%,#2b090b_100%)] text-white shadow-[0_28px_80px_-48px_rgba(80,16,16,0.42)]">
-      <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)_14rem] lg:items-center">
-        <div className="flex justify-center px-6 pt-6 lg:pt-0">
-          <div className="flex items-end gap-3">
-            {(feature.gallery || []).slice(0, 2).map((src, index) => (
-              <div
-                key={`${feature.id || feature.slug}-${index}`}
-                className={`rounded-[22px] border border-white/18 bg-white/10 p-2 backdrop-blur ${
-                  index === 1 ? "translate-y-6" : ""
-                }`}
-              >
-                <CardArtwork
-                  className="aspect-[63/88] w-[7.6rem] rounded-[16px] object-cover"
-                  game={feature.game || feature.name}
-                  src={src}
-                  title={`${feature.title || feature.name} ${index + 1}`}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="px-6 pb-6 pt-2 lg:px-0 lg:py-8">
-          <span className="inline-flex rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white">
-            {feature.kicker}
-          </span>
-          <h2 className="mt-4 max-w-3xl font-display text-[2rem] font-semibold tracking-[-0.05em] text-white sm:text-[2.45rem]">
-            {feature.title}
-          </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-white/76 sm:text-base">
-            {feature.description}
-          </p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {feature.meta.map((item) => (
-              <span
-                key={item}
-                className="rounded-full border border-white/12 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-white/78"
-              >
-                {item}
-              </span>
-            ))}
-          </div>
-          <button
-            className="mt-6 rounded-full bg-white px-5 py-3 text-sm font-semibold text-navy"
-            type="button"
-            onClick={() => {
-              if (feature.kind === "listing") {
-                onOpenListing(feature.id);
-              } else if (feature.kind === "event") {
-                onOpenEvent();
-              } else {
-                onOpenGame(feature.slug);
-              }
-            }}
-          >
-            {feature.cta}
-          </button>
-        </div>
-        <div className="hidden h-full border-l border-white/10 px-6 py-8 lg:block">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/58">
-            {feature.kind === "listing" ? "Market price" : feature.kind === "event" ? "Calendar" : "Channel"}
-          </p>
-          <p className="mt-4 font-display text-[1.85rem] font-semibold tracking-[-0.05em] text-white">
-            {feature.kind === "listing"
-              ? formatCadPrice(feature.price, feature.priceCurrency || "CAD")
-              : feature.kind === "event"
-                ? feature.time
-                : `${feature.count} live`}
-          </p>
-          <p className="mt-2 text-sm text-white/72">
-            {feature.kind === "listing"
-              ? `${feature.game} | ${feature.neighborhood}`
-              : feature.kind === "event"
-                ? feature.store
-                : `${feature.neighborhoodCount} meetup areas`}
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export default function HomePage() {
   const navigate = useNavigate();
   const {
     activeListings,
-    currentUser,
-    followedSellerIds,
     formatCadPrice,
     gameCatalog,
     hotListings,
-    loading,
     manualEvents,
-    openCreateListing,
     sellers,
     setGlobalSearch,
     siteSettings,
@@ -493,7 +269,6 @@ export default function HomePage() {
   const [remoteEvents, setRemoteEvents] = useState([]);
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const homeSections = siteSettings?.homeSections || {};
-  const heroPreviewMode = "overlay-split";
 
   const safeListings = Array.isArray(activeListings) ? activeListings.filter(Boolean) : [];
   const safeHotListings = Array.isArray(hotListings) ? hotListings.filter(Boolean) : [];
@@ -519,48 +294,17 @@ export default function HomePage() {
       }, {}),
     [safeSellers],
   );
-  const featuredCategories = (Array.isArray(gameCatalog) ? gameCatalog : []).filter(
-    (game) => game?.slug && game.slug !== "all",
-  );
-
   const categorySummaries = useMemo(
     () =>
-      featuredCategories.map((game) => ({
+      (Array.isArray(gameCatalog) ? gameCatalog : [])
+        .filter((game) => game?.slug && game.slug !== "all")
+        .map((game) => ({
         ...game,
         count: safeListings.filter((listing) => listing?.gameSlug === game.slug).length,
       })),
-    [featuredCategories, safeListings],
+    [gameCatalog, safeListings],
   );
 
-  const artworkByGame = useMemo(() => {
-    const map = {};
-    safeListings.forEach((listing) => {
-      const gameKey = normalizeGameKey(listing?.gameSlug || listing?.game);
-      if (gameKey && !map[gameKey] && listing?.imageUrl) {
-        map[gameKey] = listing.imageUrl;
-      }
-    });
-    return map;
-  }, [safeListings]);
-
-  const gameShelves = useMemo(
-    () =>
-      categorySummaries.map((game) => ({
-        ...game,
-        listings: safeListings
-          .filter((listing) => listing?.gameSlug === game.slug)
-          .sort(
-            (left, right) =>
-              Number(right.featured) - Number(left.featured) ||
-              (right.sortTimestamp || 0) - (left.sortTimestamp || 0),
-          )
-          .slice(0, 2),
-      })),
-    [categorySummaries, safeListings],
-  );
-
-  const freshListings = safeHotListings.slice(0, 4);
-  const verifiedSellerCount = safeSellers.filter((seller) => seller?.verified).length;
   const topSellers = [...safeSellers]
     .sort((left, right) => {
       const dealsDiff = Number(right.completedDeals || 0) - Number(left.completedDeals || 0);
@@ -662,14 +406,6 @@ export default function HomePage() {
     safeHotListings[0] ||
     safeListings[0] ||
     null;
-  const followedSellerFeed = useMemo(
-    () =>
-      activeListings
-        .filter((listing) => followedSellerIds.includes(listing.sellerId))
-        .sort((left, right) => right.sortTimestamp - left.sortTimestamp)
-        .slice(0, 4),
-    [activeListings, followedSellerIds],
-  );
   const newThisWeekListings = useMemo(() => {
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     return safeListings
@@ -721,7 +457,6 @@ export default function HomePage() {
         payload: {
           ...nextEvent,
           heroBackdrop: CURATED_HERO_ART[eventGameKey] || null,
-          heroArt: CURATED_HERO_ART[eventGameKey] || artworkByGame[eventGameKey] || null,
         },
       });
     }
@@ -742,88 +477,69 @@ export default function HomePage() {
         payload: {
           ...featuredGame,
           heroBackdrop: CURATED_HERO_ART[normalizeGameKey(featuredGame.slug)] || null,
-          heroArt: CURATED_HERO_ART[normalizeGameKey(featuredGame.slug)] || artworkByGame[normalizeGameKey(featuredGame.slug)] || null,
         },
       });
     }
 
     return slides;
-  }, [artworkByGame, featuredGame, featuredListing, nextEvent]);
-
-  const marketPulse = [
-    { label: "Live listings", value: formatNumber(safeListings.length) },
-    { label: "Verified sellers", value: formatNumber(verifiedSellerCount) },
-    { label: "Games", value: "5", detail: "Pokemon, Magic, One Piece, Fusion World, Union Arena" },
-    { label: "Next meetup", value: nextEvent?.store || "Events", detail: nextEvent?.dateStr || "Calendar ready" },
-  ];
-  const promoFeature = useMemo(() => {
-    if (featuredGame) {
-      return {
-        kind: "game",
-        ...featuredGame,
-        kicker: "Featured channel",
-        title: `Browse ${featuredGame.name} like a live storefront`,
-        description: "Open the busiest game channel first, then branch into the rest of the local market.",
-        meta: [
-          `${featuredGame.count} listings`,
-          `${featuredGame.neighborhoodCount || 1} neighborhoods`,
-          featuredGame.shortName,
-        ],
-        cta: "Browse game",
-      };
-    }
-
-    if (nextEvent) {
-      const eventGameKey = normalizeGameKey(nextEvent.game);
-      return {
-        kind: "event",
-        ...nextEvent,
-        kicker: "Upcoming event",
-        title: nextEvent.title,
-        description: "Use the calendar to line up store nights and tournament weekends with the current market.",
-        meta: [nextEvent.store, nextEvent.game, nextEvent.time],
-        gallery: [artworkByGame[eventGameKey], featuredListing?.imageUrl].filter(Boolean),
-        cta: "View events",
-      };
-    }
-
-    if (featuredListing) {
-      return {
-        kind: "listing",
-        ...featuredListing,
-        kicker: "Featured listing",
-        description: "A highlighted local listing with pricing, offers, and meetup planning built in.",
-        meta: [featuredListing.game, featuredListing.neighborhood, `${featuredListing.views || 0} views`],
-        gallery: [featuredListing.imageUrl, ...(featuredListing.conditionImages || [])].filter(Boolean),
-        cta: "Open listing",
-      };
-    }
-
-    return null;
-  }, [artworkByGame, featuredGame, featuredListing, nextEvent]);
+  }, [featuredGame, featuredListing, nextEvent]);
+  const homeSeoImage =
+    bannerSlides[0]?.payload?.heroBackdrop ||
+    CURATED_HERO_ART[normalizeGameKey(featuredGame?.slug)] ||
+    featuredListing?.imageUrl ||
+    null;
 
   useEffect(() => {
+    if (homeSections.showEvents === false) {
+      return undefined;
+    }
+
     let cancelled = false;
+    let timeoutId = null;
+    let idleId = null;
 
     async function loadHomeEvents() {
       try {
         const data = await fetchLocalEvents();
         if (!cancelled) {
-          setRemoteEvents(Array.isArray(data?.events) ? data.events.filter(Boolean) : []);
+          startTransition(() => {
+            setRemoteEvents(Array.isArray(data?.events) ? data.events.filter(Boolean) : []);
+          });
         }
       } catch {
         if (!cancelled) {
-          setRemoteEvents([]);
+          startTransition(() => {
+            setRemoteEvents([]);
+          });
         }
       }
     }
 
-    void loadHomeEvents();
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleId = window.requestIdleCallback(
+        () => {
+          void loadHomeEvents();
+        },
+        { timeout: 1200 },
+      );
+    } else if (typeof window !== "undefined") {
+      timeoutId = window.setTimeout(() => {
+        void loadHomeEvents();
+      }, 450);
+    } else {
+      void loadHomeEvents();
+    }
 
     return () => {
       cancelled = true;
+      if (typeof window !== "undefined" && idleId && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(idleId);
+      }
+      if (typeof window !== "undefined" && timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
     };
-  }, []);
+  }, [homeSections.showEvents]);
 
   useEffect(() => {
     if (bannerSlides.length <= 1) {
@@ -846,13 +562,6 @@ export default function HomePage() {
     navigate(`/listing/${listingId}`);
   }
 
-  function openPreset(type, fallbackPath) {
-    const opened = openCreateListing({ type });
-    if (!opened) {
-      navigate("/auth", { state: { from: fallbackPath } });
-    }
-  }
-
   function showPreviousBanner() {
     setActiveBannerIndex((current) =>
       bannerSlides.length ? (current - 1 + bannerSlides.length) % bannerSlides.length : 0,
@@ -867,6 +576,13 @@ export default function HomePage() {
 
   return (
     <div className="stagger-stack space-y-4 sm:space-y-5 lg:space-y-8">
+      <SeoHead
+        canonicalPath="/"
+        description="Local Winnipeg TCG marketplace for buying, selling, trading, events, and meetup planning."
+        image={homeSeoImage || undefined}
+        preloadImage={homeSeoImage || undefined}
+        title="Home"
+      />
       {homeSections.showHero !== false ? (
       <section className="drop-in-item space-y-3 sm:space-y-4">
         <div>
@@ -876,8 +592,6 @@ export default function HomePage() {
                 <BannerCard
                   key={slide.id}
                   active={activeBannerIndex === index}
-                  layoutMode={heroPreviewMode}
-                  formatCadPrice={formatCadPrice}
                   onOpenEvent={() => navigate("/events")}
                   onOpenGame={(slug) => {
                     setGlobalSearch("");
@@ -885,6 +599,7 @@ export default function HomePage() {
                   }}
                   onOpenListing={openListing}
                   onOpenSeller={(sellerId) => navigate(`/seller/${sellerId}`)}
+                  shouldLoad={activeBannerIndex === index}
                   slide={slide}
                 />
               ))}
@@ -995,9 +710,8 @@ export default function HomePage() {
           )}
         </div>
       </section>
-
       {(homeSections.showEvents !== false || homeSections.showTrustedSellers !== false) ? (
-      <section className="drop-in-cluster grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <section className="drop-in-cluster deferred-home-section grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         {homeSections.showEvents !== false ? (
         <article className="drop-in-item console-panel binder-edge p-2.5 sm:p-3">
           <div className="flex items-center justify-between gap-3">
@@ -1018,7 +732,7 @@ export default function HomePage() {
                 >
                   <div>
                     <p className="text-[0.84rem] font-semibold leading-5 text-ink sm:text-[0.9rem]">{event.title}</p>
-                    <p className="mt-0.5 text-[0.7rem] text-steel sm:text-[0.76rem]">
+                    <p className="mt-0.5 text-[0.7rem] text-slate-700 sm:text-[0.76rem]">
                       {event.store} | {event.dateStr} | {event.time}
                     </p>
                   </div>
@@ -1062,7 +776,7 @@ export default function HomePage() {
                     <p className="truncate text-[0.84rem] font-semibold text-ink sm:text-[0.9rem]">
                       {seller.publicName || seller.firstName || seller.name}
                     </p>
-                    <p className="mt-0.5 text-[0.68rem] text-steel sm:text-[0.74rem]">
+                    <p className="mt-0.5 text-[0.68rem] text-slate-700 sm:text-[0.74rem]">
                       {seller.completedDeals || 0} deals
                       {seller.overallRating ? ` | ${seller.overallRating.toFixed(1)} rating` : ""}
                       {` | ${sellerFollowerCounts[seller.id] || 0} followers`}
@@ -1082,7 +796,7 @@ export default function HomePage() {
       ) : null}
 
       {homeSections.showStores !== false ? (
-      <section className="drop-in-item console-panel binder-edge p-3 sm:p-4">
+      <section className="drop-in-item deferred-home-section console-panel binder-edge p-3 sm:p-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="section-kicker">Verified meetup spots</p>
@@ -1108,7 +822,13 @@ export default function HomePage() {
               <div className="flex h-[4.8rem] items-center justify-center overflow-hidden border-b border-[var(--line)] bg-[var(--surface-hover)] px-3 py-2.5 sm:h-[5.2rem] sm:px-4 sm:py-3">
                 <div className="flex h-full w-full items-center justify-center bg-[var(--surface-hover)] px-2 py-1.5">
                   {store.logoUrl ? (
-                    <img alt={store.name} className="max-h-full w-full object-contain" src={store.logoUrl} />
+                    <img
+                      alt={store.name}
+                      className="max-h-full w-full object-contain"
+                      decoding="async"
+                      loading="lazy"
+                      src={store.logoUrl}
+                    />
                   ) : null}
                 </div>
               </div>
@@ -1117,20 +837,20 @@ export default function HomePage() {
                   <p className="font-display text-[0.96rem] font-semibold tracking-[-0.03em] text-ink sm:text-[1.02rem]">
                     {store.name}
                   </p>
-                  <p className="mt-0.5 text-[0.72rem] text-steel sm:text-[0.76rem]">{store.neighborhood}</p>
+                  <p className="mt-0.5 text-[0.72rem] text-slate-700 sm:text-[0.76rem]">{store.neighborhood}</p>
                 </div>
                 <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   <span className="rounded-[8px] bg-navy/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-navy">
                     {store.activeCount} listings
                   </span>
-                  <span className="rounded-[8px] bg-[var(--surface-hover)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-steel">
+                  <span className="rounded-[8px] bg-[var(--surface-hover)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-700">
                     {storeFollowerCounts[store.slug] || 0} followers
                   </span>
-                  <span className="rounded-[8px] bg-[var(--surface-hover)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-steel">
+                  <span className="rounded-[8px] bg-[var(--surface-hover)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-700">
                     Approved
                   </span>
                 </div>
-                <p className="line-clamp-2 text-[0.76rem] leading-5 text-steel">
+                <p className="line-clamp-2 text-[0.76rem] leading-5 text-slate-700">
                   {store.featuredListing
                     ? `${store.featuredListing.title} is live and tied to this meetup area.`
                     : "Browse upcoming events and sellers who prefer meeting here."}

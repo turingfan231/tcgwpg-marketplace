@@ -1,6 +1,7 @@
 import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ListingCard from "../components/cards/ListingCard";
+import SeoHead from "../components/seo/SeoHead";
 import EmptyState from "../components/ui/EmptyState";
 import PageSkeleton from "../components/ui/PageSkeleton";
 import { useMarketplace } from "../hooks/useMarketplace";
@@ -39,6 +40,12 @@ export default function WantToBuyPage() {
 
   return (
     <div className="space-y-6">
+      <SeoHead
+        canonicalPath="/wtb"
+        description="Browse active Winnipeg want-to-buy posts for staples, deck cores, and hard-to-find TCG printings."
+        title="Want To Buy"
+        type="website"
+      />
       <section className="surface-card p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>

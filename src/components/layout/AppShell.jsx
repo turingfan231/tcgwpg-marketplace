@@ -56,8 +56,22 @@ export default function AppShell() {
     );
   }, []);
 
+  const isAutomatedBrowser = useMemo(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.navigator.webdriver === true;
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    if (isAutomatedBrowser) {
+      setInstallVisible(false);
+      setDeferredPrompt(null);
       return undefined;
     }
 
@@ -92,7 +106,7 @@ export default function AppShell() {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
     };
-  }, [isStandalone]);
+  }, [isAutomatedBrowser, isStandalone]);
 
   function dismissInstallPrompt() {
     setInstallVisible(false);
@@ -121,7 +135,7 @@ export default function AppShell() {
   }
 
   const installState = useMemo(() => {
-    if (!installVisible || typeof window === "undefined" || isStandalone) {
+    if (!installVisible || typeof window === "undefined" || isStandalone || isAutomatedBrowser) {
       return { visible: false, mode: "native", mobile: false };
     }
 
@@ -136,15 +150,15 @@ export default function AppShell() {
       mobile,
       mode: deferredPrompt ? "native" : isIos ? "ios" : "manual",
     };
-  }, [deferredPrompt, installVisible, isStandalone]);
+  }, [deferredPrompt, installVisible, isAutomatedBrowser, isStandalone]);
 
   const activeTheme = useMemo(
     () => ({
       id: "collector-strip",
       primary: "#b11d23",
       primaryRgb: "177, 29, 35",
-      accent: "#ef3b33",
-      accentRgb: "239, 59, 51",
+      accent: "#c62828",
+      accentRgb: "198, 40, 40",
     }),
     [],
   );
@@ -181,6 +195,7 @@ export default function AppShell() {
     const root = document.documentElement;
     const body = document.body;
     root.dataset.colorMode = colorMode;
+    root.dataset.theme = colorMode;
     body.dataset.colorMode = colorMode;
     root.style.colorScheme = colorMode;
     window.localStorage.setItem(COLOR_MODE_KEY, colorMode);

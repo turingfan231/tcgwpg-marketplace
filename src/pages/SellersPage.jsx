@@ -1,6 +1,7 @@
 import { Search, Star, Store } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import SeoHead from "../components/seo/SeoHead";
 import UserAvatar from "../components/shared/UserAvatar";
 import EmptyState from "../components/ui/EmptyState";
 import PageSkeleton from "../components/ui/PageSkeleton";
@@ -71,6 +72,12 @@ export default function SellersPage() {
 
   return (
     <div className="space-y-5 sm:space-y-6">
+      <SeoHead
+        canonicalPath="/sellers"
+        description="Browse trusted local TCG sellers in Winnipeg, compare reviews and completed deals, and open seller storefronts before making a deal."
+        title="Browse Sellers"
+        type="website"
+      />
       <section className="console-shell p-4 sm:p-6">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div>

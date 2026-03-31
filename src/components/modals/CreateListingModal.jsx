@@ -1,4 +1,6 @@
 import {
+  ChevronLeft,
+  ChevronRight,
   CheckCircle2,
   ImagePlus,
   Search,
@@ -8,6 +10,11 @@ import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { neighborhoods } from "../../data/mockData";
 import { useMarketplace } from "../../hooks/useMarketplace";
+import { trackEvent } from "../../lib/analytics";
+import {
+  getListingWizardStepState,
+  normalizePostalInput,
+} from "../../lib/listingWizard";
 import {
   searchCardPrintings,
   supportsLiveSearch,
@@ -48,19 +55,30 @@ const GAME_OPTIONS = [
   "Union Arena",
 ];
 
+const LISTING_STEPS = [
+  { id: "setup", label: "Setup" },
+  { id: "identity", label: "Card" },
+  { id: "details", label: "Details" },
+  { id: "publish", label: "Publish" },
+];
+
 function FieldLabel({ children }) {
   return <span className="mb-2 block text-sm font-semibold text-steel">{children}</span>;
 }
 
-function normalizePostalInput(value) {
-  return String(value || "")
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "")
-    .slice(0, 3);
-}
-
 function getPreferredListingGame(user) {
   return user?.defaultListingGame || user?.favoriteGames?.[0] || initialFormState.game;
+}
+
+function hasMeaningfulDraftContent(form, searchQuery) {
+  return Boolean(
+    form.title ||
+      form.price ||
+      form.description ||
+      form.imageUrl ||
+      form.conditionImages?.length ||
+      searchQuery.trim(),
+  );
 }
 
 export default function CreateListingModal({ onClose }) {
@@ -95,11 +113,17 @@ export default function CreateListingModal({ onClose }) {
   const [conditionPreviewImages, setConditionPreviewImages] = useState([]);
   const [draftMessage, setDraftMessage] = useState("");
   const [pendingSearchSubmit, setPendingSearchSubmit] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [highlightedResultIndex, setHighlightedResultIndex] = useState(-1);
   const [searchExpanded, setSearchExpanded] = useState(() =>
     typeof window === "undefined" ? true : window.innerWidth >= 1280,
   );
   const searchRequestIdRef = useRef(0);
   const hydratedDraftKeyRef = useRef("");
+  const autosaveTimerRef = useRef(null);
+  const lastAutosaveSignatureRef = useRef("");
+
+  const listboxId = "create-listing-printing-results";
 
   const liveSearchSupported = useMemo(
     () => supportsLiveSearch(form.game),
@@ -111,6 +135,22 @@ export default function CreateListingModal({ onClose }) {
         .filter((entry) => String(entry.query || "").trim())
         .slice(0, 6),
     [searchHistory],
+  );
+  const {
+    canAdvanceFromSetup,
+    canAdvanceFromIdentity,
+    canAdvanceFromDetails,
+    canPublish,
+    stepCanContinue,
+  } = useMemo(
+    () =>
+      getListingWizardStepState({
+        authReady,
+        form,
+        liveSearchSupported,
+        selectedPrintingId,
+      }),
+    [authReady, form, liveSearchSupported, selectedPrintingId],
   );
 
   useEffect(() => {
@@ -184,6 +224,60 @@ export default function CreateListingModal({ onClose }) {
     setSearchError("");
   }, [createListingPreset, currentUser?.neighborhood, currentUser?.postalCode]);
 
+  useEffect(() => {
+    setHighlightedResultIndex(searchResults.length ? 0 : -1);
+  }, [searchResults]);
+
+  useEffect(() => {
+    if (!authReady || !currentUser || createListingPreset) {
+      return undefined;
+    }
+
+    if (!hasMeaningfulDraftContent(form, searchQuery)) {
+      lastAutosaveSignatureRef.current = "";
+      return undefined;
+    }
+
+    const signature = JSON.stringify({
+      form,
+      searchQuery,
+    });
+
+    if (signature === lastAutosaveSignatureRef.current) {
+      return undefined;
+    }
+
+    autosaveTimerRef.current = window.setTimeout(async () => {
+      const result = await saveListingDraft({
+        ...form,
+        name: form.name || form.title || `${form.game} draft`,
+        searchQuery,
+      });
+
+      if (result?.ok) {
+        lastAutosaveSignatureRef.current = signature;
+        if (result.draft?.id) {
+          setForm((currentForm) => ({
+            ...currentForm,
+            id: result.draft.id,
+            name: result.draft.name,
+          }));
+        }
+        setDraftMessage("Draft autosaved.");
+        trackEvent("listing_wizard_autosave", {
+          game: form.game,
+          step: LISTING_STEPS[currentStep]?.id,
+        });
+      }
+    }, 1200);
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        window.clearTimeout(autosaveTimerRef.current);
+      }
+    };
+  }, [authReady, createListingPreset, currentUser, form, saveListingDraft, searchQuery]);
+
   function updateField(field, value) {
     setDraftMessage("");
     setPendingSearchSubmit(false);
@@ -191,6 +285,53 @@ export default function CreateListingModal({ onClose }) {
       ...currentForm,
       [field]: field === "postalCode" ? normalizePostalInput(value) : value,
     }));
+  }
+
+  function goToNextStep() {
+    setCurrentStep((current) =>
+      Math.min(current + 1, LISTING_STEPS.length - 1),
+    );
+  }
+
+  function goToPreviousStep() {
+    setCurrentStep((current) => Math.max(current - 1, 0));
+  }
+
+  function handleSearchComboboxKeyDown(event) {
+    if (!searchResults.length) {
+      if (event.key === "Enter") {
+        void handleSearch(event);
+      }
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setHighlightedResultIndex((current) =>
+        current < searchResults.length - 1 ? current + 1 : 0,
+      );
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setHighlightedResultIndex((current) =>
+        current > 0 ? current - 1 : searchResults.length - 1,
+      );
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setSearchResults([]);
+      setHighlightedResultIndex(-1);
+      return;
+    }
+
+    if (event.key === "Enter" && highlightedResultIndex >= 0) {
+      event.preventDefault();
+      void applyPrinting(searchResults[highlightedResultIndex]);
+    }
   }
 
   async function handleSearch(event) {
@@ -207,6 +348,11 @@ export default function CreateListingModal({ onClose }) {
     setDraftMessage("");
     setPendingSearchSubmit(false);
     recordSearchQuery(trimmedQuery, { game: form.game, source: "create-listing" });
+    trackEvent("listing_wizard_search", {
+      game: form.game,
+      language: form.language,
+      query: trimmedQuery,
+    });
 
     try {
       const result = await searchCardPrintings({
@@ -227,6 +373,7 @@ export default function CreateListingModal({ onClose }) {
             "Select a printing to autofill image, set details, and market value.",
         );
       });
+      setCurrentStep(1);
     } catch (error) {
       if (searchRequestIdRef.current !== requestId) {
         return;
@@ -282,6 +429,8 @@ export default function CreateListingModal({ onClose }) {
   async function applyPrinting(printing) {
     setSelectedPrintingId(printing.id);
     setPendingSearchSubmit(false);
+    setSearchResults([]);
+    setHighlightedResultIndex(-1);
     setForm((currentForm) => ({
       ...currentForm,
       title: printing.title,
@@ -299,6 +448,12 @@ export default function CreateListingModal({ onClose }) {
         .filter(Boolean)
         .join(". "),
     }));
+    setCurrentStep((current) => Math.max(current, 2));
+    trackEvent("listing_wizard_printing_selected", {
+      cardId: printing.id,
+      game: form.game,
+      language: form.language,
+    });
   }
 
   async function saveDraft(forceNew = false) {
@@ -324,10 +479,18 @@ export default function CreateListingModal({ onClose }) {
       }));
     }
     setDraftMessage(forceNew ? "New draft saved." : "Draft saved.");
+    trackEvent("listing_wizard_draft_saved", {
+      forceNew,
+      game: form.game,
+    });
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (!canPublish) {
+      setSubmitError("Finish the listing details before publishing.");
+      return;
+    }
     setSubmitError("");
     setDraftMessage("");
     const result = await addListing({
@@ -345,6 +508,11 @@ export default function CreateListingModal({ onClose }) {
     }
 
     const createdListing = result.listing;
+    trackEvent("listing_wizard_published", {
+      game: form.game,
+      listingId: createdListing.id,
+      type: form.type,
+    });
     onClose();
     navigate(`/listing/${createdListing.id}`);
   }
@@ -371,15 +539,101 @@ export default function CreateListingModal({ onClose }) {
         }}
         onSubmit={handleSubmit}
       >
+        <div className="col-span-full border-b border-slate-200 bg-white/70 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
+          <div className="mx-auto flex max-w-[1600px] flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {LISTING_STEPS.map((step, index) => {
+                const isActive = index === currentStep;
+                const isComplete = index < currentStep;
+                return (
+                  <button
+                    key={step.id}
+                    aria-current={isActive ? "step" : undefined}
+                    className={`inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold transition ${
+                      isActive
+                        ? "bg-navy text-white shadow-soft"
+                        : isComplete
+                          ? "border border-navy/20 bg-navy/5 text-navy"
+                          : "border border-slate-200 bg-white text-steel"
+                    }`}
+                    type="button"
+                    onClick={() => setCurrentStep(index)}
+                  >
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/18 text-[11px]">
+                      {index + 1}
+                    </span>
+                    {step.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-steel">
+                  Step {currentStep + 1} of {LISTING_STEPS.length}
+                </p>
+                <p className="mt-1 text-sm leading-6 text-steel">
+                  {currentStep === 0
+                    ? "Choose the listing type and game, then give the post a usable title."
+                    : currentStep === 1
+                      ? "Match the exact printing with the live finder so the image and market context stay accurate."
+                      : currentStep === 2
+                        ? "Set price, condition, and meetup details buyers will actually use."
+                        : "Add photos, polish the description, and publish without losing your draft."}
+                </p>
+              </div>
+              <div className="hidden items-center gap-2 sm:flex">
+                <button
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel disabled:cursor-not-allowed disabled:opacity-45"
+                  disabled={currentStep === 0}
+                  type="button"
+                  onClick={goToPreviousStep}
+                >
+                  <ChevronLeft size={15} />
+                  Back
+                </button>
+                <button
+                  className="inline-flex items-center gap-2 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+                  disabled={!stepCanContinue[currentStep] || currentStep === LISTING_STEPS.length - 1}
+                  type="button"
+                  onClick={goToNextStep}
+                >
+                  Continue
+                  <ChevronRight size={15} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="order-2 space-y-4 border-b border-slate-200 p-4 sm:space-y-5 sm:p-6 lg:p-7 2xl:order-1 2xl:border-b-0 2xl:border-r">
           <section className="console-panel p-5 sm:p-6">
-            <p className="section-kicker">Listing basics</p>
+            <p className="section-kicker">
+              {currentStep === 0
+                ? "Listing basics"
+                : currentStep === 1
+                  ? "Card identity"
+                  : currentStep === 2
+                    ? "Condition and meetup"
+                    : "Photos and notes"}
+            </p>
             <h3 className="mt-3 font-display text-[1.6rem] font-semibold tracking-[-0.04em] text-ink sm:text-[2rem]">
-              Card details
+              {currentStep === 0
+                ? "Setup the post"
+                : currentStep === 1
+                  ? "Confirm the exact printing"
+                  : currentStep === 2
+                    ? "Lock in the sale details"
+                    : "Finish and publish"}
             </h3>
             <p className="mt-2 hidden text-sm leading-7 text-steel sm:block">
-              Fill in the local listing details first. Then search the live database on the
-              right to pull in the exact printing and current market context.
+              {currentStep === 0
+                ? "Set the listing type, game, and base title first so the rest of the flow has the right context."
+                : currentStep === 1
+                  ? "Use the live finder to match the exact card and pull in image, set data, and market reference."
+                  : currentStep === 2
+                    ? "This is the buyer-facing pricing and meetup info that determines whether someone messages you."
+                    : "Add the photo proof and detail notes that make the listing feel trustworthy."}
             </p>
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -420,6 +674,8 @@ export default function CreateListingModal({ onClose }) {
                 </select>
               </label>
 
+              {currentStep === 0 ? (
+                <>
               <label className="block">
                 <FieldLabel>Format</FieldLabel>
                 <select
@@ -435,7 +691,11 @@ export default function CreateListingModal({ onClose }) {
                   <option value="binder">Binder page</option>
                 </select>
               </label>
+                </>
+              ) : null}
 
+              {currentStep >= 2 ? (
+                <>
               <label className="block">
                 <FieldLabel>Condition</FieldLabel>
                 <select
@@ -520,9 +780,12 @@ export default function CreateListingModal({ onClose }) {
                 />
                 <span className="text-sm font-semibold text-ink">Accepts trades</span>
               </label>
+                </>
+              ) : null}
             </div>
           </section>
 
+          {currentStep === 3 ? (
           <section className="console-panel p-5 sm:p-6">
             <p className="section-kicker">Photos and notes</p>
             <div className="mt-4 space-y-4">
@@ -584,6 +847,7 @@ export default function CreateListingModal({ onClose }) {
               </div>
             </div>
           </section>
+          ) : null}
         </div>
 
         <div className="order-1 space-y-4 bg-[linear-gradient(180deg,#eef5f9_0%,#dce8ef_100%)] p-4 sm:space-y-5 sm:p-6 lg:p-7 2xl:order-2">
@@ -610,12 +874,12 @@ export default function CreateListingModal({ onClose }) {
                   type="button"
                   onClick={() => setSearchExpanded((current) => !current)}
                 >
-                  {searchExpanded ? "Hide finder" : "Open finder"}
+                  {searchExpanded || currentStep === 1 ? "Hide finder" : "Open finder"}
                 </button>
               </div>
             </div>
 
-            {searchExpanded ? (
+            {searchExpanded || currentStep === 1 ? (
               <>
             <div className="mt-5">
               <p className="mb-2 text-sm font-semibold text-steel">Search game</p>
@@ -684,6 +948,16 @@ export default function CreateListingModal({ onClose }) {
               <div className="flex items-center gap-2 rounded-[20px] border border-slate-200 bg-[#f2f3f5] p-2.5">
                 <Search className="ml-2 text-steel" size={16} />
                 <input
+                  aria-activedescendant={
+                    highlightedResultIndex >= 0 && searchResults[highlightedResultIndex]
+                      ? `${listboxId}-${searchResults[highlightedResultIndex].id}`
+                      : undefined
+                  }
+                  aria-autocomplete="list"
+                  aria-controls={listboxId}
+                  aria-expanded={Boolean(searchResults.length)}
+                  aria-label={`Search ${form.game} card database`}
+                  role="combobox"
                   className="flex-1 border-0 bg-transparent px-1 py-2 text-sm text-ink outline-none placeholder:text-slate-400"
                   placeholder={`Search ${form.game} card, code, or variant`}
                   value={searchQuery}
@@ -692,11 +966,7 @@ export default function CreateListingModal({ onClose }) {
                     setSearchQuery(nextQuery);
                     setPendingSearchSubmit(Boolean(String(nextQuery || "").trim()));
                   }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      void handleSearch(event);
-                    }
-                  }}
+                  onKeyDown={handleSearchComboboxKeyDown}
                 />
               </div>
               <button
@@ -749,9 +1019,9 @@ export default function CreateListingModal({ onClose }) {
             )}
           </section>
 
-          {searchExpanded ? (
+          {searchExpanded || currentStep === 1 ? (
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)]">
-            <section className="hidden console-panel p-4 sm:p-5 xl:block">
+            <section className="console-panel p-4 sm:p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-steel">Listing summary</p>
@@ -852,16 +1122,26 @@ export default function CreateListingModal({ onClose }) {
                 </span>
               </div>
 
-              <div className="grid max-h-[45dvh] gap-2.5 overflow-y-auto pr-1 sm:max-h-[34rem] sm:gap-3">
-                {searchResults.map((printing) => (
+              <div
+                id={listboxId}
+                role="listbox"
+                className="grid max-h-[45dvh] gap-2.5 overflow-y-auto pr-1 sm:max-h-[34rem] sm:gap-3"
+              >
+                {searchResults.map((printing, index) => (
                   <button
                     key={printing.id}
+                    aria-selected={selectedPrintingId === printing.id}
+                    id={`${listboxId}-${printing.id}`}
                     className={`grid grid-cols-[88px_minmax(0,1fr)] gap-0 overflow-hidden rounded-[18px] border bg-white text-left transition sm:grid-cols-[108px_minmax(0,1fr)] ${
                       selectedPrintingId === printing.id
                         ? "border-navy shadow-soft ring-2 ring-navy/10"
+                        : highlightedResultIndex === index
+                          ? "border-slate-300 shadow-soft"
                         : "border-slate-200 hover:border-slate-300 hover:shadow-soft"
                     }`}
+                    role="option"
                     type="button"
+                    onMouseEnter={() => setHighlightedResultIndex(index)}
                     onClick={() => applyPrinting(printing)}
                   >
                       <div className="flex items-center justify-center bg-[linear-gradient(180deg,#f7f8fb_0%,#eef1f5_100%)] p-2 sm:p-2.5">
@@ -959,6 +1239,24 @@ export default function CreateListingModal({ onClose }) {
 
             <div className="grid gap-3 md:flex md:flex-wrap md:justify-end">
               <button
+                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink md:hidden"
+                disabled={currentStep === 0}
+                type="button"
+                onClick={goToPreviousStep}
+              >
+                Back
+              </button>
+              {currentStep < LISTING_STEPS.length - 1 ? (
+                <button
+                  className="rounded-full bg-navy px-6 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-400 md:hidden"
+                  disabled={!stepCanContinue[currentStep]}
+                  type="button"
+                  onClick={goToNextStep}
+                >
+                  Continue
+                </button>
+              ) : null}
+              <button
                 className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
                 disabled={!authReady}
                 type="button"
@@ -1001,7 +1299,7 @@ export default function CreateListingModal({ onClose }) {
               </button>
               <button
                 className="rounded-full bg-navy px-6 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-400"
-                disabled={!authReady}
+                disabled={!canPublish}
                 type="submit"
               >
                 {authReady ? "Post listing" : "Loading account..."}

@@ -12,11 +12,13 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import CardArtwork from "../components/shared/CardArtwork";
+import SeoHead from "../components/seo/SeoHead";
 import UserAvatar from "../components/shared/UserAvatar";
 import EmptyState from "../components/ui/EmptyState";
 import InlineSpinner from "../components/ui/InlineSpinner";
 import PageSkeleton from "../components/ui/PageSkeleton";
 import { useMarketplace } from "../hooks/useMarketplace";
+import { trackEvent } from "../lib/analytics";
 import {
   getConditionClasses,
   getGameClasses,
@@ -428,6 +430,7 @@ export default function MessagesPage() {
   const [pendingPhotos, setPendingPhotos] = useState([]);
   const [previewAttachment, setPreviewAttachment] = useState(null);
   const seenMessageKeysRef = useRef(new Set());
+  const lastTrackedThreadIdRef = useRef("");
   const messagesScrollRef = useRef(null);
   const photoInputRef = useRef(null);
   const [isDesktop, setIsDesktop] = useState(() =>
@@ -589,17 +592,52 @@ export default function MessagesPage() {
     Boolean(threadOffers.length) &&
     (isDesktop ? desktopDetailPanels.offers : mobileDetailPanel === "offers");
   const shouldShowLoading = !authReady || (loading && isAuthenticated);
+  const seoTitle = activeThread?.listing?.title
+    ? `${activeThread.listing.title} messages`
+    : "Messages";
+
+  useEffect(() => {
+    if (!activeThread?.id || lastTrackedThreadIdRef.current === activeThread.id) {
+      return;
+    }
+
+    lastTrackedThreadIdRef.current = activeThread.id;
+    trackEvent("message_thread_opened", {
+      hasListingContext: Boolean(activeThread.listingId),
+      threadId: activeThread.id,
+    });
+  }, [activeThread]);
 
   if (shouldShowLoading && !threadsForCurrentUser.length) {
-    return <PageSkeleton cards={2} rows={1} titleWidth="w-48" />;
+    return (
+      <>
+        <SeoHead
+          canonicalPath={location.pathname}
+          description="View local marketplace threads, listing context, and offer updates in one inbox."
+          title="Messages"
+        />
+        <main>
+          <PageSkeleton cards={2} rows={1} titleWidth="w-48" />
+        </main>
+      </>
+    );
   }
 
   if (!threadsForCurrentUser.length) {
     return (
-      <EmptyState
-        description="Start a conversation from any listing to keep pricing, meetup timing, and offer negotiation in one place."
-        title="No messages yet"
-      />
+      <>
+        <SeoHead
+          canonicalPath={location.pathname}
+          description="View local marketplace threads, listing context, and offer updates in one inbox."
+          title="Messages"
+        />
+        <main>
+          <EmptyState
+            description="Start a conversation from any listing to keep pricing, meetup timing, and offer negotiation in one place."
+            title="No messages yet"
+          />
+        </main>
+      </>
     );
   }
 
@@ -620,6 +658,10 @@ export default function MessagesPage() {
       files,
     });
     if (!result?.ok) {
+      trackEvent("message_send_failed", {
+        hadAttachments: files.length > 0,
+        threadId: activeThread.id,
+      });
       setDraft(messageBody);
       setPendingPhotos((current) =>
         current.length
@@ -634,6 +676,10 @@ export default function MessagesPage() {
       setSending(false);
       return;
     }
+    trackEvent("message_sent", {
+      hadAttachments: files.length > 0,
+      threadId: activeThread.id,
+    });
     setSending(false);
   }
 
@@ -691,6 +737,7 @@ export default function MessagesPage() {
     const result = await hideThreadForCurrentUser(activeThread.id);
     setDeletingThread(false);
     if (result?.ok) {
+      trackEvent("message_thread_deleted", { threadId: activeThread.id });
       navigate("/messages", { replace: true });
       return;
     }
@@ -699,6 +746,10 @@ export default function MessagesPage() {
   }
 
   function beginCounterDraft(offer) {
+    trackEvent("offer_counter_started", {
+      offerId: offer.id,
+      threadId: activeThread?.id || null,
+    });
     setCounterDrafts((current) => ({
       ...current,
       [offer.id]: {
@@ -743,12 +794,22 @@ export default function MessagesPage() {
     });
 
     if (result?.ok) {
+      trackEvent("offer_counter_sent", {
+        offerId,
+        threadId: activeThread?.id || null,
+      });
       clearCounterDraft(offerId);
     }
   }
 
   return (
-    <div className="grid gap-4 overflow-hidden overscroll-none lg:h-[calc(100dvh-12.5rem)] lg:grid-cols-[23rem_minmax(0,1fr)]">
+    <>
+      <SeoHead
+        canonicalPath={location.pathname}
+        description="View local marketplace threads, listing context, and offer updates in one inbox."
+        title={seoTitle}
+      />
+      <main className="grid gap-4 overflow-hidden overscroll-none lg:h-[calc(100dvh-12.5rem)] lg:grid-cols-[23rem_minmax(0,1fr)]">
       <section
         className={`min-h-[calc(100dvh-9.1rem)] overflow-hidden rounded-none border-0 bg-transparent shadow-none sm:rounded-[30px] sm:border sm:border-[rgba(203,220,231,0.9)] sm:bg-[linear-gradient(180deg,rgba(251,253,255,0.96),rgba(241,243,245,0.9))] sm:shadow-soft lg:h-full lg:min-h-0 ${
           showMobileThread ? "hidden lg:block" : "block"
@@ -805,7 +866,10 @@ export default function MessagesPage() {
                   isActive={thread.id === threadId}
                   offerCount={(offersByListingId[thread.listingId] || []).length}
                   thread={thread}
-                  onOpen={() => navigate(`/messages/${thread.id}`)}
+                  onOpen={() => {
+                    trackEvent("message_thread_selected", { threadId: thread.id });
+                    navigate(`/messages/${thread.id}`);
+                  }}
                 />
               ))}
             </div>
@@ -818,13 +882,13 @@ export default function MessagesPage() {
       </section>
 
       <section
-        className={`flex ${immersiveMobileThread ? "h-[100dvh] rounded-none border-0 shadow-none" : "h-[calc(100dvh-8.6rem)] rounded-[22px] border border-[rgba(203,220,231,0.9)] shadow-soft"} flex-col overflow-hidden overscroll-none bg-[linear-gradient(180deg,rgba(251,253,255,0.97),rgba(241,243,245,0.92))] sm:rounded-[30px] sm:min-h-[calc(100dvh-9.6rem)] sm:h-auto lg:h-full lg:min-h-0 ${
+        className={`flex ${immersiveMobileThread ? "h-[100dvh] rounded-none border-0 shadow-none overflow-y-auto overscroll-contain [touch-action:pan-y]" : "h-[calc(100dvh-8.6rem)] rounded-[22px] border border-[rgba(203,220,231,0.9)] shadow-soft overflow-y-auto overscroll-contain [touch-action:pan-y] sm:overflow-hidden sm:overscroll-none"} flex-col bg-[linear-gradient(180deg,rgba(251,253,255,0.97),rgba(241,243,245,0.92))] sm:rounded-[30px] sm:min-h-[calc(100dvh-9.6rem)] sm:h-auto lg:h-full lg:min-h-0 ${
           !showMobileThread ? "hidden lg:flex" : "flex"
         }`}
       >
         {activeThread ? (
           <>
-            <div className="border-b border-slate-200/80 px-3 py-2.5 sm:px-6 sm:py-4">
+              <div className="sticky top-0 z-10 border-b border-slate-200/80 bg-[linear-gradient(180deg,rgba(251,253,255,0.97),rgba(241,243,245,0.94))] px-3 py-2.5 backdrop-blur-xl sm:static sm:bg-transparent sm:px-6 sm:py-4 sm:backdrop-blur-0">
               <div className="hidden flex-wrap items-start justify-between gap-4 sm:flex">
                 <div className="min-w-0">
                   <div className="flex items-center gap-3">
@@ -1025,19 +1089,37 @@ export default function MessagesPage() {
                 currentUserId={currentUserId}
                 formatCadPrice={formatCadPrice}
                 offers={threadOffers}
-                onAccept={(offerId) => respondToOffer(offerId, "accept")}
                 onBeginCounter={beginCounterDraft}
                 onCancelCounter={clearCounterDraft}
                 onChangeCounterDraft={updateCounterDraft}
-                onDecline={(offerId) => respondToOffer(offerId, "decline")}
+                onAccept={async (offerId) => {
+                  const result = await respondToOffer(offerId, "accept");
+                  if (result?.ok) {
+                    trackEvent("offer_accepted", {
+                      offerId,
+                      threadId: activeThread?.id || null,
+                    });
+                  }
+                  return result;
+                }}
+                onDecline={async (offerId) => {
+                  const result = await respondToOffer(offerId, "decline");
+                  if (result?.ok) {
+                    trackEvent("offer_declined", {
+                      offerId,
+                      threadId: activeThread?.id || null,
+                    });
+                  }
+                  return result;
+                }}
                 onSendCounter={sendCounter}
               />
             ) : null}
 
-            <div
-              ref={messagesScrollRef}
-              className="relative flex-1 overflow-y-auto overscroll-contain px-3 py-3 [touch-action:pan-y] sm:px-6 sm:py-5"
-            >
+              <div
+                ref={messagesScrollRef}
+                className="relative flex-none px-3 py-3 sm:flex-1 sm:overflow-y-auto sm:overscroll-contain sm:[touch-action:pan-y] sm:px-6 sm:py-5"
+              >
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(240,55,55,0.07),transparent_18%),radial-gradient(circle_at_bottom_right,rgba(17,39,56,0.08),transparent_24%)]" />
               <div className="pointer-events-none absolute inset-x-3 inset-y-4 rounded-[22px] border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.28),rgba(255,255,255,0.08))] sm:inset-x-6 sm:inset-y-5 sm:rounded-[30px]" />
               <div className="relative flex min-h-full flex-col justify-end gap-2">
@@ -1104,7 +1186,12 @@ export default function MessagesPage() {
                                 key={attachment.id}
                                 className="block overflow-hidden rounded-[18px] border border-white/10"
                                 type="button"
-                                onClick={() => setPreviewAttachment(attachment)}
+                                onClick={() => {
+                                  trackEvent("message_attachment_previewed", {
+                                    threadId: activeThread?.id || null,
+                                  });
+                                  setPreviewAttachment(attachment);
+                                }}
                               >
                                 <img
                                   alt={attachment.name || "Chat photo"}
@@ -1136,7 +1223,7 @@ export default function MessagesPage() {
             </div>
 
             <form
-              className="border-t border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(241,246,249,0.94))] px-3 py-2 sm:px-6 sm:py-4"
+              className="sticky bottom-0 z-10 border-t border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(241,246,249,0.94))] px-3 py-2 backdrop-blur-xl sm:static sm:px-6 sm:py-4 sm:backdrop-blur-0"
               onSubmit={handleSubmit}
             >
               <div className="rounded-[18px] border border-[rgba(203,220,231,0.92)] bg-white/96 p-2 shadow-soft sm:rounded-[28px] sm:p-3">
@@ -1273,7 +1360,8 @@ export default function MessagesPage() {
           </div>
         </div>
       ) : null}
-    </div>
+      </main>
+    </>
   );
 }
 

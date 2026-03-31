@@ -2,6 +2,10 @@ import "dotenv/config";
 import cors from "cors";
 import express from "express";
 import { createClient } from "@supabase/supabase-js";
+import {
+  getOfferCounterpartyId,
+  resolveOfferResponse,
+} from "../src/lib/offerState.js";
 
 const app = express();
 const port = Number(process.env.PORT || 8787);
@@ -59,6 +63,13 @@ const IMAGE_PROXY_ALLOWED_HOSTS = new Set([
   "en.onepiece-cardgame.com",
   "storage.googleapis.com",
 ]);
+const DEFAULT_ALLOWED_ORIGINS = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "https://tcgwpg-marketplace.vercel.app",
+  "https://tcgwpg.com",
+  "https://www.tcgwpg.com",
+];
 
 const CATEGORY_IDS = {
   magic: 1,
@@ -135,9 +146,333 @@ const tcgdexCardCache = new Map();
 const onePieceVariantImageCache = new Map();
 const tcgcsvGroupCache = new Map();
 const tcgcsvGroupDetailCache = new Map();
+const rateLimitBuckets = new Map();
 
-app.use(cors());
+function getAllowedOrigins() {
+  const configuredOrigins = String(process.env.APP_ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  return new Set([...DEFAULT_ALLOWED_ORIGINS, ...configuredOrigins]);
+}
+
+const allowedOrigins = getAllowedOrigins();
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.has(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Origin is not allowed by CORS."));
+    },
+  }),
+);
 app.use(express.json());
+app.use((req, res, next) => {
+  const requestId =
+    String(req.headers["x-request-id"] || "").trim() ||
+    `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+
+  req.requestId = requestId;
+  res.setHeader("x-request-id", requestId);
+  res.setHeader("x-content-type-options", "nosniff");
+  res.setHeader("referrer-policy", "strict-origin-when-cross-origin");
+  res.setHeader("x-frame-options", "DENY");
+  res.setHeader(
+    "permissions-policy",
+    "camera=(), microphone=(), geolocation=(), payment=()",
+  );
+  next();
+});
+
+function getRequestOrigin(req) {
+  const origin = String(req.headers.origin || "").trim();
+  if (origin) {
+    return origin;
+  }
+
+  const referer = String(req.headers.referer || "").trim();
+  if (!referer) {
+    return "";
+  }
+
+  try {
+    return new URL(referer).origin;
+  } catch {
+    return "";
+  }
+}
+
+function requireAllowedOrigin(req, res, next) {
+  const origin = getRequestOrigin(req);
+
+  if (!origin || allowedOrigins.has(origin)) {
+    return next();
+  }
+
+  return res.status(403).json({
+    error: "Request origin is not allowed.",
+  });
+}
+
+function isMissingTableError(error, tableName) {
+  const message = String(error?.message || "").toLowerCase();
+  return (
+    message.includes(String(tableName || "").toLowerCase()) &&
+    (message.includes("does not exist") ||
+      message.includes("schema cache") ||
+      message.includes("could not find"))
+  );
+}
+
+function isMissingColumnError(error, columnName) {
+  const message = String(error?.message || "").toLowerCase();
+  return (
+    message.includes("column") &&
+    message.includes(String(columnName || "").toLowerCase()) &&
+    (message.includes("does not exist") || message.includes("schema cache"))
+  );
+}
+
+function omitMissingOfferColumns(payload, error) {
+  const nextPayload = { ...payload };
+
+  if (isMissingColumnError(error, "last_actor_id")) {
+    delete nextPayload.last_actor_id;
+  }
+
+  return nextPayload;
+}
+
+function sameParticipantSet(left = [], right = []) {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  const leftSorted = [...left].map(String).sort();
+  const rightSorted = [...right].map(String).sort();
+  return leftSorted.every((value, index) => value === rightSorted[index]);
+}
+
+async function getActingUserContext(req) {
+  if (!supabaseAdmin) {
+    return { ok: false, status: 501, error: "API server is not configured." };
+  }
+
+  const authHeader = String(req.headers.authorization || "");
+  const accessToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+
+  if (!accessToken) {
+    return { ok: false, status: 401, error: "Missing access token." };
+  }
+
+  const {
+    data: { user: actingUser },
+    error: actingUserError,
+  } = await supabaseAdmin.auth.getUser(accessToken);
+
+  if (actingUserError || !actingUser) {
+    return { ok: false, status: 401, error: "Invalid access token." };
+  }
+
+  const { data: actingProfile, error: profileError } = await supabaseAdmin
+    .from("profiles")
+    .select("*")
+    .eq("id", actingUser.id)
+    .maybeSingle();
+
+  if (profileError) {
+    return { ok: false, status: 500, error: profileError.message };
+  }
+
+  return {
+    ok: true,
+    actingUser,
+    actingProfile,
+  };
+}
+
+async function insertNotifications(records = []) {
+  if (!supabaseAdmin || !records.length) {
+    return { ok: true };
+  }
+
+  const { error } = await supabaseAdmin.from("notifications").insert(records);
+  if (error && !isMissingTableError(error, "notifications")) {
+    return { ok: false, error: error.message };
+  }
+
+  return { ok: true };
+}
+
+async function insertAdminAuditLog(entry = {}) {
+  if (!supabaseAdmin) {
+    return { ok: true };
+  }
+
+  const insertPayload = {
+    id: entry.id || `audit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    actor_id: entry.actorId || null,
+    actor_name: entry.actorName || "Admin",
+    action: entry.action || "admin-action",
+    title: entry.title || "Admin action",
+    details: entry.details || null,
+    target_id: entry.targetId || null,
+    target_type: entry.targetType || null,
+  };
+
+  const { error } = await supabaseAdmin.from("admin_audit_log").insert(insertPayload);
+  if (error && !isMissingTableError(error, "admin_audit_log")) {
+    return { ok: false, error: error.message };
+  }
+
+  return { ok: true };
+}
+
+function getClientKey(req) {
+  const forwarded = String(req.headers["x-forwarded-for"] || "")
+    .split(",")[0]
+    .trim();
+  return forwarded || req.ip || "anonymous";
+}
+
+function consumeRateLimit({ bucket, key, windowMs, maxRequests }) {
+  const normalizedKey = String(key || "anonymous").trim() || "anonymous";
+  const bucketKey = `${bucket}:${normalizedKey}`;
+  const now = Date.now();
+  const existing = rateLimitBuckets.get(bucketKey);
+
+  if (!existing || existing.resetAt <= now) {
+    rateLimitBuckets.set(bucketKey, { count: 1, resetAt: now + windowMs });
+    return { ok: true, retryAfterSeconds: 0 };
+  }
+
+  if (existing.count >= maxRequests) {
+    return {
+      ok: false,
+      retryAfterSeconds: Math.max(1, Math.ceil((existing.resetAt - now) / 1000)),
+    };
+  }
+
+  existing.count += 1;
+  rateLimitBuckets.set(bucketKey, existing);
+  return { ok: true, retryAfterSeconds: 0 };
+}
+
+function createRateLimit({ bucket, windowMs, maxRequests, getKey = getClientKey }) {
+  return function rateLimitMiddleware(req, res, next) {
+    const result = consumeRateLimit({
+      bucket,
+      key: getKey(req),
+      windowMs,
+      maxRequests,
+    });
+
+    if (!result.ok) {
+      res.setHeader("Retry-After", String(result.retryAfterSeconds));
+      return res.status(429).json({
+        error: "Too many requests. Please slow down and try again shortly.",
+      });
+    }
+
+    return next();
+  };
+}
+
+function normalizeRateLimitIdentifier(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .slice(0, 160);
+}
+
+const publicApiRateLimit = createRateLimit({
+  bucket: "public-api",
+  windowMs: 60 * 1000,
+  maxRequests: 120,
+});
+const heavyApiRateLimit = createRateLimit({
+  bucket: "heavy-api",
+  windowMs: 60 * 1000,
+  maxRequests: 40,
+});
+const adminApiRateLimit = createRateLimit({
+  bucket: "admin-api",
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 20,
+});
+const reportApiRateLimit = createRateLimit({
+  bucket: "report-api",
+  windowMs: 5 * 60 * 1000,
+  maxRequests: 10,
+});
+const bugApiRateLimit = createRateLimit({
+  bucket: "bug-api",
+  windowMs: 5 * 60 * 1000,
+  maxRequests: 8,
+});
+const offerCreateApiRateLimit = createRateLimit({
+  bucket: "offer-create-api",
+  windowMs: 60 * 1000,
+  maxRequests: 12,
+});
+const offerRespondApiRateLimit = createRateLimit({
+  bucket: "offer-respond-api",
+  windowMs: 60 * 1000,
+  maxRequests: 16,
+});
+const messageThreadApiRateLimit = createRateLimit({
+  bucket: "message-thread-api",
+  windowMs: 60 * 1000,
+  maxRequests: 20,
+});
+const messageSendApiRateLimit = createRateLimit({
+  bucket: "message-send-api",
+  windowMs: 60 * 1000,
+  maxRequests: 40,
+});
+const AUTH_GUARD_LIMITS = {
+  login: {
+    ip: {
+      bucket: "auth-login-ip",
+      windowMs: 10 * 60 * 1000,
+      maxRequests: 20,
+    },
+    identifier: {
+      bucket: "auth-login-identifier",
+      windowMs: 15 * 60 * 1000,
+      maxRequests: 10,
+    },
+  },
+  signup: {
+    ip: {
+      bucket: "auth-signup-ip",
+      windowMs: 60 * 60 * 1000,
+      maxRequests: 8,
+    },
+    identifier: {
+      bucket: "auth-signup-identifier",
+      windowMs: 60 * 60 * 1000,
+      maxRequests: 4,
+    },
+  },
+  "password-reset": {
+    ip: {
+      bucket: "auth-password-reset-ip",
+      windowMs: 60 * 60 * 1000,
+      maxRequests: 10,
+    },
+    identifier: {
+      bucket: "auth-password-reset-identifier",
+      windowMs: 60 * 60 * 1000,
+      maxRequests: 5,
+    },
+  },
+};
 
 function tcgplayerEnabled() {
   return Boolean(
@@ -2607,43 +2942,643 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-app.post("/api/admin/delete-user", async (req, res) => {
-  if (!supabaseAdmin) {
-    return res.status(501).json({
-      error:
-        "Account deletion is not configured. Set VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY on the API server.",
+app.post("/api/messages/threads", requireAllowedOrigin, messageThreadApiRateLimit, async (req, res) => {
+  const context = await getActingUserContext(req);
+  if (!context.ok) {
+    return res.status(context.status).json({ error: context.error });
+  }
+
+  const { actingUser, actingProfile } = context;
+  if (actingProfile?.account_status === "suspended") {
+    return res.status(403).json({
+      error: "This account is suspended. Messaging is disabled until the suspension is lifted.",
     });
   }
 
-  const authHeader = String(req.headers.authorization || "");
-  const accessToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-  const targetUserId = String(req.body?.userId || "").trim();
+  const listingId = String(req.body?.listingId || "").trim() || null;
+  const participantIds = [...new Set((Array.isArray(req.body?.participantIds) ? req.body.participantIds : []).filter(Boolean).map(String))];
 
-  if (!accessToken) {
-    return res.status(401).json({ error: "Missing access token." });
+  if (!participantIds.length || !participantIds.includes(String(actingUser.id))) {
+    return res.status(400).json({
+      error: "participantIds must include the current user.",
+    });
   }
+
+  if (participantIds.length < 2) {
+    return res.status(400).json({
+      error: "Threads need at least two participants.",
+    });
+  }
+
+  let existingQuery = supabaseAdmin
+    .from("message_threads")
+    .select("*")
+    .contains("participant_ids", participantIds)
+    .order("updated_at", { ascending: false })
+    .limit(20);
+
+  existingQuery = listingId
+    ? existingQuery.eq("listing_id", listingId)
+    : existingQuery.is("listing_id", null);
+
+  const { data: existingThreads, error: existingThreadsError } = await existingQuery;
+  if (existingThreadsError) {
+    return res.status(500).json({ error: existingThreadsError.message });
+  }
+
+  const exactThread =
+    (existingThreads || []).find((thread) =>
+      sameParticipantSet(thread.participant_ids || [], participantIds),
+    ) || null;
+
+  if (exactThread) {
+    return res.json({ ok: true, thread: exactThread });
+  }
+
+  const { data: threadRow, error: threadError } = await supabaseAdmin
+    .from("message_threads")
+    .insert({
+      listing_id: listingId,
+      participant_ids: participantIds,
+    })
+    .select("*")
+    .single();
+
+  if (threadError) {
+    return res.status(500).json({ error: threadError.message });
+  }
+
+  return res.json({ ok: true, thread: threadRow });
+});
+
+app.post(
+  "/api/messages/threads/:id/messages",
+  requireAllowedOrigin,
+  messageSendApiRateLimit,
+  async (req, res) => {
+    const context = await getActingUserContext(req);
+    if (!context.ok) {
+      return res.status(context.status).json({ error: context.error });
+    }
+
+    const { actingUser, actingProfile } = context;
+    if (actingProfile?.account_status === "suspended") {
+      return res.status(403).json({
+        error: "This account is suspended. Messaging is disabled until the suspension is lifted.",
+      });
+    }
+
+    const threadId = String(req.params.id || "").trim();
+    const body = String(req.body?.body || "");
+
+    if (!threadId) {
+      return res.status(400).json({ error: "Thread id is required." });
+    }
+
+    if (!body.trim()) {
+      return res.status(400).json({ error: "Message body cannot be empty." });
+    }
+
+    const { data: threadRow, error: threadError } = await supabaseAdmin
+      .from("message_threads")
+      .select("*")
+      .eq("id", threadId)
+      .maybeSingle();
+
+    if (threadError) {
+      return res.status(500).json({ error: threadError.message });
+    }
+
+    if (!threadRow) {
+      return res.status(404).json({ error: "Conversation not found." });
+    }
+
+    const participantIds = Array.isArray(threadRow.participant_ids)
+      ? threadRow.participant_ids.map(String)
+      : [];
+
+    if (!participantIds.includes(String(actingUser.id))) {
+      return res.status(403).json({ error: "You do not have access to this conversation." });
+    }
+
+    const createdAt = new Date().toISOString();
+    const { data: messageRow, error: messageError } = await supabaseAdmin
+      .from("messages")
+      .insert({
+        thread_id: threadId,
+        sender_id: actingUser.id,
+        body,
+        read_by: [actingUser.id],
+      })
+      .select("*")
+      .single();
+
+    if (messageError) {
+      return res.status(500).json({ error: messageError.message });
+    }
+
+    const nextHiddenBy = { ...(threadRow.hidden_by || {}) };
+    delete nextHiddenBy[actingUser.id];
+
+    let threadUpdateResult = await supabaseAdmin
+      .from("message_threads")
+      .update({
+        updated_at: createdAt,
+        hidden_by: nextHiddenBy,
+      })
+      .eq("id", threadId);
+
+    if (threadUpdateResult.error && isMissingColumnError(threadUpdateResult.error, "hidden_by")) {
+      threadUpdateResult = await supabaseAdmin
+        .from("message_threads")
+        .update({
+          updated_at: createdAt,
+        })
+        .eq("id", threadId);
+    }
+
+    if (threadUpdateResult.error) {
+      return res.status(500).json({ error: threadUpdateResult.error.message });
+    }
+
+    const senderName =
+      actingProfile?.public_name || actingProfile?.name || actingUser.email || "A buyer";
+
+    await insertNotifications(
+      participantIds
+        .filter((userId) => String(userId) !== String(actingUser.id))
+        .map((userId) => ({
+          user_id: userId,
+          type: "message",
+          title: "New message",
+          body: `${senderName} sent a new message.`,
+          entity_id: threadId,
+          read: false,
+        })),
+    );
+
+    return res.json({ ok: true, message: messageRow });
+  },
+);
+
+app.post("/api/offers", requireAllowedOrigin, offerCreateApiRateLimit, async (req, res) => {
+  const context = await getActingUserContext(req);
+  if (!context.ok) {
+    return res.status(context.status).json({ error: context.error });
+  }
+
+  const { actingUser, actingProfile } = context;
+  if (actingProfile?.account_status === "suspended") {
+    return res.status(403).json({
+      error: "This account is suspended. Offers are disabled until the suspension is lifted.",
+    });
+  }
+
+  const listingId = String(req.body?.listingId || "").trim();
+  const offerType = String(req.body?.offerType || "").trim() || "cash";
+  const cashAmount = Number(req.body?.cashAmount) || 0;
+  const tradeItems = Array.isArray(req.body?.tradeItems)
+    ? req.body.tradeItems.filter(Boolean)
+    : [];
+  const note = String(req.body?.note || "").trim();
+
+  if (!listingId) {
+    return res.status(400).json({ error: "listingId is required." });
+  }
+
+  const { data: listingRow, error: listingError } = await supabaseAdmin
+    .from("listings")
+    .select("id, title, seller_id, offers, status")
+    .eq("id", listingId)
+    .maybeSingle();
+
+  if (listingError) {
+    return res.status(500).json({ error: listingError.message });
+  }
+
+  if (!listingRow) {
+    return res.status(404).json({ error: "Listing not found." });
+  }
+
+  if (String(listingRow.seller_id) === String(actingUser.id)) {
+    return res.status(400).json({ error: "You cannot offer on your own listing." });
+  }
+
+  if (offerType !== "trade" && cashAmount <= 0) {
+    return res.status(400).json({ error: "Cash offers need a valid amount." });
+  }
+
+  if (offerType !== "cash" && tradeItems.length === 0) {
+    return res.status(400).json({ error: "Trade offers need at least one trade item." });
+  }
+
+  const insertPayload = {
+    listing_id: listingId,
+    seller_id: listingRow.seller_id,
+    buyer_id: actingUser.id,
+    offer_type: offerType,
+    cash_amount: cashAmount,
+    trade_items: tradeItems,
+    note,
+    last_actor_id: actingUser.id,
+  };
+
+  let insertResult = await supabaseAdmin
+    .from("offers")
+    .insert(insertPayload)
+    .select("*")
+    .single();
+
+  if (insertResult.error && isMissingColumnError(insertResult.error, "last_actor_id")) {
+    insertResult = await supabaseAdmin
+      .from("offers")
+      .insert(omitMissingOfferColumns(insertPayload, insertResult.error))
+      .select("*")
+      .single();
+  }
+
+  if (insertResult.error) {
+    return res.status(500).json({ error: insertResult.error.message });
+  }
+
+  await supabaseAdmin
+    .from("listings")
+    .update({
+      offers: Number(listingRow.offers || 0) + 1,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", listingId);
+
+  await insertNotifications([
+    {
+      user_id: listingRow.seller_id,
+      type: "offer-received",
+      title: "New offer received",
+      body: `${actingProfile?.public_name || actingProfile?.name || actingUser.email || "A buyer"} sent an offer on ${listingRow.title}.`,
+      entity_id: listingId,
+      read: false,
+    },
+  ]);
+
+  return res.json({ ok: true, offer: insertResult.data });
+});
+
+app.patch("/api/offers/:id", requireAllowedOrigin, offerRespondApiRateLimit, async (req, res) => {
+  const context = await getActingUserContext(req);
+  if (!context.ok) {
+    return res.status(context.status).json({ error: context.error });
+  }
+
+  const { actingUser, actingProfile } = context;
+  if (actingProfile?.account_status === "suspended") {
+    return res.status(403).json({
+      error: "This account is suspended. Offers are disabled until the suspension is lifted.",
+    });
+  }
+
+  const offerId = String(req.params.id || "").trim();
+  const action = String(req.body?.action || "").trim();
+  const counterPayload = req.body?.counterPayload || {};
+
+  if (!offerId || !action) {
+    return res.status(400).json({ error: "Offer id and action are required." });
+  }
+
+  const { data: offerRow, error: offerError } = await supabaseAdmin
+    .from("offers")
+    .select("*")
+    .eq("id", offerId)
+    .maybeSingle();
+
+  if (offerError) {
+    return res.status(500).json({ error: offerError.message });
+  }
+
+  if (!offerRow) {
+    return res.status(404).json({ error: "Offer not found." });
+  }
+
+  const transition = resolveOfferResponse(
+    {
+      id: offerRow.id,
+      listingId: offerRow.listing_id,
+      sellerId: offerRow.seller_id,
+      buyerId: offerRow.buyer_id,
+      offerType: offerRow.offer_type,
+      cashAmount: Number(offerRow.cash_amount) || 0,
+      tradeItems: offerRow.trade_items || [],
+      note: offerRow.note || "",
+      status: offerRow.status,
+      lastActorId:
+        offerRow.last_actor_id ||
+        (offerRow.status === "pending" ? offerRow.buyer_id : offerRow.seller_id),
+    },
+    actingUser.id,
+    action,
+    counterPayload,
+  );
+
+  if (!transition.ok) {
+    return res.status(400).json({ error: transition.error });
+  }
+
+  let updateResult = await supabaseAdmin
+    .from("offers")
+    .update(transition.updatePayload)
+    .eq("id", offerId)
+    .select("*")
+    .single();
+
+  if (updateResult.error && isMissingColumnError(updateResult.error, "last_actor_id")) {
+    updateResult = await supabaseAdmin
+      .from("offers")
+      .update(omitMissingOfferColumns(transition.updatePayload, updateResult.error))
+      .eq("id", offerId)
+      .select("*")
+      .single();
+  }
+
+  if (updateResult.error) {
+    return res.status(500).json({ error: updateResult.error.message });
+  }
+
+  if (transition.nextStatus === "accepted") {
+    const incrementCompletedDeals = async (userId) => {
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("completed_deals")
+        .eq("id", userId)
+        .maybeSingle();
+
+      return supabaseAdmin
+        .from("profiles")
+        .update({ completed_deals: Number(profile?.completed_deals || 0) + 1 })
+        .eq("id", userId);
+    };
+
+    await Promise.all([
+      incrementCompletedDeals(offerRow.seller_id),
+      incrementCompletedDeals(offerRow.buyer_id),
+    ]);
+  }
+
+  const counterpartyUserId = getOfferCounterpartyId(
+    {
+      sellerId: offerRow.seller_id,
+      buyerId: offerRow.buyer_id,
+    },
+    actingUser.id,
+  );
+
+  await insertNotifications([
+    {
+      user_id: counterpartyUserId,
+      type:
+        transition.nextStatus === "accepted"
+          ? "offer-accepted"
+          : transition.nextStatus === "declined"
+            ? "offer-declined"
+            : "offer-countered",
+      title:
+        transition.nextStatus === "accepted"
+          ? "Offer accepted"
+          : transition.nextStatus === "declined"
+            ? "Offer declined"
+            : "Counter offer received",
+      body:
+        transition.nextStatus === "countered"
+          ? `${actingProfile?.public_name || actingProfile?.name || actingUser.email || "A seller"} sent a counter offer.`
+          : `${actingProfile?.public_name || actingProfile?.name || actingUser.email || "A seller"} ${transition.nextStatus} your offer.`,
+      entity_id: offerRow.listing_id,
+      read: false,
+    },
+  ]);
+
+  return res.json({ ok: true, offer: updateResult.data });
+});
+
+app.post("/api/reports", requireAllowedOrigin, reportApiRateLimit, async (req, res) => {
+  const context = await getActingUserContext(req);
+  if (!context.ok) {
+    return res.status(context.status).json({ error: context.error });
+  }
+
+  const { actingUser, actingProfile } = context;
+  if (actingProfile?.account_status === "suspended") {
+    return res.status(403).json({
+      error: "This account is suspended. Reporting stays disabled until the suspension is reviewed.",
+    });
+  }
+
+  const listingId = String(req.body?.listingId || "").trim();
+  const sellerId = String(req.body?.sellerId || "").trim();
+  const details = String(req.body?.details || "").trim();
+  const reason = String(req.body?.reason || "").trim();
+  const reasonLabel =
+    {
+      "fake-card": "Fake or proxy suspected",
+      "misleading-condition": "Misleading condition",
+      "no-show": "No-show meetup behavior",
+      harassment: "Harassment or abusive messages",
+      "scam-risk": "Scam risk",
+    }[reason] || reason;
+
+  if (!listingId || !sellerId || !reasonLabel) {
+    return res.status(400).json({
+      error: "listingId, sellerId, and reason are required.",
+    });
+  }
+
+  const { data: reportRow, error: reportError } = await supabaseAdmin
+    .from("reports")
+    .insert({
+      listing_id: listingId,
+      seller_id: sellerId,
+      reporter_id: actingUser.id,
+      reason: reasonLabel,
+      details,
+    })
+    .select("*")
+    .single();
+
+  if (reportError) {
+    return res.status(500).json({ error: reportError.message });
+  }
+
+  const { data: adminProfiles, error: adminProfilesError } = await supabaseAdmin
+    .from("profiles")
+    .select("id")
+    .eq("role", "admin");
+
+  if (adminProfilesError && !isMissingTableError(adminProfilesError, "profiles")) {
+    console.error("report admin profile lookup failed:", adminProfilesError.message);
+  }
+
+  await insertNotifications(
+    (adminProfiles || []).map((admin) => ({
+      user_id: admin.id,
+      type: "report-opened",
+      title: "New report opened",
+      body: `${actingProfile?.public_name || actingProfile?.name || actingUser.email || "A user"} reported a listing for ${reasonLabel}.`,
+      entity_id: listingId,
+      read: false,
+    })),
+  );
+
+  return res.json({ ok: true, report: reportRow });
+});
+
+app.post("/api/bug-reports", requireAllowedOrigin, bugApiRateLimit, async (req, res) => {
+  const context = await getActingUserContext(req);
+  if (!context.ok) {
+    return res.status(context.status).json({ error: context.error });
+  }
+
+  const { actingUser, actingProfile } = context;
+  const isBetaTester =
+    Array.isArray(actingProfile?.badges) && actingProfile.badges.includes("beta");
+  const isAdmin = actingProfile?.role === "admin";
+
+  if (!isBetaTester && !isAdmin) {
+    return res.status(403).json({
+      error: "Only beta testers can access the bug tracker.",
+    });
+  }
+
+  const title = String(req.body?.title || "").trim();
+  const actualBehavior = String(req.body?.actualBehavior || "").trim();
+  const reproductionSteps = String(req.body?.reproductionSteps || "").trim();
+
+  if (!title) {
+    return res.status(400).json({ error: "Bug title is required." });
+  }
+
+  if (!actualBehavior || !reproductionSteps) {
+    return res.status(400).json({
+      error: "Actual behavior and reproduction steps are required.",
+    });
+  }
+
+  const insertPayload = {
+    reporter_id: actingUser.id,
+    title,
+    area: String(req.body?.area || "general").trim() || "general",
+    severity: String(req.body?.severity || "medium").trim() || "medium",
+    status: "open",
+    page_path: String(req.body?.pagePath || "").trim() || null,
+    expected_behavior: String(req.body?.expectedBehavior || "").trim() || null,
+    actual_behavior: actualBehavior,
+    reproduction_steps: reproductionSteps,
+    environment_label: String(req.body?.environmentLabel || "").trim() || null,
+    screenshot_url: String(req.body?.screenshotUrl || "").trim() || null,
+    admin_notes: null,
+  };
+
+  const { data: bugReportRow, error: bugReportError } = await supabaseAdmin
+    .from("bug_reports")
+    .insert(insertPayload)
+    .select("*")
+    .single();
+
+  if (bugReportError) {
+    if (isMissingTableError(bugReportError, "bug_reports")) {
+      return res.status(501).json({
+        error: "Bug reports table is not configured.",
+        code: "BUG_REPORTS_TABLE_MISSING",
+      });
+    }
+    return res.status(500).json({ error: bugReportError.message });
+  }
+
+  const { data: adminProfiles, error: adminProfilesError } = await supabaseAdmin
+    .from("profiles")
+    .select("id")
+    .eq("role", "admin");
+
+  if (adminProfilesError && !isMissingTableError(adminProfilesError, "profiles")) {
+    console.error("bug report admin profile lookup failed:", adminProfilesError.message);
+  }
+
+  await insertNotifications(
+    (adminProfiles || []).map((admin) => ({
+      user_id: admin.id,
+      type: "bug-opened",
+      title: "New beta bug report",
+      body: `${actingProfile?.public_name || actingProfile?.name || actingUser.email || "A user"} reported: ${title}.`,
+      entity_id: "/admin",
+      read: false,
+    })),
+  );
+
+  return res.json({ ok: true, bugReport: bugReportRow });
+});
+
+app.post("/api/admin/site-settings", requireAllowedOrigin, adminApiRateLimit, async (req, res) => {
+  const context = await getActingUserContext(req);
+  if (!context.ok) {
+    return res.status(context.status).json({ error: context.error });
+  }
+
+  const { actingUser, actingProfile } = context;
+  if (actingProfile?.role !== "admin") {
+    return res.status(403).json({ error: "Only admins can update storefront settings." });
+  }
+
+  const payload = req.body?.payload;
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return res.status(400).json({ error: "A settings payload is required." });
+  }
+
+  const audit = req.body?.audit && typeof req.body.audit === "object" ? req.body.audit : {};
+  const { data: siteSettingsRow, error: siteSettingsError } = await supabaseAdmin
+    .from("site_settings")
+    .upsert({
+      key: "global",
+      payload,
+      updated_at: new Date().toISOString(),
+    })
+    .select("*")
+    .single();
+
+  if (siteSettingsError) {
+    if (isMissingTableError(siteSettingsError, "site_settings")) {
+      return res.status(501).json({ error: "Site settings table is not configured." });
+    }
+
+    return res.status(500).json({ error: siteSettingsError.message });
+  }
+
+  const auditResult = await insertAdminAuditLog({
+    actorId: actingUser.id,
+    actorName:
+      actingProfile?.public_name ||
+      actingProfile?.name ||
+      actingProfile?.username ||
+      actingUser.email ||
+      "Admin",
+    action: String(audit.action || "storefront-settings"),
+    title: String(audit.title || "Updated storefront settings"),
+    details: audit.details ? String(audit.details) : null,
+    targetType: "storefront",
+  });
+
+  if (!auditResult.ok) {
+    console.error("admin site settings audit log insert failed:", auditResult.error);
+  }
+
+  return res.json({ ok: true, settings: siteSettingsRow });
+});
+
+app.post("/api/admin/delete-user", requireAllowedOrigin, adminApiRateLimit, async (req, res) => {
+  const context = await getActingUserContext(req);
+  if (!context.ok) {
+    return res.status(context.status).json({ error: context.error });
+  }
+  const { actingUser, actingProfile } = context;
+  const targetUserId = String(req.body?.userId || "").trim();
 
   if (!targetUserId) {
     return res.status(400).json({ error: "Missing userId." });
-  }
-
-  const {
-    data: { user: actingUser },
-    error: actingUserError,
-  } = await supabaseAdmin.auth.getUser(accessToken);
-
-  if (actingUserError || !actingUser) {
-    return res.status(401).json({ error: "Invalid access token." });
-  }
-
-  const { data: actingProfile, error: profileError } = await supabaseAdmin
-    .from("profiles")
-    .select("id, role")
-    .eq("id", actingUser.id)
-    .maybeSingle();
-
-  if (profileError) {
-    return res.status(500).json({ error: profileError.message });
   }
 
   const isSelfDelete = actingUser.id === targetUserId;
@@ -2653,16 +3588,41 @@ app.post("/api/admin/delete-user", async (req, res) => {
     return res.status(403).json({ error: "You do not have permission to delete this account." });
   }
 
+  const { data: targetProfile } = await supabaseAdmin
+    .from("profiles")
+    .select("id, name, public_name")
+    .eq("id", targetUserId)
+    .maybeSingle();
+
   const { error } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
 
   if (error) {
     return res.status(500).json({ error: error.message });
   }
 
+  const actorName =
+    actingProfile?.public_name || actingProfile?.name || actingUser.email || "Admin";
+  const targetName =
+    targetProfile?.public_name || targetProfile?.name || targetUserId;
+
+  const auditInsert = await insertAdminAuditLog({
+    actorId: actingUser.id,
+    actorName,
+    action: isSelfDelete ? "self-delete" : "admin-delete-user",
+    title: isSelfDelete ? "Deleted own account" : "Deleted user account",
+    details: `${targetName} (${targetUserId})`,
+    targetId: targetUserId,
+    targetType: "profile",
+  });
+
+  if (!auditInsert.ok) {
+    console.error("admin audit log insert failed:", auditInsert.error);
+  }
+
   return res.json({ ok: true });
 });
 
-app.get("/api/live/exchange-rate", async (_req, res) => {
+app.get("/api/live/exchange-rate", publicApiRateLimit, async (_req, res) => {
   const exchangeRate = await getUsdToCadRate();
 
   res.json({
@@ -2672,7 +3632,49 @@ app.get("/api/live/exchange-rate", async (_req, res) => {
   });
 });
 
-app.get("/api/live/image-proxy", async (req, res) => {
+app.post("/api/auth/guard", requireAllowedOrigin, async (req, res) => {
+  const action = String(req.body?.action || "").trim().toLowerCase();
+  const config = AUTH_GUARD_LIMITS[action];
+
+  if (!config) {
+    return res.status(400).json({
+      error: "Unsupported auth guard action.",
+    });
+  }
+
+  const ipResult = consumeRateLimit({
+    ...config.ip,
+    key: getClientKey(req),
+  });
+
+  if (!ipResult.ok) {
+    res.setHeader("Retry-After", String(ipResult.retryAfterSeconds));
+    return res.status(429).json({
+      error: "Too many authentication attempts. Please wait a bit and try again.",
+    });
+  }
+
+  const identifier = normalizeRateLimitIdentifier(req.body?.identifier);
+  if (!identifier) {
+    return res.json({ ok: true });
+  }
+
+  const identifierResult = consumeRateLimit({
+    ...config.identifier,
+    key: identifier,
+  });
+
+  if (!identifierResult.ok) {
+    res.setHeader("Retry-After", String(identifierResult.retryAfterSeconds));
+    return res.status(429).json({
+      error: "Too many authentication attempts for this account. Please wait a bit and try again.",
+    });
+  }
+
+  return res.json({ ok: true });
+});
+
+app.get("/api/live/image-proxy", heavyApiRateLimit, async (req, res) => {
   const rawUrl = String(req.query.url || "").trim();
 
   if (!rawUrl) {
@@ -2723,7 +3725,7 @@ app.get("/api/live/image-proxy", async (req, res) => {
   }
 });
 
-app.get("/api/live/search", async (req, res) => {
+app.get("/api/live/search", heavyApiRateLimit, async (req, res) => {
   const game = normalizeGameName(req.query.game);
   const language = normalizeLanguage(req.query.language);
   const query = String(req.query.query || "").trim();
@@ -2814,7 +3816,7 @@ app.get("/api/live/search", async (req, res) => {
   }
 });
 
-app.get("/api/live/source-sales", async (req, res) => {
+app.get("/api/live/source-sales", heavyApiRateLimit, async (req, res) => {
   const game = normalizeGameName(req.query.game);
   const language = normalizeLanguage(req.query.language);
   const title = String(req.query.title || "").trim();
@@ -2861,7 +3863,7 @@ app.get("/api/live/source-sales", async (req, res) => {
   }
 });
 
-app.get("/api/events/local", async (_req, res) => {
+app.get("/api/events/local", publicApiRateLimit, async (_req, res) => {
   const results = await Promise.all([
     fetchFusionEvents(),
     fetchAMuseEvents(),

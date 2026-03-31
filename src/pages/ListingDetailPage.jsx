@@ -9,10 +9,11 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import ListingCard from "../components/cards/ListingCard";
 import OfferModal from "../components/modals/OfferModal";
 import ReportModal from "../components/modals/ReportModal";
+import SeoHead from "../components/seo/SeoHead";
 import CardArtwork from "../components/shared/CardArtwork";
 import UserAvatar from "../components/shared/UserAvatar";
 import EmptyState from "../components/ui/EmptyState";
@@ -76,8 +77,64 @@ function parseListingSourceMetadata(listing) {
   };
 }
 
+function mapConditionToSchema(condition) {
+  const conditionMap = {
+    NM: "https://schema.org/NewCondition",
+    LP: "https://schema.org/UsedCondition",
+    MP: "https://schema.org/UsedCondition",
+    HP: "https://schema.org/UsedCondition",
+    DMG: "https://schema.org/DamagedCondition",
+  };
+
+  return conditionMap[condition] || "https://schema.org/UsedCondition";
+}
+
+function buildListingStructuredData(listing, pathname) {
+  if (!listing) {
+    return null;
+  }
+
+  const baseUrl =
+    typeof window !== "undefined" ? window.location.origin : "https://tcgwpg.com";
+  const url = `${baseUrl}${pathname}`;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: listing.title,
+    image: listing.imageGallery?.length
+      ? listing.imageGallery
+      : listing.primaryImage || listing.imageUrl
+        ? [listing.primaryImage || listing.imageUrl]
+        : undefined,
+    description: listing.description,
+    category: listing.game,
+    sku: listing.id,
+    brand: {
+      "@type": "Brand",
+      name: "TCG WPG Marketplace",
+    },
+    itemCondition: mapConditionToSchema(listing.condition),
+    offers: {
+      "@type": "Offer",
+      priceCurrency: listing.priceCurrency || "CAD",
+      price: Number(listing.price || 0),
+      availability:
+        listing.status === "sold"
+          ? "https://schema.org/SoldOut"
+          : "https://schema.org/InStock",
+      url,
+      seller: {
+        "@type": listing.seller?.verified ? "Organization" : "Person",
+        name: listing.seller?.publicName || listing.seller?.name || "Marketplace seller",
+      },
+    },
+  };
+}
+
 export default function ListingDetailPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { listingId } = useParams();
   const {
     activeListings,
@@ -201,6 +258,30 @@ export default function ListingDetailPage() {
       ? listing.seller.trustedMeetupSpots.includes(spot.id)
       : false,
   );
+  const listingStructuredData = useMemo(
+    () => buildListingStructuredData(listing, location.pathname),
+    [listing, location.pathname],
+  );
+
+  async function handleMessageSeller() {
+    if (!listing || !currentUser) {
+      navigate("/auth", { state: { from: `/listing/${listing?.id || listingId}` } });
+      return;
+    }
+
+    const result = await findOrCreateThread({
+      otherUserId: listing.seller.id,
+      listingId: listing.id,
+    });
+
+    if (result?.ok && result.thread?.id) {
+      navigate("/messages", {
+        state: {
+          activeThreadId: result.thread.id,
+        },
+      });
+    }
+  }
 
   async function handleSaveAdminNote() {
     if (!listing || !isAdmin) {
@@ -269,7 +350,16 @@ export default function ListingDetailPage() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-7">
+    <>
+      <SeoHead
+        canonicalPath={location.pathname}
+        description={listing.description || `View ${listing.title} on TCG WPG Marketplace.`}
+        image={listing.primaryImage || listing.imageUrl}
+        jsonLd={listingStructuredData}
+        title={listing.title}
+        type="product"
+      />
+      <main className="space-y-4 pb-24 sm:space-y-7 sm:pb-0">
       <section className="grid gap-4 xl:grid-cols-[1.03fr_0.97fr] sm:gap-5">
         <div className="space-y-3.5 sm:space-y-4">
           <div className="console-shell p-3 sm:p-4.5">
@@ -504,7 +594,7 @@ export default function ListingDetailPage() {
 
             <div className="mt-3 grid gap-2.5 sm:mt-4 sm:gap-3 sm:grid-cols-2">
               <div className="rounded-[14px] bg-slate-50 p-3 sm:rounded-[16px] sm:p-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-sm sm:tracking-[0.2em]">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-700 sm:text-sm sm:tracking-[0.2em]">
                   Asking price
                 </p>
                 <div className="mt-2 flex flex-wrap items-end gap-2 sm:mt-3 sm:gap-3">
@@ -517,7 +607,7 @@ export default function ListingDetailPage() {
                     {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
                   </span>
                 </div>
-                <p className="mt-1.5 text-[0.78rem] text-steel sm:mt-2 sm:text-sm">
+                <p className="mt-1.5 text-[0.78rem] text-slate-700 sm:mt-2 sm:text-sm">
                   {listing.neighborhood}
                   {listing.postalCode ? ` | ${listing.postalCode}` : ""}
                 </p>
@@ -571,31 +661,17 @@ export default function ListingDetailPage() {
                   <span className="hidden sm:inline">Make offer</span>
                 </button>
               ) : null}
-              {!isOwner ? (
-                <button
-                  aria-label="Message seller"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-navy px-3 py-2.5 text-[0.8rem] font-semibold text-white shadow-soft sm:w-auto sm:px-5 sm:py-4 sm:text-sm"
-                  type="button"
-                  onClick={async () => {
-                    if (!currentUser) {
-                      navigate("/auth", { state: { from: `/listing/${listing.id}` } });
-                      return;
-                    }
-
-                    const result = await findOrCreateThread({
-                      otherUserId: listing.seller.id,
-                      listingId: listing.id,
-                    });
-
-                    if (result.ok) {
-                      navigate(`/messages/${result.thread.id}`);
-                    }
-                  }}
-                >
-                  <MessageSquare size={18} />
-                  <span className="sm:hidden">Chat</span>
-                  <span className="hidden sm:inline">Message seller</span>
-                </button>
+                {!isOwner ? (
+                  <button
+                    aria-label="Message seller"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-navy px-3 py-2.5 text-[0.8rem] font-semibold text-white shadow-soft sm:w-auto sm:px-5 sm:py-4 sm:text-sm"
+                    type="button"
+                    onClick={() => void handleMessageSeller()}
+                  >
+                    <MessageSquare size={18} />
+                    <span className="sm:hidden">Chat</span>
+                    <span className="hidden sm:inline">Message seller</span>
+                  </button>
               ) : (
                 <div className="col-span-2 inline-flex w-full items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-3 py-2.5 text-[0.8rem] font-semibold text-steel sm:w-auto sm:px-5 sm:py-4 sm:text-sm">
                   <span className="sm:hidden">Your listing</span>
@@ -798,17 +874,17 @@ export default function ListingDetailPage() {
                     {listing.seller.neighborhood}
                     {listing.seller.postalCode ? ` | ${listing.seller.postalCode}` : ""}
                   </p>
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                    <span className="rounded-full bg-slate-100 px-3 py-1">
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
                       Account age {listing.seller.accountAgeLabel}
                     </span>
-                    <span className="rounded-full bg-slate-100 px-3 py-1">
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
                       Response {listing.seller.responseRate}%
                     </span>
-                    <span className="rounded-full bg-slate-100 px-3 py-1">
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
                       {listing.seller.moderationActions} moderation action{listing.seller.moderationActions === 1 ? "" : "s"}
                     </span>
-                    <span className="rounded-full bg-slate-100 px-3 py-1">
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
                       {listing.seller.riskLabel}
                     </span>
                   </div>
@@ -983,6 +1059,28 @@ export default function ListingDetailPage() {
         </section>
       ) : null}
 
+      {!isOwner ? (
+        <div className="fixed inset-x-3 bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] z-30 flex items-center gap-2 rounded-[18px] border border-[var(--line)] bg-[var(--surface-solid)] p-2 shadow-lift sm:hidden">
+          <button
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-[var(--line)] bg-[var(--surface-hover)] px-3 py-3 text-sm font-semibold text-ink"
+            type="button"
+            onClick={() => void handleMessageSeller()}
+          >
+            <MessageSquare size={16} />
+            Message
+          </button>
+          <button
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-orange px-3 py-3 text-sm font-semibold text-white"
+            type="button"
+            onClick={() => setShowOfferModal(true)}
+          >
+            <TrendingUp size={16} />
+            Make offer
+          </button>
+        </div>
+      ) : null}
+      </main>
+
       {showOfferModal ? (
         <OfferModal listing={listing} onClose={() => setShowOfferModal(false)} />
       ) : null}
@@ -998,7 +1096,7 @@ export default function ListingDetailPage() {
           />
         </div>
       ) : null}
-    </div>
+    </>
   );
 }
 

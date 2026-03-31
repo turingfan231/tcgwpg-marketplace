@@ -2,6 +2,7 @@ import { BellRing, CalendarDays, ExternalLink, Heart, MapPin, ShieldCheck, Store
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import ListingCard from "../components/cards/ListingCard";
+import SeoHead from "../components/seo/SeoHead";
 import EmptyState from "../components/ui/EmptyState";
 import PageSkeleton from "../components/ui/PageSkeleton";
 import { gameCatalog } from "../data/mockData";
@@ -132,17 +133,71 @@ export default function StoreProfilePage() {
   }, [sellers, store]);
 
   if (loading && !store) {
-    return <PageSkeleton cards={4} titleWidth="w-80" />;
+    return (
+      <>
+        <SeoHead title="Store Profile" canonicalPath={`/stores/${storeSlug || ""}`} />
+        <PageSkeleton cards={4} titleWidth="w-80" />
+      </>
+    );
   }
 
   if (!store) {
-    return <EmptyState title="Store Not Found" description="That store profile does not exist." />;
+    return (
+      <>
+        <SeoHead title="Store Not Found" canonicalPath={`/stores/${storeSlug || ""}`} />
+        <EmptyState title="Store Not Found" description="That store profile does not exist." />
+      </>
+    );
   }
 
   const isFollowingStore = followedStoreSlugs.includes(store.slug);
+  const storeStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: store.name,
+    image: store.logoUrl || undefined,
+    url: store.siteUrl || `https://tcgwpg.com/stores/${store.slug}`,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: store.address,
+      addressLocality: "Winnipeg",
+      addressRegion: "MB",
+      addressCountry: "CA",
+    },
+    areaServed: {
+      "@type": "City",
+      name: "Winnipeg",
+    },
+    event: matchingEvents.slice(0, 6).map((event) => ({
+      "@type": "Event",
+      name: event.title,
+      startDate: `${event.dateStr}T12:00:00`,
+      eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+      eventStatus: "https://schema.org/EventScheduled",
+      location: {
+        "@type": "Place",
+        name: store.name,
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: store.address,
+          addressLocality: "Winnipeg",
+          addressRegion: "MB",
+          addressCountry: "CA",
+        },
+      },
+      url: event.sourceUrl || store.eventsUrl || store.siteUrl,
+    })),
+  };
 
   return (
-    <div className="space-y-5 sm:space-y-8">
+    <main className="space-y-5 sm:space-y-8">
+      <SeoHead
+        canonicalPath={`/stores/${store.slug}`}
+        description={`${store.name} is an approved Winnipeg meetup spot with upcoming events and featured listings on TCG WPG Marketplace.`}
+        title={store.name}
+        type="website"
+        jsonLd={storeStructuredData}
+      />
       <section className="console-panel binder-edge overflow-hidden p-0">
         <div className="relative overflow-hidden bg-[linear-gradient(135deg,#4d0f13,#7a181d)] p-3.5 text-white sm:p-8">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.08),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(239,59,51,0.14),transparent_18%)]" />
@@ -386,7 +441,7 @@ export default function StoreProfilePage() {
           </Link>
         </div>
       </section>
-    </div>
+    </main>
   );
 }
 

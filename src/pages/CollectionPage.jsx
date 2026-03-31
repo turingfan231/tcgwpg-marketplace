@@ -1,5 +1,7 @@
 import { Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import ProfileWorkspaceNav from "../components/account/ProfileWorkspaceNav";
+import SeoHead from "../components/seo/SeoHead";
 import CardArtwork from "../components/shared/CardArtwork";
 import EmptyState from "../components/ui/EmptyState";
 import InlineSpinner from "../components/ui/InlineSpinner";
@@ -29,6 +31,7 @@ export default function CollectionPage() {
     addCollectionItem,
     collectionItems,
     collectionSummary,
+    currentUser,
     formatCadPrice,
     removeCollectionItem,
     updateCollectionItem,
@@ -110,6 +113,12 @@ export default function CollectionPage() {
 
   return (
     <div className="space-y-6">
+      <SeoHead
+        canonicalPath="/collection"
+        description="Track your personal binder with live card lookups, saved quantities, and estimated collection value."
+        title="Collection Tracker"
+      />
+      <ProfileWorkspaceNav sellerId={currentUser?.id} />
       <section className="surface-card p-6 sm:p-7">
         <p className="section-kicker">Personal binder</p>
         <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-ink">

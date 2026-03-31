@@ -14,7 +14,12 @@ export default function ToastStack({ items, onDismiss }) {
   }
 
   return (
-    <div className="pointer-events-none fixed right-5 top-24 z-50 flex w-[22rem] max-w-[calc(100vw-2rem)] flex-col gap-3">
+    <div
+      aria-atomic="false"
+      aria-live="polite"
+      className="pointer-events-none fixed right-5 top-24 z-50 flex w-[22rem] max-w-[calc(100vw-2rem)] flex-col gap-3"
+      role="status"
+    >
       {items.map((toast) => {
         const content = (
           <div

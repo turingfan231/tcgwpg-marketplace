@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import SeoHead from "../components/seo/SeoHead";
 import EmptyState from "../components/ui/EmptyState";
 import InlineSpinner from "../components/ui/InlineSpinner";
 import PageSkeleton from "../components/ui/PageSkeleton";
@@ -146,7 +147,7 @@ function downloadEventCalendar(event) {
 
 function EventMetaItem({ children, icon: Icon }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[0.76rem] text-steel sm:text-sm">
+    <span className="inline-flex items-center gap-1.5 text-[0.76rem] text-slate-700 sm:text-sm">
       <Icon size={15} />
       {children}
     </span>
@@ -339,14 +340,65 @@ export default function EventsPage() {
     }, {});
   }, [activeListings, eventsForList, sellers]);
 
+  const eventStructuredData = useMemo(
+    () =>
+      eventsForList.slice(0, 12).map((event) => ({
+        "@context": "https://schema.org",
+        "@type": "Event",
+        name: event.title,
+        startDate: `${event.dateStr}T12:00:00`,
+        eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+        eventStatus: "https://schema.org/EventScheduled",
+        location: {
+          "@type": "Place",
+          name: event.store,
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: "Winnipeg",
+            addressRegion: "MB",
+            addressCountry: "CA",
+          },
+        },
+        organizer: {
+          "@type": "Organization",
+          name: event.store,
+        },
+        offers: event.fee
+          ? {
+              "@type": "Offer",
+              priceCurrency: "CAD",
+              price: String(event.fee).replace(/[^0-9.]/g, "") || event.fee,
+              availability: "https://schema.org/InStock",
+            }
+          : undefined,
+        url: event.sourceUrl || undefined,
+      })),
+    [eventsForList],
+  );
+
   const selectedMonthIndex = monthKeys.indexOf(visibleMonth);
 
   if (loading && !allEvents.length) {
-    return <PageSkeleton cards={4} titleWidth="w-[30rem]" />;
+    return (
+      <>
+        <SeoHead
+          canonicalPath="/events"
+          description="Browse Winnipeg trading card events, leagues, prereleases, and store nights by game and location."
+          title="Local Events"
+        />
+        <PageSkeleton cards={4} titleWidth="w-[30rem]" />
+      </>
+    );
   }
 
   return (
-    <div className="space-y-4 sm:space-y-7">
+    <main className="space-y-4 sm:space-y-7">
+      <SeoHead
+        canonicalPath="/events"
+        description="Browse Winnipeg trading card events, leagues, prereleases, and store nights by game and location."
+        title="Local Events"
+        jsonLd={eventStructuredData}
+      />
       <section className="console-shell binder-edge p-4 sm:p-7">
         <p className="section-kicker">Local Events</p>
         <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.05em] text-ink sm:text-[3.25rem]">
@@ -426,6 +478,7 @@ export default function EventsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
+                    aria-label="Show previous month"
                     className="rounded-full border border-slate-200 bg-white p-3 text-steel disabled:opacity-40"
                     disabled={selectedMonthIndex <= 0}
                     type="button"
@@ -434,6 +487,7 @@ export default function EventsPage() {
                     <ChevronLeft size={16} />
                   </button>
                   <button
+                    aria-label="Show next month"
                     className="rounded-full border border-slate-200 bg-white p-3 text-steel disabled:opacity-40"
                     disabled={selectedMonthIndex < 0 || selectedMonthIndex >= monthKeys.length - 1}
                     type="button"
@@ -554,6 +608,7 @@ export default function EventsPage() {
               {rangeMode === "month" ? (
                 <>
                   <button
+                    aria-label="Show previous month"
                     className="rounded-full border border-slate-200 bg-white p-3 text-steel disabled:opacity-40 md:hidden"
                     disabled={selectedMonthIndex <= 0}
                     type="button"
@@ -562,6 +617,7 @@ export default function EventsPage() {
                     <ChevronLeft size={16} />
                   </button>
                   <button
+                    aria-label="Show next month"
                     className="rounded-full border border-slate-200 bg-white p-3 text-steel disabled:opacity-40 md:hidden"
                     disabled={selectedMonthIndex < 0 || selectedMonthIndex >= monthKeys.length - 1}
                     type="button"
@@ -602,7 +658,7 @@ export default function EventsPage() {
                     return (
                       <>
                   <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                    <span className="rounded-full bg-orange/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-orange sm:px-3 sm:text-xs sm:tracking-[0.18em]">
+                    <span className="rounded-full bg-rose-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-rose-800 sm:px-3 sm:text-xs sm:tracking-[0.18em]">
                       {event.game}
                     </span>
                     <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 sm:px-3 sm:text-xs sm:tracking-[0.18em]">
@@ -662,7 +718,7 @@ export default function EventsPage() {
                     </button>
                   </div>
                   <div className="mt-2.5 hidden sm:block">
-                    <p className="line-clamp-2 text-sm leading-6 text-steel">
+                    <p className="line-clamp-2 text-sm leading-6 text-slate-700">
                       {event.note || "Source page will have the latest organizer details and any format-specific rules."}
                     </p>
                   </div>
@@ -779,7 +835,7 @@ export default function EventsPage() {
           )}
         </article>
       </section>
-    </div>
+    </main>
   );
 }
 

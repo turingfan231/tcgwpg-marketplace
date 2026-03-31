@@ -1,6 +1,8 @@
 import { ArrowUpDown, BarChart3, Eye, FileText, RefreshCcw, Tag } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import ProfileWorkspaceNav from "../components/account/ProfileWorkspaceNav";
+import SeoHead from "../components/seo/SeoHead";
 import CardArtwork from "../components/shared/CardArtwork";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { formatNumber } from "../utils/formatters";
@@ -115,10 +117,16 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
+    <main className="space-y-6">
+      <SeoHead
+        canonicalPath="/dashboard"
+        description="Seller dashboard for managing listings, drafts, offer activity, and sales history in TCG WPG Marketplace."
+        title="Seller Dashboard"
+      />
+      <ProfileWorkspaceNav sellerId={currentUser?.id} />
+      <section aria-labelledby="dashboard-heading" className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
         <p className="section-kicker">Seller Dashboard</p>
-        <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-ink">
+        <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-ink" id="dashboard-heading">
           Manage {currentUser.name}'s listings
         </h1>
         <p className="mt-3 max-w-3xl text-base text-steel">
@@ -182,9 +190,9 @@ export default function DashboardPage() {
       </section>
 
       {currentUserDrafts.length ? (
-        <section className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
+        <section aria-labelledby="dashboard-drafts-heading" className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
           <p className="section-kicker">Drafts</p>
-          <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+          <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink" id="dashboard-drafts-heading">
             Saved listing drafts
           </h2>
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -246,11 +254,11 @@ export default function DashboardPage() {
         </section>
       ) : null}
 
-      <section className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
+      <section aria-labelledby="dashboard-listings-heading" className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="section-kicker">Listings</p>
-            <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+            <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink" id="dashboard-listings-heading">
               Active listings first
             </h2>
           </div>
@@ -437,9 +445,9 @@ export default function DashboardPage() {
       </section>
 
       {soldListings.length ? (
-        <section className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
+        <section aria-labelledby="dashboard-sales-heading" className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
           <p className="section-kicker">Sales history</p>
-          <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+          <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink" id="dashboard-sales-heading">
             Sold listings
           </h2>
           <div className="mt-5 space-y-3">
@@ -468,9 +476,9 @@ export default function DashboardPage() {
         </section>
       ) : null}
 
-      <section className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
+      <section aria-labelledby="dashboard-offers-heading" className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
         <p className="section-kicker">Offer queue</p>
-        <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+        <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink" id="dashboard-offers-heading">
           Incoming offers
         </h2>
         <div className="mt-5 space-y-3">
@@ -673,7 +681,8 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <section className="space-y-4">
+      <section aria-labelledby="dashboard-legacy-listings-heading" className="space-y-4">
+        <h2 className="sr-only" id="dashboard-legacy-listings-heading">Listing management cards</h2>
         {currentUserListings.map((listing) => (
           <article
             key={listing.id}
@@ -847,7 +856,7 @@ export default function DashboardPage() {
           </article>
         ))}
       </section>
-    </div>
+    </main>
   );
 }
 

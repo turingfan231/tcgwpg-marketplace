@@ -15,7 +15,7 @@ import {
 import CardArtwork from "../shared/CardArtwork";
 import UserAvatar from "../shared/UserAvatar";
 
-export default function ListingCard({ listing }) {
+export default function ListingCard({ listing, onOpen }) {
   const { formatCadPrice, toggleWishlist } = useMarketplace();
   const hasSalePrice = listing.previousPrice && listing.previousPrice > listing.price;
 
@@ -23,6 +23,7 @@ export default function ListingCard({ listing }) {
     <Link
       className="group block overflow-hidden rounded-[12px] border border-[var(--line)] bg-[var(--surface-solid)] shadow-soft transition duration-300 hover:-translate-y-0.5 hover:border-navy/20 hover:shadow-lift"
       to={`/listing/${listing.id}`}
+      onClick={() => onOpen?.(listing.id)}
     >
       <div className="flex gap-3 p-2.5 sm:gap-3.5 sm:p-3.5">
         <div className="relative flex w-[6.2rem] shrink-0 self-start items-center justify-center overflow-hidden rounded-[10px] border border-[var(--line)] bg-[var(--surface-hover)] p-1 sm:w-[6.8rem]">

@@ -33,9 +33,9 @@ export default function UserAvatar({
 
   return (
     <div
-      className={`flex items-center justify-center rounded-full bg-navy text-white ${className}`.trim()}
+      className={`flex items-center justify-center rounded-full bg-slate-300 text-slate-950 ${className}`.trim()}
     >
-      <span className={`font-semibold ${textClassName}`.trim()}>{label}</span>
+      <span className={`font-semibold text-slate-950 ${textClassName}`.trim()}>{label}</span>
     </div>
   );
 }

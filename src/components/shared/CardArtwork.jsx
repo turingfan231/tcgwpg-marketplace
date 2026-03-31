@@ -33,6 +33,7 @@ export default function CardArtwork({ src, title, game, className = "" }) {
   const shouldSkipRemoteImage = String(src || "").includes("images.onepiece-cardgame.dev");
   const displaySrc = shouldSkipRemoteImage ? "" : buildImageProxyUrl(src);
   const compactGameLabel = String(game || "TCG").replace("Dragon Ball Super Fusion World", "Fusion");
+  const accessibleTitle = String(title || "").trim() || `${compactGameLabel} card artwork`;
 
   useEffect(() => {
     setHasError(false);
@@ -41,7 +42,7 @@ export default function CardArtwork({ src, title, game, className = "" }) {
   if (displaySrc && !hasError) {
     return (
       <img
-        alt={title}
+        alt={accessibleTitle}
         className={`${className} bg-[var(--surface-hover)] object-top`}
         loading="lazy"
         referrerPolicy="no-referrer"
@@ -66,7 +67,7 @@ export default function CardArtwork({ src, title, game, className = "" }) {
             {compactGameLabel || "TCG"}
           </p>
           <p className="line-clamp-3 max-w-[12rem] text-[10px] leading-4 text-steel sm:text-sm sm:leading-5">
-            {title}
+            {accessibleTitle}
           </p>
         </div>
       </div>

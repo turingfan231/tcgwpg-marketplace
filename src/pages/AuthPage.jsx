@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import SeoHead from "../components/seo/SeoHead";
 import { neighborhoods } from "../data/mockData";
 import { useMarketplace } from "../hooks/useMarketplace";
+import { trackEvent } from "../lib/analytics";
 
 function normalizePostalInput(value) {
   return String(value || "")
@@ -69,6 +71,9 @@ export default function AuthPage() {
     setError("");
     setMessage("");
     setSubmitting(true);
+    trackEvent("auth_login_submitted", {
+      hasEmail: Boolean(loginForm.email),
+    });
     try {
       const result = await login(loginForm);
 
@@ -90,6 +95,10 @@ export default function AuthPage() {
     setError("");
     setMessage("");
     setSubmitting(true);
+    trackEvent("auth_signup_submitted", {
+      neighborhood: signupForm.neighborhood,
+      hasPostalCode: Boolean(signupForm.postalCode),
+    });
     try {
       const result = await signup(signupForm);
 
@@ -123,6 +132,9 @@ export default function AuthPage() {
     setError("");
     setMessage("");
     setSubmitting(true);
+    trackEvent("auth_password_reset_requested", {
+      hasEmail: Boolean(forgotEmail),
+    });
     try {
       const result = await requestPasswordReset(forgotEmail);
 
@@ -163,11 +175,20 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <main className="mx-auto max-w-6xl" aria-labelledby="auth-page-title">
+      <SeoHead
+        canonicalPath="/auth"
+        description="Sign in or create your TCG Wpg Marketplace account to manage listings, messages, offers, and local meetup plans."
+        title={mode === "signup" ? "Create Account" : mode === "recovery" ? "Recover Account" : "Sign In"}
+        type="website"
+      />
       <section className="grid gap-4 xl:grid-cols-[0.78fr_1.22fr] xl:items-start">
         <div className="console-panel p-5 sm:p-6">
           <p className="section-kicker">Account access</p>
-          <h1 className="mt-2 font-display text-[2rem] font-semibold leading-[1.02] tracking-[-0.05em] text-ink sm:text-[2.4rem]">
+          <h1
+            className="mt-2 font-display text-[2rem] font-semibold leading-[1.02] tracking-[-0.05em] text-ink sm:text-[2.4rem]"
+            id="auth-page-title"
+          >
             Sign in or create your account
           </h1>
           <p className="mt-3 max-w-lg text-[0.96rem] leading-7 text-steel">
@@ -189,8 +210,9 @@ export default function AuthPage() {
         <div className="surface-card p-7">
           <div className="inline-flex rounded-full bg-[#f2f3f5] p-1">
             <button
+              aria-pressed={mode === "login"}
               className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
-                mode === "login" ? "bg-white text-ink shadow-sm" : "text-steel"
+                mode === "login" ? "bg-white text-ink shadow-sm" : "text-ink opacity-70 hover:opacity-100"
               }`}
               type="button"
               onClick={() => {
@@ -202,8 +224,9 @@ export default function AuthPage() {
               Login
             </button>
             <button
+              aria-pressed={mode === "signup"}
               className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
-                mode === "signup" ? "bg-white text-ink shadow-sm" : "text-steel"
+                mode === "signup" ? "bg-white text-ink shadow-sm" : "text-ink opacity-70 hover:opacity-100"
               }`}
               type="button"
               onClick={() => {
@@ -217,22 +240,33 @@ export default function AuthPage() {
           </div>
 
           {error ? (
-            <div className="mt-5 rounded-[20px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            <div
+              aria-live="assertive"
+              className="mt-5 rounded-[20px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+              role="alert"
+            >
               {error}
             </div>
           ) : null}
           {message ? (
-            <div className="mt-5 rounded-[20px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            <div
+              aria-live="polite"
+              className="mt-5 rounded-[20px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+              role="status"
+            >
               {message}
             </div>
           ) : null}
 
           {mode === "login" ? (
-            <form className="mt-7 space-y-5" onSubmit={handleLoginSubmit}>
+            <form aria-label="Login form" className="mt-7 space-y-5" onSubmit={handleLoginSubmit}>
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-steel">Email</span>
                 <input
+                  autoComplete="email"
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  name="email"
+                  required
                   type="email"
                   value={loginForm.email}
                   onChange={(event) =>
@@ -246,7 +280,10 @@ export default function AuthPage() {
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-steel">Password</span>
                 <input
+                  autoComplete="current-password"
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  name="password"
+                  required
                   type="password"
                   value={loginForm.password}
                   onChange={(event) =>
@@ -280,11 +317,14 @@ export default function AuthPage() {
               </div>
             </form>
           ) : mode === "forgot" ? (
-            <form className="mt-7 space-y-5" onSubmit={handleForgotSubmit}>
+            <form aria-label="Password reset form" className="mt-7 space-y-5" onSubmit={handleForgotSubmit}>
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-steel">Email</span>
                 <input
+                  autoComplete="email"
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  name="reset-email"
+                  required
                   type="email"
                   value={forgotEmail}
                   onChange={(event) => setForgotEmail(event.target.value)}
@@ -315,11 +355,14 @@ export default function AuthPage() {
               </div>
             </form>
           ) : mode === "recovery" ? (
-            <form className="mt-7 space-y-5" onSubmit={handleRecoverySubmit}>
+            <form aria-label="Password recovery form" className="mt-7 space-y-5" onSubmit={handleRecoverySubmit}>
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-steel">New password</span>
                 <input
+                  autoComplete="new-password"
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  name="new-password"
+                  required
                   type="password"
                   value={recoveryForm.newPassword}
                   onChange={(event) =>
@@ -333,7 +376,10 @@ export default function AuthPage() {
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-steel">Confirm password</span>
                 <input
+                  autoComplete="new-password"
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  name="confirm-password"
+                  required
                   type="password"
                   value={recoveryForm.confirmPassword}
                   onChange={(event) =>
@@ -365,13 +411,15 @@ export default function AuthPage() {
               </div>
             </form>
           ) : (
-            <form className="mt-7 grid gap-5 sm:grid-cols-2" onSubmit={handleSignupSubmit}>
+            <form aria-label="Sign up form" className="mt-7 grid gap-5 sm:grid-cols-2" onSubmit={handleSignupSubmit}>
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-steel">Username</span>
                 <input
+                  autoComplete="username"
                   required
                   maxLength={24}
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  name="username"
                   placeholder="localcardguy"
                   value={signupForm.username}
                   onChange={(event) =>
@@ -387,8 +435,10 @@ export default function AuthPage() {
                   Actual name
                 </span>
                 <input
+                  autoComplete="name"
                   required
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  name="name"
                   value={signupForm.name}
                   onChange={(event) =>
                     setSignupForm((current) => ({
@@ -401,8 +451,10 @@ export default function AuthPage() {
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-steel">Email</span>
                 <input
+                  autoComplete="email"
                   required
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  name="signup-email"
                   type="email"
                   value={signupForm.email}
                   onChange={(event) =>
@@ -416,7 +468,9 @@ export default function AuthPage() {
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-steel">Neighborhood</span>
                 <select
+                  autoComplete="address-level2"
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  name="neighborhood"
                   value={signupForm.neighborhood}
                   onChange={(event) =>
                     setSignupForm((current) => ({
@@ -435,8 +489,10 @@ export default function AuthPage() {
                   Postal code area
                 </span>
                 <input
+                  autoComplete="postal-code"
                   maxLength={3}
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  name="postal-code"
                   placeholder="R2P"
                   value={signupForm.postalCode}
                   onChange={(event) =>
@@ -450,8 +506,10 @@ export default function AuthPage() {
               <label className="block sm:col-span-2">
                 <span className="mb-2 block text-sm font-semibold text-steel">Password</span>
                 <input
+                  autoComplete="new-password"
                   required
                   className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  name="signup-password"
                   type="password"
                   value={signupForm.password}
                   onChange={(event) =>
@@ -475,7 +533,7 @@ export default function AuthPage() {
           )}
         </div>
       </section>
-    </div>
+    </main>
   );
 }
 

@@ -1247,7 +1247,7 @@ export default function AdminPage() {
                 </article>
               ))
             ) : (
-              <EmptyAdminState>No audit entries yet in this browser session.</EmptyAdminState>
+              <EmptyAdminState>No audit entries yet.</EmptyAdminState>
             )}
           </div>
         </section>

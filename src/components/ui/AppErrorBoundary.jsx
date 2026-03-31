@@ -1,25 +1,60 @@
 import React from "react";
 
+const RECOVERABLE_CHUNK_ERRORS = [
+  "Failed to fetch dynamically imported module",
+  "Importing a module script failed",
+  "Loading chunk",
+  "ChunkLoadError",
+];
+const RETRY_STORAGE_KEY = "tcgwpg.chunkErrorRecovered";
+
+function isRecoverableChunkError(error) {
+  const message = String(error?.message || "");
+  return RECOVERABLE_CHUNK_ERRORS.some((snippet) => message.includes(snippet));
+}
+
 export default class AppErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, errorMessage: "" };
+    this.state = { hasError: false, errorMessage: "", recoverable: false };
   }
 
   static getDerivedStateFromError(error) {
     return {
       hasError: true,
       errorMessage: error?.message || "Unknown client-side error.",
+      recoverable: isRecoverableChunkError(error),
     };
   }
 
   componentDidCatch(error, errorInfo) {
     console.error("App render failed:", error, errorInfo);
+
+    if (
+      typeof window !== "undefined" &&
+      isRecoverableChunkError(error) &&
+      window.sessionStorage.getItem(RETRY_STORAGE_KEY) !== "1"
+    ) {
+      window.sessionStorage.setItem(RETRY_STORAGE_KEY, "1");
+      window.setTimeout(() => {
+        window.location.reload();
+      }, 120);
+      return;
+    }
   }
 
   handleReload = () => {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem(RETRY_STORAGE_KEY);
+    }
     window.location.reload();
   };
+
+  componentDidMount() {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem(RETRY_STORAGE_KEY);
+    }
+  }
 
   render() {
     if (this.state.hasError) {
@@ -31,8 +66,9 @@ export default class AppErrorBoundary extends React.Component {
               The page hit an unexpected error.
             </h1>
             <p className="mt-4 text-base leading-8 text-steel">
-              Refresh the page and try again. If this keeps happening, the latest live
-              data shape is probably hitting a client-side rendering issue.
+              {this.state.recoverable
+                ? "We hit a temporary app-load issue. A refresh usually fixes it right away."
+                : "Refresh the page and try again. If this keeps happening, the latest live data shape is probably hitting a client-side rendering issue."}
             </p>
             {this.state.errorMessage ? (
               <div className="mt-6 rounded-[20px] border border-slate-200 bg-[#faf7f1] px-4 py-4 text-sm text-steel">

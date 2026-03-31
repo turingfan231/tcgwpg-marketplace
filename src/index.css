@@ -1,4 +1,50 @@
-@import url("https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap");
+@font-face {
+  font-family: "Public Sans";
+  src: url("/fonts/public-sans-400.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Public Sans";
+  src: url("/fonts/public-sans-500.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Public Sans";
+  src: url("/fonts/public-sans-600.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Public Sans";
+  src: url("/fonts/public-sans-700.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("/fonts/space-grotesk-500.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("/fonts/space-grotesk-700.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
 
 @tailwind base;
 @tailwind components;
@@ -6,10 +52,42 @@
 
 :root {
   color-scheme: light;
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --r-2: 8px;
+  --r-3: 12px;
+  --r-pill: 999px;
+  --fs-12: 12px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+  --fs-18: 18px;
+  --fs-20: 20px;
+  --fs-24: 24px;
+  --fs-32: 32px;
+  --lh-body: 1.5;
+  --lh-title: 1.2;
+  --bg: #ffffff;
+  --fg: #111111;
+  --muted-fg: #5a5a5a;
+  --surface: #f6f6f6;
+  --border: #e2e2e2;
+  --brand: #d32f2f;
+  --brand-contrast: #ffffff;
+  --success: #1b7f3a;
+  --warning: #b35a00;
+  --danger: #b00020;
+  --focus: #2a6df4;
   --theme-primary: #b11d23;
   --theme-primary-rgb: 177, 29, 35;
-  --theme-accent: #ef3b33;
-  --theme-accent-rgb: 239, 59, 51;
+  --theme-accent: #c62828;
+  --theme-accent-rgb: 198, 40, 40;
   --ink: #23262d;
   --steel: #6f727b;
   --paper: #f5efef;
@@ -36,13 +114,23 @@
   --input-text: #23262d;
   --option-bg: #ffffff;
   --option-text: #23262d;
+  --form-color-scheme: light;
   --surface-solid: rgba(255, 255, 255, 0.98);
   --surface-alt: rgba(250, 250, 251, 0.98);
   --surface-hover: rgba(245, 247, 250, 0.9);
 }
 
-:root[data-color-mode="dark"] {
+:root[data-color-mode="dark"],
+:root[data-theme="dark"] {
   color-scheme: dark;
+  --bg: #111317;
+  --fg: #f5f7fb;
+  --muted-fg: #a4abb8;
+  --surface: #1a1c21;
+  --border: #2e3239;
+  --brand: #d63a3a;
+  --brand-contrast: #ffffff;
+  --focus: #7db2ff;
   --ink: #f5f7fb;
   --steel: #a4abb8;
   --paper: #111317;
@@ -69,6 +157,7 @@
   --input-text: #f5f7fb;
   --option-bg: #15181d;
   --option-text: #f5f7fb;
+  --form-color-scheme: dark;
   --surface-solid: rgba(20, 22, 27, 0.98);
   --surface-alt: rgba(25, 28, 34, 0.98);
   --surface-hover: rgba(255, 255, 255, 0.04);
@@ -89,10 +178,16 @@ body {
     radial-gradient(circle at top right, rgba(var(--theme-accent-rgb), 0.05), transparent 24%),
     linear-gradient(180deg, var(--page-start) 0%, var(--page-mid) 48%, var(--page-end) 100%);
   color: var(--ink);
+  line-height: var(--lh-body);
 }
 
 a {
   @apply transition-colors;
+}
+
+:where(a, button, input, select, textarea, [role="button"], [role="option"], [role="tab"], [role="combobox"]):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
 }
 
 #root {
@@ -124,6 +219,11 @@ a {
 .section-kicker {
   @apply text-[0.72rem] font-semibold uppercase tracking-[0.28em];
   color: rgba(var(--theme-primary-rgb), 0.65);
+}
+
+.deferred-home-section {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 540px;
 }
 
 .surface-card {
@@ -533,9 +633,10 @@ textarea::placeholder {
   color: color-mix(in srgb, var(--steel) 88%, transparent);
 }
 
-input,
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="image"]),
 select,
 textarea {
+  background-color: var(--input-bg) !important;
   color: var(--input-text);
 }
 
@@ -544,6 +645,24 @@ select option,
 select optgroup {
   background-color: var(--option-bg);
   color: var(--option-text);
+}
+
+select {
+  color-scheme: var(--form-color-scheme);
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--input-text);
+  box-shadow: 0 0 0 1000px var(--input-bg) inset;
+  transition: background-color 9999s ease-in-out 0s;
 }
 
 .text-ink {
@@ -562,12 +681,74 @@ select optgroup {
   background-color: color-mix(in srgb, var(--surface-solid) 82%, transparent) !important;
 }
 
+.bg-white\/70 {
+  background-color: color-mix(in srgb, var(--surface-solid) 70%, transparent) !important;
+}
+
+.bg-white\/72 {
+  background-color: color-mix(in srgb, var(--surface-solid) 72%, transparent) !important;
+}
+
+.bg-white\/76 {
+  background-color: color-mix(in srgb, var(--surface-solid) 76%, transparent) !important;
+}
+
+.bg-white\/80 {
+  background-color: color-mix(in srgb, var(--surface-solid) 80%, transparent) !important;
+}
+
 .bg-white\/55 {
   background-color: color-mix(in srgb, var(--surface-solid) 55%, transparent) !important;
 }
 
+.bg-white\/90 {
+  background-color: color-mix(in srgb, var(--surface-solid) 90%, transparent) !important;
+}
+
+.bg-white\/92 {
+  background-color: color-mix(in srgb, var(--surface-solid) 92%, transparent) !important;
+}
+
+.bg-white\/95 {
+  background-color: color-mix(in srgb, var(--surface-solid) 95%, transparent) !important;
+}
+
+.bg-white\/96 {
+  background-color: color-mix(in srgb, var(--surface-solid) 96%, transparent) !important;
+}
+
+.bg-\[\#f2f3f5\] {
+  background-color: var(--surface-alt) !important;
+}
+
+.bg-\[\#f7f7f8\],
+.bg-\[\#f9fcfe\],
+.bg-\[\#fbfbfc\] {
+  background-color: var(--surface-alt) !important;
+}
+
+.focus\:bg-white:focus {
+  background-color: var(--surface-solid) !important;
+}
+
 .bg-gray-50 {
   background-color: transparent !important;
+}
+
+.bg-slate-50 {
+  background-color: color-mix(in srgb, var(--surface-alt) 88%, transparent) !important;
+}
+
+.bg-slate-100 {
+  background-color: color-mix(in srgb, var(--surface-alt) 96%, transparent) !important;
+}
+
+.bg-slate-200 {
+  background-color: color-mix(in srgb, var(--surface-alt) 82%, var(--ink) 18%) !important;
+}
+
+.bg-slate-300 {
+  background-color: color-mix(in srgb, var(--surface-alt) 68%, var(--ink) 32%) !important;
 }
 
 .border-slate-100 {
@@ -578,8 +759,185 @@ select optgroup {
   border-color: color-mix(in srgb, var(--ink) 12%, transparent) !important;
 }
 
+.border-slate-300 {
+  border-color: color-mix(in srgb, var(--ink) 20%, transparent) !important;
+}
+
+.text-slate-300 {
+  color: color-mix(in srgb, var(--fg) 62%, transparent) !important;
+}
+
+.text-slate-400 {
+  color: color-mix(in srgb, var(--fg) 56%, transparent) !important;
+}
+
+.text-slate-500 {
+  color: color-mix(in srgb, var(--fg) 64%, transparent) !important;
+}
+
+.text-slate-600 {
+  color: color-mix(in srgb, var(--fg) 72%, transparent) !important;
+}
+
+.text-slate-700 {
+  color: color-mix(in srgb, var(--fg) 80%, transparent) !important;
+}
+
+.bg-red-50,
+.bg-rose-50 {
+  background-color: rgba(var(--theme-primary-rgb), 0.12) !important;
+}
+
+.bg-rose-100 {
+  background-color: rgba(var(--theme-primary-rgb), 0.18) !important;
+}
+
+.border-red-200,
+.border-rose-200 {
+  border-color: rgba(var(--theme-primary-rgb), 0.26) !important;
+}
+
+.border-rose-300 {
+  border-color: rgba(var(--theme-primary-rgb), 0.34) !important;
+}
+
+.text-red-700,
+.text-rose-700 {
+  color: color-mix(in srgb, var(--theme-primary) 45%, white 55%) !important;
+}
+
+.text-rose-800 {
+  color: color-mix(in srgb, var(--theme-primary) 34%, white 66%) !important;
+}
+
 .hover\:bg-slate-50:hover {
   background-color: var(--surface-hover) !important;
+}
+
+.hover\:bg-rose-50:hover {
+  background-color: rgba(var(--theme-primary-rgb), 0.16) !important;
+}
+
+.hover\:bg-white\/82:hover {
+  background-color: color-mix(in srgb, var(--surface-solid) 82%, transparent) !important;
+}
+
+.bg-amber-50 {
+  background-color: color-mix(in srgb, var(--surface-alt) 70%, rgba(215, 102, 21, 0.2) 30%) !important;
+}
+
+.border-amber-200 {
+  border-color: color-mix(in srgb, rgba(215, 102, 21, 0.38) 70%, var(--line) 30%) !important;
+}
+
+.text-amber-700 {
+  color: color-mix(in srgb, #d88a2c 60%, var(--fg) 40%) !important;
+}
+
+.text-amber-700\/80 {
+  color: color-mix(in srgb, #d88a2c 52%, var(--fg) 48%) !important;
+}
+
+.text-amber-900 {
+  color: color-mix(in srgb, #f2b04e 40%, var(--fg) 60%) !important;
+}
+
+.bg-black\/60 {
+  background-color: rgba(0, 0, 0, 0.62) !important;
+}
+
+.bg-black\/82 {
+  background-color: rgba(0, 0, 0, 0.82) !important;
+}
+
+.bg-white\/15 {
+  background-color: color-mix(in srgb, var(--surface-solid) 15%, transparent) !important;
+}
+
+.bg-white\/10 {
+  background-color: color-mix(in srgb, var(--surface-solid) 10%, transparent) !important;
+}
+
+.bg-white\/16 {
+  background-color: color-mix(in srgb, var(--surface-solid) 16%, transparent) !important;
+}
+
+.bg-white\/20 {
+  background-color: color-mix(in srgb, var(--surface-solid) 20%, transparent) !important;
+}
+
+.text-white\/70 {
+  color: color-mix(in srgb, white 70%, transparent) !important;
+}
+
+.text-white\/78 {
+  color: color-mix(in srgb, white 78%, transparent) !important;
+}
+
+.text-white\/85 {
+  color: color-mix(in srgb, white 85%, transparent) !important;
+}
+
+.border-white\/10 {
+  border-color: color-mix(in srgb, white 10%, transparent) !important;
+}
+
+.border-white\/12 {
+  border-color: color-mix(in srgb, white 12%, transparent) !important;
+}
+
+.border-white\/16 {
+  border-color: color-mix(in srgb, white 16%, transparent) !important;
+}
+
+.border-white\/35 {
+  border-color: color-mix(in srgb, white 35%, transparent) !important;
+}
+
+.border-white\/70 {
+  border-color: color-mix(in srgb, white 70%, transparent) !important;
+}
+
+.border-white\/80 {
+  border-color: color-mix(in srgb, white 80%, transparent) !important;
+}
+
+.border-white\/90 {
+  border-color: color-mix(in srgb, white 90%, transparent) !important;
+}
+
+.hover\:bg-white\/16:hover {
+  background-color: color-mix(in srgb, var(--surface-solid) 16%, transparent) !important;
+}
+
+.disabled\:bg-slate-300:disabled {
+  background-color: color-mix(in srgb, var(--surface-alt) 68%, var(--ink) 32%) !important;
+}
+
+.disabled\:bg-slate-400:disabled {
+  background-color: color-mix(in srgb, var(--surface-alt) 56%, var(--ink) 44%) !important;
+}
+
+:root[data-color-mode="dark"] .text-white\/70,
+:root[data-theme="dark"] .text-white\/70 {
+  color: color-mix(in srgb, white 76%, transparent) !important;
+}
+
+:root[data-color-mode="dark"] .text-white\/78,
+:root[data-theme="dark"] .text-white\/78 {
+  color: color-mix(in srgb, white 82%, transparent) !important;
+}
+
+:root[data-color-mode="dark"] .text-white\/85,
+:root[data-theme="dark"] .text-white\/85 {
+  color: color-mix(in srgb, white 88%, transparent) !important;
+}
+
+:root[data-color-mode="dark"] .console-chip,
+:root[data-theme="dark"] .console-chip {
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: color-mix(in srgb, var(--fg) 82%, var(--theme-primary) 18%);
 }
 
 .shelf-divider {

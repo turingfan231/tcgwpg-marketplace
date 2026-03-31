@@ -37,7 +37,7 @@ export const themePresets = [
     "Collector Strip",
     "Red and white storefront system inspired by a binder tab marker.",
     "#b11d23",
-    "#ef3b33",
+    "#c62828",
   ),
 ];
 

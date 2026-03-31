@@ -19,6 +19,18 @@ import {
 } from "../data/mockData";
 import { storeProfiles } from "../data/storefrontData";
 import { normalizeCustomTheme } from "../data/themePresets";
+import {
+  buildClearedDraftState,
+  buildNextDraftState,
+  normalizeDraftCollection,
+  resolveActiveDraft,
+  sortListingDrafts,
+} from "../lib/listingDrafts";
+import { retryStorageUpload } from "../lib/mediaUploads";
+import {
+  getOfferCounterpartyId,
+  resolveOfferResponse,
+} from "../lib/offerState";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
 import { average, formatCurrency, slugify } from "../utils/formatters";
 
@@ -28,6 +40,7 @@ const TOAST_SEEN_STORAGE_PREFIX = "tcgwpg.seenToasts";
 const HIDDEN_THREADS_STORAGE_PREFIX = "tcgwpg.hiddenThreads";
 const MARKETPLACE_CACHE_KEY = "tcgwpg.marketplaceCache";
 const SITE_SETTINGS_STORAGE_KEY = "tcgwpg.siteSettings";
+const LOCAL_AUTH_STORAGE_KEY = "tcgwpg.localAuthUserId";
 const COLLECTION_STORAGE_PREFIX = "tcgwpg.collection";
 const AUDIT_LOG_STORAGE_KEY = "tcgwpg.adminAuditLog";
 const VIEW_AS_STORAGE_KEY = "tcgwpg.viewAsUserId";
@@ -49,7 +62,7 @@ const DEFAULT_SITE_SETTINGS = {
   themePreset: "collector-strip",
   customTheme: normalizeCustomTheme({
     primary: "#b11d23",
-    accent: "#ef3b33",
+  accent: "#c62828",
   }),
   homeHero: {
     featuredListingId: null,
@@ -67,6 +80,17 @@ const DEFAULT_SITE_SETTINGS = {
     showTrustedSellers: true,
     showStores: true,
   },
+};
+
+const CLIENT_MUTATION_LIMITS = {
+  login: { windowMs: 60 * 1000, limit: 6 },
+  signup: { windowMs: 10 * 60 * 1000, limit: 3 },
+  passwordReset: { windowMs: 10 * 60 * 1000, limit: 3 },
+  messageSend: { windowMs: 12 * 1000, limit: 6 },
+  createOffer: { windowMs: 30 * 1000, limit: 4 },
+  respondToOffer: { windowMs: 30 * 1000, limit: 6 },
+  submitReport: { windowMs: 5 * 60 * 1000, limit: 4 },
+  submitBugReport: { windowMs: 5 * 60 * 1000, limit: 5 },
 };
 
 function readSearchStorage() {
@@ -134,6 +158,27 @@ function readMarketplaceCache() {
   } catch {
     return null;
   }
+}
+
+function readLocalAuthUserId() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return window.localStorage.getItem(LOCAL_AUTH_STORAGE_KEY) || null;
+}
+
+function writeLocalAuthUserId(userId) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  if (!userId) {
+    window.localStorage.removeItem(LOCAL_AUTH_STORAGE_KEY);
+    return;
+  }
+
+  window.localStorage.setItem(LOCAL_AUTH_STORAGE_KEY, String(userId));
 }
 
 function getHiddenThreadsStorageKey(userId) {
@@ -480,10 +525,43 @@ async function apiRequest(path, init = {}) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.error || "Request failed.");
+    const error = new Error(data.error || "Request failed.");
+    error.status = response.status;
+    error.retryAfter = response.headers.get("Retry-After");
+    error.data = data;
+    throw error;
   }
 
   return data;
+}
+
+async function runServerAuthGuard(action, identifier) {
+  if (!API_BASE_URL) {
+    return { ok: true, skipped: true };
+  }
+
+  try {
+    await apiRequest("/api/auth/guard", {
+      method: "POST",
+      body: JSON.stringify({
+        action,
+        identifier,
+      }),
+    });
+
+    return { ok: true };
+  } catch (error) {
+    if (error?.status === 429) {
+      return {
+        ok: false,
+        error:
+          error?.message ||
+          "Too many authentication attempts. Please wait a bit and try again.",
+      };
+    }
+
+    return { ok: true, skipped: true };
+  }
 }
 
 function normalizeEmail(value) {
@@ -649,6 +727,15 @@ function isMissingTableError(error, tableName) {
   );
 }
 
+function shouldFallbackToClientMutation(error, codes = []) {
+  const message = String(error?.message || "").toLowerCase();
+  return (
+    message.includes("not configured") ||
+    message.includes("api server is not configured") ||
+    codes.some((code) => message.includes(String(code).toLowerCase()))
+  );
+}
+
 function buildInitials(name) {
   return String(name || "")
     .split(/\s+/)
@@ -676,22 +763,6 @@ function titleCaseWords(value) {
     .filter(Boolean)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
-}
-
-function normalizeDraftCollection(value) {
-  if (Array.isArray(value)) {
-    return value.filter(Boolean);
-  }
-
-  if (value && Array.isArray(value.drafts)) {
-    return value.drafts.filter(Boolean);
-  }
-
-  if (value && typeof value === "object" && Object.keys(value).length) {
-    return [value];
-  }
-
-  return [];
 }
 
 function sameParticipantSet(left = [], right = []) {
@@ -1127,6 +1198,33 @@ function parseMessageBody(body) {
   }
 }
 
+function mapMessageRow(message) {
+  const parsedBody = parseMessageBody(message.body);
+  return {
+    id: message.id,
+    senderId: message.sender_id,
+    body: parsedBody.preview,
+    rawBody: parsedBody.rawBody,
+    text: parsedBody.text,
+    attachments: parsedBody.attachments,
+    isRich: parsedBody.isRich,
+    sentAt: message.created_at,
+    readBy: message.read_by || [],
+  };
+}
+
+function mapThreadRow(threadRow, existingThread = null) {
+  return {
+    id: threadRow.id,
+    participantIds: threadRow.participant_ids || existingThread?.participantIds || [],
+    listingId: threadRow.listing_id,
+    hiddenBy: threadRow.hidden_by || existingThread?.hiddenBy || {},
+    createdAt: threadRow.created_at || existingThread?.createdAt || new Date().toISOString(),
+    updatedAt: threadRow.updated_at || existingThread?.updatedAt || new Date().toISOString(),
+    messages: existingThread?.messages || [],
+  };
+}
+
 function normalizeNotificationRecord(notification) {
   return {
     read: false,
@@ -1307,6 +1405,20 @@ function fromEventRow(row) {
   });
 }
 
+function fromAuditRow(row) {
+  return normalizeAuditRecord({
+    id: row.id,
+    actorId: row.actor_id,
+    actorName: row.actor_name,
+    action: row.action,
+    title: row.title,
+    details: row.details,
+    targetId: row.target_id,
+    targetType: row.target_type,
+    createdAt: row.created_at,
+  });
+}
+
 function fromSiteSettingsRow(row) {
   return normalizeSiteSettings(row?.payload || DEFAULT_SITE_SETTINGS);
 }
@@ -1394,32 +1506,14 @@ function toListingPayload(payload, seller) {
 
 function buildThreadMap(threadRows, messageRows) {
   return (threadRows || []).map((thread) => ({
-    id: thread.id,
-    participantIds: thread.participant_ids || [],
-    listingId: thread.listing_id,
-    hiddenBy: thread.hidden_by || {},
-    createdAt: thread.created_at,
-    updatedAt: thread.updated_at,
+    ...mapThreadRow(thread),
     messages: (messageRows || [])
       .filter((message) => message.thread_id === thread.id)
       .sort(
         (left, right) =>
           new Date(left.created_at).getTime() - new Date(right.created_at).getTime(),
       )
-      .map((message) => {
-        const parsedBody = parseMessageBody(message.body);
-        return {
-          id: message.id,
-          senderId: message.sender_id,
-          body: parsedBody.preview,
-          rawBody: parsedBody.rawBody,
-          text: parsedBody.text,
-          attachments: parsedBody.attachments,
-          isRich: parsedBody.isRich,
-          sentAt: message.created_at,
-          readBy: message.read_by || [],
-        };
-      }),
+      .map(mapMessageRow),
   }));
 }
 
@@ -1446,11 +1540,13 @@ function buildSeedState() {
 
 export function MarketplaceProvider({ children }) {
   const seedState = useMemo(() => buildSeedState(), []);
-  const cachedState = useMemo(() => (isSupabaseConfigured ? readMarketplaceCache() : null), []);
+  const cachedState = useMemo(() => readMarketplaceCache(), []);
   const [users, setUsers] = useState(() =>
     isSupabaseConfigured ? cachedState?.users || [] : seedState.users,
   );
-  const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(() =>
+    isSupabaseConfigured ? null : readLocalAuthUserId(),
+  );
   const [listings, setListings] = useState(() =>
     isSupabaseConfigured ? cachedState?.listings || [] : seedState.listings,
   );
@@ -1480,13 +1576,13 @@ export function MarketplaceProvider({ children }) {
     isSupabaseConfigured ? cachedState?.notifications || [] : seedState.notifications,
   );
   const [listingDrafts, setListingDrafts] = useState(() =>
-    isSupabaseConfigured ? cachedState?.listingDrafts || [] : seedState.listingDrafts,
+    isSupabaseConfigured ? cachedState?.listingDrafts || [] : cachedState?.listingDrafts || seedState.listingDrafts,
   );
   const [activeDraftId, setActiveDraftId] = useState(() =>
-    isSupabaseConfigured ? cachedState?.activeDraftId || null : seedState.activeDraftId,
+    isSupabaseConfigured ? cachedState?.activeDraftId || null : cachedState?.activeDraftId || seedState.activeDraftId,
   );
   const [searchHistory, setSearchHistory] = useState(() =>
-    isSupabaseConfigured ? cachedState?.searchHistory || [] : seedState.searchHistory,
+    isSupabaseConfigured ? cachedState?.searchHistory || [] : cachedState?.searchHistory || seedState.searchHistory,
   );
   const [collectionItems, setCollectionItems] = useState([]);
   const [adminAuditLog, setAdminAuditLog] = useState(() => readAuditLogStorage());
@@ -1507,9 +1603,10 @@ export function MarketplaceProvider({ children }) {
   const [loading, setLoading] = useState(
     Boolean(isSupabaseConfigured && !cachedState?.listings?.length),
   );
-  const [toastItems, setToastItems] = useState([]);
-  const seenNotificationIdsRef = useRef(new Set());
-  const seededRealtimeStateRef = useRef(false);
+    const [toastItems, setToastItems] = useState([]);
+    const seenNotificationIdsRef = useRef(new Set());
+    const seededRealtimeStateRef = useRef(false);
+    const mutationLimitRef = useRef(new Map());
 
   const currentUser = useMemo(
     () => sanitizeUser(users.find((user) => user.id === currentUserId)) || null,
@@ -1520,6 +1617,14 @@ export function MarketplaceProvider({ children }) {
     () => users.find((user) => user.id === currentUserId) || null,
     [currentUserId, users],
   );
+
+  useEffect(() => {
+    if (isSupabaseConfigured) {
+      return;
+    }
+
+    writeLocalAuthUserId(currentUserId);
+  }, [currentUserId]);
   const viewedUserRecord = useMemo(
     () =>
       currentUserRecord?.role === "admin" && viewAsUserId
@@ -1536,18 +1641,11 @@ export function MarketplaceProvider({ children }) {
   const followedStoreSet = useMemo(() => new Set(followedStoreSlugs), [followedStoreSlugs]);
   const eventReminderIdSet = useMemo(() => new Set(eventReminderIds), [eventReminderIds]);
   const listingDraft = useMemo(
-    () =>
-      activeDraftId
-        ? listingDrafts.find((draft) => draft.id === activeDraftId) || null
-        : null,
+    () => resolveActiveDraft(listingDrafts, activeDraftId),
     [activeDraftId, listingDrafts],
   );
   const currentUserDrafts = useMemo(
-    () =>
-      [...listingDrafts].sort(
-        (left, right) =>
-          new Date(right.updatedAt || 0).getTime() - new Date(left.updatedAt || 0).getTime(),
-      ),
+    () => sortListingDrafts(listingDrafts),
     [listingDrafts],
   );
   const followedSellerSet = useMemo(() => new Set(followedSellerIds), [followedSellerIds]);
@@ -1910,25 +2008,99 @@ export function MarketplaceProvider({ children }) {
     setToastItems((current) => current.filter((item) => item.id !== toastId));
   }, []);
 
+  const guardMutationRate = useCallback((action, identifier = "global") => {
+    const config = CLIENT_MUTATION_LIMITS[action];
+    if (!config) {
+      return { ok: true };
+    }
+
+    const key = `${action}:${identifier || "global"}`;
+    const now = Date.now();
+    const existing = mutationLimitRef.current.get(key);
+
+    if (!existing || existing.resetAt <= now) {
+      mutationLimitRef.current.set(key, {
+        count: 1,
+        resetAt: now + config.windowMs,
+      });
+      return { ok: true };
+    }
+
+    if (existing.count >= config.limit) {
+      const retryAfterSeconds = Math.max(1, Math.ceil((existing.resetAt - now) / 1000));
+      return {
+        ok: false,
+        error: `You're doing that a bit too fast. Try again in about ${retryAfterSeconds} second${retryAfterSeconds === 1 ? "" : "s"}.`,
+      };
+    }
+
+    existing.count += 1;
+    mutationLimitRef.current.set(key, existing);
+    return { ok: true };
+  }, []);
+
   const pushAdminAuditEntry = useCallback(
-    ({ action, title, details = "", targetId = "", targetType = "record" }) => {
+    async ({
+      action,
+      title,
+      details = "",
+      targetId = "",
+      targetType = "record",
+      persist = true,
+    }) => {
       if (!currentUserRecord || currentUserRecord.role !== "admin") {
         return;
       }
 
-      setAdminAuditLog((current) => [
-        normalizeAuditRecord({
-          actorId: currentUserRecord.id,
-          actorName: currentUserRecord.publicName || currentUserRecord.name,
-          action,
-          title,
-          details,
-          targetId,
-          targetType,
-          createdAt: new Date().toISOString(),
-        }),
-        ...current,
-      ].slice(0, 200));
+      const nextEntry = normalizeAuditRecord({
+        actorId: currentUserRecord.id,
+        actorName: currentUserRecord.publicName || currentUserRecord.name,
+        action,
+        title,
+        details,
+        targetId,
+        targetType,
+        createdAt: new Date().toISOString(),
+      });
+
+      setAdminAuditLog((current) =>
+        [nextEntry, ...current.filter((entry) => entry.id !== nextEntry.id)].slice(0, 200),
+      );
+
+      if (!isSupabaseConfigured || !persist) {
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("admin_audit_log")
+        .upsert({
+          id: nextEntry.id,
+          actor_id: nextEntry.actorId || null,
+          actor_name: nextEntry.actorName,
+          action: nextEntry.action,
+          title: nextEntry.title,
+          details: nextEntry.details,
+          target_id: nextEntry.targetId || null,
+          target_type: nextEntry.targetType,
+          created_at: nextEntry.createdAt,
+        })
+        .select("*")
+        .single();
+
+      if (error && !isMissingTableError(error, "admin_audit_log")) {
+        console.error("Failed to persist admin audit log entry:", error);
+        return;
+      }
+
+      if (data) {
+        const persistedEntry = fromAuditRow(data);
+        setAdminAuditLog((current) =>
+          [persistedEntry, ...current.filter((entry) => entry.id !== persistedEntry.id)].slice(
+            0,
+            200,
+          ),
+        );
+      }
     },
     [currentUserRecord],
   );
@@ -2176,6 +2348,28 @@ export function MarketplaceProvider({ children }) {
           setSiteSettings(fromSiteSettingsRow(siteSettingsRes.data));
         }
 
+        const authedProfile = authedUserId
+          ? normalizedProfiles.find((profile) => String(profile.id) === String(authedUserId)) || null
+          : null;
+
+        if (authedProfile?.role === "admin") {
+          const auditLogRes = await supabase
+            .from("admin_audit_log")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(200);
+
+          if (auditLogRes.error && !isMissingTableError(auditLogRes.error, "admin_audit_log")) {
+            throw auditLogRes.error;
+          }
+
+          if (!auditLogRes.error) {
+            setAdminAuditLog((auditLogRes.data || []).map(fromAuditRow));
+          }
+        } else {
+          setAdminAuditLog([]);
+        }
+
         if (!authedUserId) {
           setWishlist([]);
           setThreads([]);
@@ -2186,6 +2380,7 @@ export function MarketplaceProvider({ children }) {
           setListingDrafts([]);
           setActiveDraftId(null);
           setSearchHistory([]);
+          setAdminAuditLog([]);
           return;
         }
 
@@ -2332,6 +2527,48 @@ export function MarketplaceProvider({ children }) {
   useEffect(() => {
     writeSiteSettingsStorage(siteSettings);
   }, [siteSettings]);
+
+  const persistSeedMarketplaceSnapshot = useCallback(
+    (overrides = {}) => {
+      if (isSupabaseConfigured) {
+        return;
+      }
+
+      writeMarketplaceCache({
+        users,
+        listings,
+        wishlist,
+        reviews,
+        threads,
+        manualEvents,
+        offers,
+        reports,
+        bugReports,
+        notifications,
+        listingDrafts: overrides.listingDrafts ?? listingDrafts,
+        activeDraftId: overrides.activeDraftId ?? activeDraftId,
+        searchHistory: overrides.searchHistory ?? searchHistory,
+        siteSettings: overrides.siteSettings ?? siteSettings,
+      });
+    },
+    [
+      activeDraftId,
+      bugReports,
+      isSupabaseConfigured,
+      listingDrafts,
+      listings,
+      manualEvents,
+      notifications,
+      offers,
+      reports,
+      reviews,
+      searchHistory,
+      siteSettings,
+      threads,
+      users,
+      wishlist,
+    ],
+  );
 
   useEffect(() => {
     if (!currentUserId) {
@@ -2593,6 +2830,60 @@ export function MarketplaceProvider({ children }) {
     });
   }
 
+  async function persistStorefrontSettings(nextSettings, audit = {}) {
+    if (!isSupabaseConfigured) {
+      return { ok: true, settings: nextSettings };
+    }
+
+    if (API_BASE_URL) {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const response = await apiRequest("/api/admin/site-settings", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session?.access_token || ""}`,
+          },
+          body: JSON.stringify({
+            payload: nextSettings,
+            audit,
+          }),
+        });
+
+        return {
+          ok: true,
+          settings: fromSiteSettingsRow(response.settings),
+          persistedBy: "server",
+        };
+      } catch (error) {
+        if (error?.status && error.status !== 501) {
+          return { ok: false, error: error.message || "Failed to update storefront settings." };
+        }
+      }
+    }
+
+    const { data, error } = await supabase
+      .from("site_settings")
+      .upsert({
+        key: "global",
+        payload: nextSettings,
+        updated_at: new Date().toISOString(),
+      })
+      .select("*")
+      .single();
+
+    if (error && !isMissingTableError(error, "site_settings")) {
+      return { ok: false, error: error.message };
+    }
+
+    return {
+      ok: true,
+      settings: data ? fromSiteSettingsRow(data) : nextSettings,
+      persistedBy: "supabase",
+    };
+  }
+
   async function updateHomeHeroSettings(payload = {}) {
     if (!currentUser || currentUser.role !== "admin") {
       return { ok: false, error: "Only admins can update storefront hero settings." };
@@ -2607,31 +2898,26 @@ export function MarketplaceProvider({ children }) {
     });
 
     setSiteSettings(nextSettings);
-    if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from("site_settings")
-        .upsert({
-          key: "global",
-          payload: nextSettings,
-          updated_at: new Date().toISOString(),
-        })
-        .select("*")
-        .single();
+    const details = `Featured listing: ${payload.featuredListingId || "auto"} | Pinned event: ${payload.pinnedEventId || "auto"} | Spotlight game: ${payload.spotlightGameSlug || "auto"}`;
+    const persistResult = await persistStorefrontSettings(nextSettings, {
+      action: "storefront-hero",
+      title: "Updated homepage hero controls",
+      details,
+    });
+    if (!persistResult.ok) {
+      return persistResult;
+    }
 
-      if (error && !isMissingTableError(error, "site_settings")) {
-        return { ok: false, error: error.message };
-      }
-
-      if (data) {
-        setSiteSettings(fromSiteSettingsRow(data));
-      }
+    if (persistResult.settings) {
+      setSiteSettings(persistResult.settings);
     }
 
     pushAdminAuditEntry({
       action: "storefront-hero",
       title: "Updated homepage hero controls",
-      details: `Featured listing: ${payload.featuredListingId || "auto"} | Pinned event: ${payload.pinnedEventId || "auto"} | Spotlight game: ${payload.spotlightGameSlug || "auto"}`,
+      details,
       targetType: "storefront",
+      persist: persistResult.persistedBy !== "server",
     });
     return { ok: true, settings: nextSettings };
   }
@@ -2655,24 +2941,17 @@ export function MarketplaceProvider({ children }) {
     });
 
     setSiteSettings(nextSettings);
-    if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from("site_settings")
-        .upsert({
-          key: "global",
-          payload: nextSettings,
-          updated_at: new Date().toISOString(),
-        })
-        .select("*")
-        .single();
+    const persistResult = await persistStorefrontSettings(nextSettings, {
+      action: "storefront-settings",
+      title: "Updated storefront settings",
+      details: "Homepage sections or theme controls were adjusted.",
+    });
+    if (!persistResult.ok) {
+      return persistResult;
+    }
 
-      if (error && !isMissingTableError(error, "site_settings")) {
-        return { ok: false, error: error.message };
-      }
-
-      if (data) {
-        setSiteSettings(fromSiteSettingsRow(data));
-      }
+    if (persistResult.settings) {
+      setSiteSettings(persistResult.settings);
     }
 
     pushAdminAuditEntry({
@@ -2680,6 +2959,7 @@ export function MarketplaceProvider({ children }) {
       title: "Updated storefront settings",
       details: "Homepage sections or theme controls were adjusted.",
       targetType: "storefront",
+      persist: persistResult.persistedBy !== "server",
     });
     return { ok: true, settings: nextSettings };
   }
@@ -2754,16 +3034,40 @@ export function MarketplaceProvider({ children }) {
 
   async function login({ email, password }) {
     if (!isSupabaseConfigured) {
-      return { ok: false, error: "Supabase is not configured." };
+      const normalizedEmail = normalizeEmail(email);
+      const seedUser = users.find(
+        (user) => user.email === normalizedEmail && user.password === password,
+      );
+
+      if (!seedUser) {
+        return { ok: false, error: "Email or password is incorrect." };
+      }
+
+      setCurrentUserId(seedUser.id);
+      return { ok: true };
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    const serverGuard = await runServerAuthGuard(
+      "login",
+      normalizedEmail || "anonymous",
+    );
+    if (!serverGuard.ok) {
+      return serverGuard;
+    }
+
+    const rateGuard = guardMutationRate("login", normalizedEmail || "anonymous");
+    if (!rateGuard.ok) {
+      return rateGuard;
     }
 
     setAuthReady(false);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: normalizeEmail(email),
-        password,
-      });
+          email: normalizedEmail,
+          password,
+        });
 
       if (error) {
         return {
@@ -2794,20 +3098,72 @@ export function MarketplaceProvider({ children }) {
 
   async function signup(payload) {
     if (!isSupabaseConfigured) {
-      return { ok: false, error: "Supabase is not configured." };
+      const username = normalizeUsername(payload.username);
+      const normalizedEmail = normalizeEmail(payload.email);
+      if (!username) {
+        return { ok: false, error: "A username is required." };
+      }
+      if (!normalizedEmail) {
+        return { ok: false, error: "A valid email is required." };
+      }
+      if (!payload.password || payload.password.length < 6) {
+        return { ok: false, error: "Password must be at least 6 characters." };
+      }
+      if (
+        users.some(
+          (user) =>
+            user.email === normalizedEmail || normalizeUsername(user.username) === username,
+        )
+      ) {
+        return { ok: false, error: "That email or username is already in use." };
+      }
+
+      const newUser = normalizeUserRecord({
+        id: `seller-${Date.now()}`,
+        role: "seller",
+        name: payload.name || username,
+        username,
+        email: normalizedEmail,
+        password: payload.password,
+        neighborhood: payload.neighborhood || "St. Vital",
+        postalCode: normalizePostalCode(payload.postalCode),
+        favoriteGames: [payload.defaultListingGame || "Pokemon"],
+        defaultListingGame: payload.defaultListingGame || "Pokemon",
+        trustedMeetupSpots: [],
+        meetupPreferences: "",
+        onboardingComplete: true,
+      });
+
+      setUsers((current) => [newUser, ...current]);
+      setCurrentUserId(newUser.id);
+      return { ok: true, requiresEmailConfirmation: false, email: normalizedEmail };
     }
 
     const username = normalizeUsername(payload.username);
+    const normalizedEmail = normalizeEmail(payload.email);
     if (!username) {
       return { ok: false, error: "A username is required." };
+    }
+
+    const serverGuard = await runServerAuthGuard(
+      "signup",
+      normalizedEmail || username || "anonymous",
+    );
+    if (!serverGuard.ok) {
+      return serverGuard;
+    }
+
+    const rateGuard = guardMutationRate("signup", normalizedEmail || username || "anonymous");
+    if (!rateGuard.ok) {
+      return rateGuard;
     }
 
     setAuthReady(false);
 
     try {
       const { data, error } = await supabase.auth.signUp({
-        email: normalizeEmail(payload.email),
-        password: payload.password,
+          email: normalizedEmail,
+          password: payload.password,
         options: {
           data: {
             name: payload.name,
@@ -2846,12 +3202,26 @@ export function MarketplaceProvider({ children }) {
 
   async function requestPasswordReset(email) {
     if (!isSupabaseConfigured) {
-      return { ok: false, error: "Supabase is not configured." };
+      const normalizedEmail = normalizeEmail(email);
+      if (!normalizedEmail) {
+        return { ok: false, error: "Enter the email on your account first." };
+      }
+      return { ok: true };
     }
 
     const normalizedEmail = normalizeEmail(email);
     if (!normalizedEmail) {
       return { ok: false, error: "Enter the email on your account first." };
+    }
+
+    const serverGuard = await runServerAuthGuard("password-reset", normalizedEmail);
+    if (!serverGuard.ok) {
+      return serverGuard;
+    }
+
+    const rateGuard = guardMutationRate("passwordReset", normalizedEmail);
+    if (!rateGuard.ok) {
+      return rateGuard;
     }
 
     const redirectTo =
@@ -2914,13 +3284,23 @@ export function MarketplaceProvider({ children }) {
 
       const extension = getFileExtension(payload.avatarFile.name, payload.avatarFile.type);
       const filePath = `avatars/${currentUserId}/profile-${Date.now()}.${extension}`;
-      const uploadResult = await supabase.storage
-        .from(MEDIA_BUCKET)
-        .upload(filePath, payload.avatarFile, {
-          cacheControl: "3600",
-          upsert: true,
-          contentType: payload.avatarFile.type || undefined,
-        });
+      const uploadResult = await retryStorageUpload(
+        () =>
+          supabase.storage
+            .from(MEDIA_BUCKET)
+            .upload(filePath, payload.avatarFile, {
+              cacheControl: "3600",
+              upsert: true,
+              contentType: payload.avatarFile.type || undefined,
+            })
+            .then(({ data, error }) => {
+              if (error) {
+                throw error;
+              }
+              return { data };
+            }),
+        { retries: 2, retryDelayMs: 300 },
+      ).catch((error) => ({ error }));
 
       if (uploadResult.error) {
         return {
@@ -3057,28 +3437,28 @@ export function MarketplaceProvider({ children }) {
     }
 
     const now = new Date().toISOString();
-    const nextDraft = {
-      ...payload,
-      id: payload.id || `draft-${Date.now()}`,
-      name: payload.name || payload.title || `${payload.game || "Listing"} draft`,
-      updatedAt: now,
-    };
-    const nextDrafts = [
-      nextDraft,
-      ...listingDrafts.filter((draft) => draft.id !== nextDraft.id),
-    ].slice(0, 12);
+    const nextState = buildNextDraftState({
+      drafts: listingDrafts,
+      payload,
+      now,
+      maxDrafts: 12,
+    });
 
     if (!isSupabaseConfigured) {
-      setListingDrafts(nextDrafts);
-      setActiveDraftId(nextDraft.id);
-      return { ok: true, draft: nextDraft };
+      setListingDrafts(nextState.drafts);
+      setActiveDraftId(nextState.activeDraftId);
+      persistSeedMarketplaceSnapshot({
+        listingDrafts: nextState.drafts,
+        activeDraftId: nextState.activeDraftId,
+      });
+      return { ok: true, draft: nextState.draft };
     }
 
     const { error } = await supabase.from("listing_drafts").upsert({
       user_id: currentUserId,
       payload: {
-        drafts: nextDrafts,
-        activeDraftId: nextDraft.id,
+        drafts: nextState.drafts,
+        activeDraftId: nextState.activeDraftId,
       },
       updated_at: now,
     });
@@ -3087,9 +3467,9 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: error.message };
     }
 
-    setListingDrafts(nextDrafts);
-    setActiveDraftId(nextDraft.id);
-    return { ok: true, draft: nextDraft };
+    setListingDrafts(nextState.drafts);
+    setActiveDraftId(nextState.activeDraftId);
+    return { ok: true, draft: nextState.draft };
   }
 
   async function clearListingDraft(draftId = activeDraftId) {
@@ -3097,21 +3477,27 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: "You must be logged in to clear drafts." };
     }
 
-    const nextDrafts = listingDrafts.filter((draft) => draft.id !== draftId);
-    const nextActiveDraftId =
-      draftId === activeDraftId ? nextDrafts[0]?.id || null : activeDraftId;
+    const nextState = buildClearedDraftState({
+      drafts: listingDrafts,
+      activeDraftId,
+      draftId,
+    });
 
     if (!isSupabaseConfigured) {
-      setListingDrafts(nextDrafts);
-      setActiveDraftId(nextActiveDraftId);
+      setListingDrafts(nextState.drafts);
+      setActiveDraftId(nextState.activeDraftId);
+      persistSeedMarketplaceSnapshot({
+        listingDrafts: nextState.drafts,
+        activeDraftId: nextState.activeDraftId,
+      });
       return { ok: true };
     }
 
     const { error } = await supabase.from("listing_drafts").upsert({
       user_id: currentUserId,
       payload: {
-        drafts: nextDrafts,
-        activeDraftId: nextActiveDraftId,
+        drafts: nextState.drafts,
+        activeDraftId: nextState.activeDraftId,
       },
       updated_at: new Date().toISOString(),
     });
@@ -3120,8 +3506,8 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: error.message };
     }
 
-    setListingDrafts(nextDrafts);
-    setActiveDraftId(nextActiveDraftId);
+    setListingDrafts(nextState.drafts);
+    setActiveDraftId(nextState.activeDraftId);
     return { ok: true };
   }
 
@@ -3129,6 +3515,9 @@ export function MarketplaceProvider({ children }) {
     setActiveDraftId(draftId);
 
     if (!isSupabaseConfigured || !currentUserId) {
+      if (!isSupabaseConfigured) {
+        persistSeedMarketplaceSnapshot({ activeDraftId: draftId });
+      }
       return { ok: true };
     }
 
@@ -3248,7 +3637,42 @@ export function MarketplaceProvider({ children }) {
     }
 
     if (!isSupabaseConfigured) {
-      return { ok: false, error: "Supabase is not configured." };
+      const nowIso = new Date().toISOString();
+      const localListing = normalizeListingRecord({
+        id: `listing-${Date.now()}`,
+        sellerId: currentUserRecord.id,
+        seller: currentUserRecord,
+        sellerName: currentUserRecord.publicName || currentUserRecord.name,
+        title: payload.title,
+        type: payload.type || "WTS",
+        game: payload.game,
+        gameSlug: normalizeSupportedGameSlug(payload.game),
+        listingFormat: payload.listingFormat || "single",
+        bundleItems: Array.isArray(payload.bundleItems) ? payload.bundleItems : [],
+        acceptsTrade: Boolean(payload.acceptsTrade),
+        condition: payload.condition,
+        language: payload.language || "English",
+        quantity: Number(payload.quantity) || 1,
+        price: Number(payload.price) || 0,
+        neighborhood: payload.neighborhood,
+        postalCode: normalizePostalCode(payload.postalCode),
+        description: payload.description || "",
+        imageUrl: payload.imageUrl || "",
+        primaryImage: payload.imageUrl || "",
+        conditionImages: Array.isArray(payload.conditionImages) ? payload.conditionImages : [],
+        marketPrice: Number(payload.marketPrice) || 0,
+        marketPriceCurrency: payload.marketPriceCurrency || "CAD",
+        views: 0,
+        offers: 0,
+        featured: false,
+        flagged: false,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+        status: "active",
+      });
+
+      setListings((current) => [localListing, ...current]);
+      return { ok: true, listing: localListing };
     }
 
     const {
@@ -3898,14 +4322,24 @@ export function MarketplaceProvider({ children }) {
       for (const [index, file] of preparedFiles.entries()) {
         const extension = getFileExtension(file.name, file.type);
         const filePath = `chat/${threadId}/${currentUserId}/${Date.now()}-${index + 1}.${extension}`;
-        const uploadResult = await supabase.storage.from(MEDIA_BUCKET).upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: true,
-          contentType: file.type || undefined,
-        });
+          const uploadResult = await retryStorageUpload(
+            () =>
+              supabase.storage.from(MEDIA_BUCKET).upload(filePath, file, {
+                cacheControl: "3600",
+                upsert: true,
+                contentType: file.type || undefined,
+              })
+                .then(({ data, error }) => {
+                  if (error) {
+                    throw error;
+                  }
+                  return { data };
+                }),
+            { retries: 2, retryDelayMs: 300 },
+          ).catch((error) => ({ error }));
 
-        if (uploadResult.error) {
-          return {
+          if (uploadResult.error) {
+            return {
             ok: false,
             error:
               uploadResult.error.message ||
@@ -3964,6 +4398,39 @@ export function MarketplaceProvider({ children }) {
       return { ok: true, thread };
     }
 
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const response = await apiRequest("/api/messages/threads", {
+        method: "POST",
+        headers: session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {},
+        body: JSON.stringify({
+          listingId,
+          participantIds: uniqueParticipantIds,
+        }),
+      });
+
+      const existingServerThread =
+        threads.find((thread) => String(thread.id) === String(response.thread?.id)) || null;
+      const thread = mapThreadRow(response.thread, existingServerThread);
+      setThreads((current) => {
+        const alreadyExists = current.some((item) => String(item.id) === String(thread.id));
+        if (alreadyExists) {
+          return current.map((item) => (String(item.id) === String(thread.id) ? thread : item));
+        }
+        return [thread, ...current];
+      });
+      return { ok: true, thread };
+    } catch (error) {
+      if (!shouldFallbackToClientMutation(error, ["request failed", "failed to fetch"])) {
+        return { ok: false, error: error.message };
+      }
+    }
+
     const { data, error } = await supabase
       .from("message_threads")
       .insert({
@@ -3978,11 +4445,7 @@ export function MarketplaceProvider({ children }) {
     }
 
     const thread = {
-      id: data.id,
-      participantIds: data.participant_ids || [],
-      listingId: data.listing_id,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
+      ...mapThreadRow(data),
       messages: [],
     };
 
@@ -4117,11 +4580,18 @@ export function MarketplaceProvider({ children }) {
       : ensureAccountActive(
           "This account is suspended. Messaging is disabled until the suspension is lifted.",
         );
-    if (!access.ok) {
-      return access;
-    }
+      if (!access.ok) {
+        return access;
+      }
 
-    const thread = threads.find((item) => item.id === threadId);
+      if (!options.system) {
+        const rateGuard = guardMutationRate("messageSend", `${currentUserId || "anonymous"}:${threadId}`);
+        if (!rateGuard.ok) {
+          return rateGuard;
+        }
+      }
+
+      const thread = threads.find((item) => item.id === threadId);
     if (!thread || !currentUserId) {
       return { ok: false, error: "Conversation not found." };
     }
@@ -4205,29 +4675,69 @@ export function MarketplaceProvider({ children }) {
       ),
     );
 
-    const { data: insertedMessage, error: messageError } = await supabase
-      .from("messages")
-      .insert({
-        thread_id: threadId,
-        sender_id: options.senderId || currentUserId,
-        body: encodedBody,
-        read_by: [currentUserId],
-      })
-      .select("*")
-      .single();
+    let insertedMessage = null;
+    let usedBackendRoute = false;
 
-    if (messageError || !insertedMessage) {
-      setThreads((current) =>
-        current.map((item) =>
-          item.id === threadId
-            ? {
-                ...item,
-                messages: item.messages.filter((message) => message.id !== optimisticMessageId),
-              }
-            : item,
-        ),
-      );
-      return { ok: false, error: messageError.message };
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const response = await apiRequest(`/api/messages/threads/${threadId}/messages`, {
+        method: "POST",
+        headers: session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {},
+        body: JSON.stringify({
+          body: encodedBody,
+        }),
+      });
+
+      insertedMessage = response.message;
+      usedBackendRoute = true;
+    } catch (error) {
+      if (!shouldFallbackToClientMutation(error, ["request failed", "failed to fetch"])) {
+        setThreads((current) =>
+          current.map((item) =>
+            item.id === threadId
+              ? {
+                  ...item,
+                  messages: item.messages.filter((message) => message.id !== optimisticMessageId),
+                }
+              : item,
+          ),
+        );
+        return { ok: false, error: error.message };
+      }
+    }
+
+    if (!insertedMessage) {
+      const { data: fallbackMessage, error: messageError } = await supabase
+        .from("messages")
+        .insert({
+          thread_id: threadId,
+          sender_id: options.senderId || currentUserId,
+          body: encodedBody,
+          read_by: [currentUserId],
+        })
+        .select("*")
+        .single();
+
+      if (messageError || !fallbackMessage) {
+        setThreads((current) =>
+          current.map((item) =>
+            item.id === threadId
+              ? {
+                  ...item,
+                  messages: item.messages.filter((message) => message.id !== optimisticMessageId),
+                }
+              : item,
+          ),
+        );
+        return { ok: false, error: messageError.message };
+      }
+
+      insertedMessage = fallbackMessage;
     }
 
     setThreads((current) =>
@@ -4237,58 +4747,45 @@ export function MarketplaceProvider({ children }) {
               ...item,
               updatedAt: createdAt,
               messages: item.messages.map((message) =>
-                message.id === optimisticMessageId
-                  ? (() => {
-                      const parsedBody = parseMessageBody(insertedMessage.body);
-                      return {
-                        id: insertedMessage.id,
-                        senderId: insertedMessage.sender_id,
-                        body: parsedBody.preview,
-                        rawBody: parsedBody.rawBody,
-                        text: parsedBody.text,
-                        attachments: parsedBody.attachments,
-                        isRich: parsedBody.isRich,
-                        sentAt: insertedMessage.created_at,
-                        readBy: insertedMessage.read_by || [currentUserId],
-                      };
-                    })()
-                  : message,
+                message.id === optimisticMessageId ? mapMessageRow(insertedMessage) : message,
               ),
             }
           : item,
       ),
     );
 
-    const { error: threadError } = await supabase
-      .from("message_threads")
-      .update({ updated_at: createdAt })
-      .eq("id", threadId);
+    if (!usedBackendRoute) {
+      const { error: threadError } = await supabase
+        .from("message_threads")
+        .update({ updated_at: createdAt })
+        .eq("id", threadId);
 
-    if (threadError) {
-      setThreads((current) =>
-        current.map((item) =>
-          item.id === threadId
-            ? {
-                ...item,
-                messages: item.messages.filter((message) => message.id !== optimisticMessageId),
-              }
-            : item,
+      if (threadError) {
+        setThreads((current) =>
+          current.map((item) =>
+            item.id === threadId
+              ? {
+                  ...item,
+                  messages: item.messages.filter((message) => message.id !== optimisticMessageId),
+                }
+              : item,
+          ),
+        );
+        return { ok: false, error: threadError.message };
+      }
+
+      await Promise.all(
+        otherParticipantIds.map((userId) =>
+          pushNotification({
+            userId,
+            type: "message",
+            title: "New message",
+            body: `${currentUser?.publicName || currentUser?.name || "A buyer"} sent a new message.`,
+            entityId: threadId,
+          }),
         ),
       );
-      return { ok: false, error: threadError.message };
     }
-
-    await Promise.all(
-      otherParticipantIds.map((userId) =>
-        pushNotification({
-          userId,
-          type: "message",
-          title: "New message",
-          body: `${currentUser?.publicName || currentUser?.name || "A buyer"} sent a new message.`,
-          entityId: threadId,
-        }),
-      ),
-    );
 
     window.setTimeout(() => {
       void refreshMarketplaceData(currentUserId, { silent: true });
@@ -4372,11 +4869,16 @@ export function MarketplaceProvider({ children }) {
     const access = ensureAccountActive(
       "This account is suspended. Offers are disabled until the suspension is lifted.",
     );
-    if (!access.ok) {
-      return access;
-    }
+      if (!access.ok) {
+        return access;
+      }
 
-    const listing = listings.find((item) => item.id === payload.listingId);
+      const rateGuard = guardMutationRate("createOffer", `${currentUserId || "anonymous"}:${payload.listingId || "listing"}`);
+      if (!rateGuard.ok) {
+        return rateGuard;
+      }
+
+      const listing = listings.find((item) => item.id === payload.listingId);
     if (!listing) {
       return { ok: false, error: "Listing not found." };
     }
@@ -4442,6 +4944,45 @@ export function MarketplaceProvider({ children }) {
         { thread: threadResult.thread },
       );
       return { ok: true, offer, threadId: threadResult.thread.id };
+    }
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const response = await apiRequest("/api/offers", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.access_token || ""}`,
+        },
+        body: JSON.stringify({
+          listingId: payload.listingId,
+          offerType: payload.offerType,
+          cashAmount: normalizedCashAmount,
+          tradeItems: normalizedTradeItems,
+          note: String(payload.note || "").trim(),
+        }),
+      });
+
+      await sendMessage(
+        threadResult.thread.id,
+        buildOfferMessage({
+          buyerName: currentUser?.publicName || currentUser?.name,
+          offerType: payload.offerType,
+          cashAmount: normalizedCashAmount,
+          tradeItems: normalizedTradeItems,
+          note: payload.note,
+        }),
+        { system: true, thread: threadResult.thread },
+      );
+
+      await refreshMarketplaceData(currentUserId, { silent: true });
+      return { ok: true, offer: fromOfferRow(response.offer), threadId: threadResult.thread.id };
+    } catch (error) {
+      if (!shouldFallbackToClientMutation(error)) {
+        return { ok: false, error: error.message };
+      }
     }
 
     const offerInsertPayload = {
@@ -4512,45 +5053,30 @@ export function MarketplaceProvider({ children }) {
       }
 
     const access = ensureAccountActive();
-    if (!access.ok) {
-      return access;
+      if (!access.ok) {
+        return access;
+      }
+
+        const rateGuard = guardMutationRate("respondToOffer", `${currentUserId || "anonymous"}:${offerId}`);
+        if (!rateGuard.ok) {
+          return rateGuard;
+        }
+
+    const transition = resolveOfferResponse(offer, currentUserId, action, counterPayload);
+    if (!transition.ok) {
+      return transition;
     }
 
-      const isParticipant =
-        String(currentUserId) === String(offer.sellerId) ||
-        String(currentUserId) === String(offer.buyerId);
-      if (!isParticipant) {
-        return { ok: false, error: "You cannot respond to this offer." };
-      }
-
-      const lastActorId =
-        offer.lastActorId ||
-        (offer.status === "pending" ? offer.buyerId : offer.sellerId);
-
-      if (offer.status === "pending" && String(currentUserId) !== String(offer.sellerId)) {
-        return { ok: false, error: "Only the seller can respond to a new offer." };
-      }
-
-      if (
-        offer.status === "countered" &&
-        String(currentUserId) === String(lastActorId)
-      ) {
-        return { ok: false, error: "You cannot respond to your own counter offer." };
-      }
-
-      const nextStatus =
-        action === "accept" ? "accepted" : action === "decline" ? "declined" : "countered";
-    const nextUpdatedAt = new Date().toISOString();
-    const nextOfferType = counterPayload.offerType || offer.offerType;
-    const nextCashAmount =
-      counterPayload.cashAmount !== undefined
-        ? Number(counterPayload.cashAmount) || 0
-        : offer.cashAmount;
-    const nextTradeItems = Array.isArray(counterPayload.tradeItems)
-      ? counterPayload.tradeItems.filter(Boolean)
-      : offer.tradeItems;
-    const nextNote =
-      counterPayload.note !== undefined ? String(counterPayload.note || "") : offer.note;
+    const {
+      nextStatus,
+      nextOfferType,
+      nextCashAmount,
+      nextTradeItems,
+      nextNote,
+      nextUpdatedAt,
+      updatePayload,
+    } = transition;
+    const counterpartyUserId = getOfferCounterpartyId(offer, currentUserId);
 
     if (!isSupabaseConfigured) {
       setOffers((current) =>
@@ -4572,17 +5098,47 @@ export function MarketplaceProvider({ children }) {
       return { ok: true };
     }
 
-      const updatePayload = {
-        status: nextStatus,
-        last_actor_id: currentUserId,
-        updated_at: nextUpdatedAt,
-      };
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-    if (action === "counter") {
-      updatePayload.offer_type = nextOfferType;
-      updatePayload.cash_amount = nextCashAmount;
-      updatePayload.trade_items = nextTradeItems;
-      updatePayload.note = nextNote;
+      await apiRequest(`/api/offers/${offerId}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${session?.access_token || ""}`,
+        },
+        body: JSON.stringify({
+          action,
+          counterPayload,
+        }),
+      });
+
+      const threadResult = await findOrCreateThread({
+        otherUserId: counterpartyUserId,
+        listingId: offer.listingId,
+      });
+      if (threadResult.ok) {
+        await sendMessage(
+          threadResult.thread.id,
+          buildOfferMessage({
+            buyerName: currentUser?.publicName || currentUser?.name || "Seller",
+            offerType: nextOfferType,
+            cashAmount: nextCashAmount,
+            tradeItems: nextTradeItems,
+            note: nextNote,
+            status: nextStatus,
+          }),
+          { system: true, thread: threadResult.thread },
+        );
+      }
+
+      await refreshMarketplaceData(currentUserId, { silent: true });
+      return { ok: true };
+    } catch (error) {
+      if (!shouldFallbackToClientMutation(error)) {
+        return { ok: false, error: error.message };
+      }
     }
 
     let updateResult = await supabase.from("offers").update(updatePayload).eq("id", offerId);
@@ -4620,7 +5176,7 @@ export function MarketplaceProvider({ children }) {
     }
 
     await pushNotification({
-      userId: offer.buyerId,
+      userId: counterpartyUserId,
       type:
         nextStatus === "accepted"
           ? "offer-accepted"
@@ -4641,7 +5197,7 @@ export function MarketplaceProvider({ children }) {
     });
 
     const threadResult = await findOrCreateThread({
-      otherUserId: offer.buyerId,
+      otherUserId: counterpartyUserId,
       listingId: offer.listingId,
     });
     if (threadResult.ok) {
@@ -4671,11 +5227,19 @@ export function MarketplaceProvider({ children }) {
     const access = ensureAccountActive(
       "This account is suspended. Reporting stays disabled until the suspension is reviewed.",
     );
-    if (!access.ok) {
-      return access;
-    }
+      if (!access.ok) {
+        return access;
+      }
 
-    const reasonLabel =
+      const rateGuard = guardMutationRate(
+        "submitReport",
+        `${currentUserId || "anonymous"}:${payload.targetType || payload.listingId || payload.sellerId || "report"}`,
+      );
+      if (!rateGuard.ok) {
+        return rateGuard;
+      }
+
+      const reasonLabel =
       {
         "fake-card": "Fake or proxy suspected",
         "misleading-condition": "Misleading condition",
@@ -4697,6 +5261,33 @@ export function MarketplaceProvider({ children }) {
       });
       setReports((current) => [report, ...current]);
       return { ok: true, report };
+    }
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const response = await apiRequest("/api/reports", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.access_token || ""}`,
+        },
+        body: JSON.stringify({
+          listingId: payload.listingId,
+          sellerId: payload.sellerId,
+          reason: payload.reason,
+          details: payload.details,
+          targetType: payload.targetType || "listing",
+        }),
+      });
+
+      await refreshMarketplaceData(currentUserId);
+      return { ok: true, report: fromReportRow(response.report) };
+    } catch (error) {
+      if (!shouldFallbackToClientMutation(error)) {
+        return { ok: false, error: error.message };
+      }
     }
 
     const { data, error } = await supabase
@@ -4836,11 +5427,16 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: "You must be logged in to submit a bug report." };
     }
 
-    if (!isBetaTester) {
-      return { ok: false, error: "Only beta testers can access the bug tracker." };
-    }
+      if (!isBetaTester) {
+        return { ok: false, error: "Only beta testers can access the bug tracker." };
+      }
 
-    const title = String(payload.title || "").trim();
+      const rateGuard = guardMutationRate("submitBugReport", currentUserId || "anonymous");
+      if (!rateGuard.ok) {
+        return rateGuard;
+      }
+
+      const title = String(payload.title || "").trim();
     const actualBehavior = String(payload.actualBehavior || "").trim();
     const reproductionSteps = String(payload.reproductionSteps || "").trim();
 
@@ -4876,6 +5472,39 @@ export function MarketplaceProvider({ children }) {
     if (!isSupabaseConfigured) {
       setBugReports((current) => [nextBugReport, ...current]);
       return { ok: true, bugReport: nextBugReport, warning: "Saved locally only." };
+    }
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const response = await apiRequest("/api/bug-reports", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.access_token || ""}`,
+        },
+        body: JSON.stringify({
+          title,
+          area: payload.area || "general",
+          severity: payload.severity || "medium",
+          pagePath: String(payload.pagePath || "").trim(),
+          expectedBehavior: String(payload.expectedBehavior || "").trim(),
+          actualBehavior,
+          reproductionSteps,
+          environmentLabel: String(payload.environmentLabel || "").trim(),
+          screenshotUrl: String(payload.screenshotUrl || "").trim(),
+        }),
+      });
+
+      await refreshMarketplaceData(currentUserId, { silent: true });
+      return { ok: true, bugReport: fromBugReportRow(response.bugReport) };
+    } catch (error) {
+      if (
+        !shouldFallbackToClientMutation(error, ["BUG_REPORTS_TABLE_MISSING"])
+      ) {
+        return { ok: false, error: error.message };
+      }
     }
 
     const insertPayload = {

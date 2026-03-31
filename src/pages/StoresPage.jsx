@@ -1,6 +1,7 @@
 import { ArrowRight, CalendarRange, MapPin, ShieldCheck } from "lucide-react";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
+import SeoHead from "../components/seo/SeoHead";
 import { storeProfiles } from "../data/storefrontData";
 import { useMarketplace } from "../hooks/useMarketplace";
 
@@ -19,6 +20,12 @@ export default function StoresPage() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
+      <SeoHead
+        canonicalPath="/stores"
+        description="Browse approved Winnipeg card shops used for meetups, local events, and trusted store-based TCG deals."
+        title="Browse Stores"
+        type="website"
+      />
       <section className="console-shell p-4 sm:p-7">
         <p className="section-kicker">Meetup Spots</p>
         <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.05em] text-ink sm:text-[3.2rem]">

@@ -187,45 +187,46 @@ export default function Header({
     <>
       <header className="app-header-chrome sticky top-0 z-40 border-b backdrop-blur-2xl">
         <div className="page-shell py-0.5 sm:py-1">
-          <div className="console-panel px-2.5 py-2 sm:px-4 sm:py-1.5">
-          <div className="relative flex items-center justify-between gap-2 sm:hidden">
+          <div className="console-panel px-2 py-1.5 sm:px-4 sm:py-1.5">
+          <div className="relative flex items-center justify-between gap-1 sm:hidden">
             <div className="shrink-0">
               {onToggleColorMode ? (
                 <button
                   aria-label={colorMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-                  className="inline-flex h-12 w-12 items-center justify-center rounded-[18px] border border-[rgba(145,38,43,0.12)] bg-[var(--surface-solid)] text-steel transition hover:border-slate-300 hover:text-ink"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-[12px] border border-[rgba(145,38,43,0.12)] bg-[var(--surface-solid)] text-steel transition hover:border-slate-300 hover:text-ink"
                   type="button"
                   onClick={onToggleColorMode}
                 >
-                  <ColorModeIcon size={18} />
+                  <ColorModeIcon size={15} />
                 </button>
               ) : (
-                <div className="h-12 w-12" />
+                <div className="h-9 w-9" />
               )}
             </div>
 
             <Link className="pointer-events-auto absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" to="/">
               <BrandLogo
                 className="inline-flex"
-                imgClassName="h-[3.25rem] w-auto max-w-[11.5rem] object-contain"
+                imgClassName="h-[clamp(1.85rem,7vw,2.25rem)] w-auto max-w-[clamp(6.9rem,30vw,8.6rem)] object-contain"
               />
             </Link>
 
-            <div className="flex shrink-0 items-center justify-end gap-1.5">
+            <div className="flex shrink-0 items-center justify-end gap-1">
               <Link
-                className="relative inline-flex h-12 w-12 items-center justify-center rounded-[18px] border border-[rgba(203,220,231,0.92)] bg-[var(--surface-solid)] text-steel transition hover:border-slate-300 hover:text-ink"
+                aria-label="Open messages"
+                className="relative inline-flex h-9 w-9 items-center justify-center rounded-[12px] border border-[rgba(203,220,231,0.92)] bg-[var(--surface-solid)] text-steel transition hover:border-slate-300 hover:text-ink"
                 to="/messages"
               >
-                <MessageCircle size={18} />
+                <MessageCircle size={15} />
                 {safeUnreadMessageCount ? (
-                  <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-orange px-1 text-[0.65rem] font-semibold text-white">
+                  <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-orange px-1 text-[0.58rem] font-semibold text-white">
                     {safeUnreadMessageCount}
                   </span>
                 ) : null}
               </Link>
 
               <button
-                className="rounded-[18px] bg-orange px-5 py-3 text-[1rem] font-semibold text-white shadow-soft transition hover:bg-[#d8332d]"
+                className="rounded-[12px] bg-orange px-3.5 py-2 text-[0.88rem] font-semibold text-white shadow-soft transition hover:bg-[#d8332d]"
                 type="button"
                 onClick={() => openListing("WTS", "/dashboard")}
               >
@@ -234,11 +235,11 @@ export default function Header({
 
               <button
                 aria-label="Open navigation menu"
-                className="inline-flex h-12 w-12 items-center justify-center rounded-[18px] border border-[rgba(203,220,231,0.92)] bg-[var(--surface-solid)] text-steel transition hover:border-slate-300 hover:text-ink"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-[12px] border border-[rgba(203,220,231,0.92)] bg-[var(--surface-solid)] text-steel transition hover:border-slate-300 hover:text-ink"
                 type="button"
                 onClick={() => setMobileDrawerOpen(true)}
               >
-                <Menu size={18} />
+                <Menu size={15} />
               </button>
             </div>
           </div>
@@ -278,6 +279,7 @@ export default function Header({
 
             <div className="flex shrink-0 items-center justify-end gap-1.5 self-start pt-1 sm:pt-2">
               <Link
+                aria-label="Open messages"
                 className="relative inline-flex items-center justify-center rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 p-2 text-steel transition hover:border-slate-300 hover:text-ink md:px-4 md:py-2.5"
                 to="/messages"
               >
@@ -386,13 +388,13 @@ export default function Header({
             </div>
           </div>
 
-          <form className="relative mt-0 min-w-0" onSubmit={handleSubmit}>
+          <form className="relative mt-1 min-w-0 sm:mt-0" onSubmit={handleSubmit}>
             <Search
-              className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-steel"
-              size={18}
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-steel sm:left-5"
+              size={17}
             />
             <input
-            className="w-full rounded-[18px] border border-[rgba(145,38,43,0.12)] bg-[var(--input-bg)] py-3 pl-11 pr-4 text-sm text-ink outline-none transition focus:border-navy focus:bg-[var(--surface-solid)] sm:rounded-[20px] sm:py-3.5"
+            className="w-full rounded-[13px] border border-[rgba(145,38,43,0.12)] bg-[var(--input-bg)] py-2.25 pl-10 pr-3 text-[0.88rem] text-ink outline-none transition focus:border-navy focus:bg-[var(--surface-solid)] sm:rounded-[20px] sm:py-3.5 sm:pl-11 sm:pr-4 sm:text-sm"
               placeholder="Search cards, set codes, variants, or sellers"
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}

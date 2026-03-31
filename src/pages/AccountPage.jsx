@@ -1,10 +1,13 @@
 import { AlertTriangle, LockKeyhole, MapPin, ShieldCheck, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ProfileWorkspaceNav from "../components/account/ProfileWorkspaceNav";
+import SeoHead from "../components/seo/SeoHead";
 import { neighborhoods } from "../data/mockData";
 import { approvedMeetupSpots } from "../data/storefrontData";
 import { useMarketplace } from "../hooks/useMarketplace";
 import UserAvatar from "../components/shared/UserAvatar";
+import { trackEvent } from "../lib/analytics";
 
 const GAME_OPTIONS = [
   "Magic",
@@ -118,6 +121,12 @@ export default function AccountPage() {
       return;
     }
 
+    trackEvent("profile_settings_saved", {
+      defaultListingGame: profileForm.defaultListingGame,
+      favoriteGameCount: profileForm.favoriteGames.length,
+      trustedMeetupSpotCount: profileForm.trustedMeetupSpots.length,
+      hasAvatarUpload: Boolean(avatarFile),
+    });
     setProfileMessage(result.warning || "Account location details updated.");
     setAvatarFile(null);
     if (typeof result.avatarUrl === "string") {
@@ -174,10 +183,17 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <section className="surface-card p-7">
+    <main className="space-y-8">
+      <SeoHead
+        canonicalPath="/account"
+        description="Manage your TCG WPG Marketplace account settings, meetup area, seller bio, and password."
+        title="Account Settings"
+        type="profile"
+      />
+      <ProfileWorkspaceNav sellerId={currentUser?.id} />
+      <section aria-labelledby="account-settings-heading" className="surface-card p-7">
         <p className="section-kicker">Account</p>
-        <h1 className="mt-3 font-display text-5xl font-semibold tracking-[-0.05em] text-ink">
+        <h1 className="mt-3 font-display text-5xl font-semibold tracking-[-0.05em] text-ink" id="account-settings-heading">
           Manage your local account
         </h1>
         <p className="mt-4 max-w-4xl text-base leading-8 text-steel">
@@ -203,12 +219,12 @@ export default function AccountPage() {
       ) : null}
 
       <section className="grid items-start gap-7 xl:grid-cols-[0.92fr_1.08fr]">
-        <article className="surface-card self-start p-6">
+        <article aria-labelledby="account-identity-heading" className="surface-card self-start p-6">
           <div className="flex items-center gap-3">
             <ShieldCheck className="text-navy" size={20} />
             <div>
               <p className="section-kicker">Identity</p>
-              <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+              <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink" id="account-identity-heading">
                 Locked profile details
               </h2>
             </div>
@@ -261,12 +277,12 @@ export default function AccountPage() {
         </article>
 
         <div className="space-y-7">
-          <article className="surface-card p-6">
+          <article aria-labelledby="account-meetup-heading" className="surface-card p-6">
             <div className="flex items-center gap-3">
               <MapPin className="text-orange" size={20} />
               <div>
                 <p className="section-kicker">Meetup Area</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink" id="account-meetup-heading">
                   Neighborhood and postal code
                 </h2>
               </div>
@@ -538,12 +554,12 @@ export default function AccountPage() {
             </form>
           </article>
 
-          <article className="surface-card p-6">
+          <article aria-labelledby="account-security-heading" className="surface-card p-6">
             <div className="flex items-center gap-3">
               <LockKeyhole className="text-navy" size={20} />
               <div>
                 <p className="section-kicker">Security</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink" id="account-security-heading">
                   Change password
                 </h2>
               </div>
@@ -619,12 +635,12 @@ export default function AccountPage() {
           </article>
 
           {isSuspended ? (
-            <article className="surface-card p-6">
+            <article aria-labelledby="account-appeal-heading" className="surface-card p-6">
               <div className="flex items-center gap-3">
                 <AlertTriangle className="text-rose-700" size={20} />
                 <div>
                   <p className="section-kicker">Appeal</p>
-                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink" id="account-appeal-heading">
                     Request review
                   </h2>
                 </div>
@@ -663,12 +679,12 @@ export default function AccountPage() {
             </article>
           ) : null}
 
-          <article className="surface-card p-6">
+          <article aria-labelledby="account-delete-heading" className="surface-card p-6">
             <div className="flex items-center gap-3">
               <Trash2 className="text-rose-700" size={20} />
               <div>
                 <p className="section-kicker">Delete account</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
+                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink" id="account-delete-heading">
                   Remove this account
                 </h2>
               </div>
@@ -686,11 +702,14 @@ export default function AccountPage() {
               <button
                 className="rounded-full bg-rose-600 px-6 py-3 text-sm font-semibold text-white"
                 type="button"
-                onClick={async () => {
-                  setDeleteError("");
-                  const result = await deleteCurrentUserAccount();
-                  if (!result.ok) {
-                    setDeleteError(result.error);
+                  onClick={async () => {
+                    setDeleteError("");
+                    trackEvent("account_delete_requested", {
+                      userId: currentUser?.id || null,
+                    });
+                    const result = await deleteCurrentUserAccount();
+                    if (!result.ok) {
+                      setDeleteError(result.error);
                     return;
                   }
                   navigate("/");
@@ -702,7 +721,7 @@ export default function AccountPage() {
           </article>
         </div>
       </section>
-    </div>
+    </main>
   );
 }
 

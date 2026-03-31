@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import ListingCard from "../components/cards/ListingCard";
 import ReviewModal from "../components/modals/ReviewModal";
+import SeoHead from "../components/seo/SeoHead";
 import UserAvatar from "../components/shared/UserAvatar";
 import EmptyState from "../components/ui/EmptyState";
 import PageSkeleton from "../components/ui/PageSkeleton";
@@ -21,16 +22,11 @@ const bannerToneMap = {
 };
 
 const sellerBannerArtMap = {
-  pokemon:
-    "https://www.metagames.toys/cdn/shop/collections/Imagens_das_categorias_1880_x_500_px_b14a0c20-da0b-49e9-8d5c-d2dc020a6e1a.png?v=1718376850&width=1100",
-  magic:
-    "https://static.posters.cz/image/hp/77610.jpg",
-  "one-piece":
-    "https://www.beserk.com.au/cdn/shop/files/2023_Header_One-Piece.jpg?v=1693436857&width=1500",
-  "dragon-ball-fusion-world":
-    "https://www.gametrade.it/images/testate/dbsfusion_testata.jpg",
-  "union-arena":
-    "https://www.japangoodz.com/cdn/shop/files/UNION_ARENA_BANNER__PC__JAPANGOODZ.jpg?v=1745136537&width=1849",
+  pokemon: "/hero/pokemon-hero.png",
+  magic: "/hero/magic-hero.jpg",
+  "one-piece": "/hero/one-piece-hero.jpg",
+  "dragon-ball-fusion-world": "/hero/fusion-world-hero.jpg",
+  "union-arena": "/hero/union-arena-hero.jpg",
 };
 
 export default function SellerProfilePage() {
@@ -76,21 +72,68 @@ export default function SellerProfilePage() {
   const sellerBannerArt = seller ? sellerBannerArtMap[seller.bannerStyle] : "";
 
   if (loading && !seller) {
-    return <PageSkeleton cards={4} titleWidth="w-72" />;
+    return (
+      <>
+        <SeoHead title="Seller Profile" canonicalPath={`/seller/${sellerId || ""}`} type="profile" />
+        <PageSkeleton cards={4} titleWidth="w-72" />
+      </>
+    );
   }
 
   if (!seller) {
     return (
-      <EmptyState
-        description="The seller profile may not exist yet in local storage."
-        title="Seller Not Found"
-      />
+      <>
+        <SeoHead title="Seller Not Found" canonicalPath={`/seller/${sellerId || ""}`} type="profile" />
+        <EmptyState
+          description="The seller profile may not exist yet in local storage."
+          title="Seller Not Found"
+        />
+      </>
     );
   }
 
+  const sellerStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: seller.publicName || seller.name,
+    description: seller.bio,
+    url: `https://tcgwpg.com/seller/${seller.id}`,
+    image: seller.avatarUrl || undefined,
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: seller.neighborhood || "Winnipeg",
+      addressRegion: "MB",
+      addressCountry: "CA",
+    },
+    knowsAbout: seller.favoriteGames,
+    interactionStatistic: [
+      {
+        "@type": "InteractionCounter",
+        interactionType: "https://schema.org/FollowAction",
+        userInteractionCount: followerCount,
+      },
+    ],
+    aggregateRating:
+      seller.reviewCount > 0
+        ? {
+            "@type": "AggregateRating",
+            ratingValue: Number(seller.overallRating || 0).toFixed(1),
+            reviewCount: seller.reviewCount,
+          }
+        : undefined,
+  };
+
   return (
-    <div className="space-y-5 sm:space-y-8">
-      <section className="console-panel overflow-hidden">
+    <main className="space-y-5 sm:space-y-8">
+      <SeoHead
+        canonicalPath={`/seller/${seller.id}`}
+        description={`${seller.publicName || seller.name} is a local ${seller.favoriteGames.join(", ") || "TCG"} seller on TCG WPG Marketplace with ${seller.reviewCount} review${seller.reviewCount === 1 ? "" : "s"} and ${followerCount} follower${followerCount === 1 ? "" : "s"}.`}
+        title={seller.publicName || seller.name}
+        type="profile"
+        image={seller.avatarUrl || sellerBannerArt || undefined}
+        jsonLd={sellerStructuredData}
+      />
+      <section aria-labelledby="seller-profile-heading" className="console-panel overflow-hidden">
         <div
           className={`relative overflow-hidden bg-gradient-to-r ${bannerToneMap[seller.bannerStyle] || bannerToneMap.neutral} p-4 text-white sm:p-8`}
         >
@@ -116,7 +159,10 @@ export default function SellerProfilePage() {
                 />
                 <div>
                   <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-                    <h1 className="font-display text-[1.85rem] font-semibold tracking-[-0.05em] sm:text-4xl">
+                    <h1
+                      className="font-display text-[1.85rem] font-semibold tracking-[-0.05em] sm:text-4xl"
+                      id="seller-profile-heading"
+                    >
                       {seller.publicName || seller.name}
                     </h1>
                     {seller.verified ? (
@@ -270,75 +316,92 @@ export default function SellerProfilePage() {
         </div>
       </section>
 
-      <section className="space-y-4 sm:space-y-5">
+      <section aria-labelledby="seller-listings-heading" className="space-y-4 sm:space-y-5">
         <div>
           <p className="section-kicker">Storefront</p>
-          <h2 className="section-title mt-2">Active listings</h2>
+          <h2 className="section-title mt-2" id="seller-listings-heading">Active listings</h2>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {sellerListings.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
-          ))}
+          {sellerListings.length ? (
+            sellerListings.map((listing) => <ListingCard key={listing.id} listing={listing} />)
+          ) : (
+            <div className="sm:col-span-2 xl:col-span-4">
+              <EmptyState
+                title="No active listings"
+                description="This seller does not have any live listings right now."
+              />
+            </div>
+          )}
         </div>
       </section>
 
-      <section className="space-y-4 sm:space-y-5">
+      <section aria-labelledby="seller-reviews-heading" className="space-y-4 sm:space-y-5">
         <div>
           <p className="section-kicker">Buyer reviews</p>
-          <h2 className="section-title mt-2">Recent feedback</h2>
+          <h2 className="section-title mt-2" id="seller-reviews-heading">Recent feedback</h2>
         </div>
         {deleteReviewError ? (
           <p className="text-sm font-semibold text-rose-700">{deleteReviewError}</p>
         ) : null}
         <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
-          {sellerReviews.map((review) => (
-            <article
-              key={review.id}
-              className="rounded-[20px] border border-slate-200 bg-white p-4 shadow-soft sm:rounded-[28px] sm:p-5"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="font-display text-[1.05rem] font-semibold tracking-[-0.03em] text-ink sm:text-xl">
-                    {review.author}
-                  </p>
-                  <p className="mt-1 text-[0.8rem] text-steel sm:text-sm">{review.createdAt}</p>
+          {sellerReviews.length ? (
+            sellerReviews.map((review) => (
+              <article
+                key={review.id}
+                className="rounded-[20px] border border-slate-200 bg-white p-4 shadow-soft sm:rounded-[28px] sm:p-5"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-display text-[1.05rem] font-semibold tracking-[-0.03em] text-ink sm:text-xl">
+                      {review.author}
+                    </p>
+                    <p className="mt-1 text-[0.8rem] text-steel sm:text-sm">{review.createdAt}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <RatingStars value={review.rating} />
+                    {isAdmin ? (
+                      <button
+                        aria-label={`Remove review from ${review.author}`}
+                        className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-rose-700 sm:px-3 sm:text-xs sm:tracking-[0.18em]"
+                        type="button"
+                        onClick={async () => {
+                          setDeleteReviewError("");
+                          const result = await deleteReview(review.id);
+                          if (!result?.ok) {
+                            setDeleteReviewError(result?.error || "Review could not be removed.");
+                          }
+                        }}
+                      >
+                        <Trash2 size={13} />
+                        Remove
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <RatingStars value={review.rating} />
-                  {isAdmin ? (
-                    <button
-                      className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-rose-700 sm:px-3 sm:text-xs sm:tracking-[0.18em]"
-                      type="button"
-                      onClick={async () => {
-                        setDeleteReviewError("");
-                        const result = await deleteReview(review.id);
-                        if (!result?.ok) {
-                          setDeleteReviewError(result?.error || "Review could not be removed.");
-                        }
-                      }}
-                    >
-                      <Trash2 size={13} />
-                      Remove
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-              <p className="mt-3 text-[0.92rem] text-steel sm:mt-4 sm:text-base">{review.comment}</p>
-              {review.imageUrl ? (
-                <img
-                  alt={`Review from ${review.author}`}
-                  className="mt-3 h-44 w-full rounded-[18px] border border-slate-200 object-cover sm:mt-4 sm:h-56 sm:rounded-[22px]"
-                  src={review.imageUrl}
-                />
-              ) : null}
-            </article>
-          ))}
+                <p className="mt-3 text-[0.92rem] text-steel sm:mt-4 sm:text-base">{review.comment}</p>
+                {review.imageUrl ? (
+                  <img
+                    alt={`Review from ${review.author}`}
+                    className="mt-3 h-44 w-full rounded-[18px] border border-slate-200 object-cover sm:mt-4 sm:h-56 sm:rounded-[22px]"
+                    src={review.imageUrl}
+                  />
+                ) : null}
+              </article>
+            ))
+          ) : (
+            <div className="lg:col-span-2">
+              <EmptyState
+                title="No reviews yet"
+                description="This seller has not received any buyer feedback yet."
+              />
+            </div>
+          )}
         </div>
       </section>
 
       {isReviewModalOpen && !isOwnProfile ? (
         <ReviewModal seller={seller} onClose={() => setReviewModalOpen(false)} />
       ) : null}
-    </div>
+    </main>
   );
 }
