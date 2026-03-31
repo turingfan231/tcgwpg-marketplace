@@ -61,8 +61,8 @@ function ThreadCard({ formatCadPrice, isActive, offerCount, onOpen, thread }) {
     <button
       className={`group w-full rounded-[20px] border px-3 py-3 text-left transition sm:rounded-[26px] sm:px-4 sm:py-4 ${
         isActive
-          ? "border-navy/15 bg-[linear-gradient(180deg,rgba(19,48,65,0.08),rgba(255,255,255,0.98))] shadow-soft"
-          : "border-[rgba(203,220,231,0.72)] bg-white/92 hover:border-navy/20 hover:-translate-y-[1px] hover:shadow-soft"
+          ? "border-navy/15 bg-[linear-gradient(180deg,rgba(var(--theme-primary-rgb),0.12),var(--surface-solid))] shadow-soft"
+          : "border-[rgba(203,220,231,0.72)] bg-[var(--surface-solid)] hover:border-navy/20 hover:-translate-y-[1px] hover:shadow-soft"
       }`}
       type="button"
       onClick={onOpen}
@@ -141,7 +141,7 @@ function ListingThreadCard({ formatCadPrice, listing, otherParticipant }) {
   }
 
   return (
-    <div className="mx-4 mt-4 rounded-[24px] border border-[rgba(203,220,231,0.88)] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(238,245,249,0.92))] p-3 shadow-soft sm:mx-6 sm:rounded-[28px] sm:p-4">
+      <div className="mx-4 mt-4 rounded-[24px] border border-[rgba(203,220,231,0.88)] bg-[linear-gradient(180deg,var(--surface-solid),var(--surface-alt))] p-3 shadow-soft sm:mx-6 sm:rounded-[28px] sm:p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <CardArtwork
           className="h-20 w-16 shrink-0 rounded-[18px] object-cover sm:h-28 sm:w-24 sm:rounded-[22px]"
@@ -202,7 +202,7 @@ function ListingThreadCard({ formatCadPrice, listing, otherParticipant }) {
                 {formatCadPrice(listing.price, listing.priceCurrency)}
               </span>
               <Link
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-navy/20 hover:text-ink"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-[var(--surface-solid)] px-4 py-2 text-sm font-semibold text-steel transition hover:border-navy/20 hover:text-ink"
                 to={`/listing/${listing.id}`}
               >
                 Open listing
@@ -233,7 +233,7 @@ function OfferTimeline({
   }
 
   return (
-    <div className="mx-4 mt-4 rounded-[28px] border border-[rgba(177,29,35,0.16)] bg-[linear-gradient(180deg,rgba(255,248,248,0.98),rgba(249,240,240,0.94))] p-4 shadow-soft sm:mx-6">
+      <div className="mx-4 mt-4 rounded-[28px] border border-[rgba(177,29,35,0.16)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface-solid)_88%,rgba(var(--theme-primary-rgb),0.12)),var(--surface-alt))] p-4 shadow-soft sm:mx-6">
       <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-steel">
         <BellRing size={14} />
         Deal flow
@@ -257,7 +257,7 @@ function OfferTimeline({
           return (
             <div
               key={offer.id}
-              className="rounded-[22px] border border-[rgba(203,220,231,0.86)] bg-white/95 px-4 py-4"
+              className="rounded-[22px] border border-[rgba(203,220,231,0.86)] bg-[var(--surface-solid)] px-4 py-4"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -287,7 +287,7 @@ function OfferTimeline({
                       Accept
                     </button>
                     <button
-                      className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                      className="rounded-full border border-slate-200 bg-[var(--surface-solid)] px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
                       type="button"
                       onClick={() => void onDecline(offer.id)}
                     >
@@ -303,14 +303,14 @@ function OfferTimeline({
                   </div>
 
                   {counterDraft ? (
-                    <div className="mt-4 rounded-[20px] border border-slate-200 bg-[#f9fcfe] p-4">
+                    <div className="mt-4 rounded-[20px] border border-slate-200 bg-[var(--surface-alt)] p-4">
                       <div className="grid gap-3 md:grid-cols-2">
                         <label className="block">
                           <span className="mb-2 block text-sm font-semibold text-steel">
                             {isSeller ? "Counter type" : "Reply type"}
                           </span>
                           <select
-                            className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-navy"
+                            className="w-full rounded-[18px] border border-slate-200 bg-[var(--surface-solid)] px-4 py-3 text-sm outline-none transition focus:border-navy"
                             value={counterDraft.offerType}
                             onChange={(event) =>
                               onChangeCounterDraft(offer.id, "offerType", event.target.value)
@@ -330,7 +330,7 @@ function OfferTimeline({
                             <input
                               min="0"
                               step="0.01"
-                              className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-navy"
+                              className="w-full rounded-[18px] border border-slate-200 bg-[var(--surface-solid)] px-4 py-3 text-sm outline-none transition focus:border-navy"
                               type="number"
                               value={counterDraft.cashAmount}
                               onChange={(event) =>
@@ -346,7 +346,7 @@ function OfferTimeline({
                               Trade items
                             </span>
                             <textarea
-                              className="min-h-24 w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-navy"
+                              className="min-h-24 w-full rounded-[18px] border border-slate-200 bg-[var(--surface-solid)] px-4 py-3 text-sm outline-none transition focus:border-navy"
                               value={counterDraft.tradeItems}
                               onChange={(event) =>
                                 onChangeCounterDraft(offer.id, "tradeItems", event.target.value)
@@ -360,7 +360,7 @@ function OfferTimeline({
                             {isSeller ? "Counter note" : "Reply note"}
                           </span>
                           <textarea
-                            className="min-h-24 w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-navy"
+                            className="min-h-24 w-full rounded-[18px] border border-slate-200 bg-[var(--surface-solid)] px-4 py-3 text-sm outline-none transition focus:border-navy"
                             value={counterDraft.note}
                             onChange={(event) =>
                               onChangeCounterDraft(offer.id, "note", event.target.value)
@@ -378,7 +378,7 @@ function OfferTimeline({
                           {offer.status === "countered" ? "Send reply counter" : "Send counter"}
                         </button>
                         <button
-                          className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                          className="rounded-full border border-slate-200 bg-[var(--surface-solid)] px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
                           type="button"
                           onClick={() => onCancelCounter(offer.id)}
                         >
@@ -815,7 +815,7 @@ export default function MessagesPage() {
           showMobileThread ? "hidden lg:block" : "block"
         }`}
       >
-        <div className="sticky top-0 z-10 border-b border-slate-200/80 bg-[rgba(247,242,242,0.92)] px-2 pb-3 pt-1 backdrop-blur-xl sm:static sm:bg-transparent sm:px-5 sm:py-5">
+            <div className="sticky top-0 z-10 border-b border-slate-200/80 bg-[linear-gradient(180deg,var(--surface-solid),var(--surface-alt))] px-2 pb-3 pt-1 backdrop-blur-xl sm:static sm:bg-transparent sm:px-5 sm:py-5">
           <p className="section-kicker hidden sm:block">Messages</p>
           <h1 className="mt-1 font-display text-[1.45rem] font-semibold tracking-[-0.04em] text-ink sm:mt-2 sm:text-[2rem]">
             Inbox
@@ -823,7 +823,7 @@ export default function MessagesPage() {
           <p className="mt-1 max-w-sm text-[0.86rem] leading-5 text-steel sm:mt-2 sm:text-sm sm:leading-6">
             Keep listings, offers, and meetup details together instead of scattered across DMs.
           </p>
-          <div className="mt-3 rounded-[18px] border border-[rgba(203,220,231,0.88)] bg-white/96 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] sm:mt-4 sm:rounded-[20px]">
+          <div className="mt-3 rounded-[18px] border border-[rgba(203,220,231,0.88)] bg-[var(--surface-solid)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] sm:mt-4 sm:rounded-[20px]">
             <div className="flex items-center gap-3">
               <Search size={16} className="text-steel" />
               <input
@@ -845,7 +845,7 @@ export default function MessagesPage() {
                 className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-semibold transition sm:px-4 ${
                   threadFilter === filter.id
                     ? "bg-navy text-white shadow-sm"
-                    : "border border-slate-200 bg-white text-steel hover:border-navy/20 hover:text-ink"
+                    : "border border-slate-200 bg-[var(--surface-solid)] text-steel hover:border-navy/20 hover:text-ink"
                 }`}
                 type="button"
                 onClick={() => setThreadFilter(filter.id)}
@@ -926,7 +926,7 @@ export default function MessagesPage() {
               <div className="sm:hidden">
                 <div className="flex items-center gap-2">
                   <button
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-steel"
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-[var(--surface-solid)] text-steel"
                     type="button"
                     onClick={() => navigate("/messages")}
                   >
@@ -948,7 +948,7 @@ export default function MessagesPage() {
                   </div>
                   {activeThread.listing ? (
                     <Link
-                      className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-steel"
+                      className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-[var(--surface-solid)] px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-steel"
                       to={`/listing/${activeThread.listing.id}`}
                     >
                       Open
@@ -1003,7 +1003,7 @@ export default function MessagesPage() {
             </div>
 
             {isDesktop ? (
-              <div className="border-b border-slate-200/70 bg-white/55 px-6 py-3">
+              <div className="border-b border-slate-200/70 bg-[var(--surface-alt)] px-6 py-3">
                 <div className="flex flex-wrap items-center gap-2.5">
                   {activeThread.listing ? (
                     <>
@@ -1028,7 +1028,7 @@ export default function MessagesPage() {
                         />
                       </button>
                       <Link
-                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-steel transition hover:border-navy/20 hover:text-ink"
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-[var(--surface-solid)] px-3.5 py-2 text-sm font-semibold text-steel transition hover:border-navy/20 hover:text-ink"
                         to={`/listing/${activeThread.listing.id}`}
                       >
                         {formatCadPrice(
@@ -1176,7 +1176,7 @@ export default function MessagesPage() {
                         className={`max-w-[min(44rem,88%)] rounded-[20px] px-3 py-2.5 shadow-[0_18px_34px_-28px_rgba(17,39,56,0.45)] sm:rounded-[24px] sm:px-4 sm:py-3 ${
                           mine
                             ? "bg-[linear-gradient(180deg,#f03737,#d32d2d)] text-white"
-                            : "border border-white/70 bg-white/92 text-ink"
+                            : "border border-white/70 bg-[var(--surface-solid)] text-ink"
                         }`}
                       >
                         {message.attachments?.length ? (
@@ -1223,10 +1223,10 @@ export default function MessagesPage() {
             </div>
 
             <form
-              className="sticky bottom-0 z-10 border-t border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(241,246,249,0.94))] px-3 py-2 backdrop-blur-xl sm:static sm:px-6 sm:py-4 sm:backdrop-blur-0"
+              className="sticky bottom-0 z-10 border-t border-slate-200/80 bg-[linear-gradient(180deg,var(--surface-solid),var(--surface-alt))] px-3 py-2 backdrop-blur-xl sm:static sm:px-6 sm:py-4 sm:backdrop-blur-0"
               onSubmit={handleSubmit}
             >
-              <div className="rounded-[18px] border border-[rgba(203,220,231,0.92)] bg-white/96 p-2 shadow-soft sm:rounded-[28px] sm:p-3">
+              <div className="rounded-[18px] border border-[rgba(203,220,231,0.92)] bg-[var(--surface-solid)] p-2 shadow-soft sm:rounded-[28px] sm:p-3">
                 {shouldShowQuickReplies && quickReplies.length ? (
                   <div className="mb-3 flex flex-wrap gap-2 px-1">
                     {quickReplies.map((reply) => (
@@ -1248,7 +1248,7 @@ export default function MessagesPage() {
                     {pendingPhotos.map((photo) => (
                       <div
                         key={photo.id}
-                        className="relative h-20 w-20 overflow-hidden rounded-[16px] border border-slate-200 bg-[#f7f7f8]"
+                        className="relative h-20 w-20 overflow-hidden rounded-[16px] border border-slate-200 bg-[var(--surface-alt)]"
                       >
                         <img
                           alt={photo.file.name}
@@ -1268,7 +1268,7 @@ export default function MessagesPage() {
                   </div>
                 ) : null}
                 <div className="flex items-end gap-2">
-                  <div className="flex-1 rounded-[16px] border border-slate-200 bg-[#fbfbfc] px-2.5 py-1.5">
+                  <div className="flex-1 rounded-[16px] border border-slate-200 bg-[var(--surface-alt)] px-2.5 py-1.5">
                     <textarea
                       className="min-h-[40px] w-full resize-none bg-transparent px-0 py-1.5 text-sm leading-5 outline-none sm:min-h-[58px] sm:px-3 sm:leading-7"
                       disabled={sending}
@@ -1287,7 +1287,7 @@ export default function MessagesPage() {
                     onChange={handlePhotoSelection}
                   />
                   <button
-                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-steel transition hover:border-navy/20 hover:text-ink sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-3 sm:text-sm sm:font-semibold"
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-[var(--surface-solid)] text-steel transition hover:border-navy/20 hover:text-ink sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-3 sm:text-sm sm:font-semibold"
                     disabled={sending || pendingPhotos.length >= 4}
                     type="button"
                     onClick={() => photoInputRef.current?.click()}
@@ -1364,4 +1364,5 @@ export default function MessagesPage() {
     </>
   );
 }
+
 

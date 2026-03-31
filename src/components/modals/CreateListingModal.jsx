@@ -525,7 +525,7 @@ export default function CreateListingModal({ onClose }) {
       onClose={onClose}
     >
       <form
-        className="grid gap-0 bg-[linear-gradient(180deg,#f6fbfe_0%,#e1ebf1_100%)] pb-28 2xl:grid-cols-[minmax(360px,0.8fr)_minmax(0,1.2fr)] md:pb-32"
+        className="grid gap-0 bg-[linear-gradient(180deg,var(--surface-alt)_0%,var(--well-bottom)_100%)] pb-28 2xl:grid-cols-[minmax(360px,0.8fr)_minmax(0,1.2fr)] md:pb-32"
         onKeyDownCapture={(event) => {
           if (
             event.key === "Enter" &&
@@ -554,7 +554,7 @@ export default function CreateListingModal({ onClose }) {
                         ? "bg-navy text-white shadow-soft"
                         : isComplete
                           ? "border border-navy/20 bg-navy/5 text-navy"
-                          : "border border-slate-200 bg-white text-steel"
+                          : "border border-slate-200 bg-[var(--surface-solid)] text-steel"
                     }`}
                     type="button"
                     onClick={() => setCurrentStep(index)}
@@ -584,7 +584,7 @@ export default function CreateListingModal({ onClose }) {
               </div>
               <div className="hidden items-center gap-2 sm:flex">
                 <button
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel disabled:cursor-not-allowed disabled:opacity-45"
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-[var(--surface-solid)] px-4 py-2 text-sm font-semibold text-steel disabled:cursor-not-allowed disabled:opacity-45"
                   disabled={currentStep === 0}
                   type="button"
                   onClick={goToPreviousStep}
@@ -641,7 +641,7 @@ export default function CreateListingModal({ onClose }) {
                 <FieldLabel>Listing title</FieldLabel>
                 <input
                   required
-                  className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[var(--surface-alt)] px-4 py-3 outline-none transition focus:border-navy focus:bg-[var(--surface-solid)]"
                   placeholder="Card title or bundle name"
                   value={form.title}
                   onChange={(event) => updateField("title", event.target.value)}
@@ -651,7 +651,7 @@ export default function CreateListingModal({ onClose }) {
               <label className="block">
                 <FieldLabel>Game</FieldLabel>
                 <select
-                  className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[var(--surface-alt)] px-4 py-3 outline-none transition focus:border-navy focus:bg-[var(--surface-solid)]"
                   value={form.game}
                   onChange={(event) => updateField("game", event.target.value)}
                 >
@@ -664,7 +664,7 @@ export default function CreateListingModal({ onClose }) {
               <label className="block">
                 <FieldLabel>Listing type</FieldLabel>
                 <select
-                  className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[var(--surface-alt)] px-4 py-3 outline-none transition focus:border-navy focus:bg-[var(--surface-solid)]"
                   value={form.type}
                   onChange={(event) => updateField("type", event.target.value)}
                 >
@@ -679,7 +679,7 @@ export default function CreateListingModal({ onClose }) {
               <label className="block">
                 <FieldLabel>Format</FieldLabel>
                 <select
-                  className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[var(--surface-alt)] px-4 py-3 outline-none transition focus:border-navy focus:bg-[var(--surface-solid)]"
                   value={form.listingFormat}
                   onChange={(event) => updateField("listingFormat", event.target.value)}
                 >
@@ -699,7 +699,7 @@ export default function CreateListingModal({ onClose }) {
               <label className="block">
                 <FieldLabel>Condition</FieldLabel>
                 <select
-                  className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[var(--surface-alt)] px-4 py-3 outline-none transition focus:border-navy focus:bg-[var(--surface-solid)]"
                   value={form.condition}
                   onChange={(event) => updateField("condition", event.target.value)}
                 >
@@ -717,7 +717,7 @@ export default function CreateListingModal({ onClose }) {
                   min="0"
                   step="0.01"
                   type="number"
-                  className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[var(--surface-alt)] px-4 py-3 outline-none transition focus:border-navy focus:bg-[var(--surface-solid)]"
                   value={form.price}
                   onChange={(event) => updateField("price", event.target.value)}
                 />
@@ -729,7 +729,7 @@ export default function CreateListingModal({ onClose }) {
                   min="1"
                   step="1"
                   type="number"
-                  className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[var(--surface-alt)] px-4 py-3 outline-none transition focus:border-navy focus:bg-[var(--surface-solid)]"
                   value={form.quantity}
                   onChange={(event) => updateField("quantity", Math.max(1, Number(event.target.value) || 1))}
                 />
@@ -738,7 +738,7 @@ export default function CreateListingModal({ onClose }) {
               <label className="block md:col-span-2">
                 <FieldLabel>Neighborhood</FieldLabel>
                 <select
-                  className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[20px] border border-slate-200 bg-[var(--surface-alt)] px-4 py-3 outline-none transition focus:border-navy focus:bg-[var(--surface-solid)]"
                   value={form.neighborhood}
                   onChange={(event) => updateField("neighborhood", event.target.value)}
                 >
@@ -752,7 +752,7 @@ export default function CreateListingModal({ onClose }) {
                 <FieldLabel>Postal code area</FieldLabel>
                 <input
                   maxLength={3}
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3.5 outline-none transition focus:border-navy focus:bg-white"
+                  className="w-full rounded-[22px] border border-slate-200 bg-[var(--surface-alt)] px-4 py-3.5 outline-none transition focus:border-navy focus:bg-[var(--surface-solid)]"
                   placeholder="Optional FSA, like R2P"
                   value={form.postalCode}
                   onChange={(event) => updateField("postalCode", event.target.value)}
@@ -763,7 +763,7 @@ export default function CreateListingModal({ onClose }) {
                 <label className="block md:col-span-2">
                   <FieldLabel>Bundle contents</FieldLabel>
                   <textarea
-                  className="min-h-24 w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="min-h-24 w-full rounded-[20px] border border-slate-200 bg-[var(--surface-alt)] px-4 py-3 outline-none transition focus:border-navy focus:bg-[var(--surface-solid)]"
                     placeholder="One item or note per line. Example: 4x Charizard ex&#10;Sleeved deck core&#10;Matching tokens"
                     value={form.bundleItems}
                     onChange={(event) => updateField("bundleItems", event.target.value)}
@@ -771,7 +771,7 @@ export default function CreateListingModal({ onClose }) {
                 </label>
               ) : null}
 
-              <label className="flex items-center gap-3 rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3.5 md:col-span-2">
+              <label className="flex items-center gap-3 rounded-[20px] border border-slate-200 bg-[var(--surface-alt)] px-4 py-3.5 md:col-span-2">
                 <input
                   checked={form.acceptsTrade}
                   className="h-4 w-4 accent-navy"
@@ -793,7 +793,7 @@ export default function CreateListingModal({ onClose }) {
                 <FieldLabel>Description</FieldLabel>
                 <textarea
                   required
-                  className="min-h-32 w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+                  className="min-h-32 w-full rounded-[20px] border border-slate-200 bg-[var(--surface-alt)] px-4 py-3 outline-none transition focus:border-navy focus:bg-[var(--surface-solid)]"
                   placeholder="Call out set, rarity, defects, meetup range, and trade interests."
                   value={form.description}
                   onChange={(event) => updateField("description", event.target.value)}
@@ -802,7 +802,7 @@ export default function CreateListingModal({ onClose }) {
 
               <div className="block">
                 <FieldLabel>Primary card image</FieldLabel>
-                <label className="flex cursor-pointer items-center gap-3 rounded-[20px] border border-dashed border-slate-300 bg-[#f2f3f5] px-4 py-4 text-steel transition hover:border-navy hover:text-ink">
+                <label className="flex cursor-pointer items-center gap-3 rounded-[20px] border border-dashed border-slate-300 bg-[var(--surface-alt)] px-4 py-4 text-steel transition hover:border-navy hover:text-ink">
                   <ImagePlus size={18} />
                   <span className="text-sm font-semibold">
                     Upload the front-facing card image or let live search fill it in
@@ -818,7 +818,7 @@ export default function CreateListingModal({ onClose }) {
 
               <div className="block">
                 <FieldLabel>Condition photos</FieldLabel>
-                <label className="flex cursor-pointer items-center gap-3 rounded-[20px] border border-dashed border-slate-300 bg-[#f2f3f5] px-4 py-4 text-steel transition hover:border-navy hover:text-ink">
+                <label className="flex cursor-pointer items-center gap-3 rounded-[20px] border border-dashed border-slate-300 bg-[var(--surface-alt)] px-4 py-4 text-steel transition hover:border-navy hover:text-ink">
                   <ImagePlus size={18} />
                   <span className="text-sm font-semibold">
                     Upload close-ups of corners, edges, back, or surface wear
@@ -850,7 +850,7 @@ export default function CreateListingModal({ onClose }) {
           ) : null}
         </div>
 
-        <div className="order-1 space-y-4 bg-[linear-gradient(180deg,#eef5f9_0%,#dce8ef_100%)] p-4 sm:space-y-5 sm:p-6 lg:p-7 2xl:order-2">
+        <div className="order-1 space-y-4 bg-[linear-gradient(180deg,var(--surface-alt)_0%,var(--well-bottom)_100%)] p-4 sm:space-y-5 sm:p-6 lg:p-7 2xl:order-2">
           <section className="console-shell border-[rgba(203,220,231,0.92)] p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
@@ -870,7 +870,7 @@ export default function CreateListingModal({ onClose }) {
                 </span>
                 ) : null}
                 <button
-                  className="inline-flex rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink 2xl:hidden"
+                  className="inline-flex rounded-full border border-slate-200 bg-[var(--surface-solid)] px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink 2xl:hidden"
                   type="button"
                   onClick={() => setSearchExpanded((current) => !current)}
                 >
@@ -890,7 +890,7 @@ export default function CreateListingModal({ onClose }) {
                     className={`rounded-full px-3 py-2.5 text-sm font-semibold transition ${
                       form.game === game
                         ? "bg-navy text-white shadow-soft"
-                        : "border border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
+                        : "border border-slate-200 bg-[var(--surface-solid)] text-steel hover:border-slate-300 hover:text-ink"
                     }`}
                     type="button"
                     onClick={() => {
@@ -923,7 +923,7 @@ export default function CreateListingModal({ onClose }) {
                     className={`rounded-full px-4 py-2.5 text-sm font-semibold transition ${
                       form.language === language
                         ? "bg-navy text-white shadow-soft"
-                        : "border border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
+                        : "border border-slate-200 bg-[var(--surface-solid)] text-steel hover:border-slate-300 hover:text-ink"
                     }`}
                     type="button"
                     onClick={() => {
@@ -945,7 +945,7 @@ export default function CreateListingModal({ onClose }) {
             </div>
 
             <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto]">
-              <div className="flex items-center gap-2 rounded-[20px] border border-slate-200 bg-[#f2f3f5] p-2.5">
+              <div className="flex items-center gap-2 rounded-[20px] border border-slate-200 bg-[var(--surface-alt)] p-2.5">
                 <Search className="ml-2 text-steel" size={16} />
                 <input
                   aria-activedescendant={
@@ -986,7 +986,7 @@ export default function CreateListingModal({ onClose }) {
               </button>
             </div>
 
-            <div className="mt-4 rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 text-sm text-steel">
+              <div className="mt-4 rounded-[20px] border border-slate-200 bg-[var(--surface-alt)] px-4 py-3 text-sm text-steel">
               <span className="font-semibold text-ink">{providerLabel}</span>
               <span className="mx-2 text-slate-300">|</span>
               {liveSearchSupported
@@ -999,7 +999,7 @@ export default function CreateListingModal({ onClose }) {
                 {recentQueries.map((entry) => (
                   <button
                     key={entry.id}
-                    className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-steel transition hover:border-slate-300 hover:text-ink"
+                    className="rounded-full border border-slate-200 bg-[var(--surface-solid)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-steel transition hover:border-slate-300 hover:text-ink"
                     type="button"
                     onClick={() => {
                       setSearchQuery(entry.query);
@@ -1013,7 +1013,7 @@ export default function CreateListingModal({ onClose }) {
             ) : null}
               </>
             ) : (
-              <div className="mt-4 rounded-[18px] border border-dashed border-slate-200 bg-white/76 px-4 py-4 text-sm leading-6 text-steel">
+              <div className="mt-4 rounded-[18px] border border-dashed border-slate-200 bg-[var(--surface-alt)] px-4 py-4 text-sm leading-6 text-steel">
                 Tap <span className="font-semibold text-ink">Open finder</span> when you want the exact printing, then come back to the listing form.
               </div>
             )}
@@ -1047,7 +1047,7 @@ export default function CreateListingModal({ onClose }) {
                       title={form.title || "Selected card"}
                     />
                   ) : (
-                    <div className="flex aspect-[63/88] w-full max-w-[120px] items-center justify-center rounded-[20px] border border-dashed border-slate-300 bg-[#f2f3f5] px-4 text-center text-xs font-semibold uppercase tracking-[0.16em] text-steel">
+                    <div className="flex aspect-[63/88] w-full max-w-[120px] items-center justify-center rounded-[20px] border border-dashed border-slate-300 bg-[var(--surface-alt)] px-4 text-center text-xs font-semibold uppercase tracking-[0.16em] text-steel">
                       No image yet
                     </div>
                   )}
@@ -1081,7 +1081,7 @@ export default function CreateListingModal({ onClose }) {
                   </p>
                 </div>
 
-                <div className="rounded-[22px] border border-slate-200 bg-[#f2f3f5] p-4">
+                <div className="rounded-[22px] border border-slate-200 bg-[var(--surface-alt)] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
                       Price context
@@ -1132,7 +1132,7 @@ export default function CreateListingModal({ onClose }) {
                     key={printing.id}
                     aria-selected={selectedPrintingId === printing.id}
                     id={`${listboxId}-${printing.id}`}
-                    className={`grid grid-cols-[88px_minmax(0,1fr)] gap-0 overflow-hidden rounded-[18px] border bg-white text-left transition sm:grid-cols-[108px_minmax(0,1fr)] ${
+                    className={`grid grid-cols-[88px_minmax(0,1fr)] gap-0 overflow-hidden rounded-[18px] border bg-[var(--surface-solid)] text-left transition sm:grid-cols-[108px_minmax(0,1fr)] ${
                       selectedPrintingId === printing.id
                         ? "border-navy shadow-soft ring-2 ring-navy/10"
                         : highlightedResultIndex === index
@@ -1144,7 +1144,7 @@ export default function CreateListingModal({ onClose }) {
                     onMouseEnter={() => setHighlightedResultIndex(index)}
                     onClick={() => applyPrinting(printing)}
                   >
-                      <div className="flex items-center justify-center bg-[linear-gradient(180deg,#f7f8fb_0%,#eef1f5_100%)] p-2 sm:p-2.5">
+                      <div className="flex items-center justify-center bg-[linear-gradient(180deg,var(--surface-alt)_0%,var(--well-bottom)_100%)] p-2 sm:p-2.5">
                         <CardArtwork
                         className="aspect-[63/88] w-full max-w-[4.5rem] rounded-[12px] object-cover sm:max-w-[5.5rem] sm:rounded-[14px]"
                         game={form.game}
@@ -1218,7 +1218,7 @@ export default function CreateListingModal({ onClose }) {
               </div>
 
               {!searchResults.length && !loadingSearch ? (
-                <div className="mt-4 rounded-[24px] border border-dashed border-slate-200 bg-[#f2f3f5] px-5 py-12 text-center text-sm leading-7 text-steel">
+                <div className="mt-4 rounded-[24px] border border-dashed border-slate-200 bg-[var(--surface-alt)] px-5 py-12 text-center text-sm leading-7 text-steel">
                   Search a card name, code, or variant above to load live printings here.
                 </div>
               ) : null}
@@ -1228,7 +1228,7 @@ export default function CreateListingModal({ onClose }) {
 
         </div>
 
-        <div className="sticky bottom-0 z-20 col-span-full border-t border-[rgba(203,220,231,0.92)] bg-[rgba(233,241,246,0.96)] px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 backdrop-blur sm:px-6 lg:px-8">
+        <div className="sticky bottom-0 z-20 col-span-full border-t border-[rgba(203,220,231,0.92)] bg-[linear-gradient(180deg,var(--surface-alt),var(--surface-solid))] px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 backdrop-blur sm:px-6 lg:px-8">
           <div className="mx-auto flex max-w-[1600px] flex-col gap-3">
             {draftMessage ? (
               <p className="text-sm font-semibold text-emerald-700 md:text-right">{draftMessage}</p>
@@ -1239,7 +1239,7 @@ export default function CreateListingModal({ onClose }) {
 
             <div className="grid gap-3 md:flex md:flex-wrap md:justify-end">
               <button
-                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink md:hidden"
+                className="rounded-full border border-slate-200 bg-[var(--surface-solid)] px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink md:hidden"
                 disabled={currentStep === 0}
                 type="button"
                 onClick={goToPreviousStep}
@@ -1257,7 +1257,7 @@ export default function CreateListingModal({ onClose }) {
                 </button>
               ) : null}
               <button
-                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                className="rounded-full border border-slate-200 bg-[var(--surface-solid)] px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
                 disabled={!authReady}
                 type="button"
                 onClick={() => void saveDraft(false)}
@@ -1265,7 +1265,7 @@ export default function CreateListingModal({ onClose }) {
                 Save draft
               </button>
               <button
-                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                className="rounded-full border border-slate-200 bg-[var(--surface-solid)] px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
                 disabled={!authReady}
                 type="button"
                 onClick={() => void saveDraft(true)}
@@ -1274,7 +1274,7 @@ export default function CreateListingModal({ onClose }) {
               </button>
               {listingDraft ? (
                 <button
-                  className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                  className="rounded-full border border-slate-200 bg-[var(--surface-solid)] px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
                   type="button"
                   onClick={async () => {
                     setSubmitError("");
@@ -1291,7 +1291,7 @@ export default function CreateListingModal({ onClose }) {
                 </button>
               ) : null}
               <button
-                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                className="rounded-full border border-slate-200 bg-[var(--surface-solid)] px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
                 type="button"
                 onClick={onClose}
               >
@@ -1311,5 +1311,6 @@ export default function CreateListingModal({ onClose }) {
     </ModalShell>
   );
 }
+
 
 

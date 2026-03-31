@@ -34,7 +34,7 @@ export default function InstallPrompt({ installState, onDismiss, onInstall }) {
             : "bottom-6 right-6 left-auto hidden w-[24rem] lg:block"
         }`}
       >
-        <div className="mx-auto max-w-xl rounded-[26px] border border-[rgba(203,220,231,0.9)] bg-[rgba(248,252,255,0.96)] px-4 py-4 shadow-[0_22px_44px_-24px_rgba(15,23,42,0.3)] backdrop-blur-xl">
+        <div className="mx-auto max-w-xl rounded-[26px] border border-[var(--line)] bg-[var(--surface-solid)] px-4 py-4 shadow-[0_22px_44px_-24px_rgba(15,23,42,0.3)] backdrop-blur-xl">
           <div className="flex items-start gap-3">
             <div className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-navy text-white">
               <Download size={18} />
@@ -63,7 +63,7 @@ export default function InstallPrompt({ installState, onDismiss, onInstall }) {
                   {isFallbackMode ? "Show install steps" : "Install app"}
                 </button>
                 <button
-                  className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
+                  className="rounded-full border border-[var(--line)] bg-[var(--surface-alt)] px-4 py-2 text-sm font-semibold text-steel"
                   type="button"
                   onClick={onDismiss}
                 >
@@ -73,7 +73,7 @@ export default function InstallPrompt({ installState, onDismiss, onInstall }) {
             </div>
             <button
               aria-label="Dismiss install prompt"
-              className="rounded-full border border-slate-200 p-2 text-steel"
+              className="rounded-full border border-[var(--line)] bg-[var(--surface-alt)] p-2 text-steel"
               type="button"
               onClick={onDismiss}
             >
@@ -90,7 +90,7 @@ export default function InstallPrompt({ installState, onDismiss, onInstall }) {
               : "items-center pb-6"
           }`}
         >
-          <div className="w-full max-w-xl rounded-[28px] border border-[rgba(203,220,231,0.9)] bg-[rgba(248,252,255,0.97)] px-5 py-5 shadow-[0_24px_48px_-24px_rgba(15,23,42,0.35)]">
+          <div className="w-full max-w-xl rounded-[28px] border border-[var(--line)] bg-[var(--surface-solid)] px-5 py-5 shadow-[0_24px_48px_-24px_rgba(15,23,42,0.35)]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.18em] text-navy/65">
@@ -102,7 +102,7 @@ export default function InstallPrompt({ installState, onDismiss, onInstall }) {
               </div>
               <button
                 aria-label="Close install guide"
-                className="rounded-full border border-slate-200 p-2 text-steel"
+                className="rounded-full border border-[var(--line)] bg-[var(--surface-alt)] p-2 text-steel"
                 type="button"
                 onClick={() => setShowGuide(false)}
               >
@@ -114,9 +114,9 @@ export default function InstallPrompt({ installState, onDismiss, onInstall }) {
               {guideSteps.map((step, index) => (
                 <div
                   key={step}
-                  className="flex items-start gap-3 rounded-[20px] bg-[#f7f3ec] px-4 py-4"
+                  className="flex items-start gap-3 rounded-[20px] border border-[var(--line)] bg-[var(--surface-alt)] px-4 py-4"
                 >
-                  <div className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-xs font-semibold text-navy">
+                  <div className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--surface-solid)] text-xs font-semibold text-navy">
                     {index + 1}
                   </div>
                   <p className="text-sm leading-6 text-ink">{step}</p>
@@ -124,7 +124,7 @@ export default function InstallPrompt({ installState, onDismiss, onInstall }) {
               ))}
             </div>
 
-            <div className="mt-5 rounded-[20px] border border-slate-200 bg-white px-4 py-4">
+            <div className="mt-5 rounded-[20px] border border-[var(--line)] bg-[var(--surface-alt)] px-4 py-4">
               <div className="inline-flex items-center gap-2 text-sm font-semibold text-ink">
                 {isIosFallback ? <Share size={16} /> : <MoreHorizontal size={16} />}
                 {isIosFallback ? "Safari Share menu" : "Browser menu"}

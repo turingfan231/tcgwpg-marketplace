@@ -47,7 +47,7 @@ export default function OfferModal({ listing, onClose }) {
       onClose={onClose}
     >
       <form className="space-y-6 p-6" onSubmit={handleSubmit}>
-        <div className="rounded-[24px] bg-[#f2f3f5] p-5">
+        <div className="rounded-[24px] bg-[var(--surface-alt)] p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
             Asking price
           </p>
@@ -67,7 +67,7 @@ export default function OfferModal({ listing, onClose }) {
               className={`rounded-[20px] border px-4 py-4 text-sm font-semibold transition ${
                 offerType === option.id
                   ? "border-navy bg-navy text-white"
-                  : "border-slate-200 bg-white text-steel"
+                  : "border-slate-200 bg-[var(--surface-solid)] text-steel"
               }`}
               type="button"
               onClick={() => setOfferType(option.id)}
@@ -83,7 +83,7 @@ export default function OfferModal({ listing, onClose }) {
             <input
               min="0"
               step="0.01"
-              className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              className="w-full rounded-[22px] border border-slate-200 bg-[var(--surface-alt)] px-4 py-3 outline-none transition focus:border-navy focus:bg-[var(--surface-solid)]"
               type="number"
               value={cashAmount}
               onChange={(event) => setCashAmount(event.target.value)}
@@ -95,7 +95,7 @@ export default function OfferModal({ listing, onClose }) {
           <label className="block">
             <span className="mb-2 block text-sm font-semibold text-steel">Trade items</span>
             <textarea
-              className="min-h-32 w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+              className="min-h-32 w-full rounded-[22px] border border-slate-200 bg-[var(--surface-alt)] px-4 py-3 outline-none transition focus:border-navy focus:bg-[var(--surface-solid)]"
               placeholder="One item per line. Example: 4x Arid Mesa&#10;1x Van Gogh Pikachu"
               value={tradeItems}
               onChange={(event) => setTradeItems(event.target.value)}
@@ -106,7 +106,7 @@ export default function OfferModal({ listing, onClose }) {
         <label className="block">
           <span className="mb-2 block text-sm font-semibold text-steel">Offer note</span>
           <textarea
-            className="min-h-28 w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
+            className="min-h-28 w-full rounded-[22px] border border-slate-200 bg-[var(--surface-alt)] px-4 py-3 outline-none transition focus:border-navy focus:bg-[var(--surface-solid)]"
             placeholder="Meetup timing, condition assumptions, or counter flexibility."
             value={note}
             onChange={(event) => setNote(event.target.value)}
@@ -121,7 +121,7 @@ export default function OfferModal({ listing, onClose }) {
 
         <div className="flex justify-end gap-3">
           <button
-            className="rounded-full border border-slate-200 px-5 py-3 text-sm font-semibold text-steel"
+            className="rounded-full border border-slate-200 bg-[var(--surface-solid)] px-5 py-3 text-sm font-semibold text-steel"
             type="button"
             onClick={onClose}
           >
@@ -138,5 +138,6 @@ export default function OfferModal({ listing, onClose }) {
     </ModalShell>
   );
 }
+
 
 

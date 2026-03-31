@@ -42,7 +42,7 @@ export default function AppShell() {
       return storedMode;
     }
 
-    return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ? "dark" : "light";
+    return "light";
   });
 
   const isStandalone = useMemo(() => {

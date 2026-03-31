@@ -177,7 +177,10 @@ test("seed inbox thread allows sending a message", async ({ page }) => {
   await page.getByRole("button", { name: /message seller/i }).click();
 
   await expect(page).toHaveURL(/\/messages/, { timeout: 10000 });
-  await page.getByRole("button", { name: /sheoldred, the apocalypse/i }).click();
+  await page
+    .getByRole("button", { name: /sheoldred, the apocalypse/i })
+    .first()
+    .click();
   await expect(
     page.getByPlaceholder(/write about condition, trades, meetup timing/i),
   ).toBeVisible({

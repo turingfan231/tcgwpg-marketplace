@@ -187,37 +187,37 @@ export default function Header({
     <>
       <header className="app-header-chrome sticky top-0 z-40 border-b backdrop-blur-2xl">
         <div className="page-shell py-0.5 sm:py-1">
-          <div className="console-panel px-2 py-1.5 sm:px-4 sm:py-1.5">
-          <div className="relative flex items-center justify-between gap-1 sm:hidden">
+          <div className="console-panel px-2 py-1 sm:px-4 sm:py-1.5">
+          <div className="relative flex items-center justify-between gap-1.5 sm:hidden">
             <div className="shrink-0">
               {onToggleColorMode ? (
                 <button
                   aria-label={colorMode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-[12px] border border-[rgba(145,38,43,0.12)] bg-[var(--surface-solid)] text-steel transition hover:border-slate-300 hover:text-ink"
+                  className="inline-flex h-[clamp(2rem,9vw,2.25rem)] w-[clamp(2rem,9vw,2.25rem)] items-center justify-center rounded-[12px] border border-[var(--line)] bg-[var(--surface-solid)] text-steel transition hover:border-slate-300 hover:text-ink"
                   type="button"
                   onClick={onToggleColorMode}
                 >
-                  <ColorModeIcon size={15} />
+                  <ColorModeIcon size={14} />
                 </button>
               ) : (
-                <div className="h-9 w-9" />
+                <div className="h-[clamp(2rem,9vw,2.25rem)] w-[clamp(2rem,9vw,2.25rem)]" />
               )}
             </div>
 
-            <Link className="pointer-events-auto absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" to="/">
+            <Link className="pointer-events-auto absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[46%]" to="/">
               <BrandLogo
                 className="inline-flex"
-                imgClassName="h-[clamp(1.85rem,7vw,2.25rem)] w-auto max-w-[clamp(6.9rem,30vw,8.6rem)] object-contain"
+                imgClassName="h-[clamp(1.45rem,5.7vw,1.95rem)] w-auto max-w-[clamp(5.8rem,24vw,7.6rem)] object-contain"
               />
             </Link>
 
             <div className="flex shrink-0 items-center justify-end gap-1">
               <Link
                 aria-label="Open messages"
-                className="relative inline-flex h-9 w-9 items-center justify-center rounded-[12px] border border-[rgba(203,220,231,0.92)] bg-[var(--surface-solid)] text-steel transition hover:border-slate-300 hover:text-ink"
+                className="relative inline-flex h-[clamp(2rem,9vw,2.25rem)] w-[clamp(2rem,9vw,2.25rem)] items-center justify-center rounded-[12px] border border-[var(--line)] bg-[var(--surface-solid)] text-steel transition hover:border-slate-300 hover:text-ink"
                 to="/messages"
               >
-                <MessageCircle size={15} />
+                <MessageCircle size={14} />
                 {safeUnreadMessageCount ? (
                   <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-orange px-1 text-[0.58rem] font-semibold text-white">
                     {safeUnreadMessageCount}
@@ -226,7 +226,7 @@ export default function Header({
               </Link>
 
               <button
-                className="rounded-[12px] bg-orange px-3.5 py-2 text-[0.88rem] font-semibold text-white shadow-soft transition hover:bg-[#d8332d]"
+                className="rounded-[12px] bg-orange px-[clamp(0.72rem,3.8vw,0.95rem)] py-[clamp(0.55rem,2.6vw,0.72rem)] text-[clamp(0.8rem,3.4vw,0.9rem)] font-semibold text-white shadow-soft transition hover:bg-[#d8332d]"
                 type="button"
                 onClick={() => openListing("WTS", "/dashboard")}
               >
@@ -235,11 +235,11 @@ export default function Header({
 
               <button
                 aria-label="Open navigation menu"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-[12px] border border-[rgba(203,220,231,0.92)] bg-[var(--surface-solid)] text-steel transition hover:border-slate-300 hover:text-ink"
+                className="inline-flex h-[clamp(2rem,9vw,2.25rem)] w-[clamp(2rem,9vw,2.25rem)] items-center justify-center rounded-[12px] border border-[var(--line)] bg-[var(--surface-solid)] text-steel transition hover:border-slate-300 hover:text-ink"
                 type="button"
                 onClick={() => setMobileDrawerOpen(true)}
               >
-                <Menu size={15} />
+                <Menu size={14} />
               </button>
             </div>
           </div>
@@ -257,7 +257,7 @@ export default function Header({
                     <ColorModeIcon size={16} />
                   </button>
                   <button
-                    className="hidden items-center gap-2 rounded-full border border-[rgba(145,38,43,0.12)] bg-white/82 px-4 py-2.5 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink sm:inline-flex"
+                    className="hidden items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface-solid)] px-4 py-2.5 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink sm:inline-flex"
                     type="button"
                     onClick={onToggleColorMode}
                   >
@@ -280,7 +280,7 @@ export default function Header({
             <div className="flex shrink-0 items-center justify-end gap-1.5 self-start pt-1 sm:pt-2">
               <Link
                 aria-label="Open messages"
-                className="relative inline-flex items-center justify-center rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 p-2 text-steel transition hover:border-slate-300 hover:text-ink md:px-4 md:py-2.5"
+                className="relative inline-flex items-center justify-center rounded-full border border-[var(--line)] bg-[var(--surface-solid)] p-2 text-steel transition hover:border-slate-300 hover:text-ink md:px-4 md:py-2.5"
                 to="/messages"
               >
                 <MessageCircle size={18} />
@@ -302,7 +302,7 @@ export default function Header({
 
               <button
                 aria-label="Open navigation menu"
-                className="inline-flex items-center justify-center rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 p-2 text-steel transition hover:border-slate-300 hover:text-ink lg:hidden"
+                className="inline-flex items-center justify-center rounded-full border border-[var(--line)] bg-[var(--surface-solid)] p-2 text-steel transition hover:border-slate-300 hover:text-ink lg:hidden"
                 type="button"
                 onClick={() => setMobileDrawerOpen(true)}
               >
@@ -314,7 +314,7 @@ export default function Header({
                   <div className="relative" ref={accountMenuRef}>
                     <button
                       aria-expanded={menuOpen}
-                      className="relative inline-flex items-center gap-2 rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-slate-300"
+                      className="relative inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface-solid)] px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-slate-300"
                       type="button"
                       onClick={() => setMenuOpen((current) => !current)}
                     >
@@ -329,7 +329,7 @@ export default function Header({
                     </button>
 
                     {menuOpen ? (
-                      <div className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[18rem] rounded-[24px] border border-[rgba(203,220,231,0.92)] bg-[rgba(248,252,255,0.96)] p-2 shadow-[0_18px_44px_-22px_rgba(15,23,42,0.28)] backdrop-blur-xl">
+                      <div className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[18rem] rounded-[24px] border border-[var(--line)] bg-[var(--surface-solid)] p-2 shadow-[0_18px_44px_-22px_rgba(15,23,42,0.28)] backdrop-blur-xl">
                         <div className="border-b border-slate-100 px-4 py-3">
                           <div className="flex items-center gap-3">
                             <UserAvatar className="h-11 w-11 text-sm" user={currentUser} />
@@ -378,7 +378,7 @@ export default function Header({
                   </div>
                 ) : (
                   <Link
-                    className="inline-flex items-center gap-2 rounded-full border border-[rgba(203,220,231,0.92)] bg-white/82 px-4 py-2.5 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+                    className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface-solid)] px-4 py-2.5 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
                     to="/auth"
                   >
                     Login / Sign Up
@@ -394,7 +394,7 @@ export default function Header({
               size={17}
             />
             <input
-            className="w-full rounded-[13px] border border-[rgba(145,38,43,0.12)] bg-[var(--input-bg)] py-2.25 pl-10 pr-3 text-[0.88rem] text-ink outline-none transition focus:border-navy focus:bg-[var(--surface-solid)] sm:rounded-[20px] sm:py-3.5 sm:pl-11 sm:pr-4 sm:text-sm"
+            className="w-full rounded-[13px] border border-[var(--line)] bg-[var(--input-bg)] py-2.25 pl-10 pr-3 text-[0.88rem] text-ink outline-none transition focus:border-navy focus:bg-[var(--surface-solid)] sm:rounded-[20px] sm:py-3.5 sm:pl-11 sm:pr-4 sm:text-sm"
               placeholder="Search cards, set codes, variants, or sellers"
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
@@ -410,7 +410,7 @@ export default function Header({
                     `whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
                       isActive
                         ? "bg-navy text-white"
-                        : "border border-transparent bg-white/55 text-steel hover:border-[rgba(203,220,231,0.92)] hover:bg-white/82 hover:text-ink"
+                        : "border border-transparent bg-[var(--surface-hover)] text-steel hover:border-[var(--line)] hover:bg-[var(--surface-solid)] hover:text-ink"
                     }`
                   }
                   onClick={() => handleBrowseLink(link)}
@@ -456,7 +456,7 @@ export default function Header({
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
               <div>
                 <p className="section-kicker">Navigation</p>
-                <BrandLogo className="mt-3" imgClassName="h-10 w-auto max-w-[11rem] object-contain" />
+                <BrandLogo className="mt-3" imgClassName="h-8 w-auto max-w-[9.2rem] object-contain" />
               </div>
               <button
                 className="rounded-full border border-slate-200 p-2 text-steel"
@@ -480,7 +480,7 @@ export default function Header({
                   Sell cards
                 </Link>
                 <Link
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-ink"
+                  className="rounded-2xl border border-slate-200 bg-[var(--surface-solid)] px-4 py-3 text-sm font-semibold text-ink"
                   to="#"
                   onClick={(event) => {
                     event.preventDefault();
@@ -502,7 +502,7 @@ export default function Header({
                   return (
                     <Link
                       key={item.to}
-                      className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-ink"
+                      className="flex items-center justify-between rounded-2xl border border-slate-200 bg-[var(--surface-solid)] px-4 py-3 text-sm font-semibold text-ink"
                       to={item.to}
                       onClick={() => setMobileDrawerOpen(false)}
                     >
@@ -532,7 +532,7 @@ export default function Header({
                         `rounded-2xl px-4 py-3 text-sm font-semibold transition ${
                           isActive
                             ? "bg-navy text-white"
-                            : "border border-slate-200 bg-white text-ink"
+                            : "border border-slate-200 bg-[var(--surface-solid)] text-ink"
                         }`
                       }
                       onClick={() => handleBrowseLink(link)}
@@ -550,7 +550,7 @@ export default function Header({
                 </p>
                 {isAuthenticated ? (
                   <div className="mt-3 space-y-2">
-                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+                    <div className="rounded-2xl border border-slate-200 bg-[var(--surface-solid)] px-4 py-4">
                       <div className="flex items-center gap-3">
                         <UserAvatar className="h-11 w-11 text-sm" user={currentUser} />
                         <div className="min-w-0">
@@ -564,7 +564,7 @@ export default function Header({
                       return (
                         <Link
                           key={item.to}
-                          className="inline-flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-ink"
+                          className="inline-flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-[var(--surface-solid)] px-4 py-3 text-sm font-semibold text-ink"
                           to={item.to}
                           onClick={() => setMobileDrawerOpen(false)}
                         >
@@ -574,7 +574,7 @@ export default function Header({
                       );
                     })}
                     <button
-                      className="inline-flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-ink"
+                      className="inline-flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-[var(--surface-solid)] px-4 py-3 text-sm font-semibold text-ink"
                       type="button"
                       onClick={() => {
                         setMobileDrawerOpen(false);
@@ -588,7 +588,7 @@ export default function Header({
                   </div>
                 ) : (
                   <Link
-                    className="mt-3 inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-ink"
+                    className="mt-3 inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-[var(--surface-solid)] px-4 py-3 text-sm font-semibold text-ink"
                     to="/auth"
                     onClick={() => setMobileDrawerOpen(false)}
                   >
@@ -603,7 +603,7 @@ export default function Header({
                     Appearance
                   </p>
                   <button
-                    className="mt-3 inline-flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-ink"
+                    className="mt-3 inline-flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-[var(--surface-solid)] px-4 py-3 text-sm font-semibold text-ink"
                     type="button"
                     onClick={() => {
                       onToggleColorMode();
@@ -622,7 +622,7 @@ export default function Header({
                     App
                   </p>
                   <button
-                    className="mt-3 inline-flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-ink"
+                    className="mt-3 inline-flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-[var(--surface-solid)] px-4 py-3 text-sm font-semibold text-ink"
                     type="button"
                     onClick={() => {
                       setMobileDrawerOpen(false);

@@ -420,7 +420,7 @@ export default function ListingDetailPage() {
                 </div>
 
                 {listing.bundleItems?.length ? (
-                  <div className="rounded-[16px] border border-slate-200 bg-[#f2f3f5] p-3 sm:rounded-[18px] sm:p-3.5">
+                  <div className="rounded-[16px] border border-slate-200 bg-[var(--surface-alt)] p-3 sm:rounded-[18px] sm:p-3.5">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-xs sm:tracking-[0.18em]">
                       Bundle contents
                     </p>
@@ -428,7 +428,7 @@ export default function ListingDetailPage() {
                       {listing.bundleItems.map((item) => (
                         <span
                           key={item}
-                          className="rounded-full bg-white px-2.5 py-1 text-[0.78rem] font-semibold text-slate-700 sm:px-3 sm:text-sm"
+                          className="rounded-full bg-[var(--surface-solid)] px-2.5 py-1 text-[0.78rem] font-semibold text-slate-700 sm:px-3 sm:text-sm"
                         >
                           {item}
                         </span>
@@ -477,7 +477,7 @@ export default function ListingDetailPage() {
             </div>
 
             {!canLookupSourceSales ? (
-              <p className="mt-5 rounded-[20px] border border-slate-200 bg-[#f7f7f8] px-4 py-3 text-sm text-steel">
+              <p className="mt-5 rounded-[20px] border border-slate-200 bg-[var(--surface-alt)] px-4 py-3 text-sm text-steel">
                 Last solds are only available for listings that were autofilled from a supported
                 source.
               </p>
@@ -512,8 +512,8 @@ export default function ListingDetailPage() {
                             target: "_blank",
                           }
                         : {})}
-                      className={`block rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-4 transition ${
-                        sale.sourceUrl ? "hover:border-slate-300 hover:bg-white" : ""
+                      className={`block rounded-[24px] border border-slate-200 bg-[var(--surface-alt)] p-4 transition ${
+                        sale.sourceUrl ? "hover:border-slate-300 hover:bg-[var(--surface-solid)]" : ""
                       }`}
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -741,8 +741,8 @@ export default function ListingDetailPage() {
                 <button
                   className={`rounded-[22px] border px-4 py-4 text-left transition ${
                     listing.flagged
-                      ? "border-rose-200 bg-white text-rose-700"
-                      : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
+                      ? "border-rose-200 bg-[var(--surface-solid)] text-rose-700"
+                      : "border-slate-200 bg-[var(--surface-solid)] text-steel hover:border-slate-300 hover:text-ink"
                   }`}
                   type="button"
                   onClick={() => void toggleListingFlag(listing.id)}
@@ -758,8 +758,8 @@ export default function ListingDetailPage() {
                 <button
                   className={`rounded-[22px] border px-4 py-4 text-left transition ${
                     listing.featured
-                      ? "border-navy/20 bg-white text-navy"
-                      : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
+                      ? "border-navy/20 bg-[var(--surface-solid)] text-navy"
+                      : "border-slate-200 bg-[var(--surface-solid)] text-steel hover:border-slate-300 hover:text-ink"
                   }`}
                   type="button"
                   onClick={() => void toggleListingFeatured(listing.id)}
@@ -775,8 +775,8 @@ export default function ListingDetailPage() {
                 <button
                   className={`rounded-[22px] border px-4 py-4 text-left transition ${
                     listing.status === "removed"
-                      ? "border-navy/20 bg-white text-navy"
-                      : "border-amber-200 bg-white text-amber-800"
+                      ? "border-navy/20 bg-[var(--surface-solid)] text-navy"
+                      : "border-amber-200 bg-[var(--surface-solid)] text-amber-800"
                   }`}
                   type="button"
                   onClick={() => void toggleListingRemoved(listing.id)}
@@ -792,7 +792,7 @@ export default function ListingDetailPage() {
                   </p>
                 </button>
                 <Link
-                  className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left text-steel transition hover:border-slate-300 hover:text-ink"
+                  className="rounded-[22px] border border-slate-200 bg-[var(--surface-solid)] px-4 py-4 text-left text-steel transition hover:border-slate-300 hover:text-ink"
                   to={`/seller/${listing.seller.id}`}
                 >
                   <p className="text-xs font-semibold uppercase tracking-[0.18em]">Seller</p>
@@ -803,7 +803,7 @@ export default function ListingDetailPage() {
                 </Link>
               </div>
 
-              <div className="mt-5 rounded-[24px] border border-amber-200/70 bg-white p-4">
+              <div className="mt-5 rounded-[24px] border border-amber-200/70 bg-[var(--surface-solid)] p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
@@ -819,7 +819,7 @@ export default function ListingDetailPage() {
                   </span>
                 </div>
                 <textarea
-                  className="mt-4 min-h-[120px] w-full rounded-[20px] border border-slate-200 bg-[#f7f7f8] px-4 py-3 text-sm leading-7 text-ink outline-none transition focus:border-navy"
+                  className="mt-4 min-h-[120px] w-full rounded-[20px] border border-slate-200 bg-[var(--surface-alt)] px-4 py-3 text-sm leading-7 text-ink outline-none transition focus:border-navy"
                   placeholder="Internal moderation note"
                   value={adminNoteDraft}
                   onChange={(event) => setAdminNoteDraft(event.target.value)}
@@ -893,10 +893,10 @@ export default function ListingDetailPage() {
 
               <div className="flex flex-wrap gap-2">
                 {listing.seller.badges.map((badge) => (
-                  <span
-                    key={badge}
-                    className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700"
-                  >
+                    <span
+                      key={badge}
+                      className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700"
+                    >
                     <BadgeCheck size={14} />
                     {reviewBadgeCatalog[badge]?.label || badge}
                   </span>
@@ -908,7 +908,7 @@ export default function ListingDetailPage() {
                 {trustedMeetupSpots.map((spot) => (
                   <span
                     key={spot.id}
-                    className="inline-flex items-center gap-2 rounded-full border border-[rgba(203,220,231,0.88)] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-navy"
+                    className="inline-flex items-center gap-2 rounded-full border border-[rgba(203,220,231,0.88)] bg-[var(--surface-solid)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-navy"
                   >
                     <ShieldCheck size={13} />
                     {spot.label}
@@ -936,7 +936,7 @@ export default function ListingDetailPage() {
                   listingOffers.map((offer) => (
                     <div
                       key={offer.id}
-                      className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-4"
+                      className="rounded-[24px] border border-slate-200 bg-[var(--surface-alt)] p-4"
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
@@ -953,7 +953,7 @@ export default function ListingDetailPage() {
                             <p className="mt-2 text-sm leading-7 text-steel">{offer.note}</p>
                           ) : null}
                         </div>
-                        <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+                        <span className="rounded-full bg-[var(--surface-solid)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
                           {offer.status}
                         </span>
                       </div>
@@ -968,7 +968,7 @@ export default function ListingDetailPage() {
                             Accept
                           </button>
                           <button
-                            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
+                            className="rounded-full border border-slate-200 bg-[var(--surface-solid)] px-4 py-2 text-sm font-semibold text-steel"
                             type="button"
                             onClick={() => void respondToOffer(offer.id, "decline")}
                           >
@@ -1011,7 +1011,7 @@ export default function ListingDetailPage() {
                 {listing.editHistory.map((entry) => (
                   <div
                     key={entry.id}
-                    className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-4"
+                    className="rounded-[24px] border border-slate-200 bg-[var(--surface-alt)] p-4"
                   >
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
                       {new Date(entry.createdAt).toLocaleString("en-CA", {
@@ -1044,7 +1044,7 @@ export default function ListingDetailPage() {
               <h2 className="section-title mt-2">More local listings</h2>
             </div>
             <Link
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-[var(--surface-solid)] px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
               to={`/market/${listing.gameSlug}`}
             >
               View more
@@ -1099,5 +1099,6 @@ export default function ListingDetailPage() {
     </>
   );
 }
+
 
 

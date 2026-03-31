@@ -200,7 +200,7 @@ export default function SellerProfilePage() {
                       className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[0.82rem] font-semibold sm:px-5 sm:py-3 sm:text-sm ${
                         seller.followedByCurrentUser
                           ? "border border-white/20 bg-white/10 text-white"
-                          : "bg-white text-ink"
+                          : "bg-[var(--surface-solid)] text-ink"
                       }`}
                         type="button"
                         onClick={async () => {
@@ -217,7 +217,7 @@ export default function SellerProfilePage() {
                       {seller.followedByCurrentUser ? "Following seller" : "Follow seller"}
                     </button>
                     <button
-                      className="rounded-full bg-white px-4 py-2.5 text-[0.82rem] font-semibold text-ink sm:px-5 sm:py-3 sm:text-sm"
+                      className="rounded-full bg-[var(--surface-solid)] px-4 py-2.5 text-[0.82rem] font-semibold text-ink sm:px-5 sm:py-3 sm:text-sm"
                       type="button"
                       onClick={() => setReviewModalOpen(true)}
                     >
@@ -294,7 +294,7 @@ export default function SellerProfilePage() {
               {trustedSpots.map((spot) => (
                 <span
                   key={spot.id}
-                  className="inline-flex items-center gap-2 rounded-full border border-[rgba(203,220,231,0.88)] bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-navy sm:px-3 sm:text-xs sm:tracking-[0.18em]"
+                  className="inline-flex items-center gap-2 rounded-full border border-[rgba(203,220,231,0.88)] bg-[var(--surface-solid)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-navy sm:px-3 sm:text-xs sm:tracking-[0.18em]"
                 >
                   <Store size={14} />
                   {spot.label}
@@ -304,10 +304,10 @@ export default function SellerProfilePage() {
           ) : null}
           <div className="flex flex-wrap gap-2">
             {seller.badges.map((badge) => (
-              <span
-                key={badge}
-                className="inline-flex items-center gap-2 rounded-full border border-[rgba(203,220,231,0.88)] bg-[rgba(235,242,247,0.92)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink sm:px-3 sm:text-xs sm:tracking-[0.18em]"
-              >
+                <span
+                  key={badge}
+                  className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface-alt)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink sm:px-3 sm:text-xs sm:tracking-[0.18em]"
+                >
                 <BadgeCheck size={14} />
                 {reviewBadgeCatalog[badge]?.label || badge}
               </span>
@@ -348,7 +348,7 @@ export default function SellerProfilePage() {
             sellerReviews.map((review) => (
               <article
                 key={review.id}
-                className="rounded-[20px] border border-slate-200 bg-white p-4 shadow-soft sm:rounded-[28px] sm:p-5"
+                className="rounded-[20px] border border-slate-200 bg-[var(--surface-solid)] p-4 shadow-soft sm:rounded-[28px] sm:p-5"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -405,3 +405,4 @@ export default function SellerProfilePage() {
     </main>
   );
 }
+

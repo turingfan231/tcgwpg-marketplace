@@ -792,6 +792,30 @@ select:-webkit-autofill:focus {
   background-color: rgba(var(--theme-primary-rgb), 0.18) !important;
 }
 
+.bg-emerald-50 {
+  background-color: color-mix(in srgb, rgba(22, 163, 74, 0.18) 70%, var(--surface-alt) 30%) !important;
+}
+
+.bg-emerald-500\/10 {
+  background-color: color-mix(in srgb, rgba(22, 163, 74, 0.14) 72%, var(--surface-alt) 28%) !important;
+}
+
+.border-emerald-200 {
+  border-color: color-mix(in srgb, rgba(22, 163, 74, 0.32) 70%, var(--line) 30%) !important;
+}
+
+.text-emerald-700 {
+  color: color-mix(in srgb, #28a766 58%, var(--fg) 42%) !important;
+}
+
+.bg-indigo-50 {
+  background-color: color-mix(in srgb, rgba(99, 102, 241, 0.18) 72%, var(--surface-alt) 28%) !important;
+}
+
+.text-indigo-700 {
+  color: color-mix(in srgb, #8c91ff 52%, var(--fg) 48%) !important;
+}
+
 .border-red-200,
 .border-rose-200 {
   border-color: rgba(var(--theme-primary-rgb), 0.26) !important;
@@ -862,6 +886,10 @@ select:-webkit-autofill:focus {
   background-color: color-mix(in srgb, var(--surface-solid) 16%, transparent) !important;
 }
 
+.bg-white\/18 {
+  background-color: color-mix(in srgb, var(--surface-solid) 18%, transparent) !important;
+}
+
 .bg-white\/20 {
   background-color: color-mix(in srgb, var(--surface-solid) 20%, transparent) !important;
 }
@@ -874,8 +902,20 @@ select:-webkit-autofill:focus {
   color: color-mix(in srgb, white 78%, transparent) !important;
 }
 
+.text-white\/76 {
+  color: color-mix(in srgb, white 76%, transparent) !important;
+}
+
 .text-white\/85 {
   color: color-mix(in srgb, white 85%, transparent) !important;
+}
+
+.text-white\/82 {
+  color: color-mix(in srgb, white 82%, transparent) !important;
+}
+
+.text-white\/86 {
+  color: color-mix(in srgb, white 86%, transparent) !important;
 }
 
 .border-white\/10 {
@@ -926,6 +966,11 @@ select:-webkit-autofill:focus {
 :root[data-color-mode="dark"] .text-white\/78,
 :root[data-theme="dark"] .text-white\/78 {
   color: color-mix(in srgb, white 82%, transparent) !important;
+}
+
+:root[data-color-mode="dark"] .text-white\/76,
+:root[data-theme="dark"] .text-white\/76 {
+  color: color-mix(in srgb, white 80%, transparent) !important;
 }
 
 :root[data-color-mode="dark"] .text-white\/85,

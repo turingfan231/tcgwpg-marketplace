@@ -16,7 +16,7 @@ export default function BrandLogo({
       <img
         alt={alt}
         className={imgClassName}
-        fetchpriority={fetchPriority}
+        fetchPriority={fetchPriority}
         loading={loading}
         src={src}
       />
