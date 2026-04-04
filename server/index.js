@@ -2,6 +2,8 @@ import dotenv from "dotenv";
 import cors from "cors";
 import express from "express";
 import { createClient } from "@supabase/supabase-js";
+import { fileURLToPath } from "url";
+import path from "path";
 import {
   getOfferCounterpartyId,
   resolveOfferResponse,
@@ -4379,6 +4381,13 @@ app.get("/api/bootstrap", publicApiRateLimit, async (_req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`TCGWPG proxy listening on http://localhost:${port}`);
-});
+const currentFilePath = fileURLToPath(import.meta.url);
+const launchedScriptPath = process.argv[1] ? path.resolve(process.argv[1]) : "";
+
+if (launchedScriptPath === currentFilePath) {
+  app.listen(port, () => {
+    console.log(`TCGWPG proxy listening on http://localhost:${port}`);
+  });
+}
+
+export default app;
