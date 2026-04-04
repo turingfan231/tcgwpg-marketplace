@@ -933,6 +933,29 @@ function omitMissingProfileSelectColumns(columns, error) {
     .join(",");
 }
 
+async function selectWithProfileFallback(buildQuery, initialColumns) {
+  let currentColumns = String(initialColumns || "").trim();
+  let lastResult = { data: null, error: null };
+  const seen = new Set();
+
+  while (currentColumns && !seen.has(currentColumns)) {
+    seen.add(currentColumns);
+    const result = await buildQuery(currentColumns);
+    if (!result.error) {
+      return { ...result, resolvedColumns: currentColumns };
+    }
+
+    lastResult = result;
+    const fallbackColumns = omitMissingProfileSelectColumns(currentColumns, result.error);
+    if (!fallbackColumns || fallbackColumns === currentColumns) {
+      break;
+    }
+    currentColumns = fallbackColumns;
+  }
+
+  return { ...lastResult, resolvedColumns: currentColumns };
+}
+
 function omitMissingOfferColumns(payload, error) {
   const nextPayload = { ...payload };
 
@@ -1963,12 +1986,18 @@ export function MarketplaceProvider({ children }) {
   const listingsRef = useRef(listings);
   const viewedListingsRef = useRef(readViewedListingIds());
   const pendingViewedListingsRef = useRef(new Set());
+  const profileBootColumnsRef = useRef(PROFILE_BOOT_COLUMNS);
+  const profileFullColumnsRef = useRef(PROFILE_FULL_COLUMNS);
   const secondaryStateRef = useRef({
     reviewsLoaded: Boolean(cachedState?.reviews?.length),
     workspaceUserId: null,
     eventAttendanceLoaded: false,
     adminUserId: null,
   });
+  const [bootProgress, setBootProgress] = useState(hasUsableCache ? 0.34 : 0.08);
+  const [bootStatus, setBootStatus] = useState(
+    hasUsableCache ? "Restoring cached marketplace" : "Starting TCG WPG",
+  );
 
   const currentUser = useMemo(
     () => sanitizeUser(users.find((user) => user.id === currentUserId)) || null,
@@ -2570,29 +2599,32 @@ export function MarketplaceProvider({ children }) {
     [currentUserRecord?.accountStatus, pushToast],
   );
 
+  const updateBootState = useCallback((progress, label) => {
+    setBootProgress((current) => Math.max(current, Number(progress) || 0));
+    if (label) {
+      setBootStatus(label);
+    }
+  }, []);
+
   const bootstrapProfile = useCallback(async (authUser, payload = {}) => {
     if (!isSupabaseConfigured || !authUser) {
       return null;
     }
 
-    let profileResult = await supabase
-      .from("profiles")
-      .select(PROFILE_FULL_COLUMNS)
-      .eq("id", authUser.id)
-      .maybeSingle();
-
-    if (profileResult.error) {
-      const fallbackColumns = omitMissingProfileSelectColumns(PROFILE_FULL_COLUMNS, profileResult.error);
-      if (fallbackColumns && fallbackColumns !== PROFILE_FULL_COLUMNS) {
-        profileResult = await supabase
+    const profileResult = await selectWithProfileFallback(
+      (columns) =>
+        supabase
           .from("profiles")
-          .select(fallbackColumns)
+          .select(columns)
           .eq("id", authUser.id)
-          .maybeSingle();
-      }
-    }
+          .maybeSingle(),
+      profileFullColumnsRef.current,
+    );
 
     const { data: existingProfile, error: profileError } = profileResult;
+    if (!profileError && profileResult.resolvedColumns) {
+      profileFullColumnsRef.current = profileResult.resolvedColumns;
+    }
 
     if (profileError) {
       throw profileError;
@@ -2925,6 +2957,7 @@ export function MarketplaceProvider({ children }) {
 
       if (!options.silent) {
         setLoading(true);
+        updateBootState(hasUsableCache ? 0.4 : 0.2, "Loading marketplace");
       }
 
       try {
@@ -2934,9 +2967,12 @@ export function MarketplaceProvider({ children }) {
           authUser = authResult.data?.user || null;
         }
 
-        let profilesPromise = supabase.from("profiles").select(PROFILE_BOOT_COLUMNS);
+        const profilesPromise = selectWithProfileFallback(
+          (columns) => supabase.from("profiles").select(columns),
+          profileBootColumnsRef.current,
+        );
         const [
-          profilesInitialRes,
+          profilesRes,
           listingsRes,
           manualEventsRes,
           siteSettingsRes,
@@ -2952,14 +2988,6 @@ export function MarketplaceProvider({ children }) {
             : Promise.resolve({ data: [], error: null }),
         ]);
 
-        let profilesRes = profilesInitialRes;
-        if (profilesRes.error) {
-          const fallbackColumns = omitMissingProfileSelectColumns(PROFILE_BOOT_COLUMNS, profilesRes.error);
-          if (fallbackColumns && fallbackColumns !== PROFILE_BOOT_COLUMNS) {
-            profilesRes = await supabase.from("profiles").select(fallbackColumns);
-          }
-        }
-
         if (profilesRes.error) throw profilesRes.error;
         if (listingsRes.error) throw listingsRes.error;
         if (manualEventsRes.error) throw manualEventsRes.error;
@@ -2967,6 +2995,13 @@ export function MarketplaceProvider({ children }) {
           throw siteSettingsRes.error;
         }
         if (wishlistsRes.error) throw wishlistsRes.error;
+        if (profilesRes.resolvedColumns) {
+          profileBootColumnsRef.current = profilesRes.resolvedColumns;
+        }
+
+        if (!options.silent) {
+          updateBootState(hasUsableCache ? 0.7 : 0.58, "Preparing listings");
+        }
 
         const normalizedProfiles = (profilesRes.data || [])
           .map((row) => mergeAuthedProfileMetadata(row, authUser))
@@ -2979,6 +3014,10 @@ export function MarketplaceProvider({ children }) {
         setWishlist((wishlistsRes.data || []).map((item) => item.listing_id));
         if (!siteSettingsRes.error && siteSettingsRes.data) {
           setSiteSettings(fromSiteSettingsRow(siteSettingsRes.data));
+        }
+
+        if (!options.silent) {
+          updateBootState(hasUsableCache ? 0.9 : 0.82, "Finalizing home");
         }
 
         const authedProfile = authedUserId
@@ -3043,10 +3082,13 @@ export function MarketplaceProvider({ children }) {
           await Promise.all(secondaryTasks.map((task) => task()));
         }
       } finally {
+        if (!options.silent) {
+          updateBootState(1, "Ready");
+        }
         setLoading(false);
       }
     },
-    [currentUserId, loadAdminData, loadEventAttendanceFeed, loadSellerTrustData, loadWorkspaceData],
+    [currentUserId, hasUsableCache, loadAdminData, loadEventAttendanceFeed, loadSellerTrustData, loadWorkspaceData, updateBootState],
   );
 
   const ensureSellerTrustLoaded = useCallback(
@@ -3330,6 +3372,7 @@ export function MarketplaceProvider({ children }) {
 
       try {
         if (authUser) {
+          updateBootState(hasUsableCache ? 0.28 : 0.16, "Checking your account");
           const profile = await bootstrapProfile(authUser);
           if (!mounted) {
             return;
@@ -3375,6 +3418,7 @@ export function MarketplaceProvider({ children }) {
     }
 
     async function initAuth() {
+      updateBootState(hasUsableCache ? 0.16 : 0.1, "Checking session");
       const { data, error } = await supabase.auth.getSession();
       if (!mounted) {
         return;
@@ -3403,7 +3447,7 @@ export function MarketplaceProvider({ children }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [bootstrapProfile, hasUsableCache, refreshMarketplaceData]);
+  }, [bootstrapProfile, hasUsableCache, refreshMarketplaceData, updateBootState]);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !currentUserId || !authReady) {
@@ -7389,6 +7433,8 @@ export function MarketplaceProvider({ children }) {
     adminOverview,
     adminAuditLog,
     authReady,
+    bootProgress,
+    bootStatus,
     activeListings,
     bumpListing,
     changeCurrentUserPassword,

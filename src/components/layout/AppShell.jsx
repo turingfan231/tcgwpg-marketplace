@@ -82,7 +82,7 @@ function DesktopSidebar({ pathname }) {
 
   return (
     <aside
-      className="hidden w-[272px] shrink-0 flex-col border-r px-5 py-6 lg:flex"
+      className="hidden w-[232px] shrink-0 flex-col border-r px-4 py-5 xl:w-[244px] lg:flex"
       style={{
         background: "linear-gradient(180deg, rgba(14,14,18,0.96), rgba(10,10,12,0.98))",
         borderColor: "rgba(255,255,255,0.05)",
@@ -133,29 +133,12 @@ function DesktopSidebar({ pathname }) {
         ))}
       </nav>
 
-      <div
-        className="mt-auto rounded-[24px] p-4"
-        style={{
-          background: "linear-gradient(180deg, rgba(64,14,18,0.24), rgba(18,18,22,0.7))",
-          border: "1px solid rgba(239,68,68,0.08)",
-        }}
-      >
-        <p className="text-[11px] uppercase tracking-[0.12em]" style={{ color: "#f87171", fontWeight: 700 }}>
-          Desktop Mode
-        </p>
-        <p className="mt-2 text-[13px] text-white" style={{ fontWeight: 700 }}>
-          Browse faster on PC
-        </p>
-        <p className="mt-1 text-[11px]" style={{ color: "#8a8a92", lineHeight: 1.5 }}>
-          Wider market grids, denser inboxes, and proper multi-column workspace layouts are now active here.
-        </p>
-      </div>
     </aside>
   );
 }
 
 export default function AppShell() {
-  const { authReady, loading } = useMarketplace();
+  const { authReady, bootProgress, bootStatus, loading } = useMarketplace();
   const location = useLocation();
   const [isDesktop, setIsDesktop] = useState(() =>
     typeof window === "undefined" ? false : window.matchMedia("(min-width: 1024px)").matches,
@@ -189,21 +172,34 @@ export default function AppShell() {
 
     const timeoutId = window.setTimeout(() => {
       setBootReady(true);
-    }, isDesktop ? 220 : 180);
+    }, isDesktop ? 120 : 90);
 
     return () => window.clearTimeout(timeoutId);
   }, [authReady, bootReady, isDesktop, loading]);
 
   if (!bootReady) {
-    return <AppLaunchScreen compact={isDesktop} />;
+    return <AppLaunchScreen compact={isDesktop} progress={bootProgress} status={bootStatus} />;
   }
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden" style={{ background: "radial-gradient(circle at top left, rgba(56,56,64,0.12) 0%, rgba(10,10,12,1) 32%)" }}>
+    <div
+      className="flex h-[100dvh] overflow-hidden"
+      style={{
+        background:
+          "radial-gradient(circle at top left, rgba(90,18,24,0.14) 0%, transparent 24%), radial-gradient(circle at 72% 0%, rgba(255,255,255,0.035) 0%, transparent 28%), linear-gradient(180deg, #0d0d10 0%, #09090b 100%)",
+      }}
+    >
       <DesktopSidebar pathname={location.pathname} />
       <div className="flex min-w-0 flex-1 overflow-hidden">
-        <div className="relative flex h-[100dvh] min-h-0 w-full max-w-[430px] flex-col overflow-hidden lg:max-w-none lg:flex-1 lg:px-6 lg:py-6">
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:w-full lg:overflow-visible lg:rounded-[28px] lg:border lg:border-white/5 lg:bg-[linear-gradient(180deg,rgba(16,16,20,0.94),rgba(12,12,14,0.98))] lg:shadow-[0_18px_48px_rgba(0,0,0,0.24)]">
+        <div className="relative flex h-[100dvh] min-h-0 w-full max-w-[430px] flex-col overflow-hidden lg:max-w-none lg:flex-1 lg:px-4 lg:py-4 xl:px-6 xl:py-5">
+        <div
+          className="flex min-h-0 flex-1 flex-col overflow-hidden lg:w-full lg:overflow-visible lg:rounded-[30px] lg:border lg:border-white/5 lg:shadow-[0_18px_48px_rgba(0,0,0,0.24)]"
+          style={{
+            background: isDesktop
+              ? "radial-gradient(circle at top left, rgba(255,255,255,0.025) 0%, transparent 20%), linear-gradient(180deg, rgba(16,16,20,0.96), rgba(12,12,14,0.98))"
+              : undefined,
+          }}
+        >
           {isDesktop ? (
             <Outlet />
           ) : (
