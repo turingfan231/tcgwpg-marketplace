@@ -1,4 +1,4 @@
-import "dotenv/config";
+import dotenv from "dotenv";
 import cors from "cors";
 import express from "express";
 import { createClient } from "@supabase/supabase-js";
@@ -7,8 +7,24 @@ import {
   resolveOfferResponse,
 } from "../src/lib/offerState.js";
 
+dotenv.config({ path: ".env.local" });
+dotenv.config();
+
 const app = express();
 const port = Number(process.env.PORT || 8787);
+const supabaseReadKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  process.env.VITE_SUPABASE_ANON_KEY;
+const supabaseReadClient =
+  process.env.VITE_SUPABASE_URL && supabaseReadKey
+    ? createClient(process.env.VITE_SUPABASE_URL, supabaseReadKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      })
+    : null;
 const supabaseAdmin =
   process.env.VITE_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
     ? createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
@@ -59,6 +75,87 @@ const UNION_ARENA_CARDLIST_PAGE = "https://www.unionarena-tcg.com/na/cardlist/";
 const TCGCSV_BASE = "https://tcgcsv.com/tcgplayer";
 const SERVER_TIMEOUT_MS = 15000;
 const FX_TIMEOUT_MS = 2500;
+const PROFILE_BOOTSTRAP_COLUMNS = [
+  "id",
+  "role",
+  "name",
+  "username",
+  "default_listing_game",
+  "avatar_url",
+  "neighborhood",
+  "postal_code",
+  "badges",
+  "verified",
+  "account_status",
+  "banner_style",
+  "favorite_games",
+  "followed_seller_ids",
+  "followed_store_slugs",
+  "meetup_preferences",
+  "response_time",
+  "completed_deals",
+  "created_at",
+  "onboarding_complete",
+].join(",");
+const LISTING_BOOTSTRAP_COLUMNS = [
+  "id",
+  "seller_id",
+  "type",
+  "game",
+  "game_slug",
+  "title",
+  "price",
+  "price_currency",
+  "previous_price",
+  "market_price",
+  "market_price_currency",
+  "condition",
+  "neighborhood",
+  "postal_code",
+  "accepts_trade",
+  "listing_format",
+  "quantity",
+  "bundle_items",
+  "description",
+  "primary_image",
+  "image_gallery",
+  "status",
+  "featured",
+  "flagged",
+  "admin_notes",
+  "views",
+  "offers",
+  "created_at",
+  "updated_at",
+].join(",");
+const MANUAL_EVENT_BOOTSTRAP_COLUMNS = [
+  "id",
+  "title",
+  "store",
+  "source",
+  "source_type",
+  "source_url",
+  "date_str",
+  "time",
+  "game",
+  "fee",
+  "neighborhood",
+  "note",
+  "published",
+].join(",");
+const MANUAL_EVENT_BOOTSTRAP_FALLBACK_COLUMNS = [
+  "id",
+  "title",
+  "store",
+  "source",
+  "date_str",
+  "time",
+  "game",
+  "fee",
+  "neighborhood",
+  "note",
+  "published",
+].join(",");
 const IMAGE_PROXY_ALLOWED_HOSTS = new Set([
   "en.onepiece-cardgame.com",
   "storage.googleapis.com",
@@ -245,6 +342,65 @@ function omitMissingOfferColumns(payload, error) {
   }
 
   return nextPayload;
+}
+
+function omitMissingProfileSelectColumns(columns, error) {
+  const nextColumns = String(columns || "")
+    .split(",")
+    .map((column) => column.trim())
+    .filter(Boolean);
+
+  const missingProfileColumns = [
+    "username",
+    "avatar_url",
+    "default_listing_game",
+    "followed_seller_ids",
+    "followed_store_slugs",
+    "favorite_games",
+    "banner_style",
+    "onboarding_complete",
+    "response_time",
+    "completed_deals",
+    "meetup_preferences",
+    "badges",
+    "verified",
+    "account_status",
+    "postal_code",
+    "bio",
+    "email",
+  ];
+
+  return nextColumns
+    .filter(
+      (column) =>
+        !missingProfileColumns.some(
+          (missing) => isMissingColumnError(error, missing) && column === missing,
+        ),
+    )
+    .join(",");
+}
+
+async function selectProfilesWithFallback(buildQuery, initialColumns) {
+  let currentColumns = String(initialColumns || "").trim();
+  let lastResult = { data: null, error: null };
+  const seen = new Set();
+
+  while (currentColumns && !seen.has(currentColumns)) {
+    seen.add(currentColumns);
+    const result = await buildQuery(currentColumns);
+    if (!result.error) {
+      return { ...result, resolvedColumns: currentColumns };
+    }
+
+    lastResult = result;
+    const fallbackColumns = omitMissingProfileSelectColumns(currentColumns, result.error);
+    if (!fallbackColumns || fallbackColumns === currentColumns) {
+      break;
+    }
+    currentColumns = fallbackColumns;
+  }
+
+  return { ...lastResult, resolvedColumns: currentColumns };
 }
 
 function sameParticipantSet(left = [], right = []) {
@@ -4145,6 +4301,80 @@ app.get("/api/events/local", publicApiRateLimit, async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       error: error.message,
+    });
+  }
+});
+
+app.get("/api/bootstrap", publicApiRateLimit, async (_req, res) => {
+  if (!supabaseReadClient) {
+    return res.status(503).json({
+      error: "Supabase bootstrap client is not configured.",
+    });
+  }
+
+  try {
+    const manualEventsPromise = (async () => {
+      let result = await supabaseReadClient
+        .from("manual_events")
+        .select(MANUAL_EVENT_BOOTSTRAP_COLUMNS);
+      if (
+        result.error &&
+        (isMissingColumnError(result.error, "source_type") ||
+          isMissingColumnError(result.error, "source_url"))
+      ) {
+        result = await supabaseReadClient
+          .from("manual_events")
+          .select(MANUAL_EVENT_BOOTSTRAP_FALLBACK_COLUMNS);
+      }
+      return result;
+    })();
+
+    const [listingsRes, manualEventsRes, siteSettingsRes] = await Promise.all([
+      supabaseReadClient.from("listings").select(LISTING_BOOTSTRAP_COLUMNS),
+      manualEventsPromise,
+      supabaseReadClient
+        .from("site_settings")
+        .select("key,payload")
+        .eq("key", "global")
+        .maybeSingle(),
+    ]);
+
+    if (listingsRes.error) {
+      throw listingsRes.error;
+    }
+    if (manualEventsRes.error) {
+      throw manualEventsRes.error;
+    }
+    if (siteSettingsRes.error && !isMissingTableError(siteSettingsRes.error, "site_settings")) {
+      throw siteSettingsRes.error;
+    }
+
+    const listings = listingsRes.data || [];
+    const sellerIds = [...new Set(listings.map((listing) => String(listing.seller_id || "")).filter(Boolean))];
+
+    let profiles = [];
+    if (sellerIds.length) {
+      const profilesRes = await selectProfilesWithFallback(
+        (columns) => supabaseReadClient.from("profiles").select(columns).in("id", sellerIds),
+        PROFILE_BOOTSTRAP_COLUMNS,
+      );
+
+      if (profilesRes.error) {
+        throw profilesRes.error;
+      }
+      profiles = profilesRes.data || [];
+    }
+
+    return res.json({
+      users: profiles,
+      listings,
+      manualEvents: manualEventsRes.data || [],
+      siteSettings: siteSettingsRes.data || null,
+      fetchedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: error.message || "Marketplace bootstrap failed.",
     });
   }
 });

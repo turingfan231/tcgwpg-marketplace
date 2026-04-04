@@ -144,6 +144,7 @@ export default function AppShell() {
     typeof window === "undefined" ? false : window.matchMedia("(min-width: 1024px)").matches,
   );
   const [bootReady, setBootReady] = useState(false);
+  const [bootDeadlineElapsed, setBootDeadlineElapsed] = useState(false);
   const hideNav = HIDE_NAV_PATTERNS.some((pattern) => pattern.test(location.pathname));
 
   useEffect(() => {
@@ -162,21 +163,41 @@ export default function AppShell() {
   }, []);
 
   useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setBootDeadlineElapsed(true);
+    }, hasBootCache ? 1200 : isDesktop ? 3200 : 2800);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [hasBootCache, isDesktop]);
+
+  useEffect(() => {
     if (bootReady) {
       return undefined;
     }
 
-    const canRevealFromCache = hasBootCache && !loading;
-    if (loading || (!authReady && !canRevealFromCache)) {
+    if (bootDeadlineElapsed) {
+      setBootReady(true);
+      return undefined;
+    }
+
+    if (hasBootCache) {
+      const timeoutId = window.setTimeout(() => {
+        setBootReady(true);
+      }, isDesktop ? 70 : 50);
+
+      return () => window.clearTimeout(timeoutId);
+    }
+
+    if (loading || !authReady) {
       return undefined;
     }
 
     const timeoutId = window.setTimeout(() => {
       setBootReady(true);
-    }, canRevealFromCache ? 50 : isDesktop ? 120 : 90);
+    }, isDesktop ? 120 : 90);
 
     return () => window.clearTimeout(timeoutId);
-  }, [authReady, bootReady, hasBootCache, isDesktop, loading]);
+  }, [authReady, bootDeadlineElapsed, bootReady, hasBootCache, isDesktop, loading]);
 
   if (!bootReady) {
     return <AppLaunchScreen compact={isDesktop} progress={bootProgress} status={bootStatus} />;
