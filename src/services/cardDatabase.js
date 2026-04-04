@@ -726,6 +726,14 @@ export async function fetchLocalEvents() {
   );
 }
 
+export async function syncLocalEventsCache() {
+  return fetchJsonFromCandidates(
+    `${LOCAL_EVENTS_PATH}?sync=1`,
+    undefined,
+    "Local events sync failed.",
+  );
+}
+
 export async function searchCardPrintings({ game, query, limit = 24, language = "english" }) {
   const normalizedGame = normalizeGameName(game);
   const normalizedLanguage = normalizeLanguage(language);

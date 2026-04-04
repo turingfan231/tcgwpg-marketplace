@@ -201,6 +201,7 @@ create table public.manual_events (
   store text not null,
   source text not null default 'Admin override',
   source_type text not null default 'manual',
+  external_key text,
   source_url text,
   date_str date not null,
   time text not null,
@@ -209,7 +210,8 @@ create table public.manual_events (
   neighborhood text,
   note text not null default '',
   published boolean not null default true,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 create table public.search_history (
@@ -241,6 +243,13 @@ alter table public.collection_items enable row level security;
 alter table public.user_event_preferences enable row level security;
 alter table public.bug_reports enable row level security;
 alter table public.manual_events enable row level security;
+
+create unique index if not exists manual_events_external_key_unique
+on public.manual_events (external_key)
+where external_key is not null;
+
+create index if not exists manual_events_source_type_date_idx
+on public.manual_events (source_type, date_str, published);
 alter table public.search_history enable row level security;
 alter table public.site_settings enable row level security;
 

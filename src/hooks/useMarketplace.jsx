@@ -32,6 +32,7 @@ import {
   resolveOfferResponse,
 } from "../lib/offerState";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
+import { syncLocalEventsCache } from "../services/cardDatabase";
 import { average, formatCurrency, slugify } from "../utils/formatters";
 
 const MarketplaceContext = createContext(null);
@@ -49,6 +50,7 @@ const VIEW_AS_STORAGE_KEY = "tcgwpg.viewAsUserId";
 const STORE_FOLLOW_STORAGE_PREFIX = "tcgwpg.storeFollows";
 const EVENT_REMINDER_STORAGE_PREFIX = "tcgwpg.eventReminders";
 const EVENT_ATTENDANCE_STORAGE_PREFIX = "tcgwpg.eventAttendance";
+const EVENT_SYNC_STORAGE_KEY = "tcgwpg.eventsLastSync";
 const SUPPORTED_GAME_SLUGS = new Set([
   "magic",
   "pokemon",
@@ -158,6 +160,19 @@ const MANUAL_EVENT_COLUMNS = [
   "source",
   "source_type",
   "source_url",
+  "date_str",
+  "time",
+  "game",
+  "fee",
+  "neighborhood",
+  "note",
+  "published",
+].join(",");
+const MANUAL_EVENT_FALLBACK_COLUMNS = [
+  "id",
+  "title",
+  "store",
+  "source",
   "date_str",
   "time",
   "game",
@@ -541,6 +556,27 @@ function writeEventAttendanceStorage(userId, value) {
       getEventAttendanceStorageKey(userId),
       JSON.stringify(value && typeof value === "object" ? value : {}),
     );
+  } catch {
+    // Ignore storage write failures in constrained/private browser contexts.
+  }
+}
+
+function readEventSyncTimestamp() {
+  if (typeof window === "undefined") {
+    return 0;
+  }
+
+  const rawValue = Number(window.localStorage.getItem(EVENT_SYNC_STORAGE_KEY) || 0);
+  return Number.isFinite(rawValue) ? rawValue : 0;
+}
+
+function writeEventSyncTimestamp(value) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(EVENT_SYNC_STORAGE_KEY, String(Number(value) || Date.now()));
   } catch {
     // Ignore storage write failures in constrained/private browser contexts.
   }
@@ -1988,6 +2024,7 @@ export function MarketplaceProvider({ children }) {
   const pendingViewedListingsRef = useRef(new Set());
   const profileBootColumnsRef = useRef(PROFILE_BOOT_COLUMNS);
   const profileFullColumnsRef = useRef(PROFILE_FULL_COLUMNS);
+  const eventsSyncRunningRef = useRef(false);
   const secondaryStateRef = useRef({
     reviewsLoaded: Boolean(cachedState?.reviews?.length),
     workspaceUserId: null,
@@ -2791,41 +2828,17 @@ export function MarketplaceProvider({ children }) {
         draftRes,
         threadRowsRes,
         offersRes,
-        bugReportsRes,
-        notificationsRes,
-        searchHistoryRes,
-        collectionItemsRes,
-        eventPreferencesRes,
       ] = await Promise.all([
         supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId),
         supabase.from("listing_drafts").select("payload,updated_at").eq("user_id", authedUserId).maybeSingle(),
         supabase.from("message_threads").select(THREAD_COLUMNS).contains("participant_ids", [authedUserId]),
         supabase.from("offers").select(OFFER_COLUMNS).or(`seller_id.eq.${authedUserId},buyer_id.eq.${authedUserId}`),
-        supabase.from("bug_reports").select(BUG_REPORT_COLUMNS).eq("reporter_id", authedUserId),
-        supabase.from("notifications").select(NOTIFICATION_COLUMNS).eq("user_id", authedUserId),
-        supabase.from("search_history").select(SEARCH_HISTORY_COLUMNS).eq("user_id", authedUserId).order("created_at", { ascending: false }),
-        supabase.from("collection_items").select(COLLECTION_ITEM_COLUMNS).eq("user_id", authedUserId).order("updated_at", { ascending: false }),
-        supabase.from("user_event_preferences").select(EVENT_PREF_COLUMNS).eq("user_id", authedUserId),
       ]);
 
       if (wishlistsRes.error) throw wishlistsRes.error;
       if (draftRes.error) throw draftRes.error;
       if (threadRowsRes.error) throw threadRowsRes.error;
       if (offersRes.error) throw offersRes.error;
-      if (bugReportsRes.error && !isMissingTableError(bugReportsRes.error, "bug_reports")) {
-        throw bugReportsRes.error;
-      }
-      if (notificationsRes.error) throw notificationsRes.error;
-      if (searchHistoryRes.error) throw searchHistoryRes.error;
-      if (collectionItemsRes.error && !isMissingTableError(collectionItemsRes.error, "collection_items")) {
-        throw collectionItemsRes.error;
-      }
-      if (
-        eventPreferencesRes.error &&
-        !isMissingTableError(eventPreferencesRes.error, "user_event_preferences")
-      ) {
-        throw eventPreferencesRes.error;
-      }
 
       const threadRows = threadRowsRes.data || [];
       let messageRows = [];
@@ -2853,34 +2866,68 @@ export function MarketplaceProvider({ children }) {
       setWishlist((wishlistsRes.data || []).map((item) => item.listing_id));
       setListingDrafts(nextDrafts);
       setActiveDraftId(draftPayload?.activeDraftId || nextDrafts[0]?.id || null);
+      setThreads(buildThreadMap(threadRows, messageRows));
+      setOffers((offersRes.data || []).map(fromOfferRow));
+
+      const [
+        bugReportsRes,
+        notificationsRes,
+        searchHistoryRes,
+        collectionItemsRes,
+        eventPreferencesRes,
+      ] = await Promise.all([
+        supabase.from("bug_reports").select(BUG_REPORT_COLUMNS).eq("reporter_id", authedUserId),
+        supabase.from("notifications").select(NOTIFICATION_COLUMNS).eq("user_id", authedUserId),
+        supabase.from("search_history").select(SEARCH_HISTORY_COLUMNS).eq("user_id", authedUserId).order("created_at", { ascending: false }),
+        supabase.from("collection_items").select(COLLECTION_ITEM_COLUMNS).eq("user_id", authedUserId).order("updated_at", { ascending: false }),
+        supabase.from("user_event_preferences").select(EVENT_PREF_COLUMNS).eq("user_id", authedUserId),
+      ]);
+
+      if (!bugReportsRes.error) {
+        setBugReports((bugReportsRes.data || []).map(fromBugReportRow));
+      } else if (!isMissingTableError(bugReportsRes.error, "bug_reports")) {
+        console.error("Workspace bug reports failed to load:", bugReportsRes.error);
+      }
+
+      if (!notificationsRes.error) {
+        setNotifications((notificationsRes.data || []).map(fromNotificationRow));
+      } else {
+        console.error("Workspace notifications failed to load:", notificationsRes.error);
+      }
+
+      if (!searchHistoryRes.error) {
+        setSearchHistory(
+          (searchHistoryRes.data || []).map((row) => ({
+            id: row.id,
+            query: row.query,
+            game: row.game,
+            source: row.source,
+            createdAt: row.created_at,
+          })),
+        );
+      } else {
+        console.error("Workspace search history failed to load:", searchHistoryRes.error);
+      }
+
       if (!collectionItemsRes.error) {
         setCollectionItems((collectionItemsRes.data || []).map(fromCollectionItemRow));
-      } else {
+      } else if (isMissingTableError(collectionItemsRes.error, "collection_items")) {
         setCollectionItems(readCollectionStorage(authedUserId).map(normalizeCollectionRecord));
+      } else {
+        console.error("Workspace collection failed to load:", collectionItemsRes.error);
       }
+
       if (!eventPreferencesRes.error) {
         const nextEventPreferences = normalizeEventPreferences(eventPreferencesRes.data || []);
         setEventReminderIds(nextEventPreferences.reminderIds);
         setEventAttendance(nextEventPreferences.attendance);
-      } else {
+      } else if (isMissingTableError(eventPreferencesRes.error, "user_event_preferences")) {
         setEventReminderIds(readEventReminderStorage(authedUserId));
         setEventAttendance(readEventAttendanceStorage(authedUserId));
+      } else {
+        console.error("Workspace event preferences failed to load:", eventPreferencesRes.error);
       }
-      setThreads(buildThreadMap(threadRows, messageRows));
-      setOffers((offersRes.data || []).map(fromOfferRow));
-      if (!bugReportsRes.error) {
-        setBugReports((bugReportsRes.data || []).map(fromBugReportRow));
-      }
-      setNotifications((notificationsRes.data || []).map(fromNotificationRow));
-      setSearchHistory(
-        (searchHistoryRes.data || []).map((row) => ({
-          id: row.id,
-          query: row.query,
-          game: row.game,
-          source: row.source,
-          createdAt: row.created_at,
-        })),
-      );
+
       secondaryStateRef.current.workspaceUserId = String(authedUserId);
       return normalizedProfiles;
     },
@@ -2971,6 +3018,17 @@ export function MarketplaceProvider({ children }) {
           (columns) => supabase.from("profiles").select(columns),
           profileBootColumnsRef.current,
         );
+        const manualEventsPromise = (async () => {
+          let result = await supabase.from("manual_events").select(MANUAL_EVENT_COLUMNS);
+          if (
+            result.error &&
+            (isMissingColumnError(result.error, "source_type") ||
+              isMissingColumnError(result.error, "source_url"))
+          ) {
+            result = await supabase.from("manual_events").select(MANUAL_EVENT_FALLBACK_COLUMNS);
+          }
+          return result;
+        })();
         const [
           profilesRes,
           listingsRes,
@@ -2981,7 +3039,7 @@ export function MarketplaceProvider({ children }) {
           await Promise.all([
           profilesPromise,
           supabase.from("listings").select(LISTING_BOOT_COLUMNS),
-          supabase.from("manual_events").select(MANUAL_EVENT_COLUMNS),
+          manualEventsPromise,
           supabase.from("site_settings").select(SITE_SETTINGS_COLUMNS).eq("key", "global").maybeSingle(),
           authedUserId
             ? supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId)
@@ -3488,6 +3546,36 @@ export function MarketplaceProvider({ children }) {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [authReady, currentUserId, refreshMarketplaceData]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !authReady || eventsSyncRunningRef.current) {
+      return;
+    }
+
+    const lastSyncedAt = readEventSyncTimestamp();
+    const maxAgeMs = 45 * 60 * 1000;
+    const emptyRetryMs = 2 * 60 * 1000;
+    const syncWindowMs = manualEvents.length ? maxAgeMs : emptyRetryMs;
+    if (lastSyncedAt && Date.now() - lastSyncedAt < syncWindowMs) {
+      return;
+    }
+
+    eventsSyncRunningRef.current = true;
+
+    void syncLocalEventsCache()
+      .then((payload) => {
+        if (Array.isArray(payload?.events) && payload.events.length) {
+          setManualEvents(payload.events.map(normalizeManualEventRecord));
+        }
+        writeEventSyncTimestamp(Date.now());
+      })
+      .catch((error) => {
+        console.error("Background event sync failed:", error);
+      })
+      .finally(() => {
+        eventsSyncRunningRef.current = false;
+      });
+  }, [authReady, manualEvents.length]);
 
   useEffect(() => {
     if (!currentUserId) {
