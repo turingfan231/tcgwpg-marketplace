@@ -295,10 +295,17 @@ function HeroCarousel({ slides }) {
                       }}
                     >
                       {item.storeLogo ? (
-                        <div className="flex h-11 w-11 items-center justify-center overflow-hidden lg:h-16 lg:w-16">
+                        <div
+                          className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-[14px] lg:h-16 lg:w-16 lg:rounded-[18px]"
+                          style={{
+                            background: "#ffffff",
+                            border: "1px solid rgba(255,255,255,0.16)",
+                            boxShadow: "0 10px 24px rgba(0,0,0,0.16)",
+                          }}
+                        >
                           <img
                             alt={item.storeName || "Store logo"}
-                            className="h-full w-full object-contain"
+                            className="h-full w-full object-contain p-1.5 lg:p-2"
                             decoding="async"
                             loading="lazy"
                             src={item.storeLogo}
@@ -523,7 +530,15 @@ function StoreCard({ store }) {
       >
         <div
           className="mb-2 flex h-[30px] w-[30px] items-center justify-center overflow-hidden rounded-[9px] lg:h-[42px] lg:w-[42px] lg:rounded-[14px]"
-          style={{ background: store.logoUrl ? "rgba(255,255,255,0.06)" : `linear-gradient(135deg, ${accent}, ${accent}88)` }}
+          style={
+            store.logoUrl
+              ? {
+                  background: "#ffffff",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  boxShadow: "0 8px 18px rgba(0,0,0,0.14)",
+                }
+              : { background: `linear-gradient(135deg, ${accent}, ${accent}88)` }
+          }
         >
           {store.logoUrl ? (
             <img
