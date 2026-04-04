@@ -505,10 +505,10 @@ export default function MarketPage() {
       </AnimatePresence>
 
       <PullToRefresh onRefresh={() => refreshMarketplaceData?.()}>
-        <main className="pb-[82px] lg:px-6 lg:pb-8">
+        <main className="pb-[82px] lg:mx-auto lg:w-full lg:max-w-[1480px] lg:px-6 lg:pb-8">
           {filtered.length ? (
             viewMode === "grid" ? (
-              <div className="grid grid-cols-2 gap-2 px-3 pt-2.5 lg:rounded-[24px] lg:border lg:border-white/5 lg:bg-white/[0.015] lg:grid-cols-5 lg:gap-4 lg:px-5 lg:py-5">
+              <div className="grid grid-cols-2 gap-2 px-3 pt-2.5 lg:rounded-[26px] lg:border lg:border-white/5 lg:bg-white/[0.015] lg:grid-cols-6 lg:gap-4 lg:px-5 lg:py-5">
                 {filtered.map((listing) => (
                   <GridCard
                     key={listing.id}

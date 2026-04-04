@@ -198,7 +198,7 @@ export default function MessagesPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { threadId } = useParams();
-  const { authReady, currentUserId, ensureWorkspaceDataLoaded, getThreadById, hideThreadForCurrentUser, isAuthenticated, loading, markThreadRead, offersByListingId, respondToOffer, sendMessage, threadsForCurrentUser, unreadMessageCount } = useMarketplace();
+  const { authReady, currentUserId, ensureWorkspaceDataLoaded, getThreadById, hideThreadForCurrentUser, isAuthenticated, markThreadRead, offersByListingId, respondToOffer, sendMessage, threadsForCurrentUser, unreadMessageCount } = useMarketplace();
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [tab, setTab] = useState("all");
@@ -213,10 +213,20 @@ export default function MessagesPage() {
   const [respondingOfferId, setRespondingOfferId] = useState("");
   const [showThreadActions, setShowThreadActions] = useState(false);
   const feedRef = useRef(null);
+  const workspaceHydratedForRef = useRef("");
 
   useEffect(() => {
+    if (!currentUserId) {
+      workspaceHydratedForRef.current = "";
+      return;
+    }
+    const key = String(currentUserId);
+    if (workspaceHydratedForRef.current === key) {
+      return;
+    }
+    workspaceHydratedForRef.current = key;
     void ensureWorkspaceDataLoaded();
-  }, [ensureWorkspaceDataLoaded]);
+  }, [currentUserId, ensureWorkspaceDataLoaded]);
   const desktopFeedRef = useRef(null);
   const fileInputRef = useRef(null);
   const filteredThreads = useMemo(() => {
@@ -360,7 +370,7 @@ export default function MessagesPage() {
     setCounterDraft(null);
   }
 
-  if (!authReady || loading) {
+  if (!authReady) {
     return (
       <MobileScreen>
         <SeoHead canonicalPath={threadId ? `/inbox/${threadId}` : "/inbox"} description="Manage conversations, offers, and meetup details." title="Inbox" />

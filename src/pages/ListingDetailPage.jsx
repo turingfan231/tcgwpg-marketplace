@@ -320,7 +320,7 @@ export default function ListingDetailPage() {
       </motion.header>
 
       <main className="flex-1 overflow-y-auto pb-[152px] lg:px-8 lg:pb-10 lg:pt-8">
-        <div className="mx-auto lg:grid lg:max-w-[1380px] lg:grid-cols-[minmax(0,1.08fr)_430px] lg:items-start lg:gap-8">
+      <div className="mx-auto lg:grid lg:max-w-[1480px] lg:grid-cols-[minmax(0,1.12fr)_440px] lg:items-start lg:gap-8">
         <div className="lg:sticky lg:top-24">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
           <div className="relative">

@@ -452,7 +452,7 @@ export default function AccountPage() {
               </div>
             ) : null}
 
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_380px]">
+            <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.35fr)_420px]">
               <div
                 className="overflow-hidden rounded-[30px] border p-6"
                 style={{
@@ -461,7 +461,7 @@ export default function AccountPage() {
                   borderColor: "rgba(255,255,255,0.05)",
                 }}
               >
-                <div className="flex items-start justify-between gap-6">
+                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_220px] xl:items-center">
                   <div className="flex items-start gap-4">
                     <div className="relative">
                       {avatarPreviewUrl ? (
@@ -521,11 +521,11 @@ export default function AccountPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="grid shrink-0 gap-2">
-                    <PrimaryButton className="!h-[44px] !rounded-[16px] !px-5" onClick={() => navigate("/dashboard")}>
+                  <div className="grid shrink-0 gap-2 xl:self-center">
+                    <PrimaryButton className="!h-[48px] !rounded-[16px] !px-5" onClick={() => navigate("/dashboard")}>
                       Seller Dashboard
                     </PrimaryButton>
-                    <SecondaryButton className="!h-[44px] !rounded-[16px] !px-5" onClick={() => navigate(publicProfileHref)}>
+                    <SecondaryButton className="!h-[48px] !rounded-[16px] !px-5" onClick={() => navigate(publicProfileHref)}>
                       View Public Profile
                     </SecondaryButton>
                   </div>
@@ -533,67 +533,76 @@ export default function AccountPage() {
               </div>
 
               <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-[24px] border px-4 py-4" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
+                <div className="flex min-h-[184px] flex-col rounded-[24px] border px-4 py-4" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
                   <p className="text-[10px] uppercase tracking-[0.08em]" style={{ color: "#5e5e66", fontWeight: 700 }}>Active</p>
-                  <p className="mt-3 text-[30px] text-white" style={{ fontWeight: 800 }}>{currentUserListings.length}</p>
+                  <p className="mt-auto text-[34px] text-white" style={{ fontWeight: 800 }}>{currentUserListings.length}</p>
+                  <p className="mt-2 text-[11px]" style={{ color: "#6a6a72", lineHeight: 1.45 }}>Listings currently visible in the marketplace.</p>
                 </div>
-                <div className="rounded-[24px] border px-4 py-4" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
+                <div className="flex min-h-[184px] flex-col rounded-[24px] border px-4 py-4" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
                   <p className="text-[10px] uppercase tracking-[0.08em]" style={{ color: "#5e5e66", fontWeight: 700 }}>Saved</p>
-                  <p className="mt-3 text-[30px] text-white" style={{ fontWeight: 800 }}>{wishlist.length}</p>
+                  <p className="mt-auto text-[34px] text-white" style={{ fontWeight: 800 }}>{wishlist.length}</p>
+                  <p className="mt-2 text-[11px]" style={{ color: "#6a6a72", lineHeight: 1.45 }}>Cards you are tracking from around Winnipeg.</p>
                 </div>
                 <button
-                  className="rounded-[24px] border px-4 py-4 text-left"
+                  className="flex min-h-[184px] flex-col rounded-[24px] border px-4 py-4 text-left transition-colors hover:bg-white/[0.03]"
                   style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}
                   type="button"
                   onClick={() => setSheet("followers")}
                 >
                   <p className="text-[10px] uppercase tracking-[0.08em]" style={{ color: "#5e5e66", fontWeight: 700 }}>Followers</p>
-                  <p className="mt-3 text-[30px] text-white" style={{ fontWeight: 800 }}>{followerCount}</p>
+                  <p className="mt-auto text-[34px] text-white" style={{ fontWeight: 800 }}>{followerCount}</p>
+                  <p className="mt-2 text-[11px]" style={{ color: "#6a6a72", lineHeight: 1.45 }}>People following your public seller profile.</p>
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <SettingsGroup title="Notifications">
-                <SettingsRow icon={Bell} iconColor="#f87171" label="Notification Center" sublabel="Messages, offers, reminders, and updates" value={String(unreadNotificationCount)} isLast onClick={() => navigate("/notifications")} />
-              </SettingsGroup>
+            <div className="grid gap-6 xl:grid-cols-3">
+              <div className="space-y-6">
+                <SettingsGroup title="Overview">
+                  <SettingsRow icon={Bell} iconColor="#f87171" label="Notification Center" sublabel="Messages, offers, reminders, and updates" value={String(unreadNotificationCount)} onClick={() => navigate("/notifications")} />
+                  <SettingsRow icon={Users} iconColor="#6ee7b7" label="Followers" sublabel="See who follows your seller profile" value={String(followerCount)} onClick={() => setSheet("followers")} />
+                  <SettingsRow icon={Eye} iconColor="#a78bfa" isLast label="Public Seller Profile" sublabel="See how buyers view your profile" onClick={() => navigate(publicProfileHref)} />
+                </SettingsGroup>
 
-              <SettingsGroup title="Marketplace">
-                <SettingsRow icon={Heart} iconColor="#f87171" label="Wishlist" sublabel="Saved cards and watchlist" value={String(wishlist.length)} onClick={() => navigate("/wishlist")} />
-                <SettingsRow icon={BookOpenText} iconColor="#60a5fa" label="Collection" sublabel="Your binder and collection value" value={String(collectionItems.length)} onClick={() => navigate("/collection")} />
-                <SettingsRow icon={BarChart3} iconColor="#ef4444" label="Seller Dashboard" sublabel="Listings, drafts, and offers" value={String(currentUserListings.length)} onClick={() => navigate("/dashboard")} />
-                <SettingsRow icon={Users} iconColor="#6ee7b7" label="Followers" sublabel="See who follows your seller profile" value={String(followerCount)} onClick={() => setSheet("followers")} />
-                <SettingsRow icon={Eye} iconColor="#a78bfa" isLast label="Public Seller Profile" sublabel="See how buyers view your profile" onClick={() => navigate(publicProfileHref)} />
-              </SettingsGroup>
+                <SettingsGroup title="Meetup">
+                  <SettingsRow icon={MapPin} iconColor="#f87171" label="Trusted Meetup Spots" sublabel="Manage your preferred public meetup locations" value={meetupSummary} onClick={() => setSheet("preferences")} />
+                  <SettingsRow icon={MapPin} iconColor="#60a5fa" label="Meetup Notes" sublabel={profileForm.meetupPreferences || "No meetup notes added"} isLast onClick={() => setSheet("preferences")} />
+                </SettingsGroup>
 
-              <SettingsGroup title="Meetup">
-                <SettingsRow icon={MapPin} iconColor="#f87171" label="Trusted Meetup Spots" sublabel="Manage your preferred public meetup locations" value={meetupSummary} onClick={() => setSheet("preferences")} />
-                <SettingsRow icon={MapPin} iconColor="#60a5fa" label="Meetup Notes" sublabel={profileForm.meetupPreferences || "No meetup notes added"} isLast onClick={() => setSheet("preferences")} />
-              </SettingsGroup>
+                <SettingsGroup title="Privacy & Security">
+                  <SettingsRow icon={Lock} iconColor="#a78bfa" label="Password & Security" sublabel="Change your password" onClick={() => setSheet("security")} />
+                  {isAdmin ? (
+                    <SettingsRow badge="Admin" icon={ShieldCheck} iconColor="#fbbf24" label="Admin Panel" sublabel="Moderation and controls" isLast onClick={() => navigate("/admin")} />
+                  ) : (
+                    <SettingsRow icon={Flag} iconColor="#fb7185" label="Suspension Appeal" sublabel={isSuspended ? "Explain the situation to admin support" : "Appeal options unavailable"} value={isSuspended ? undefined : "Locked"} isLast onClick={() => { if (isSuspended) setSheet("appeal"); }} />
+                  )}
+                </SettingsGroup>
+              </div>
 
-              <SettingsGroup title="Seller">
-                <SettingsRow icon={Gamepad2} iconColor="#fbbf24" label="Favorite Games" sublabel={favoriteGamesLabel} onClick={() => setSheet("preferences")} />
-                <SettingsRow icon={Shield} iconColor="#60a5fa" label="Profile Details" sublabel={`${profileForm.username || "No username"} / ${profileForm.neighborhood || "Winnipeg"}`} onClick={() => setSheet("profile")} />
-                <SettingsRow icon={Star} iconColor="#6ee7b7" label="Default Listing Game" sublabel={profileForm.defaultListingGame || "Not set"} isLast onClick={() => setSheet("preferences")} />
-              </SettingsGroup>
+              <div className="space-y-6">
+                <SettingsGroup title="Marketplace">
+                  <SettingsRow icon={Heart} iconColor="#f87171" label="Wishlist" sublabel="Saved cards and watchlist" value={String(wishlist.length)} onClick={() => navigate("/wishlist")} />
+                  <SettingsRow icon={BookOpenText} iconColor="#60a5fa" label="Collection" sublabel="Your binder and collection value" value={String(collectionItems.length)} onClick={() => navigate("/collection")} />
+                  <SettingsRow icon={BarChart3} iconColor="#ef4444" label="Seller Dashboard" sublabel="Listings, drafts, and offers" value={String(currentUserListings.length)} isLast onClick={() => navigate("/dashboard")} />
+                </SettingsGroup>
 
-              <SettingsGroup title="Privacy & Security">
-                <SettingsRow icon={Lock} iconColor="#a78bfa" label="Password & Security" sublabel="Change your password" onClick={() => setSheet("security")} />
-                {isAdmin ? (
-                  <SettingsRow badge="Admin" icon={ShieldCheck} iconColor="#fbbf24" label="Admin Panel" sublabel="Moderation and controls" isLast onClick={() => navigate("/admin")} />
-                ) : (
-                  <SettingsRow icon={Flag} iconColor="#fb7185" label="Suspension Appeal" sublabel={isSuspended ? "Explain the situation to admin support" : "Appeal options unavailable"} value={isSuspended ? undefined : "Locked"} isLast onClick={() => { if (isSuspended) setSheet("appeal"); }} />
-                )}
-              </SettingsGroup>
+                <SettingsGroup title="Seller">
+                  <SettingsRow icon={Gamepad2} iconColor="#fbbf24" label="Favorite Games" sublabel={favoriteGamesLabel} onClick={() => setSheet("preferences")} />
+                  <SettingsRow icon={Shield} iconColor="#60a5fa" label="Profile Details" sublabel={`${profileForm.username || "No username"} / ${profileForm.neighborhood || "Winnipeg"}`} onClick={() => setSheet("profile")} />
+                  <SettingsRow icon={Star} iconColor="#6ee7b7" label="Default Listing Game" sublabel={profileForm.defaultListingGame || "Not set"} isLast onClick={() => setSheet("preferences")} />
+                </SettingsGroup>
+              </div>
 
-              <SettingsGroup title="Support">
-                {!isAdmin ? (
-                  <SettingsRow badge={bugReportsForCurrentUser.length ? String(bugReportsForCurrentUser.length) : undefined} icon={Bug} iconColor="#fb7185" label="Bug Reports" sublabel="Beta feedback and QA reports" onClick={() => navigate("/beta/bugs")} />
-                ) : null}
-                <SettingsRow icon={HelpCircle} iconColor="#60a5fa" label="Help & Support" sublabel="Open a support conversation in inbox" onClick={() => navigate("/inbox")} />
-                <SettingsRow destructive icon={LogOut} iconColor="#f87171" label="Log Out" onClick={() => void handleLogout()} />
-                <SettingsRow destructive icon={Trash2} iconColor="#f87171" isLast label="Delete Account" sublabel="Remove your marketplace profile and access" onClick={() => void handleDeleteAccount()} />
-              </SettingsGroup>
+              <div className="space-y-6">
+                <SettingsGroup title="Support">
+                  {!isAdmin ? (
+                    <SettingsRow badge={bugReportsForCurrentUser.length ? String(bugReportsForCurrentUser.length) : undefined} icon={Bug} iconColor="#fb7185" label="Bug Reports" sublabel="Beta feedback and QA reports" onClick={() => navigate("/beta/bugs")} />
+                  ) : null}
+                  <SettingsRow icon={HelpCircle} iconColor="#60a5fa" label="Help & Support" sublabel="Open a support conversation in inbox" onClick={() => navigate("/inbox")} />
+                  <SettingsRow destructive icon={LogOut} iconColor="#f87171" label="Log Out" onClick={() => void handleLogout()} />
+                  <SettingsRow destructive icon={Trash2} iconColor="#f87171" isLast label="Delete Account" sublabel="Remove your marketplace profile and access" onClick={() => void handleDeleteAccount()} />
+                </SettingsGroup>
+              </div>
             </div>
           </div>
         </div>
