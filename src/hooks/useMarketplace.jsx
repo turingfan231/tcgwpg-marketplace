@@ -38,7 +38,9 @@ const MarketplaceContext = createContext(null);
 const SEARCH_STORAGE_KEY = "tcgwpg.globalSearch";
 const TOAST_SEEN_STORAGE_PREFIX = "tcgwpg.seenToasts";
 const HIDDEN_THREADS_STORAGE_PREFIX = "tcgwpg.hiddenThreads";
+const VIEWED_LISTINGS_STORAGE_KEY = "tcgwpg.viewedListings.v1";
 const MARKETPLACE_CACHE_KEY = "tcgwpg.marketplaceCache";
+const MARKETPLACE_CACHE_VERSION = 2;
 const SITE_SETTINGS_STORAGE_KEY = "tcgwpg.siteSettings";
 const LOCAL_AUTH_STORAGE_KEY = "tcgwpg.localAuthUserId";
 const COLLECTION_STORAGE_PREFIX = "tcgwpg.collection";
@@ -101,6 +103,19 @@ function readSearchStorage() {
   return window.localStorage.getItem(SEARCH_STORAGE_KEY) || "";
 }
 
+function safeLocalStorageGet(key, fallback) {
+  if (typeof window === "undefined") {
+    return fallback;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 function writeSearchStorage(value) {
   if (typeof window === "undefined") {
     return;
@@ -154,7 +169,21 @@ function readMarketplaceCache() {
 
   try {
     const parsed = JSON.parse(window.localStorage.getItem(MARKETPLACE_CACHE_KEY) || "null");
-    return parsed && typeof parsed === "object" ? parsed : null;
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
+
+    if (parsed.version !== MARKETPLACE_CACHE_VERSION) {
+      window.localStorage.removeItem(MARKETPLACE_CACHE_KEY);
+      return null;
+    }
+
+    if (isSupabaseConfigured && parsed.source !== "remote") {
+      window.localStorage.removeItem(MARKETPLACE_CACHE_KEY);
+      return null;
+    }
+
+    return parsed;
   } catch {
     return null;
   }
@@ -425,6 +454,19 @@ function readSiteSettingsStorage() {
   }
 }
 
+function readViewedListingIds() {
+  if (typeof window === "undefined") {
+    return new Set();
+  }
+
+  const stored = safeLocalStorageGet(VIEWED_LISTINGS_STORAGE_KEY, []);
+  if (!Array.isArray(stored)) {
+    return new Set();
+  }
+
+  return new Set(stored.map((value) => String(value)));
+}
+
 function writeSiteSettingsStorage(settings) {
   if (typeof window === "undefined") {
     return;
@@ -446,6 +488,8 @@ function trimCacheArray(items, limit) {
 
 function buildMarketplaceCacheSnapshot(snapshot) {
   return {
+    version: MARKETPLACE_CACHE_VERSION,
+    source: isSupabaseConfigured ? "remote" : "seed",
     users: trimCacheArray(snapshot.users, 120).map((user) => ({
       id: user.id,
       role: user.role,
@@ -1030,6 +1074,122 @@ function normalizeCollectionRecord(item) {
   };
 }
 
+function fromCollectionItemRow(row) {
+  return normalizeCollectionRecord({
+    id: row.id,
+    game: row.game,
+    language: row.language,
+    title: row.title,
+    setName: row.set_name,
+    printLabel: row.print_label,
+    rarity: row.rarity,
+    condition: row.condition,
+    quantity: row.quantity,
+    marketPrice: row.market_price,
+    marketPriceCurrency: row.market_price_currency,
+    sourceLabel: row.source_label,
+    imageUrl: row.image_url,
+    notes: row.notes,
+    addedAt: row.added_at,
+    updatedAt: row.updated_at,
+  });
+}
+
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value || ""),
+  );
+}
+
+function toCollectionItemPayload(item, userId, { includeId = true } = {}) {
+  const payload = {
+    user_id: userId,
+    game: item.game,
+    language: item.language,
+    title: item.title,
+    set_name: item.setName,
+    print_label: item.printLabel,
+    rarity: item.rarity,
+    condition: item.condition,
+    quantity: Math.max(1, Number(item.quantity) || 1),
+    market_price: Number(item.marketPrice) || 0,
+    market_price_currency: item.marketPriceCurrency || "CAD",
+    source_label: item.sourceLabel || "Manual entry",
+    image_url: item.imageUrl || "",
+    notes: item.notes || "",
+    added_at: item.addedAt || new Date().toISOString(),
+    updated_at: item.updatedAt || new Date().toISOString(),
+  };
+
+  if (includeId && isUuid(item.id)) {
+    payload.id = item.id;
+  }
+
+  return payload;
+}
+
+function normalizeEventPreferences(rows) {
+  const reminderIds = [];
+  const attendance = {};
+
+  (rows || []).forEach((row) => {
+    const eventId = String(row?.event_id || "").trim();
+    if (!eventId) {
+      return;
+    }
+
+    if (row.reminder_enabled) {
+      reminderIds.push(eventId);
+    }
+
+    const intent = String(row.attendance_intent || "").trim().toLowerCase();
+    if (intent) {
+      attendance[eventId] = intent;
+    }
+  });
+
+  return { reminderIds, attendance };
+}
+
+function normalizeEventAttendanceFeed(rows, users = []) {
+  const usersById = new Map((users || []).map((user) => [String(user.id || ""), user]));
+  const next = {};
+
+  (rows || []).forEach((row) => {
+    const eventId = String(row?.event_id || "").trim();
+    const userId = String(row?.user_id || "").trim();
+    const intent = String(row?.attendance_intent || "").trim().toLowerCase();
+    if (!eventId || !userId || !intent) {
+      return;
+    }
+
+    const user = usersById.get(userId);
+    if (!user) {
+      return;
+    }
+
+    if (!next[eventId]) {
+      next[eventId] = [];
+    }
+
+    next[eventId].push({
+      id: userId,
+      intent,
+      user,
+    });
+  });
+
+  Object.keys(next).forEach((eventId) => {
+    next[eventId] = next[eventId].sort((left, right) =>
+      String(left.user?.publicName || left.user?.name || "").localeCompare(
+        String(right.user?.publicName || right.user?.name || ""),
+      ),
+    );
+  });
+
+  return next;
+}
+
 function normalizeAuditRecord(entry) {
   return {
     id: entry.id || `audit-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -1590,6 +1750,7 @@ export function MarketplaceProvider({ children }) {
   const [followedStoreSlugs, setFollowedStoreSlugs] = useState([]);
   const [eventReminderIds, setEventReminderIds] = useState([]);
   const [eventAttendance, setEventAttendance] = useState({});
+  const [eventAttendanceFeed, setEventAttendanceFeed] = useState({});
   const [siteSettings, setSiteSettings] = useState(() =>
     normalizeSiteSettings(
       (isSupabaseConfigured ? cachedState?.siteSettings : seedState.siteSettings) ||
@@ -1607,11 +1768,18 @@ export function MarketplaceProvider({ children }) {
     const seenNotificationIdsRef = useRef(new Set());
     const seededRealtimeStateRef = useRef(false);
     const mutationLimitRef = useRef(new Map());
+    const listingsRef = useRef(listings);
+    const viewedListingsRef = useRef(readViewedListingIds());
+    const pendingViewedListingsRef = useRef(new Set());
 
   const currentUser = useMemo(
     () => sanitizeUser(users.find((user) => user.id === currentUserId)) || null,
     [currentUserId, users],
   );
+
+  useEffect(() => {
+    listingsRef.current = listings;
+  }, [listings]);
 
   const currentUserRecord = useMemo(
     () => users.find((user) => user.id === currentUserId) || null,
@@ -1773,7 +1941,9 @@ export function MarketplaceProvider({ children }) {
   const currentUserListings = useMemo(
     () =>
       enrichedListings.filter(
-        (listing) => listing.sellerId === currentUserId && listing.status !== "removed",
+        (listing) =>
+          String(listing.sellerId || listing.seller?.id || "") === String(currentUserId || "") &&
+          listing.status !== "removed",
       ),
     [currentUserId, enrichedListings],
   );
@@ -2381,6 +2551,7 @@ export function MarketplaceProvider({ children }) {
           setActiveDraftId(null);
           setSearchHistory([]);
           setAdminAuditLog([]);
+          setEventAttendanceFeed({});
           return;
         }
 
@@ -2393,6 +2564,9 @@ export function MarketplaceProvider({ children }) {
             bugReportsRes,
             notificationsRes,
             searchHistoryRes,
+            collectionItemsRes,
+            eventPreferencesRes,
+            eventAttendanceFeedRes,
           ] = await Promise.all([
           supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId),
           supabase
@@ -2416,6 +2590,18 @@ export function MarketplaceProvider({ children }) {
             .select("*")
             .eq("user_id", authedUserId)
             .order("created_at", { ascending: false }),
+          supabase
+            .from("collection_items")
+            .select("*")
+            .eq("user_id", authedUserId)
+            .order("updated_at", { ascending: false }),
+          supabase
+            .from("user_event_preferences")
+            .select("*")
+            .eq("user_id", authedUserId),
+          supabase
+            .from("user_event_preferences")
+            .select("event_id, user_id, attendance_intent"),
         ]);
 
         if (wishlistsRes.error) throw wishlistsRes.error;
@@ -2428,6 +2614,24 @@ export function MarketplaceProvider({ children }) {
           }
           if (notificationsRes.error) throw notificationsRes.error;
         if (searchHistoryRes.error) throw searchHistoryRes.error;
+        if (
+          collectionItemsRes.error &&
+          !isMissingTableError(collectionItemsRes.error, "collection_items")
+        ) {
+          throw collectionItemsRes.error;
+        }
+        if (
+          eventPreferencesRes.error &&
+          !isMissingTableError(eventPreferencesRes.error, "user_event_preferences")
+        ) {
+          throw eventPreferencesRes.error;
+        }
+        if (
+          eventAttendanceFeedRes.error &&
+          !isMissingTableError(eventAttendanceFeedRes.error, "user_event_preferences")
+        ) {
+          throw eventAttendanceFeedRes.error;
+        }
 
         const threadRows = threadRowsRes.data || [];
         let messageRows = [];
@@ -2459,6 +2663,26 @@ export function MarketplaceProvider({ children }) {
             nextDrafts[0]?.id ||
             null,
         );
+        if (!collectionItemsRes.error) {
+          setCollectionItems((collectionItemsRes.data || []).map(fromCollectionItemRow));
+        } else {
+          setCollectionItems(readCollectionStorage(authedUserId).map(normalizeCollectionRecord));
+        }
+        if (!eventPreferencesRes.error) {
+          const nextEventPreferences = normalizeEventPreferences(eventPreferencesRes.data || []);
+          setEventReminderIds(nextEventPreferences.reminderIds);
+          setEventAttendance(nextEventPreferences.attendance);
+        } else {
+          setEventReminderIds(readEventReminderStorage(authedUserId));
+          setEventAttendance(readEventAttendanceStorage(authedUserId));
+        }
+        if (!eventAttendanceFeedRes.error) {
+          setEventAttendanceFeed(
+            normalizeEventAttendanceFeed(eventAttendanceFeedRes.data || [], normalizedProfiles),
+          );
+        } else {
+          setEventAttendanceFeed({});
+        }
           setThreads(buildThreadMap(threadRows, messageRows));
           setOffers((offersRes.data || []).map(fromOfferRow));
           setReports((reportsRes.data || []).map(fromReportRow));
@@ -2525,6 +2749,10 @@ export function MarketplaceProvider({ children }) {
   ]);
 
   useEffect(() => {
+    if (isSupabaseConfigured) {
+      return;
+    }
+
     writeSiteSettingsStorage(siteSettings);
   }, [siteSettings]);
 
@@ -2578,13 +2806,25 @@ export function MarketplaceProvider({ children }) {
       return;
     }
 
+    if (isSupabaseConfigured) {
+      return;
+    }
+
     setFollowedStoreSlugs(readStoreFollowStorage(currentUserId));
     setEventReminderIds(readEventReminderStorage(currentUserId));
     setEventAttendance(readEventAttendanceStorage(currentUserId));
   }, [currentUserId]);
 
   useEffect(() => {
-    if (!currentUserId) {
+    if (!currentUserId || !isSupabaseConfigured) {
+      return;
+    }
+
+    setFollowedStoreSlugs(currentUserRecord?.followedStoreSlugs || []);
+  }, [currentUserId, currentUserRecord?.followedStoreSlugs]);
+
+  useEffect(() => {
+    if (!currentUserId || isSupabaseConfigured) {
       return;
     }
 
@@ -2592,7 +2832,7 @@ export function MarketplaceProvider({ children }) {
   }, [currentUserId, followedStoreSlugs]);
 
   useEffect(() => {
-    if (!currentUserId) {
+    if (!currentUserId || isSupabaseConfigured) {
       return;
     }
 
@@ -2600,7 +2840,7 @@ export function MarketplaceProvider({ children }) {
   }, [currentUserId, eventReminderIds]);
 
   useEffect(() => {
-    if (!currentUserId) {
+    if (!currentUserId || isSupabaseConfigured) {
       return;
     }
 
@@ -2609,6 +2849,11 @@ export function MarketplaceProvider({ children }) {
 
   useEffect(() => {
     if (!currentUserId) {
+      setHiddenThreadMap({});
+      return;
+    }
+
+    if (isSupabaseConfigured) {
       setHiddenThreadMap({});
       return;
     }
@@ -2622,11 +2867,15 @@ export function MarketplaceProvider({ children }) {
       return;
     }
 
+    if (isSupabaseConfigured) {
+      return;
+    }
+
     setCollectionItems(readCollectionStorage(currentUserId).map(normalizeCollectionRecord));
   }, [currentUserId]);
 
   useEffect(() => {
-    if (!currentUserId) {
+    if (!currentUserId || isSupabaseConfigured) {
       return;
     }
 
@@ -2634,7 +2883,7 @@ export function MarketplaceProvider({ children }) {
   }, [currentUserId, hiddenThreadMap]);
 
   useEffect(() => {
-    if (!currentUserId) {
+    if (!currentUserId || isSupabaseConfigured) {
       return;
     }
 
@@ -3572,8 +3821,24 @@ export function MarketplaceProvider({ children }) {
       updatedAt: new Date().toISOString(),
     });
 
-    setCollectionItems((current) => [nextItem, ...current.filter((item) => item.id !== nextItem.id)]);
-    return { ok: true, item: nextItem };
+    if (!isSupabaseConfigured) {
+      setCollectionItems((current) => [nextItem, ...current.filter((item) => item.id !== nextItem.id)]);
+      return { ok: true, item: nextItem };
+    }
+
+    const { data, error } = await supabase
+      .from("collection_items")
+      .insert(toCollectionItemPayload(nextItem, currentUserId, { includeId: false }))
+      .select("*")
+      .single();
+
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+
+    const storedItem = fromCollectionItemRow(data);
+    setCollectionItems((current) => [storedItem, ...current.filter((item) => item.id !== storedItem.id)]);
+    return { ok: true, item: storedItem };
   }
 
   async function updateCollectionItem(itemId, updates) {
@@ -3581,32 +3846,61 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: "You must be logged in to track a collection." };
     }
 
-    let nextItem = null;
-    setCollectionItems((current) =>
-      current.map((item) => {
-        if (item.id !== itemId) {
-          return item;
-        }
+    const existingItem = collectionItems.find((item) => item.id === itemId);
+    if (!existingItem) {
+      return { ok: false, error: "Collection item not found." };
+    }
 
-        nextItem = normalizeCollectionRecord({
-          ...item,
-          ...updates,
-          id: item.id,
-          addedAt: item.addedAt,
-          updatedAt: new Date().toISOString(),
-        });
-        return nextItem;
-      }),
+    const nextItem = normalizeCollectionRecord({
+      ...existingItem,
+      ...updates,
+      id: existingItem.id,
+      addedAt: existingItem.addedAt,
+      updatedAt: new Date().toISOString(),
+    });
+
+    if (!isSupabaseConfigured) {
+      setCollectionItems((current) =>
+        current.map((item) => (item.id === itemId ? nextItem : item)),
+      );
+      return { ok: true, item: nextItem };
+    }
+
+    const { data, error } = await supabase
+      .from("collection_items")
+      .update(toCollectionItemPayload(nextItem, currentUserId, { includeId: false }))
+      .eq("id", itemId)
+      .eq("user_id", currentUserId)
+      .select("*")
+      .single();
+
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+
+    const storedItem = fromCollectionItemRow(data);
+    setCollectionItems((current) =>
+      current.map((item) => (item.id === itemId ? storedItem : item)),
     );
 
-    return nextItem
-      ? { ok: true, item: nextItem }
-      : { ok: false, error: "Collection item not found." };
+    return { ok: true, item: storedItem };
   }
 
   async function removeCollectionItem(itemId) {
     if (!currentUserId) {
       return { ok: false, error: "You must be logged in to track a collection." };
+    }
+
+    if (isSupabaseConfigured) {
+      const { error } = await supabase
+        .from("collection_items")
+        .delete()
+        .eq("id", itemId)
+        .eq("user_id", currentUserId);
+
+      if (error) {
+        return { ok: false, error: error.message };
+      }
     }
 
     setCollectionItems((current) => current.filter((item) => item.id !== itemId));
@@ -3616,6 +3910,17 @@ export function MarketplaceProvider({ children }) {
   async function clearCollection() {
     if (!currentUserId) {
       return { ok: false, error: "You must be logged in to track a collection." };
+    }
+
+    if (isSupabaseConfigured) {
+      const { error } = await supabase
+        .from("collection_items")
+        .delete()
+        .eq("user_id", currentUserId);
+
+      if (error) {
+        return { ok: false, error: error.message };
+      }
     }
 
     setCollectionItems([]);
@@ -3896,26 +4201,133 @@ export function MarketplaceProvider({ children }) {
     return { ok: true };
   }
 
-  async function recordListingView(listingId) {
-    const listing = listings.find((item) => item.id === listingId);
+  async function deleteListing(listingId) {
+    const nextUpdatedAt = new Date().toISOString();
+
+    const access = ensureAccountActive();
+    if (!access.ok) {
+      return access;
+    }
+
+    const listing = listings.find((item) => String(item.id) === String(listingId));
+    if (!listing) {
+      return { ok: false, error: "Listing not found." };
+    }
+
+    const ownerId = String(listing.sellerId || listing.seller?.id || "");
+    if (currentUserId && ownerId && ownerId !== String(currentUserId)) {
+      return { ok: false, error: "You can only delete your own listings." };
+    }
+
+    if (!isSupabaseConfigured || !currentUserId) {
+      setListings((current) =>
+        current.map((item) =>
+          String(item.id) === String(listingId)
+            ? normalizeListingRecord({
+                ...item,
+                status: "removed",
+                updatedAt: nextUpdatedAt,
+              })
+            : item,
+        ),
+      );
+      return { ok: true };
+    }
+
+    const { error } = await supabase
+      .from("listings")
+      .update({ status: "removed", updated_at: nextUpdatedAt })
+      .eq("id", listingId)
+      .eq("seller_id", currentUserId);
+
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+
+    await refreshMarketplaceData(currentUserId);
+    return { ok: true };
+  }
+
+  const recordListingView = useCallback(async (listingId) => {
+    const normalizedId = String(listingId || "");
+    if (!normalizedId || pendingViewedListingsRef.current.has(normalizedId)) {
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      const latestViewedListings = readViewedListingIds();
+      if (latestViewedListings.has(normalizedId)) {
+        viewedListingsRef.current = latestViewedListings;
+        return;
+      }
+    }
+
+    if (viewedListingsRef.current.has(normalizedId)) {
+      return;
+    }
+
+    const listing = listingsRef.current.find((item) => String(item.id) === normalizedId);
     if (!listing) {
       return;
     }
 
     const nextViews = Number(listing.views || 0) + 1;
+    const previousViews = Number(listing.views || 0);
+    pendingViewedListingsRef.current.add(normalizedId);
 
     setListings((current) =>
       current.map((item) =>
-        item.id === listingId ? normalizeListingRecord({ ...item, views: nextViews }) : item,
+        String(item.id) === normalizedId
+          ? normalizeListingRecord({ ...item, views: nextViews })
+          : item,
       ),
     );
 
-    if (!isSupabaseConfigured) {
-      return;
-    }
+    try {
+      if (!isSupabaseConfigured) {
+        viewedListingsRef.current.add(normalizedId);
+        if (typeof window !== "undefined") {
+          try {
+            window.localStorage.setItem(
+              VIEWED_LISTINGS_STORAGE_KEY,
+              JSON.stringify([...viewedListingsRef.current]),
+            );
+          } catch {
+            // Ignore storage errors and keep in-memory dedupe.
+          }
+        }
+        return;
+      }
 
-    await supabase.from("listings").update({ views: nextViews }).eq("id", listingId);
-  }
+      const { error } = await supabase.from("listings").update({ views: nextViews }).eq("id", normalizedId);
+      if (error) {
+        throw error;
+      }
+
+      viewedListingsRef.current.add(normalizedId);
+      if (typeof window !== "undefined") {
+        try {
+          window.localStorage.setItem(
+            VIEWED_LISTINGS_STORAGE_KEY,
+            JSON.stringify([...viewedListingsRef.current]),
+          );
+        } catch {
+          // Ignore storage errors and keep in-memory dedupe.
+        }
+      }
+    } catch (error) {
+      setListings((current) =>
+        current.map((item) =>
+          String(item.id) === normalizedId
+            ? normalizeListingRecord({ ...item, views: previousViews })
+            : item,
+        ),
+      );
+      console.error("recordListingView failed:", error);
+    } finally {
+      pendingViewedListingsRef.current.delete(normalizedId);
+    }
+  }, [isSupabaseConfigured]);
 
   async function toggleWishlist(listingId) {
     const access = ensureAccountActive(
@@ -3983,9 +4395,20 @@ export function MarketplaceProvider({ children }) {
     }
 
     const alreadyFollowing = followedSellerSet.has(sellerId);
+    const previousFollowedSellerIds = followedSellerIds;
     const nextFollowedSellerIds = alreadyFollowing
       ? followedSellerIds.filter((id) => id !== sellerId)
       : [...followedSellerIds, sellerId];
+
+    const rollbackFollow = () => {
+      setUsers((current) =>
+        current.map((user) =>
+          user.id === currentUserId
+            ? normalizeUserRecord({ ...user, followedSellerIds: previousFollowedSellerIds })
+            : user,
+        ),
+      );
+    };
 
     setUsers((current) =>
       current.map((user) =>
@@ -4006,6 +4429,7 @@ export function MarketplaceProvider({ children }) {
     });
 
     if (authUpdateResult.error) {
+      rollbackFollow();
       return { ok: false, error: authUpdateResult.error.message };
     }
 
@@ -4031,6 +4455,7 @@ export function MarketplaceProvider({ children }) {
     }
 
     if (updateResult.error) {
+      rollbackFollow();
       return { ok: false, error: updateResult.error.message };
     }
 
@@ -4055,9 +4480,21 @@ export function MarketplaceProvider({ children }) {
     }
 
     const alreadyFollowing = followedStoreSet.has(normalizedSlug);
+    const previousFollowedStoreSlugs = followedStoreSlugs;
     const nextFollowedStoreSlugs = alreadyFollowing
       ? followedStoreSlugs.filter((slug) => slug !== normalizedSlug)
       : [...followedStoreSlugs, normalizedSlug];
+
+    const rollbackStoreFollow = () => {
+      setFollowedStoreSlugs(previousFollowedStoreSlugs);
+      setUsers((current) =>
+        current.map((user) =>
+          user.id === currentUserId
+            ? normalizeUserRecord({ ...user, followedStoreSlugs: previousFollowedStoreSlugs })
+            : user,
+        ),
+      );
+    };
 
     setFollowedStoreSlugs(nextFollowedStoreSlugs);
     setUsers((current) =>
@@ -4069,11 +4506,16 @@ export function MarketplaceProvider({ children }) {
     );
 
     if (isSupabaseConfigured) {
-      await supabase.auth.updateUser({
+      const authUpdateResult = await supabase.auth.updateUser({
         data: {
           followed_store_slugs: nextFollowedStoreSlugs,
         },
       });
+
+      if (authUpdateResult.error) {
+        rollbackStoreFollow();
+        return { ok: false, error: authUpdateResult.error.message };
+      }
 
       const profilePayload = {
         followed_store_slugs: nextFollowedStoreSlugs,
@@ -4094,6 +4536,11 @@ export function MarketplaceProvider({ children }) {
           .from("profiles")
           .update(legacyProfilePayload)
           .eq("id", currentUserId);
+      }
+
+      if (updateResult.error) {
+        rollbackStoreFollow();
+        return { ok: false, error: updateResult.error.message };
       }
     }
 
@@ -4118,11 +4565,45 @@ export function MarketplaceProvider({ children }) {
     }
 
     const alreadyEnabled = eventReminderIdSet.has(normalizedEventId);
-    setEventReminderIds((current) =>
-      alreadyEnabled
-        ? current.filter((id) => id !== normalizedEventId)
-        : [...current, normalizedEventId],
-    );
+    const nextReminderIds = alreadyEnabled
+      ? eventReminderIds.filter((id) => id !== normalizedEventId)
+      : [...eventReminderIds, normalizedEventId];
+
+    if (!isSupabaseConfigured) {
+      setEventReminderIds(nextReminderIds);
+      return { ok: true, enabled: !alreadyEnabled };
+    }
+
+    const nextIntent = eventAttendance[normalizedEventId] || null;
+    if (!nextIntent && alreadyEnabled) {
+      const { error } = await supabase
+        .from("user_event_preferences")
+        .delete()
+        .eq("user_id", currentUserId)
+        .eq("event_id", normalizedEventId);
+
+      if (error) {
+        return { ok: false, error: error.message };
+      }
+    } else {
+      const { error } = await supabase
+        .from("user_event_preferences")
+        .upsert({
+          user_id: currentUserId,
+          event_id: normalizedEventId,
+          reminder_enabled: !alreadyEnabled,
+          attendance_intent: nextIntent,
+          updated_at: new Date().toISOString(),
+        })
+        .select("event_id")
+        .single();
+
+      if (error) {
+        return { ok: false, error: error.message };
+      }
+    }
+
+    setEventReminderIds(nextReminderIds);
     return { ok: true, enabled: !alreadyEnabled };
   }
 
@@ -4144,17 +4625,52 @@ export function MarketplaceProvider({ children }) {
       return access;
     }
 
-    setEventAttendance((current) => {
-      const next = { ...current };
-      if (!normalizedIntent || next[normalizedEventId] === normalizedIntent) {
-        delete next[normalizedEventId];
-        return next;
-      }
-      next[normalizedEventId] = normalizedIntent;
-      return next;
-    });
+    const existingIntent = eventAttendance[normalizedEventId] || "";
+    const nextAttendance = { ...eventAttendance };
+    if (!normalizedIntent || existingIntent === normalizedIntent) {
+      delete nextAttendance[normalizedEventId];
+    } else {
+      nextAttendance[normalizedEventId] = normalizedIntent;
+    }
 
-    return { ok: true, intent: normalizedIntent || null };
+    const nextReminderEnabled = eventReminderIdSet.has(normalizedEventId);
+
+    if (!isSupabaseConfigured) {
+      setEventAttendance(nextAttendance);
+      return { ok: true, intent: nextAttendance[normalizedEventId] || null };
+    }
+
+    if (!nextAttendance[normalizedEventId] && !nextReminderEnabled) {
+      const { error } = await supabase
+        .from("user_event_preferences")
+        .delete()
+        .eq("user_id", currentUserId)
+        .eq("event_id", normalizedEventId);
+
+      if (error) {
+        return { ok: false, error: error.message };
+      }
+    } else {
+      const { error } = await supabase
+        .from("user_event_preferences")
+        .upsert({
+          user_id: currentUserId,
+          event_id: normalizedEventId,
+          reminder_enabled: nextReminderEnabled,
+          attendance_intent: nextAttendance[normalizedEventId] || null,
+          updated_at: new Date().toISOString(),
+        })
+        .select("event_id")
+        .single();
+
+      if (error) {
+        return { ok: false, error: error.message };
+      }
+    }
+
+    setEventAttendance(nextAttendance);
+
+    return { ok: true, intent: nextAttendance[normalizedEventId] || null };
   }
 
   async function addReview(payload) {
@@ -4800,9 +5316,45 @@ export function MarketplaceProvider({ children }) {
 
     const hiddenAt = new Date().toISOString();
     const targetThread = threads.find((thread) => thread.id === threadId) || null;
+    const previousHiddenAt = hiddenThreadMap[threadId] || targetThread?.hiddenBy?.[currentUserId] || null;
+    const previousHiddenBy = { ...(targetThread?.hiddenBy || {}) };
+    const removedNotifications = notifications.filter(
+      (notification) =>
+        notification.userId === currentUserId &&
+        notification.type === "message" &&
+        notification.entityId === threadId,
+    );
     const nextHiddenBy = {
       ...(targetThread?.hiddenBy || {}),
       [currentUserId]: hiddenAt,
+    };
+
+    const rollbackHideThread = () => {
+      setHiddenThreadMap((current) => {
+        const next = { ...current };
+        if (previousHiddenAt) {
+          next[threadId] = previousHiddenAt;
+        } else {
+          delete next[threadId];
+        }
+        return next;
+      });
+      setThreads((current) =>
+        current.map((thread) =>
+          thread.id === threadId
+            ? {
+                ...thread,
+                hiddenBy: previousHiddenBy,
+              }
+            : thread,
+        ),
+      );
+      if (removedNotifications.length) {
+        setNotifications((current) => {
+          const existingIds = new Set(current.map((notification) => notification.id));
+          return [...removedNotifications.filter((notification) => !existingIds.has(notification.id)), ...current];
+        });
+      }
     };
 
     setHiddenThreadMap((current) => ({
@@ -4850,10 +5402,12 @@ export function MarketplaceProvider({ children }) {
       ]);
 
       if (threadUpdate.error && !isMissingColumnError(threadUpdate.error, "hidden_by")) {
+        rollbackHideThread();
         return { ok: false, error: threadUpdate.error.message };
       }
 
       if (notificationUpdate.error) {
+        rollbackHideThread();
         return { ok: false, error: notificationUpdate.error.message };
       }
     }
@@ -5716,6 +6270,7 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: "You must be logged in." };
     }
 
+    const previousNotifications = notifications;
     setNotifications((current) =>
       current.map((notification) =>
         notification.userId === currentUserId
@@ -5734,7 +6289,12 @@ export function MarketplaceProvider({ children }) {
       .eq("user_id", currentUserId)
       .eq("read", false);
 
-    return error ? { ok: false, error: error.message } : { ok: true };
+    if (error) {
+      setNotifications(previousNotifications);
+      return { ok: false, error: error.message };
+    }
+
+    return { ok: true };
   }
 
   async function deleteNotification(notificationId) {
@@ -5742,6 +6302,8 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: "You must be logged in." };
     }
 
+    const previousNotifications = notifications;
+    const previousSeenNotificationIds = new Set(seenNotificationIdsRef.current);
     setNotifications((current) =>
       current.filter(
         (notification) =>
@@ -5761,7 +6323,14 @@ export function MarketplaceProvider({ children }) {
       .eq("id", notificationId)
       .eq("user_id", currentUserId);
 
-    return error ? { ok: false, error: error.message } : { ok: true };
+    if (error) {
+      setNotifications(previousNotifications);
+      seenNotificationIdsRef.current = previousSeenNotificationIds;
+      writeToastSeenStorage(currentUserId, seenNotificationIdsRef.current);
+      return { ok: false, error: error.message };
+    }
+
+    return { ok: true };
   }
 
   async function clearReadNotifications() {
@@ -5769,6 +6338,8 @@ export function MarketplaceProvider({ children }) {
       return { ok: false, error: "You must be logged in." };
     }
 
+    const previousNotifications = notifications;
+    const previousSeenNotificationIds = new Set(seenNotificationIdsRef.current);
     const readIds = notificationsForCurrentUser
       .filter((notification) => notification.read)
       .map((notification) => notification.id);
@@ -5791,7 +6362,14 @@ export function MarketplaceProvider({ children }) {
       .eq("user_id", currentUserId)
       .eq("read", true);
 
-    return error ? { ok: false, error: error.message } : { ok: true };
+    if (error) {
+      setNotifications(previousNotifications);
+      seenNotificationIdsRef.current = previousSeenNotificationIds;
+      writeToastSeenStorage(currentUserId, seenNotificationIdsRef.current);
+      return { ok: false, error: error.message };
+    }
+
+    return { ok: true };
   }
 
   async function toggleListingFlag(listingId) {
@@ -6391,6 +6969,7 @@ export function MarketplaceProvider({ children }) {
     currentUserId,
     currentUserListings,
     clearReadNotifications,
+    deleteListing,
     deleteReview,
     deleteNotification,
     deleteCurrentUserAccount,
@@ -6399,6 +6978,7 @@ export function MarketplaceProvider({ children }) {
     editListing,
     enrichedListings,
     eventAttendance,
+    eventAttendanceFeed,
     eventReminderIds,
     featuredMerchandising,
       findOrCreateThread,

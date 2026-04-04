@@ -1,4 +1,5 @@
 import React from "react";
+import { m } from "../../mobile/design";
 
 const RECOVERABLE_CHUNK_ERRORS = [
   "Failed to fetch dynamically imported module",
@@ -39,7 +40,12 @@ export default class AppErrorBoundary extends React.Component {
       window.setTimeout(() => {
         window.location.reload();
       }, 120);
-      return;
+    }
+  }
+
+  componentDidMount() {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem(RETRY_STORAGE_KEY);
     }
   }
 
@@ -50,40 +56,32 @@ export default class AppErrorBoundary extends React.Component {
     window.location.reload();
   };
 
-  componentDidMount() {
-    if (typeof window !== "undefined") {
-      window.sessionStorage.removeItem(RETRY_STORAGE_KEY);
-    }
-  }
-
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-[#f5f1ea] px-6 py-12">
-          <div className="mx-auto max-w-2xl rounded-[32px] border border-slate-200 bg-white p-8 shadow-soft sm:p-10">
-            <p className="section-kicker">Something broke</p>
-            <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.04em] text-ink">
+        <main className="min-h-screen px-4 py-10 sm:px-6 sm:py-12" role="main" style={{ background: m.bg }}>
+          <div className="mx-auto max-w-xl rounded-[28px] border p-6 sm:p-8" style={{ background: m.surface, borderColor: m.borderStrong, boxShadow: m.shadowFloating }}>
+            <p className="text-[10px] uppercase tracking-[0.12em]" style={{ color: m.textTertiary, fontWeight: 700 }}>
+              Unexpected client error
+            </p>
+            <h1 className="mt-3 text-[30px] tracking-tight text-white sm:text-[38px]" style={{ fontWeight: 700, lineHeight: 1.02 }}>
               The page hit an unexpected error.
             </h1>
-            <p className="mt-4 text-base leading-8 text-steel">
+            <p className="mt-4 text-[13px] sm:text-[14px]" style={{ color: m.textSecondary, lineHeight: 1.65 }}>
               {this.state.recoverable
                 ? "We hit a temporary app-load issue. A refresh usually fixes it right away."
                 : "Refresh the page and try again. If this keeps happening, the latest live data shape is probably hitting a client-side rendering issue."}
             </p>
             {this.state.errorMessage ? (
-              <div className="mt-6 rounded-[20px] border border-slate-200 bg-[#faf7f1] px-4 py-4 text-sm text-steel">
+              <div className="mt-6 rounded-[18px] border px-4 py-4 text-[12px]" style={{ background: m.surfaceStrong, borderColor: m.border, color: m.textSecondary }}>
                 {this.state.errorMessage}
               </div>
             ) : null}
-            <button
-              className="mt-8 rounded-full bg-navy px-6 py-3 text-sm font-semibold text-white"
-              type="button"
-              onClick={this.handleReload}
-            >
-              Reload site
+            <button className="mt-8 inline-flex h-[44px] items-center justify-center rounded-[14px] px-5 text-[13px] text-white" style={{ background: m.redGradient, fontWeight: 700, boxShadow: "0 8px 24px rgba(185,28,28,0.26)" }} type="button" onClick={this.handleReload}>
+              Reload Site
             </button>
           </div>
-        </div>
+        </main>
       );
     }
 

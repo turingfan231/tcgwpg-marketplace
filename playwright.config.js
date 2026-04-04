@@ -20,7 +20,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev:web -- --host 127.0.0.1 --port 4174",
+    command: "npm run dev:e2e",
     env: {
       ...process.env,
       VITE_SUPABASE_URL: "",

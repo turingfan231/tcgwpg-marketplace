@@ -1,862 +1,544 @@
-import { ArrowUpDown, BarChart3, Eye, FileText, RefreshCcw, Tag } from "lucide-react";
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { BarChart3, ChevronRight, Eye, FileText, Package, Plus, RefreshCcw, Tag, Trash2 } from "lucide-react";
+import { motion } from "motion/react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import ProfileWorkspaceNav from "../components/account/ProfileWorkspaceNav";
 import SeoHead from "../components/seo/SeoHead";
-import CardArtwork from "../components/shared/CardArtwork";
 import { useMarketplace } from "../hooks/useMarketplace";
+import { m } from "../mobile/design";
+import { compactTimeLabel, formatPrice, listingArtwork } from "../mobile/helpers";
+import {
+  BottomSheet,
+  EmptyBlock,
+  MobileScreen,
+  PrimaryButton,
+  ScreenHeader,
+  ScreenSection,
+  SecondaryButton,
+  TextArea,
+  TextField,
+} from "../mobile/primitives";
 import { formatNumber } from "../utils/formatters";
 
-function formatOfferTypeLabel(type) {
-  if (type === "cash-trade") {
-    return "Cash + Trade";
-  }
+function DashboardStat({ icon: Icon, label, value, tone }) {
+  return (
+    <div className="rounded-[18px] border p-3 lg:rounded-[22px] lg:p-4" style={{ background: m.surface, borderColor: m.border }}>
+      <Icon size={15} style={{ color: tone }} />
+      <p className="mt-3 text-[22px] text-white lg:text-[28px]" style={{ fontWeight: 700, lineHeight: 1 }}>
+        {value}
+      </p>
+      <p className="mt-1 text-[10px] lg:text-[11px]" style={{ color: m.textSecondary, fontWeight: 600 }}>
+        {label}
+      </p>
+    </div>
+  );
+}
 
-  return type[0].toUpperCase() + type.slice(1);
+function SellerListingCard({ formatCadPrice, listing, onBump, onEdit, onSold }) {
+  return (
+    <div className="rounded-[20px] border p-3 lg:rounded-[24px] lg:p-4" style={{ background: m.surface, borderColor: m.border, boxShadow: m.shadowPanel }}>
+      <div className="flex gap-3 lg:items-center">
+        <Link className="h-20 w-16 shrink-0 overflow-hidden rounded-[14px] lg:h-24 lg:w-20 lg:rounded-[16px]" to={`/listing/${listing.id}`}>
+          <img alt={listing.title} className="h-full w-full object-cover" src={listingArtwork(listing)} />
+        </Link>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="truncate text-[13px] text-white lg:text-[15px]" style={{ fontWeight: 700 }}>
+                {listing.title}
+              </p>
+              <p className="mt-1 text-[10px] lg:text-[11px]" style={{ color: m.textSecondary }}>
+                {[listing.game, listing.condition, listing.neighborhood].filter(Boolean).join(" / ")}
+              </p>
+            </div>
+            <span className="text-[15px] text-white lg:text-[18px]" style={{ fontWeight: 700 }}>
+              {formatCadPrice(listing.priceCad ?? listing.price, listing.priceCurrency || "CAD")}
+            </span>
+          </div>
+          <div className="mt-3 flex items-center gap-3 text-[9px] lg:text-[10px]" style={{ color: m.textTertiary, fontWeight: 600 }}>
+            <span>{formatNumber(listing.views || 0)} views</span>
+            <span>{formatNumber(listing.offers || 0)} offers</span>
+            <span>{compactTimeLabel(listing.updatedAt || listing.createdAt || listing.timeAgo)}</span>
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2 lg:max-w-[420px]">
+            <SecondaryButton className="h-9 text-[10px] lg:h-10 lg:text-[11px]" onClick={() => onEdit(listing)}>
+              Edit
+            </SecondaryButton>
+            <SecondaryButton className="h-9 text-[10px] lg:h-10 lg:text-[11px]" onClick={() => onBump(listing.id)}>
+              <RefreshCcw size={12} />
+              Bump
+            </SecondaryButton>
+            <PrimaryButton className="h-9 text-[10px] lg:h-10 lg:text-[11px]" onClick={() => onSold(listing.id)}>
+              Mark Sold
+            </PrimaryButton>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OfferRow({ formatCadPrice, offer, onAccept, onDecline, onCounter, processing }) {
+  return (
+    <div className="rounded-[18px] border p-3 lg:rounded-[22px] lg:p-4" style={{ background: m.surface, borderColor: m.border }}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate text-[12px] text-white" style={{ fontWeight: 700 }}>
+            {offer.listing?.title || "Listing"}
+          </p>
+          <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+            From {offer.buyer?.publicName || offer.buyer?.name || "Buyer"} / {offer.offerType}
+          </p>
+        </div>
+        <span className="text-[15px] text-white" style={{ fontWeight: 700 }}>
+          {offer.offerType === "trade" ? "Trade" : formatCadPrice(offer.cashAmount || 0, "CAD")}
+        </span>
+      </div>
+      {offer.note ? (
+        <p className="mt-2 text-[11px]" style={{ color: m.textSecondary, lineHeight: 1.45 }}>
+          {offer.note}
+        </p>
+      ) : null}
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <SecondaryButton className="h-9 text-[10px] lg:h-10 lg:text-[11px]" disabled={processing} onClick={() => onDecline(offer)}>
+          Decline
+        </SecondaryButton>
+        <SecondaryButton className="h-9 text-[10px] lg:h-10 lg:text-[11px]" disabled={processing} onClick={() => onCounter(offer)}>
+          Counter
+        </SecondaryButton>
+        <PrimaryButton className="h-9 text-[10px] lg:h-10 lg:text-[11px]" disabled={processing} onClick={() => onAccept(offer)}>
+          Accept
+        </PrimaryButton>
+      </div>
+    </div>
+  );
+}
+
+function DraftCard({ draft, isActive, onDelete, onOpen, onSetActive }) {
+  return (
+    <div className="rounded-[18px] border p-3 lg:rounded-[22px] lg:p-4" style={{ background: isActive ? "rgba(239,68,68,0.08)" : m.surface, borderColor: isActive ? "rgba(239,68,68,0.12)" : m.border }}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate text-[12px] text-white" style={{ fontWeight: 700 }}>
+            {draft.title || draft.name || "Untitled draft"}
+          </p>
+          <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+            {[draft.game, draft.neighborhood].filter(Boolean).join(" / ") || "Needs more details"}
+          </p>
+        </div>
+        {isActive ? (
+          <span className="rounded-full px-2 py-[5px] text-[9px]" style={{ background: "rgba(239,68,68,0.12)", color: "#fca5a5", fontWeight: 700 }}>
+            Active
+          </span>
+        ) : null}
+      </div>
+      <p className="mt-2 text-[11px]" style={{ color: m.textSecondary, lineHeight: 1.45 }}>
+        {draft.description || "Draft saved in progress."}
+      </p>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <SecondaryButton className="h-9 text-[10px] lg:h-10 lg:text-[11px]" onClick={() => onOpen(draft.id)}>
+          Open
+        </SecondaryButton>
+        <SecondaryButton className="h-9 text-[10px] lg:h-10 lg:text-[11px]" onClick={() => onSetActive(draft.id)}>
+          Set Active
+        </SecondaryButton>
+        <SecondaryButton className="h-9 text-[10px] lg:h-10 lg:text-[11px]" onClick={() => onDelete(draft.id)}>
+          Delete
+        </SecondaryButton>
+      </div>
+    </div>
+  );
 }
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const {
     bumpListing,
     clearListingDraft,
     currentUser,
     currentUserDrafts,
     currentUserListings,
+    deleteListing,
     editListing,
     formatCadPrice,
     listingDraft,
     markListingSold,
     offersForCurrentUser,
-    openCreateListing,
     respondToOffer,
     selectListingDraft,
   } = useMarketplace();
-  const [editingId, setEditingId] = useState("");
-  const [listingSort, setListingSort] = useState("active-first");
-  const [editForm, setEditForm] = useState({
-    price: "",
-    condition: "NM",
-    quantity: 1,
-    description: "",
-  });
-  const [counterDrafts, setCounterDrafts] = useState({});
 
-  const activeCount = currentUserListings.filter(
-    (listing) => listing.status !== "sold",
-  ).length;
-  const totalViews = currentUserListings.reduce(
-    (total, listing) => total + listing.views,
-    0,
+  const [editingListing, setEditingListing] = useState(null);
+  const [editForm, setEditForm] = useState({ price: "", condition: "NM", quantity: "1", description: "" });
+  const [counterOffer, setCounterOffer] = useState(null);
+  const [counterForm, setCounterForm] = useState({ offerType: "cash", cashAmount: "", tradeItems: "", note: "" });
+  const [busyId, setBusyId] = useState("");
+  const [offerError, setOfferError] = useState("");
+  const [offerMessage, setOfferMessage] = useState("");
+  const [resolvedOfferIds, setResolvedOfferIds] = useState([]);
+  const draftsRef = useRef(null);
+
+  const activeListings = useMemo(
+    () => currentUserListings.filter((listing) => listing.status !== "sold"),
+    [currentUserListings],
   );
-  const totalOffers = currentUserListings.reduce(
-    (total, listing) => total + listing.offers,
-    0,
+  const soldListings = useMemo(
+    () => currentUserListings.filter((listing) => listing.status === "sold"),
+    [currentUserListings],
   );
-  const sellerOffers = offersForCurrentUser.filter(
-    (offer) => offer.sellerId === currentUser.id,
+  const sellerOffers = useMemo(
+    () =>
+      offersForCurrentUser
+        .filter((offer) => String(offer.sellerId) === String(currentUser?.id) && (offer.status === "pending" || offer.status === "countered"))
+        .filter((offer) => !resolvedOfferIds.includes(offer.id))
+        .slice(0, 4),
+    [currentUser?.id, offersForCurrentUser, resolvedOfferIds],
   );
-  const sortedSellerListings = useMemo(() => {
-    const items = [...currentUserListings];
+  const totalViews = useMemo(
+    () => currentUserListings.reduce((sum, listing) => sum + Number(listing.views || 0), 0),
+    [currentUserListings],
+  );
 
-    if (listingSort === "price-low") {
-      return items.sort((left, right) => left.priceCad - right.priceCad);
+  useEffect(() => {
+    if (location.hash !== "#drafts" || !draftsRef.current) {
+      return;
     }
-
-    if (listingSort === "price-high") {
-      return items.sort((left, right) => right.priceCad - left.priceCad);
-    }
-
-    if (listingSort === "oldest") {
-      return items.sort((left, right) => left.sortTimestamp - right.sortTimestamp);
-    }
-
-    return items.sort((left, right) => {
-      if (listingSort === "active-first") {
-        const leftRank = left.status === "sold" ? 1 : 0;
-        const rightRank = right.status === "sold" ? 1 : 0;
-
-        if (leftRank !== rightRank) {
-          return leftRank - rightRank;
-        }
-      }
-
-      return right.sortTimestamp - left.sortTimestamp;
+    requestAnimationFrame(() => {
+      draftsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
-  }, [currentUserListings, listingSort]);
-  const dashboardActiveListings = sortedSellerListings.filter((listing) => listing.status !== "sold");
-  const soldListings = sortedSellerListings.filter((listing) => listing.status === "sold");
+  }, [location.hash, currentUserDrafts.length]);
 
-  function openEditor(listing) {
-    setEditingId(listing.id);
+  function startEdit(listing) {
+    setEditingListing(listing);
     setEditForm({
-      price: listing.price,
-      condition: listing.condition,
-      quantity: listing.quantity || 1,
-      description: listing.description,
+      price: String(listing.priceCad ?? listing.price ?? ""),
+      condition: listing.condition || "NM",
+      quantity: String(listing.quantity || 1),
+      description: listing.description || "",
     });
   }
 
-  function beginCounterDraft(offer) {
-    setCounterDrafts((current) => ({
-      ...current,
-      [offer.id]: {
-        offerType: offer.offerType,
-        cashAmount: String(offer.cashAmount || ""),
-        tradeItems: Array.isArray(offer.tradeItems) ? offer.tradeItems.join("\n") : "",
-        note: offer.note || "",
-      },
-    }));
+  async function saveEdit() {
+    if (!editingListing) {
+      return;
+    }
+    setBusyId(editingListing.id);
+    await editListing(editingListing.id, editForm);
+    setBusyId("");
+    setEditingListing(null);
   }
 
-  function clearCounterDraft(offerId) {
-    setCounterDrafts((current) => {
-      const next = { ...current };
-      delete next[offerId];
-      return next;
+  async function handleDeleteEditing() {
+    if (!editingListing) {
+      return;
+    }
+    setBusyId(editingListing.id);
+    await deleteListing(editingListing.id);
+    setBusyId("");
+    setEditingListing(null);
+  }
+
+  function startCounter(offer) {
+    setOfferError("");
+    setOfferMessage("");
+    setCounterOffer(offer);
+    setCounterForm({
+      offerType: offer.offerType || "cash",
+      cashAmount: String(offer.cashAmount || ""),
+      tradeItems: Array.isArray(offer.tradeItems) ? offer.tradeItems.join("\n") : "",
+      note: offer.note || "",
     });
+  }
+
+  async function handleOfferAction(offer, action, payload = undefined) {
+    setOfferError("");
+    setOfferMessage("");
+    setBusyId(offer.id);
+    const result = await respondToOffer(offer.id, action, payload);
+    setBusyId("");
+    if (!result?.ok) {
+      setOfferError(result?.error || "Offer action failed.");
+      return;
+    }
+    if (action === "counter") {
+      setCounterOffer(null);
+      setOfferMessage("Counter offer sent.");
+      return;
+    }
+    setResolvedOfferIds((current) => [...new Set([...current, offer.id])]);
+    setOfferMessage(action === "accept" ? "Offer accepted." : "Offer declined.");
+  }
+
+  function openDraft(draftId) {
+    selectListingDraft(draftId);
+    navigate("/sell");
   }
 
   return (
-    <main className="space-y-6">
-      <SeoHead
-        canonicalPath="/dashboard"
-        description="Seller dashboard for managing listings, drafts, offer activity, and sales history in TCG WPG Marketplace."
-        title="Seller Dashboard"
-      />
-      <ProfileWorkspaceNav sellerId={currentUser?.id} />
-      <section aria-labelledby="dashboard-heading" className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
-        <p className="section-kicker">Seller Dashboard</p>
-        <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-ink" id="dashboard-heading">
-          Manage {currentUser.name}'s listings
-        </h1>
-        <p className="mt-3 max-w-3xl text-base text-steel">
-          Watch offer flow, bump active items, track views, and keep a draft ready when
-          you are still researching printings and condition photos.
-        </p>
-
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-[24px] bg-slate-50 p-5">
-            <Tag className="text-orange" />
-            <p className="mt-4 text-sm font-semibold uppercase tracking-[0.2em] text-steel">
-              Active listings
-            </p>
-            <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
-              {formatNumber(activeCount)}
-            </p>
-          </div>
-          <div className="rounded-[24px] bg-slate-50 p-5">
-            <Eye className="text-navy" />
-            <p className="mt-4 text-sm font-semibold uppercase tracking-[0.2em] text-steel">
-              Total views
-            </p>
-            <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
-              {formatNumber(totalViews)}
-            </p>
-          </div>
-          <div className="rounded-[24px] bg-slate-50 p-5">
-            <BarChart3 className="text-navy" />
-            <p className="mt-4 text-sm font-semibold uppercase tracking-[0.2em] text-steel">
-              Active offers
-            </p>
-            <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
-              {formatNumber(totalOffers)}
-            </p>
-          </div>
-          <div className="rounded-[24px] bg-slate-50 p-5">
-            <FileText className="text-orange" />
-            <p className="mt-4 text-sm font-semibold uppercase tracking-[0.2em] text-steel">
-              Draft status
-            </p>
-            <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
-              {currentUserDrafts.length ? currentUserDrafts.length : "Empty"}
-            </p>
-          </div>
-        </div>
-        <div className="mt-5 flex flex-wrap gap-3">
-          <Link
-            className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel"
-            to={`/seller/${currentUser.id}`}
-          >
-            View my seller page
-          </Link>
+    <MobileScreen>
+      <SeoHead canonicalPath="/dashboard" description="Manage active listings, incoming offers, drafts, and seller performance." title="Seller Dashboard" />
+      <ScreenHeader
+        className="lg:hidden"
+        subtitle={currentUser?.publicName || currentUser?.name || "Seller workspace"}
+        title="Dashboard"
+        right={
           <button
-            className="rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
+            className="inline-flex h-10 items-center gap-2 rounded-[14px] px-3 text-[11px] text-white"
+            style={{ background: m.redGradient, fontWeight: 700, boxShadow: "0 10px 24px rgba(185,28,28,0.22)" }}
             type="button"
-            onClick={() => openCreateListing({ type: "WTS" })}
+            onClick={() => navigate("/sell")}
           >
-            New listing
+            <Plus size={14} />
+            New Listing
           </button>
-        </div>
-      </section>
+        }
+      />
 
-      {currentUserDrafts.length ? (
-        <section aria-labelledby="dashboard-drafts-heading" className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
-          <p className="section-kicker">Drafts</p>
-          <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink" id="dashboard-drafts-heading">
-            Saved listing drafts
-          </h2>
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            {currentUserDrafts.map((draft) => {
-              const isActive = listingDraft?.id === draft.id;
-              return (
-                <div
-                  key={draft.id}
-                  className={`rounded-[24px] border p-5 ${
-                    isActive ? "border-navy bg-navy/5" : "border-slate-200 bg-[#f7f7f8]"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-ink">{draft.title || draft.name || "Untitled draft"}</p>
-                      <p className="mt-2 text-sm text-steel">
-                        {draft.game || "Game not set"} | {draft.neighborhood || "Neighborhood not set"}
-                      </p>
-                    </div>
-                    {isActive ? (
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-navy">
-                        Active
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="mt-3 text-sm leading-7 text-steel">
-                    {draft.description || "Draft has no description yet."}
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button
-                      className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-steel"
-                      type="button"
-                      onClick={() => {
-                        selectListingDraft(draft.id);
-                        openCreateListing();
-                      }}
-                    >
-                      Open draft
-                    </button>
-                    <button
-                      className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                      type="button"
-                      onClick={() => selectListingDraft(draft.id)}
-                    >
-                      Set active
-                    </button>
-                    <button
-                      className="rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700"
-                      type="button"
-                      onClick={() => clearListingDraft(draft.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      ) : null}
+      <div className="lg:hidden">
+        <ProfileWorkspaceNav sellerId={currentUser?.id} />
+      </div>
 
-      <section aria-labelledby="dashboard-listings-heading" className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="section-kicker">Listings</p>
-            <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink" id="dashboard-listings-heading">
-              Active listings first
-            </h2>
-          </div>
-          <label className="block min-w-[15rem]">
-            <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-steel">
-              <ArrowUpDown size={16} />
-              Sort listings
-            </span>
-            <select
-              className="w-full rounded-[18px] border border-slate-200 bg-[#f7f7f8] px-4 py-3 text-sm font-semibold text-ink outline-none transition focus:border-navy"
-              value={listingSort}
-              onChange={(event) => setListingSort(event.target.value)}
-            >
-              <option value="active-first">Active first, newest to oldest</option>
-              <option value="newest">Newest to oldest</option>
-              <option value="oldest">Oldest to newest</option>
-              <option value="price-low">Price low to high</option>
-              <option value="price-high">Price high to low</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="mt-5 space-y-4">
-          {dashboardActiveListings.length ? (
-            dashboardActiveListings.map((listing) => (
-              <div
-                key={listing.id}
-                className={`grid gap-4 rounded-[28px] border border-slate-200 bg-[#f7f7f8] p-5 lg:grid-cols-[10rem_minmax(0,1fr)_auto] ${listing.status === "sold" ? "opacity-70" : ""}`}
-              >
-                <CardArtwork
-                  alt={listing.title}
-                  className="aspect-[2.5/3.5] h-full max-h-56 w-full rounded-[22px] border border-slate-200 bg-white"
-                  imageClassName="object-contain p-2"
-                  src={listing.imageUrl}
-                />
-                <div className="space-y-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-navy/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-navy">
-                      {listing.type}
-                    </span>
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                      {listing.condition}
-                    </span>
-                    {listing.status === "sold" ? (
-                      <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white">
-                        Sold
-                      </span>
-                    ) : null}
-                  </div>
-                  <div>
-                    <h3 className="font-display text-2xl font-semibold tracking-[-0.04em] text-ink">
-                      {listing.title}
-                    </h3>
-                    <p className="mt-2 text-sm text-steel">
-                      {listing.game} | {listing.neighborhood} | {listing.quantity || 1}x
-                    </p>
-                  </div>
-                  {editingId === listing.id ? (
-                    <div className="grid gap-3 lg:grid-cols-2">
-                      <label className="block">
-                        <span className="mb-2 block text-sm font-semibold text-steel">Price</span>
-                        <input
-                          className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 outline-none"
-                          type="number"
-                          value={editForm.price}
-                          onChange={(event) =>
-                            setEditForm((current) => ({ ...current, price: event.target.value }))
-                          }
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="mb-2 block text-sm font-semibold text-steel">Condition</span>
-                        <select
-                          className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 outline-none"
-                          value={editForm.condition}
-                          onChange={(event) =>
-                            setEditForm((current) => ({ ...current, condition: event.target.value }))
-                          }
-                        >
-                          {["NM", "LP", "MP", "HP", "DMG"].map((condition) => (
-                            <option key={condition} value={condition}>
-                              {condition}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="block">
-                        <span className="mb-2 block text-sm font-semibold text-steel">Quantity</span>
-                        <input
-                          className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 outline-none"
-                          min="1"
-                          type="number"
-                          value={editForm.quantity}
-                          onChange={(event) =>
-                            setEditForm((current) => ({ ...current, quantity: event.target.value }))
-                          }
-                        />
-                      </label>
-                      <label className="block lg:col-span-2">
-                        <span className="mb-2 block text-sm font-semibold text-steel">Description</span>
-                        <textarea
-                          className="min-h-28 w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 outline-none"
-                          value={editForm.description}
-                          onChange={(event) =>
-                            setEditForm((current) => ({ ...current, description: event.target.value }))
-                          }
-                        />
-                      </label>
-                      <div className="flex flex-wrap gap-2 lg:col-span-2">
-                        <button
-                          className="rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white"
-                          type="button"
-                          onClick={async () => {
-                            const updated = await editListing(listing.id, editForm);
-                            if (updated) {
-                              setEditingId("");
-                            }
-                          }}
-                        >
-                          Save changes
-                        </button>
-                        <button
-                          className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                          type="button"
-                          onClick={() => setEditingId("")}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm leading-7 text-steel">{listing.description}</p>
-                  )}
-                </div>
-                <div className="flex flex-col justify-between gap-4 lg:items-end">
-                  <div className="space-y-2 text-right">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                      Asking price
-                    </p>
-                    <p className="font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                      {formatCadPrice(listing.priceCad, "CAD")}
-                    </p>
-                    <p className="text-sm text-steel">
-                      {formatNumber(listing.views)} views | {formatNumber(listing.offers)} offers
-                    </p>
-                  </div>
-                  {editingId === listing.id ? null : (
-                    <div className="flex flex-wrap gap-2 lg:justify-end">
-                      <button
-                        className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                        type="button"
-                        onClick={() => openEditor(listing)}
-                      >
-                        Edit
-                      </button>
-                      {listing.status !== "sold" ? (
-                        <>
-                          <button
-                            className="rounded-full border border-navy bg-navy/5 px-4 py-2 text-sm font-semibold text-navy"
-                            type="button"
-                            onClick={() => bumpListing(listing.id)}
-                          >
-                            <RefreshCcw size={15} className="mr-2 inline-flex" />
-                            Bump
-                          </button>
-                          <button
-                            className="rounded-full bg-slate-800 px-4 py-2 text-sm font-semibold text-white"
-                            type="button"
-                            onClick={() => markListingSold(listing.id)}
-                          >
-                            Mark as sold
-                          </button>
-                        </>
-                      ) : null}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-sm leading-7 text-steel">No active listings right now.</p>
-          )}
-        </div>
-      </section>
-
-      {soldListings.length ? (
-        <section aria-labelledby="dashboard-sales-heading" className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
-          <p className="section-kicker">Sales history</p>
-          <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink" id="dashboard-sales-heading">
-            Sold listings
-          </h2>
-          <div className="mt-5 space-y-3">
-            {soldListings.map((listing) => (
-              <div
-                key={listing.id}
-                className="flex flex-wrap items-center justify-between gap-4 rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-4"
-              >
-                <div>
-                  <p className="font-semibold text-ink">{listing.title}</p>
-                  <p className="mt-2 text-sm text-steel">
-                    {listing.game} | {listing.neighborhood} | Sold {listing.timeAgo}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
-                    {formatCadPrice(listing.priceCad, "CAD")}
-                  </p>
-                  <p className="mt-1 text-sm text-steel">
-                    {formatNumber(listing.views)} views | {formatNumber(listing.offers)} offers
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      <section aria-labelledby="dashboard-offers-heading" className="rounded-[32px] bg-white p-5 shadow-soft sm:p-6">
-        <p className="section-kicker">Offer queue</p>
-        <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink" id="dashboard-offers-heading">
-          Incoming offers
-        </h2>
-        <div className="mt-5 space-y-3">
-          {sellerOffers.length ? (
-            sellerOffers.map((offer) => (
-              <div
-                key={offer.id}
-                className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-4"
-              >
-                {(() => {
-                  const counterDraft = counterDrafts[offer.id];
-                  return (
-                    <>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="font-semibold text-ink">
-                      {formatOfferTypeLabel(offer.offerType)}
-                      {offer.cashAmount
-                        ? ` | ${formatCadPrice(offer.cashAmount, "CAD")}`
-                        : ""}
-                    </p>
-                    {offer.tradeItems.length ? (
-                      <p className="mt-2 text-sm text-steel">
-                        Trade: {offer.tradeItems.join(", ")}
-                      </p>
-                    ) : null}
-                    {offer.note ? (
-                      <p className="mt-2 text-sm leading-7 text-steel">{offer.note}</p>
-                    ) : null}
-                  </div>
-                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                    {offer.status}
-                  </span>
-                </div>
-                {offer.status === "pending" ? (
-                  <>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <button
-                        className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
-                        type="button"
-                        onClick={() => respondToOffer(offer.id, "accept")}
-                      >
-                        Accept
-                      </button>
-                      <button
-                        className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                        type="button"
-                        onClick={() => respondToOffer(offer.id, "decline")}
-                      >
-                        Decline
-                      </button>
-                      <button
-                        className="rounded-full border border-navy bg-navy/5 px-4 py-2 text-sm font-semibold text-navy"
-                        type="button"
-                        onClick={() => beginCounterDraft(offer)}
-                      >
-                        Counter
-                      </button>
-                    </div>
-
-                    {counterDraft ? (
-                      <div className="mt-4 rounded-[20px] border border-slate-200 bg-white p-4">
-                        <div className="grid gap-3 md:grid-cols-2">
-                          <label className="block">
-                            <span className="mb-2 block text-sm font-semibold text-steel">
-                              Counter type
-                            </span>
-                            <select
-                              className="w-full rounded-[18px] border border-slate-200 bg-[#f7f7f8] px-4 py-3 text-sm outline-none transition focus:border-navy"
-                              value={counterDraft.offerType}
-                              onChange={(event) =>
-                                setCounterDrafts((current) => ({
-                                  ...current,
-                                  [offer.id]: {
-                                    ...current[offer.id],
-                                    offerType: event.target.value,
-                                  },
-                                }))
-                              }
-                            >
-                              <option value="cash">Cash</option>
-                              <option value="trade">Trade</option>
-                              <option value="cash-trade">Cash + Trade</option>
-                            </select>
-                          </label>
-
-                          {counterDraft.offerType !== "trade" ? (
-                            <label className="block">
-                              <span className="mb-2 block text-sm font-semibold text-steel">
-                                Counter amount (CAD)
-                              </span>
-                              <input
-                                min="0"
-                                step="0.01"
-                                className="w-full rounded-[18px] border border-slate-200 bg-[#f7f7f8] px-4 py-3 text-sm outline-none transition focus:border-navy"
-                                type="number"
-                                value={counterDraft.cashAmount}
-                                onChange={(event) =>
-                                  setCounterDrafts((current) => ({
-                                    ...current,
-                                    [offer.id]: {
-                                      ...current[offer.id],
-                                      cashAmount: event.target.value,
-                                    },
-                                  }))
-                                }
-                              />
-                            </label>
-                          ) : null}
-
-                          {counterDraft.offerType !== "cash" ? (
-                            <label className="block md:col-span-2">
-                              <span className="mb-2 block text-sm font-semibold text-steel">
-                                Trade items
-                              </span>
-                              <textarea
-                                className="min-h-24 w-full rounded-[18px] border border-slate-200 bg-[#f7f7f8] px-4 py-3 text-sm outline-none transition focus:border-navy"
-                                value={counterDraft.tradeItems}
-                                onChange={(event) =>
-                                  setCounterDrafts((current) => ({
-                                    ...current,
-                                    [offer.id]: {
-                                      ...current[offer.id],
-                                      tradeItems: event.target.value,
-                                    },
-                                  }))
-                                }
-                              />
-                            </label>
-                          ) : null}
-
-                          <label className="block md:col-span-2">
-                            <span className="mb-2 block text-sm font-semibold text-steel">
-                              Counter note
-                            </span>
-                            <textarea
-                              className="min-h-24 w-full rounded-[18px] border border-slate-200 bg-[#f7f7f8] px-4 py-3 text-sm outline-none transition focus:border-navy"
-                              value={counterDraft.note}
-                              onChange={(event) =>
-                                setCounterDrafts((current) => ({
-                                  ...current,
-                                  [offer.id]: {
-                                    ...current[offer.id],
-                                    note: event.target.value,
-                                  },
-                                }))
-                              }
-                            />
-                          </label>
-                        </div>
-
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          <button
-                            className="rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white"
-                            type="button"
-                            onClick={() =>
-                              void respondToOffer(offer.id, "counter", {
-                                offerType: counterDraft.offerType,
-                                cashAmount:
-                                  counterDraft.offerType === "trade"
-                                    ? 0
-                                    : Number(counterDraft.cashAmount || 0),
-                                tradeItems:
-                                  counterDraft.offerType === "cash"
-                                    ? []
-                                    : counterDraft.tradeItems
-                                        .split("\n")
-                                        .map((item) => item.trim())
-                                        .filter(Boolean),
-                                note: counterDraft.note,
-                              }).then((result) => {
-                                if (result?.ok) {
-                                  clearCounterDraft(offer.id);
-                                }
-                              })
-                            }
-                          >
-                            Send counter
-                          </button>
-                          <button
-                            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                            type="button"
-                            onClick={() => clearCounterDraft(offer.id)}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
-                  </>
-                ) : null}
-                    </>
-                  );
-                })()}
-              </div>
-            ))
-          ) : (
-            <p className="text-sm leading-7 text-steel">No incoming offers yet.</p>
-          )}
-        </div>
-      </section>
-
-      <section aria-labelledby="dashboard-legacy-listings-heading" className="space-y-4">
-        <h2 className="sr-only" id="dashboard-legacy-listings-heading">Listing management cards</h2>
-        {currentUserListings.map((listing) => (
-          <article
-            key={listing.id}
-            className={`rounded-[30px] bg-white p-5 shadow-soft transition ${
-              listing.status === "sold" ? "opacity-60" : ""
-            }`}
-          >
-            <div className="grid gap-5 xl:grid-cols-[auto_1fr_auto_auto] xl:items-center">
-              <CardArtwork
-                className="h-28 w-24 rounded-[20px] object-cover"
-                game={listing.game}
-                src={listing.imageUrl}
-                title={listing.title}
-              />
-
-              <div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <h2 className="font-display text-2xl font-semibold tracking-[-0.04em] text-ink">
-                    {listing.title}
-                  </h2>
-                  {listing.status === "sold" ? (
-                    <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
-                      Sold
-                    </span>
-                  ) : null}
-                </div>
-                <p className="mt-2 text-sm text-steel">
-                  {listing.game} | {listing.neighborhood} | {listing.timeAgo}
-                </p>
-                <p className="mt-3 text-base text-steel">{listing.description}</p>
-              </div>
-
-              <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
-                <div className="rounded-[20px] bg-slate-50 px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                    Price
-                  </p>
-                  <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
-                    {formatCadPrice(listing.price, listing.priceCurrency)}
-                  </p>
-                </div>
-                <div className="rounded-[20px] bg-slate-50 px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                    Views
-                  </p>
-                  <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
-                    {listing.views}
-                  </p>
-                </div>
-                <div className="rounded-[20px] bg-slate-50 px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                    Offers
-                  </p>
-                  <p className="mt-1 font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
-                    {listing.offers}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-                <button
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 px-4 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
-                  type="button"
-                  onClick={() =>
-                    editingId === listing.id ? setEditingId("") : openEditor(listing)
-                  }
-                >
-                  {editingId === listing.id ? "Close editor" : "Edit listing"}
-                </button>
-                <button
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 px-4 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={listing.status === "sold"}
-                  type="button"
-                  onClick={() => bumpListing(listing.id)}
-                >
-                  <RefreshCcw size={16} />
-                  Bump listing
-                </button>
-                <button
-                  className="rounded-full bg-navy px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
-                  disabled={listing.status === "sold"}
-                  type="button"
-                  onClick={() => markListingSold(listing.id)}
-                >
-                  Mark as sold
-                </button>
-              </div>
+      <div className="hidden lg:block lg:px-6 lg:pt-8">
+        <div className="mx-auto w-full max-w-[1400px] rounded-[28px] border p-6" style={{ background: "rgba(255,255,255,0.015)", borderColor: "rgba(255,255,255,0.05)" }}>
+          <div className="flex items-start justify-between gap-8">
+            <div>
+              <p className="text-[30px] text-white" style={{ fontWeight: 800, lineHeight: 1.05 }}>Seller Dashboard</p>
+              <p className="mt-2 max-w-[42rem] text-[13px]" style={{ color: "#7a7a82", lineHeight: 1.6 }}>
+                Monitor live listings, handle buyer offers, and manage drafts from a desktop-first seller workspace.
+              </p>
             </div>
+            <PrimaryButton className="!h-[46px] !rounded-[16px] !px-5" onClick={() => navigate("/sell")}>
+              <Plus size={14} />
+              New Listing
+            </PrimaryButton>
+          </div>
+        </div>
+      </div>
 
-            {editingId === listing.id ? (
-              <div className="mt-5 grid gap-4 rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-5 md:grid-cols-2">
-                <label className="block">
-                  <span className="mb-2 block text-sm font-semibold text-steel">Price</span>
-                  <input
-                    className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-navy"
-                    type="number"
-                    value={editForm.price}
-                    onChange={(event) =>
-                      setEditForm((current) => ({ ...current, price: event.target.value }))
-                    }
+      <ScreenSection className="pt-3 lg:px-6 lg:pt-6">
+        <div className="mx-auto grid w-full grid-cols-2 gap-2.5 lg:max-w-[1400px] lg:grid-cols-4 lg:gap-4">
+          <DashboardStat icon={Package} label="Active" tone={m.blue} value={activeListings.length} />
+          <DashboardStat icon={Tag} label="Pending offers" tone={m.warning} value={sellerOffers.length} />
+          <DashboardStat icon={Eye} label="Views" tone={m.success} value={formatNumber(totalViews)} />
+          <DashboardStat icon={BarChart3} label="Drafts" tone="#fca5a5" value={currentUserDrafts.length} />
+        </div>
+      </ScreenSection>
+
+      <div className="lg:px-6 lg:pb-8">
+      <div className="mx-auto lg:grid lg:max-w-[1400px] lg:grid-cols-[minmax(0,1.45fr)_390px] lg:gap-8">
+        <div className="min-w-0">
+          <ScreenSection className="pt-5 lg:px-0">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-[12px] text-white" style={{ fontWeight: 700 }}>
+                Active listings
+              </p>
+              <span className="text-[10px]" style={{ color: m.textTertiary, fontWeight: 600 }}>
+                {activeListings.length} live
+              </span>
+            </div>
+            {activeListings.length ? (
+              <div className="flex flex-col gap-2.5">
+                {activeListings.map((listing) => (
+                  <SellerListingCard
+                    key={listing.id}
+                    formatCadPrice={formatCadPrice}
+                    listing={listing}
+                    onBump={bumpListing}
+                    onEdit={startEdit}
+                    onSold={markListingSold}
                   />
-                </label>
-                <label className="block">
-                  <span className="mb-2 block text-sm font-semibold text-steel">Condition</span>
-                  <select
-                    className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-navy"
-                    value={editForm.condition}
-                    onChange={(event) =>
-                      setEditForm((current) => ({
-                        ...current,
-                        condition: event.target.value,
-                      }))
-                    }
-                  >
-                    <option>NM</option>
-                    <option>LP</option>
-                    <option>MP</option>
-                    <option>HP</option>
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="mb-2 block text-sm font-semibold text-steel">Quantity</span>
-                  <input
-                    min="1"
-                    step="1"
-                    type="number"
-                    className="w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-navy"
-                    value={editForm.quantity}
-                    onChange={(event) =>
-                      setEditForm((current) => ({
-                        ...current,
-                        quantity: Math.max(1, Number(event.target.value) || 1),
-                      }))
-                    }
-                  />
-                </label>
-                <label className="block md:col-span-2">
-                  <span className="mb-2 block text-sm font-semibold text-steel">Description</span>
-                  <textarea
-                    className="min-h-24 w-full rounded-[18px] border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-navy"
-                    value={editForm.description}
-                    onChange={(event) =>
-                      setEditForm((current) => ({
-                        ...current,
-                        description: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-                <div className="flex flex-col gap-3 md:col-span-2 md:flex-row md:justify-end">
-                  <button
-                    className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                    type="button"
-                    onClick={() => setEditingId("")}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="rounded-full bg-orange px-4 py-2 text-sm font-semibold text-white"
-                    type="button"
-                    onClick={() => {
-                      editListing(listing.id, editForm);
-                      setEditingId("");
-                    }}
-                  >
-                    Save changes
-                  </button>
-                </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyBlock
+                description="Post your first card to start getting views, offers, and messages."
+                title="No active listings"
+                action={<PrimaryButton onClick={() => navigate("/sell")}>Create listing</PrimaryButton>}
+              />
+            )}
+          </ScreenSection>
+
+          {soldListings.length ? (
+            <ScreenSection className="pt-5 lg:px-0">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-[12px] text-white" style={{ fontWeight: 700 }}>
+                  Sold
+                </p>
+                <span className="text-[10px]" style={{ color: m.textTertiary, fontWeight: 600 }}>
+                  {soldListings.length} archived
+                </span>
+              </div>
+              <div className="grid gap-2.5 lg:grid-cols-2">
+                {soldListings.slice(0, 4).map((listing) => (
+                  <div key={listing.id} className="rounded-[18px] border p-3" style={{ background: m.surface, borderColor: m.border }}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-[12px] text-white" style={{ fontWeight: 700 }}>
+                          {listing.title}
+                        </p>
+                        <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+                          Sold {compactTimeLabel(listing.updatedAt || listing.timeAgo)}
+                        </p>
+                      </div>
+                      <span className="text-[14px] text-white" style={{ fontWeight: 700 }}>
+                        {formatPrice(listing.priceCad ?? listing.price, listing.priceCurrency || "CAD")}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScreenSection>
+          ) : null}
+        </div>
+
+        <aside className="min-w-0 lg:sticky lg:top-6 lg:self-start">
+          <ScreenSection className="pt-5 lg:px-0 lg:pt-0">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-[12px] text-white" style={{ fontWeight: 700 }}>
+                Incoming offers
+              </p>
+              <Link className="inline-flex items-center gap-1 text-[10px]" style={{ color: m.textSecondary, fontWeight: 600 }} to="/inbox">
+                Open inbox
+                <ChevronRight size={12} />
+              </Link>
+            </div>
+            {offerError ? (
+              <div className="mb-2 rounded-[14px] px-3 py-2 text-[11px]" style={{ background: "rgba(248,113,113,0.08)", color: m.danger, fontWeight: 600 }}>
+                {offerError}
               </div>
             ) : null}
-          </article>
-        ))}
-      </section>
-    </main>
+            {offerMessage ? (
+              <div className="mb-2 rounded-[14px] px-3 py-2 text-[11px]" style={{ background: "rgba(52,211,153,0.08)", color: m.success, fontWeight: 600 }}>
+                {offerMessage}
+              </div>
+            ) : null}
+            {sellerOffers.length ? (
+              <div className="flex flex-col gap-2.5">
+                {sellerOffers.map((offer) => (
+                  <OfferRow
+                    key={offer.id}
+                    formatCadPrice={formatCadPrice}
+                    offer={offer}
+                    processing={busyId === offer.id}
+                    onAccept={(target) => handleOfferAction(target, "accept")}
+                    onCounter={startCounter}
+                    onDecline={(target) => handleOfferAction(target, "decline")}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyBlock description="New offers will surface here as buyers message and negotiate." title="No active offers" />
+            )}
+          </ScreenSection>
+
+          {currentUserDrafts.length ? (
+            <ScreenSection className="pt-5 lg:px-0" ref={undefined}>
+              <div ref={draftsRef}>
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-[12px] text-white" style={{ fontWeight: 700 }}>
+                    Drafts
+                  </p>
+                  <span className="text-[10px]" style={{ color: m.textTertiary, fontWeight: 600 }}>
+                    {currentUserDrafts.length} saved
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2.5">
+                  {currentUserDrafts.map((draft) => (
+                    <DraftCard
+                      key={draft.id}
+                      draft={draft}
+                      isActive={listingDraft?.id === draft.id}
+                      onDelete={clearListingDraft}
+                      onOpen={openDraft}
+                      onSetActive={selectListingDraft}
+                    />
+                  ))}
+                </div>
+              </div>
+            </ScreenSection>
+          ) : null}
+        </aside>
+      </div>
+      </div>
+
+      <BottomSheet open={Boolean(editingListing)} onClose={() => setEditingListing(null)}>
+        <div className="px-4 pb-6 pt-4">
+          <p className="text-[14px] text-white" style={{ fontWeight: 700 }}>
+            Edit listing
+          </p>
+          <div className="mt-4 grid gap-3">
+            <TextField inputMode="decimal" prefix="$" placeholder="Price" value={editForm.price} onChange={(value) => setEditForm((current) => ({ ...current, price: value.replace(/[^0-9.]/g, "") }))} />
+            <select
+              className="h-[42px] w-full rounded-[14px] border px-3 text-[12.5px] outline-none"
+              style={{ background: m.surfaceStrong, borderColor: m.border, color: m.text, fontWeight: 500 }}
+              value={editForm.condition}
+              onChange={(event) => setEditForm((current) => ({ ...current, condition: event.target.value }))}
+            >
+              {["Mint", "NM", "LP", "MP", "HP", "DMG"].map((condition) => (
+                <option key={condition} value={condition}>
+                  {condition}
+                </option>
+              ))}
+            </select>
+            <TextField inputMode="numeric" placeholder="Quantity" value={editForm.quantity} onChange={(value) => setEditForm((current) => ({ ...current, quantity: value.replace(/[^0-9]/g, "") }))} />
+            <TextArea placeholder="Description" rows={4} value={editForm.description} onChange={(value) => setEditForm((current) => ({ ...current, description: value }))} />
+            <button
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-[14px] border text-[11px]"
+              style={{
+                borderColor: "rgba(248,113,113,0.28)",
+                background: "rgba(127,29,29,0.14)",
+                color: "#fca5a5",
+                fontWeight: 700,
+              }}
+              type="button"
+              onClick={handleDeleteEditing}
+            >
+              <Trash2 size={13} />
+              Delete listing
+            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <SecondaryButton onClick={() => setEditingListing(null)}>Cancel</SecondaryButton>
+              <PrimaryButton disabled={busyId === editingListing?.id} onClick={saveEdit}>
+                Save
+              </PrimaryButton>
+            </div>
+          </div>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet open={Boolean(counterOffer)} onClose={() => setCounterOffer(null)}>
+        <div className="px-4 pb-6 pt-4">
+          <p className="text-[14px] text-white" style={{ fontWeight: 700 }}>
+            Counter offer
+          </p>
+          <div className="mt-4 grid gap-3">
+            {(counterForm.offerType === "cash" || counterForm.offerType === "cash-trade") ? (
+              <TextField inputMode="decimal" prefix="$" placeholder="Cash amount" value={counterForm.cashAmount} onChange={(value) => setCounterForm((current) => ({ ...current, cashAmount: value.replace(/[^0-9.]/g, "") }))} />
+            ) : null}
+            {(counterForm.offerType === "trade" || counterForm.offerType === "cash-trade") ? (
+              <TextArea placeholder={"One trade item per line"} rows={4} value={counterForm.tradeItems} onChange={(value) => setCounterForm((current) => ({ ...current, tradeItems: value }))} />
+            ) : null}
+            <TextArea placeholder="Add a note for the buyer..." rows={3} value={counterForm.note} onChange={(value) => setCounterForm((current) => ({ ...current, note: value }))} />
+            <div className="grid grid-cols-2 gap-2">
+              <SecondaryButton onClick={() => setCounterOffer(null)}>Cancel</SecondaryButton>
+              <PrimaryButton
+                disabled={!counterOffer || busyId === counterOffer.id}
+                onClick={() =>
+                  handleOfferAction(counterOffer, "counter", {
+                    offerType: counterForm.offerType,
+                    cashAmount: counterForm.cashAmount,
+                    tradeItems: counterForm.tradeItems.split("\n").map((item) => item.trim()).filter(Boolean),
+                    note: counterForm.note,
+                  })
+                }
+              >
+                Send counter
+              </PrimaryButton>
+            </div>
+          </div>
+        </div>
+      </BottomSheet>
+    </MobileScreen>
   );
 }
-

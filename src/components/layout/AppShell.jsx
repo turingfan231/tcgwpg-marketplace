@@ -1,424 +1,170 @@
-import { AlertTriangle, Clock3, MapPin, ShieldCheck } from "lucide-react";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import {
+  CalendarDays,
+  Home,
+  LayoutDashboard,
+  MessageCircle,
+  Search,
+  Settings2,
+  Store,
+  UserRound,
+} from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router-dom";
+import UserAvatar from "../shared/UserAvatar";
 import { useMarketplace } from "../../hooks/useMarketplace";
-import AppLaunchScreen from "../ui/AppLaunchScreen";
-import InstallPrompt from "../ui/InstallPrompt";
-import ToastStack from "../ui/ToastStack";
-import Header from "./Header";
 import MobileTabBar from "./MobileTabBar";
+import { m } from "../../mobile/design";
 
-const INSTALL_DISMISS_KEY = "tcgwpg.installPromptDismissed";
-const ONBOARDING_DISMISS_KEY = "tcgwpg.onboardingDismissed";
-const COLOR_MODE_KEY = "tcgwpg.colorMode";
-const CreateListingModal = lazy(() => import("../modals/CreateListingModal"));
-const OnboardingModal = lazy(() => import("../modals/OnboardingModal"));
+const HIDE_NAV_PATTERNS = [
+  /^\/listing\//,
+  /^\/inbox\/[^/]+/,
+  /^\/sell(\/|$)/,
+  /^\/offer(\/|$)/,
+];
+
+const DESKTOP_NAV_ITEMS = [
+  { id: "home", label: "Home", icon: Home, to: "/", match: (pathname) => pathname === "/" },
+  { id: "market", label: "Market", icon: Search, to: "/market", match: (pathname) => pathname.startsWith("/market") },
+  { id: "events", label: "Events", icon: CalendarDays, to: "/events", match: (pathname) => pathname.startsWith("/events") },
+  { id: "stores", label: "Stores", icon: Store, to: "/stores", match: (pathname) => pathname.startsWith("/stores") },
+  { id: "inbox", label: "Inbox", icon: MessageCircle, to: "/inbox", match: (pathname) => pathname.startsWith("/inbox") || pathname.startsWith("/messages") },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, to: "/dashboard", match: (pathname) => pathname === "/dashboard" || pathname === "/account/dashboard" },
+  { id: "account", label: "Account", icon: Settings2, to: "/account", match: (pathname) => pathname.startsWith("/account") || pathname.startsWith("/collection") || pathname.startsWith("/wishlist") || pathname.startsWith("/notifications") },
+];
+
+function DesktopNavLink({ active, icon: Icon, label, to, badge }) {
+  return (
+    <Link
+      aria-current={active ? "page" : undefined}
+      className="group flex items-center gap-3 rounded-[18px] px-3.5 py-3 transition-colors"
+      style={{
+        background: active ? "linear-gradient(135deg, rgba(239,68,68,0.14), rgba(185,28,28,0.08))" : "transparent",
+        border: active ? "1px solid rgba(239,68,68,0.14)" : "1px solid transparent",
+      }}
+      to={to}
+    >
+      <div
+        className="flex h-10 w-10 items-center justify-center rounded-[14px] transition-colors"
+        style={{
+          background: active ? "rgba(239,68,68,0.14)" : "rgba(255,255,255,0.04)",
+          color: active ? "#fca5a5" : "#6a6a72",
+        }}
+      >
+        <Icon size={18} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p
+          className="text-[13px]"
+          style={{
+            color: active ? "#f4d7d9" : "#d1d1d6",
+            fontWeight: active ? 700 : 600,
+          }}
+        >
+          {label}
+        </p>
+      </div>
+      {badge ? (
+        <span
+          className="rounded-full px-2 py-[3px] text-[10px]"
+          style={{ background: "rgba(239,68,68,0.14)", color: "#fca5a5", fontWeight: 700 }}
+        >
+          {badge}
+        </span>
+      ) : null}
+    </Link>
+  );
+}
+
+function DesktopSidebar({ pathname }) {
+  const { currentUser, unreadMessageCount } = useMarketplace();
+
+  return (
+    <aside
+      className="hidden w-[272px] shrink-0 flex-col border-r px-5 py-6 lg:flex"
+      style={{
+        background: "linear-gradient(180deg, rgba(14,14,18,0.96), rgba(10,10,12,0.98))",
+        borderColor: "rgba(255,255,255,0.05)",
+      }}
+    >
+      <Link className="flex items-center gap-3 rounded-[20px] p-2" to="/">
+        <div className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-[14px] text-white" style={{ background: "#17090b" }}>
+          <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(239,68,68,0.95), rgba(127,29,29,0.92))" }} />
+          <div className="absolute -right-2 -top-2 h-7 w-7 rounded-full" style={{ background: "rgba(255,255,255,0.12)" }} />
+          <span className="relative text-[10px] tracking-[0.08em]" style={{ fontWeight: 900 }}>WPG</span>
+        </div>
+        <div>
+          <p className="text-[16px] text-white" style={{ fontWeight: 800 }}>TCG WPG</p>
+          <p className="text-[11px]" style={{ color: "#6a6a72", fontWeight: 500 }}>Desktop workspace</p>
+        </div>
+      </Link>
+
+      <div
+        className="mt-5 rounded-[24px] p-3"
+        style={{
+          background: "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))",
+          border: "1px solid rgba(255,255,255,0.05)",
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <UserAvatar className="h-12 w-12 text-[14px]" user={currentUser} />
+          <div className="min-w-0">
+            <p className="truncate text-[13px] text-white" style={{ fontWeight: 700 }}>
+              {currentUser?.publicName || currentUser?.name || currentUser?.username || "Guest"}
+            </p>
+            <p className="mt-0.5 truncate text-[11px]" style={{ color: "#6a6a72" }}>
+              {currentUser?.neighborhood || "Winnipeg, MB"}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <nav aria-label="Desktop navigation" className="mt-5 flex flex-col gap-1.5">
+        {DESKTOP_NAV_ITEMS.map((item) => (
+          <DesktopNavLink
+            key={item.id}
+            active={item.match(pathname)}
+            badge={item.id === "inbox" && unreadMessageCount ? String(unreadMessageCount) : undefined}
+            icon={item.icon}
+            label={item.label}
+            to={item.to}
+          />
+        ))}
+      </nav>
+
+      <div
+        className="mt-auto rounded-[24px] p-4"
+        style={{
+          background: "linear-gradient(180deg, rgba(64,14,18,0.24), rgba(18,18,22,0.7))",
+          border: "1px solid rgba(239,68,68,0.08)",
+        }}
+      >
+        <p className="text-[11px] uppercase tracking-[0.12em]" style={{ color: "#f87171", fontWeight: 700 }}>
+          Desktop Mode
+        </p>
+        <p className="mt-2 text-[13px] text-white" style={{ fontWeight: 700 }}>
+          Browse faster on PC
+        </p>
+        <p className="mt-1 text-[11px]" style={{ color: "#8a8a92", lineHeight: 1.5 }}>
+          Wider market grids, denser inboxes, and proper multi-column workspace layouts are now active here.
+        </p>
+      </div>
+    </aside>
+  );
+}
 
 export default function AppShell() {
   const location = useLocation();
-  const {
-    authReady,
-    closeCreateListing,
-    currentUser,
-    dismissToast,
-    isCreateListingOpen,
-    isViewingAs,
-    isSuspended,
-    stopViewAs,
-    toastItems,
-    viewedUserRecord,
-  } = useMarketplace();
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [installVisible, setInstallVisible] = useState(false);
-  const [appBooted, setAppBooted] = useState(false);
-  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
-  const [colorMode, setColorMode] = useState(() => {
-    if (typeof window === "undefined") {
-      return "light";
-    }
-
-    const storedMode = window.localStorage.getItem(COLOR_MODE_KEY);
-    if (storedMode === "light" || storedMode === "dark") {
-      return storedMode;
-    }
-
-    return "light";
-  });
-
-  const isStandalone = useMemo(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-
-    return (
-      window.matchMedia?.("(display-mode: standalone)")?.matches ||
-      window.navigator.standalone === true
-    );
-  }, []);
-
-  const isAutomatedBrowser = useMemo(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-
-    return window.navigator.webdriver === true;
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return undefined;
-    }
-
-    if (isAutomatedBrowser) {
-      setInstallVisible(false);
-      setDeferredPrompt(null);
-      return undefined;
-    }
-
-    const dismissed = window.localStorage.getItem(INSTALL_DISMISS_KEY) === "1";
-    const userAgent = window.navigator.userAgent || "";
-    const isIos =
-      /iPad|iPhone|iPod/.test(userAgent) ||
-      (window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1);
-
-    const handleBeforeInstallPrompt = (event) => {
-      event.preventDefault();
-      setDeferredPrompt(event);
-      if (!dismissed && !isStandalone) {
-        setInstallVisible(true);
-      }
-    };
-
-    const handleAppInstalled = () => {
-      setInstallVisible(false);
-      setDeferredPrompt(null);
-      window.localStorage.setItem(INSTALL_DISMISS_KEY, "1");
-    };
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    window.addEventListener("appinstalled", handleAppInstalled);
-
-    if (!dismissed && !isStandalone) {
-      setInstallVisible(true);
-    }
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-      window.removeEventListener("appinstalled", handleAppInstalled);
-    };
-  }, [isAutomatedBrowser, isStandalone]);
-
-  function dismissInstallPrompt() {
-    setInstallVisible(false);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(INSTALL_DISMISS_KEY, "1");
-    }
-  }
-
-  function openInstallPrompt() {
-    setInstallVisible(true);
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(INSTALL_DISMISS_KEY);
-    }
-  }
-
-  async function handleInstall() {
-    if (!deferredPrompt) {
-      dismissInstallPrompt();
-      return;
-    }
-
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice.catch(() => null);
-    setDeferredPrompt(null);
-    dismissInstallPrompt();
-  }
-
-  const installState = useMemo(() => {
-    if (!installVisible || typeof window === "undefined" || isStandalone || isAutomatedBrowser) {
-      return { visible: false, mode: "native", mobile: false };
-    }
-
-    const userAgent = window.navigator.userAgent || "";
-    const isIos =
-      /iPad|iPhone|iPod/.test(userAgent) ||
-      (window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1);
-    const mobile = window.matchMedia("(max-width: 1023px)").matches;
-
-    return {
-      visible: true,
-      mobile,
-      mode: deferredPrompt ? "native" : isIos ? "ios" : "manual",
-    };
-  }, [deferredPrompt, installVisible, isAutomatedBrowser, isStandalone]);
-
-  const activeTheme = useMemo(
-    () => ({
-      id: "collector-strip",
-      primary: "#b11d23",
-      primaryRgb: "177, 29, 35",
-      accent: "#c62828",
-      accentRgb: "198, 40, 40",
-    }),
-    [],
-  );
-
-  const themeStyle = useMemo(
-    () => ({
-      "--theme-primary": activeTheme.primary,
-      "--theme-primary-rgb": activeTheme.primaryRgb,
-      "--theme-accent": activeTheme.accent,
-      "--theme-accent-rgb": activeTheme.accentRgb,
-    }),
-    [activeTheme],
-  );
-
-  useEffect(() => {
-    if (typeof document === "undefined") {
-      return undefined;
-    }
-
-    const root = document.documentElement;
-    root.style.setProperty("--theme-primary", activeTheme.primary);
-    root.style.setProperty("--theme-primary-rgb", activeTheme.primaryRgb);
-    root.style.setProperty("--theme-accent", activeTheme.accent);
-    root.style.setProperty("--theme-accent-rgb", activeTheme.accentRgb);
-
-    return undefined;
-  }, [activeTheme]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof document === "undefined") {
-      return undefined;
-    }
-
-    const root = document.documentElement;
-    const body = document.body;
-    root.dataset.colorMode = colorMode;
-    root.dataset.theme = colorMode;
-    body.dataset.colorMode = colorMode;
-    root.style.colorScheme = colorMode;
-    window.localStorage.setItem(COLOR_MODE_KEY, colorMode);
-
-    return undefined;
-  }, [colorMode]);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setAppBooted(true), 1400);
-    return () => window.clearTimeout(timeout);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const dismissedUserId = window.localStorage.getItem(ONBOARDING_DISMISS_KEY) || "";
-    setOnboardingDismissed(dismissedUserId === String(currentUser?.id || ""));
-  }, [currentUser?.id]);
-
-  useEffect(() => {
-    if (!appBooted && authReady) {
-      const timeout = window.setTimeout(() => setAppBooted(true), 180);
-      return () => window.clearTimeout(timeout);
-    }
-
-    return undefined;
-  }, [appBooted, authReady]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  }, [location.pathname, location.search]);
-
-  const showLaunchScreen = !appBooted;
-  const allowBlockingOnboarding = /^\/(account|dashboard)(\/|$)/.test(location.pathname);
-  const showOnboarding =
-    authReady &&
-    !showLaunchScreen &&
-    Boolean(currentUser) &&
-    !Boolean(currentUser?.onboardingComplete) &&
-    allowBlockingOnboarding &&
-    !onboardingDismissed;
-
-  function handleCloseOnboarding() {
-    setOnboardingDismissed(true);
-    if (typeof window !== "undefined" && currentUser?.id) {
-      window.localStorage.setItem(ONBOARDING_DISMISS_KEY, String(currentUser.id));
-    }
-  }
-
-  function toggleColorMode() {
-    setColorMode((currentMode) => (currentMode === "dark" ? "light" : "dark"));
-  }
-
-  const isMobileThreadRoute = /^\/messages\/[^/]+/.test(location.pathname);
-
+  const hideNav = HIDE_NAV_PATTERNS.some((pattern) => pattern.test(location.pathname));
   return (
-    <div
-      className="square-preview min-h-screen bg-transparent"
-      data-color-mode={colorMode}
-      data-theme-preset={activeTheme.id}
-      style={themeStyle}
-    >
-      {showLaunchScreen ? <AppLaunchScreen /> : null}
-      {isMobileThreadRoute ? (
-        <div className="hidden lg:block">
-          <Header
-            canInstallApp={installState.visible || !isStandalone}
-            colorMode={colorMode}
-            onOpenInstallPrompt={openInstallPrompt}
-            onToggleColorMode={toggleColorMode}
-          />
-        </div>
-      ) : (
-        <Header
-          canInstallApp={installState.visible || !isStandalone}
-          colorMode={colorMode}
-          onOpenInstallPrompt={openInstallPrompt}
-          onToggleColorMode={toggleColorMode}
-        />
-      )}
-      {isSuspended ? (
-        <div className="border-b border-rose-200 bg-rose-50">
-          <div className="page-shell flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
-            <div className="inline-flex items-center gap-2 font-semibold text-rose-800">
-              <AlertTriangle size={16} />
-              This account is suspended. Browsing is still available, but posting, messaging,
-              offers, and seller actions are disabled until review is complete.
-            </div>
-            <Link
-              className="rounded-full border border-rose-200 bg-white px-4 py-2 font-semibold text-rose-700"
-              to="/account"
-            >
-              Appeal or review status
-            </Link>
-          </div>
-        </div>
-      ) : null}
-      {isViewingAs && viewedUserRecord ? (
-        <div className="border-b border-[rgba(177,29,35,0.18)] bg-[rgba(177,29,35,0.08)]">
-          <div className="page-shell flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
-            <div className="inline-flex items-center gap-2 font-semibold text-ink">
-              <ShieldCheck size={16} className="text-navy" />
-              View-as mode: public troubleshooting view for {viewedUserRecord.publicName || viewedUserRecord.name}
-            </div>
-            <button
-              className="rounded-full border border-[rgba(240,55,55,0.22)] bg-white px-4 py-2 font-semibold text-ink"
-              type="button"
-              onClick={() => void stopViewAs()}
-            >
-              Exit view-as mode
-            </button>
-          </div>
-        </div>
-      ) : null}
-      <main
-        className={`page-shell ${
-          isMobileThreadRoute
-            ? "h-[100dvh] overflow-hidden px-0 py-0 pb-[env(safe-area-inset-bottom)] sm:px-6 sm:py-6 lg:px-8 lg:py-10 lg:pb-24 xl:px-10"
-            : "py-4 pb-[calc(7.15rem+env(safe-area-inset-bottom))] sm:py-6 lg:py-10 lg:pb-24"
-        }`}
-      >
-        <div key={location.pathname} className="app-page-transition">
+    <div className="flex h-[100dvh] overflow-hidden" style={{ background: "radial-gradient(circle at top left, rgba(56,56,64,0.12) 0%, rgba(10,10,12,1) 32%)" }}>
+      <DesktopSidebar pathname={location.pathname} />
+      <div className="flex min-w-0 flex-1 overflow-hidden">
+        <div className="relative flex h-[100dvh] min-h-0 w-full max-w-[430px] flex-col overflow-hidden lg:max-w-none lg:flex-1 lg:px-6 lg:py-6">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:w-full lg:overflow-visible lg:rounded-[28px] lg:border lg:border-white/5 lg:bg-[linear-gradient(180deg,rgba(16,16,20,0.94),rgba(12,12,14,0.98))] lg:shadow-[0_18px_48px_rgba(0,0,0,0.24)]">
           <Outlet />
         </div>
-      </main>
-
-      <footer className="app-footer-chrome hidden border-t md:block">
-        <div className="page-shell py-10">
-          <div className="console-shell px-6 py-7 sm:px-8">
-            <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr_0.8fr]">
-              <div>
-                <p className="section-kicker">TCGWPG</p>
-                <h2 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.04em] text-ink">
-                  Local cards, faster deals.
-                </h2>
-                <p className="mt-4 max-w-lg text-sm leading-7 text-steel">
-                  Built for Winnipeg players who want a cleaner way to buy, sell, trade,
-                  and plan meetups without leaving the city.
-                </p>
-              </div>
-
-              <div className="grid gap-6 sm:grid-cols-2">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                    Browse
-                  </p>
-                  <div className="mt-4 grid gap-3 text-sm font-semibold text-ink">
-                    <Link to="/market">All listings</Link>
-                    <Link to="/wtb">WTB board</Link>
-                    <Link to="/sellers">Sellers</Link>
-                    <Link to="/events">Events</Link>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                    Account
-                  </p>
-                  <div className="mt-4 grid gap-3 text-sm font-semibold text-ink">
-                    <Link to="/messages">Messages</Link>
-                    <Link to="/dashboard">Dashboard</Link>
-                    <Link to="/wishlist">Wishlist</Link>
-                    <Link to="/account">Settings</Link>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid gap-3">
-                <div className="console-well px-4 py-4">
-                  <div className="inline-flex items-center gap-2 text-sm font-semibold text-ink">
-                    <MapPin size={16} className="text-navy" />
-                    Winnipeg-first
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-steel">
-                    Neighborhood filters and postal areas keep meetups practical.
-                  </p>
-                </div>
-                <div className="console-well px-4 py-4">
-                  <div className="inline-flex items-center gap-2 text-sm font-semibold text-ink">
-                    <Clock3 size={16} className="text-orange" />
-                    Faster deals
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-steel">
-                    Messages, offers, and follow-up stay attached to the listing.
-                  </p>
-                </div>
-                <div className="console-well px-4 py-4">
-                  <div className="inline-flex items-center gap-2 text-sm font-semibold text-ink">
-                    <ShieldCheck size={16} className="text-navy" />
-                    Trust tools
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-steel">
-                    Reviews, badges, and admin moderation help keep the market clean.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
-
-      <div className={`${isMobileThreadRoute ? "hidden" : "block"} app-footer-chrome border-t px-4 py-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-steel md:hidden`}>
-        TCG Wpg Marketplace | Local cards, faster deals
+        {hideNav ? null : <MobileTabBar />}
       </div>
-
-      <Suspense fallback={null}>
-        {isCreateListingOpen ? (
-          <CreateListingModal onClose={closeCreateListing} />
-        ) : null}
-        {showOnboarding ? <OnboardingModal onClose={handleCloseOnboarding} /> : null}
-      </Suspense>
-      <InstallPrompt
-        installState={installState}
-        onDismiss={dismissInstallPrompt}
-        onInstall={handleInstall}
-      />
-      {isMobileThreadRoute ? null : <MobileTabBar />}
-      <ToastStack items={toastItems} onDismiss={dismissToast} />
+      </div>
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import { X } from "lucide-react";
 import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
+import { AnimatePresence, motion } from "motion/react";
+import { m } from "../../mobile/design";
 
 export default function ModalShell({
   children,
@@ -16,7 +18,8 @@ export default function ModalShell({
 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
-    const handleKeyDown = (event) => {
+
+    function handleKeyDown(event) {
       if (event.key === "Escape") {
         onClose();
       }
@@ -43,7 +46,7 @@ export default function ModalShell({
           first.focus();
         }
       }
-    };
+    }
 
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", handleKeyDown);
@@ -63,56 +66,92 @@ export default function ModalShell({
   }, [onClose]);
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-5">
-      <button
-        aria-label="Close modal"
-        className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
-        type="button"
-        onClick={onClose}
-      />
-      <div
-        ref={panelRef}
-        aria-describedby={subtitle ? descriptionId : undefined}
-        aria-labelledby={titleId}
-        aria-modal="true"
-        role="dialog"
-        className={`relative w-full overflow-hidden border border-[var(--line)] bg-[linear-gradient(180deg,var(--panel-top)_0%,var(--panel-bottom)_100%)] text-ink shadow-lift ${
-          mobileSheet
-            ? "max-h-[84dvh] rounded-t-[28px] border-b-0"
-            : "h-[100dvh] rounded-none"
-        } sm:max-h-[94vh] sm:h-auto sm:rounded-[34px] ${
-          wide ? "sm:max-w-[1600px]" : "sm:max-w-2xl"
-        }`}
-      >
-        <div className="sticky top-0 z-10 flex items-start justify-between border-b border-[var(--line)] bg-[color-mix(in_srgb,var(--surface-solid)_92%,transparent)] px-4 py-4 backdrop-blur sm:px-6 sm:py-5 lg:px-8">
-          <div>
-            <p className="section-kicker">Marketplace Flow</p>
-            <h2 id={titleId} className="mt-2 font-display text-[1.65rem] font-bold uppercase tracking-[0.08em] text-ink sm:text-3xl">
-              {title}
-            </h2>
-            {subtitle ? <p id={descriptionId} className="mt-2 text-sm text-steel sm:text-base">{subtitle}</p> : null}
-          </div>
-          <button
-            aria-label="Close create listing dialog"
-            data-autofocus="true"
-            className="rounded-full border border-slate-200 bg-[var(--surface-alt)] p-2 text-steel transition hover:border-slate-300 hover:text-ink"
-            type="button"
-            onClick={onClose}
-          >
-            <X size={18} />
-          </button>
-        </div>
-        <div
-          className={`overflow-y-auto ${
+    <AnimatePresence>
+      <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-6">
+        <motion.button
+          aria-label="Close modal"
+          className="absolute inset-0"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(8px)" }}
+          type="button"
+          onClick={onClose}
+        />
+
+        <motion.div
+          ref={panelRef}
+          aria-describedby={subtitle ? descriptionId : undefined}
+          aria-labelledby={titleId}
+          aria-modal="true"
+          role="dialog"
+          initial={{ opacity: 0, y: 32, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 24, scale: 0.98 }}
+          transition={{ type: "spring", damping: 28, stiffness: 280 }}
+          className={`relative w-full overflow-hidden ${
             mobileSheet
-              ? "max-h-[calc(84dvh-92px)]"
-              : "max-h-[calc(100dvh-92px)]"
-          } sm:max-h-[calc(94vh-106px)]`}
+              ? "max-h-[84dvh] rounded-t-[28px] sm:rounded-[26px]"
+              : "h-[100dvh] rounded-none sm:h-auto sm:max-h-[94vh] sm:rounded-[26px]"
+          } ${wide ? "sm:max-w-[1280px]" : "sm:max-w-3xl"}`}
+          style={{
+            background: "#151519",
+            color: m.text,
+            border: `1px solid ${m.borderStrong}`,
+            boxShadow: m.shadowFloating,
+          }}
         >
-          {children}
-        </div>
+          <div
+            className="sticky top-0 z-10 px-4 py-3 sm:px-5"
+            style={{
+              background: "rgba(21,21,25,0.92)",
+              backdropFilter: "blur(24px)",
+              WebkitBackdropFilter: "blur(24px)",
+              borderBottom: `1px solid ${m.border}`,
+            }}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-[0.12em]" style={{ color: m.textTertiary, fontWeight: 700 }}>
+                  Marketplace flow
+                </p>
+                <h2
+                  id={titleId}
+                  className="mt-2 text-[22px] tracking-tight text-white"
+                  style={{ fontWeight: 700, lineHeight: 1.05 }}
+                >
+                  {title}
+                </h2>
+                {subtitle ? (
+                  <p id={descriptionId} className="mt-2 max-w-2xl text-[12px]" style={{ color: m.textSecondary, lineHeight: 1.55 }}>
+                    {subtitle}
+                  </p>
+                ) : null}
+              </div>
+
+              <button
+                aria-label="Close dialog"
+                data-autofocus="true"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px]"
+                style={{ background: m.surfaceStrong, color: m.textSecondary, border: `1px solid ${m.border}` }}
+                type="button"
+                onClick={onClose}
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+
+          <div
+            className={`overflow-y-auto ${
+              mobileSheet ? "max-h-[calc(84dvh-96px)]" : "max-h-[calc(100dvh-96px)]"
+            } sm:max-h-[calc(94vh-104px)]`}
+          >
+            {children}
+          </div>
+        </motion.div>
       </div>
-    </div>,
+    </AnimatePresence>,
     document.body,
   );
 }

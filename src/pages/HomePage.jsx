@@ -1,255 +1,564 @@
 import {
-  ArrowRight,
-  CalendarRange,
+  Bell,
   ChevronLeft,
   ChevronRight,
-  Heart,
-  Shield,
+  Flame,
+  MapPin,
+  Search,
+  Star,
 } from "lucide-react";
-import { startTransition, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { motion } from "motion/react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import SeoHead from "../components/seo/SeoHead";
-import CardArtwork from "../components/shared/CardArtwork";
 import UserAvatar from "../components/shared/UserAvatar";
 import { storeProfiles } from "../data/storefrontData";
 import { useMarketplace } from "../hooks/useMarketplace";
+import DBSFWBanner from "../assets/DBSFW_Banner_optimized.jpg";
+import MTGBanner from "../assets/MTG_Banner_optimized.jpg";
+import OPTCGBanner from "../assets/OPTCG_Banner_optimized.jpg";
+import PokemonBanner from "../assets/Pokemon_Banner.jpg";
+import UABanner from "../assets/UA_Banner_optimized.jpg";
+import { m, conditionStyle } from "../mobile/design";
+import {
+  compactTimeLabel,
+  formatPrice,
+  listingArtwork,
+  listingHref,
+  rememberAndNavigateToListing,
+  rememberListingReturnPath,
+  sellerInitial,
+  sellerLabel,
+} from "../mobile/helpers";
+import { ListingRow, MobileScreen, PullToRefresh } from "../mobile/primitives";
 import { fetchLocalEvents } from "../services/cardDatabase";
 
-function sortByUpcomingDate(events) {
-  return [...events].sort(
-    (left, right) => new Date(left.dateStr).getTime() - new Date(right.dateStr).getTime(),
-  );
-}
+const HERO_GAMES = [
+  {
+    slug: "pokemon",
+    game: "Pokemon",
+    banner: PokemonBanner,
+    accent: "#ef4444",
+    placeholderTitle: "Pokemon spotlight",
+    placeholderSubtitle: "Top Pokemon listing",
+  },
+  {
+    slug: "magic",
+    game: "Magic",
+    banner: MTGBanner,
+    accent: "#c084fc",
+    placeholderTitle: "Magic spotlight",
+    placeholderSubtitle: "Top Magic listing",
+  },
+  {
+    slug: "one-piece",
+    game: "One Piece",
+    banner: OPTCGBanner,
+    accent: "#ef4444",
+    placeholderTitle: "One Piece spotlight",
+    placeholderSubtitle: "Top One Piece listing",
+  },
+  {
+    slug: "dragon-ball-fusion-world",
+    game: "Dragon Ball Super Fusion World",
+    banner: DBSFWBanner,
+    accent: "#38bdf8",
+    placeholderTitle: "Fusion World spotlight",
+    placeholderSubtitle: "Top Fusion World listing",
+  },
+  {
+    slug: "union-arena",
+    game: "Union Arena",
+    banner: UABanner,
+    accent: "#f59e0b",
+    placeholderTitle: "Union Arena spotlight",
+    placeholderSubtitle: "Top Union Arena listing",
+  },
+];
 
-function normalizeGameKey(value) {
-  const normalized = String(value || "").trim().toLowerCase();
-  if (normalized.includes("one piece")) {
-    return "one-piece";
-  }
-  if (normalized.includes("pokemon")) {
-    return "pokemon";
-  }
-  if (normalized.includes("magic")) {
-    return "magic";
-  }
-  if (normalized.includes("dragon ball") || normalized.includes("fusion world")) {
+function normalizeHeroGameSlug(value) {
+  const source = String(value || "").toLowerCase();
+  if (source.includes("pokemon")) return "pokemon";
+  if (source.includes("magic")) return "magic";
+  if (source.includes("one piece") || source.includes("one-piece")) return "one-piece";
+  if (source.includes("union")) return "union-arena";
+  if (
+    source.includes("dragon ball") ||
+    source.includes("dragon-ball") ||
+    source.includes("fusion world") ||
+    source.includes("fusion-world") ||
+    source.includes("dbs")
+  ) {
     return "dragon-ball-fusion-world";
   }
-  if (normalized.includes("union arena")) {
-    return "union-arena";
-  }
-  return normalized || null;
+  return "";
 }
 
-const CURATED_HERO_ART = {
-  pokemon: "/hero/pokemon-hero.png",
-  "one-piece": "/hero/one-piece-hero.jpg",
-  magic: "/hero/magic-hero.jpg",
-  "dragon-ball-fusion-world": "/hero/fusion-world-hero.jpg",
-  "union-arena": "/hero/union-arena-hero.jpg",
-};
+function buildPokemonPlaceholderCard() {
+  return {
+    title: "Pokemon banner pending",
+    subtitle: "Placeholder card",
+    image: "",
+  };
+}
 
-function ShelfCard({ listing, formatCadPrice, onOpen }) {
+function SectionHeader({ title, to }) {
   return (
-    <button
-      className="flex w-full min-w-0 items-center gap-2 overflow-hidden rounded-[10px] border border-[var(--line)] bg-[var(--surface-solid)] px-2.5 py-2.5 text-left transition duration-300 hover:-translate-y-0.5 hover:border-navy/20 hover:shadow-soft sm:gap-2.5 sm:px-3 sm:py-3"
-      type="button"
-      onClick={() => onOpen(listing.id)}
-    >
-      <CardArtwork
-        className="aspect-[63/88] w-[3rem] rounded-[8px] object-cover sm:w-[3.4rem]"
-        game={listing.game}
-        src={listing.imageUrl}
-        title={listing.title}
-      />
-      <div className="min-w-0 flex-1">
-        <p className="line-clamp-2 text-[0.84rem] font-semibold leading-5 text-ink sm:text-[0.9rem]">{listing.title}</p>
-        <p className="mt-0.5 text-[0.72rem] text-slate-700 sm:text-[0.76rem]">
-          {listing.neighborhood} | {listing.seller?.publicName || listing.seller?.name}
-        </p>
-      </div>
-      <p className="text-[0.88rem] font-semibold text-ink sm:text-[0.94rem]">
-        {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
-      </p>
-    </button>
+    <div className="mb-2 mt-4 flex items-center justify-between px-4 lg:px-0">
+      <h2
+        className="text-[13px] uppercase tracking-[0.06em]"
+        style={{ fontWeight: 600, color: "#707078" }}
+      >
+        {title}
+      </h2>
+      {to ? (
+        <Link className="flex items-center gap-0.5" to={to}>
+          <span className="text-[11px]" style={{ fontWeight: 500, color: "#f87171" }}>
+            See All
+          </span>
+          <ChevronRight size={11} style={{ color: "#f87171" }} />
+        </Link>
+      ) : null}
+    </div>
   );
 }
 
-function BannerCard({
-  slide,
-  active,
-  shouldLoad = false,
-  onOpenListing,
-  onOpenEvent,
-  onOpenSeller,
-  onOpenGame,
-}) {
-  const listingGallery = slide.kind === "listing" ? slide.payload.gallery || [] : [];
-  const heroGameKey =
-    slide.kind === "event"
-      ? normalizeGameKey(slide.payload.game)
-      : slide.kind === "game"
-        ? normalizeGameKey(slide.payload.slug)
-        : normalizeGameKey(slide.payload.game);
-  const heroBackdrop =
-    slide.payload.heroBackdrop ||
-    CURATED_HERO_ART[heroGameKey] ||
-    null;
-  const overlayHeroClass =
-    heroGameKey === "pokemon"
-      ? "object-[56%_center] sm:object-center"
-      : heroGameKey === "one-piece"
-        ? "object-[60%_center] sm:object-center"
-        : heroGameKey === "magic"
-          ? "object-[62%_center] sm:object-center"
-          : heroGameKey === "dragon-ball-fusion-world"
-            ? "object-[54%_center] sm:object-center"
-            : heroGameKey === "union-arena"
-              ? "object-[56%_center] sm:object-center"
-          : "object-center";
-  const compactMeta = slide.meta.slice(0, 2);
+function CompactBrand() {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-[10px] text-white" style={{ background: "#17090b" }}>
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(239,68,68,0.95), rgba(127,29,29,0.92))" }} />
+        <div className="absolute -right-2 -top-2 h-6 w-6 rounded-full" style={{ background: "rgba(255,255,255,0.12)" }} />
+        <span className="relative text-[8px] tracking-[0.08em]" style={{ fontWeight: 900 }}>WPG</span>
+      </div>
+      <div>
+        <p className="text-[13px] text-white" style={{ fontWeight: 700 }}>
+          TCG WPG
+        </p>
+        <p className="text-[11px]" style={{ color: m.textSecondary }}>
+          Winnipeg, MB
+        </p>
+      </div>
+    </div>
+  );
+}
 
-  function handlePrimaryAction() {
-    if (slide.kind === "listing") {
-      onOpenListing(slide.payload.id);
-    } else if (slide.kind === "event") {
-      onOpenEvent();
-    } else if (slide.kind === "game") {
-      onOpenGame(slide.payload.slug);
-    } else {
-      onOpenSeller(slide.payload.id);
+function HeroCarousel({ slides }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [heroIndex, setHeroIndex] = useState(0);
+  const [desktopViewport, setDesktopViewport] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia("(min-width: 1024px)").matches : false,
+  );
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const media = window.matchMedia("(min-width: 1024px)");
+    const handleChange = (event) => setDesktopViewport(event.matches);
+    setDesktopViewport(media.matches);
+    media.addEventListener("change", handleChange);
+    return () => media.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (slides.length <= 1 || desktopViewport) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      setHeroIndex((current) => {
+        const nextIndex = (current + 1) % slides.length;
+        const nextNode = scrollRef.current?.children?.[nextIndex];
+        nextNode?.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+        return nextIndex;
+      });
+    }, 5000);
+
+    return () => window.clearInterval(timer);
+  }, [desktopViewport, slides.length]);
+
+  if (!slides.length) {
+    return null;
+  }
+
+  function handleHeroScroll(event) {
+    const container = event.currentTarget;
+    const width = container.clientWidth || 1;
+    const nextIndex = Math.round(container.scrollLeft / width);
+    if (nextIndex !== heroIndex) {
+      setHeroIndex(nextIndex);
     }
   }
 
-  function renderMeta(extraClassName = "") {
-    return (
-      <div className={`flex flex-wrap gap-1.5 sm:gap-2 ${extraClassName}`}>
-        {compactMeta.map((item, index) => (
-          <span
-            key={item}
-            className={`rounded-[9px] border border-white/12 bg-white/10 px-2 py-1 text-[0.54rem] font-semibold uppercase tracking-[0.1em] text-white/78 sm:px-3 sm:py-1.5 sm:text-xs sm:tracking-[0.18em] ${index > 0 ? "max-[389px]:hidden" : ""}`}
-          >
-            {item}
-          </span>
-        ))}
-        {slide.meta.slice(2).map((item) => (
-          <span
-            key={item}
-            className="hidden rounded-[9px] border border-white/12 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-white/78 sm:inline-flex"
-          >
-            {item}
-          </span>
-        ))}
-      </div>
-    );
+  function goToSlide(index) {
+    setHeroIndex(index);
+    const nextNode = scrollRef.current?.children?.[index];
+    nextNode?.scrollIntoView({
+      behavior: desktopViewport ? "auto" : "smooth",
+      inline: "start",
+      block: "nearest",
+    });
   }
 
   return (
-      <article
-        className={`absolute inset-0 transition-all duration-700 ease-out ${
-          active
-            ? "translate-y-0 opacity-100"
-            : "pointer-events-none translate-y-4 opacity-0"
-        }`}
+    <div className="px-4 pt-2 lg:px-0 lg:pt-0">
+      <div
+        className="relative overflow-hidden rounded-2xl lg:rounded-[28px]"
+        style={{ border: "1px solid rgba(255,255,255,0.06)" }}
       >
-          <div className="relative h-full overflow-hidden rounded-[26px] border border-white/10 bg-[#23090b] text-white shadow-[0_32px_90px_-48px_rgba(80,16,16,0.42)] sm:rounded-[32px]">
-          <div className="relative h-full p-3 pb-24 sm:p-8 lg:p-10">
-              {heroBackdrop && shouldLoad ? (
-                <img
-                  alt=""
-                  aria-hidden="true"
-                  className={`absolute inset-0 h-full w-full scale-[1.04] object-cover ${overlayHeroClass}`}
-                  fetchpriority={active ? "high" : "auto"}
-                  loading={active ? "eager" : "lazy"}
-                  src={heroBackdrop}
+        <div
+          ref={scrollRef}
+          className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto"
+          style={{ scrollbarWidth: "none" }}
+          onScroll={handleHeroScroll}
+        >
+          {slides.map((item, index) => (
+            <motion.button
+              key={item.id}
+              className="relative block w-full shrink-0 snap-center text-left"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.25 }}
+              type="button"
+              onClick={() => {
+                if (String(item.to || "").startsWith("/listing/")) {
+                  const listingId = String(item.to).replace("/listing/", "");
+                  rememberAndNavigateToListing(navigate, location, listingId);
+                  return;
+                }
+                navigate(item.to);
+              }}
+            >
+              <div
+                className="relative grid min-h-[126px] grid-cols-[1.08fr_0.92fr] items-stretch lg:min-h-[252px] lg:grid-cols-[1.05fr_0.95fr]"
+                style={{
+                  background: item.banner
+                    ? `linear-gradient(90deg, rgba(8,8,10,0.94) 0%, rgba(8,8,10,0.84) 30%, rgba(8,8,10,0.28) 64%, rgba(8,8,10,0.08) 100%), url(${item.banner})`
+                    : `radial-gradient(circle at top left, ${item.accent}22 0%, rgba(24,18,22,0.92) 48%, rgba(12,12,14,1) 100%)`,
+                  backgroundSize: item.banner ? "cover" : "auto",
+                  backgroundPosition: item.banner ? (desktopViewport ? "right center" : "center center") : "center",
+                }}
+              >
+                <div
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    background:
+                      item.banner
+                        ? "linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 42%), linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.18) 100%)"
+                        : "linear-gradient(135deg, rgba(255,255,255,0.015) 0%, transparent 45%), repeating-linear-gradient(135deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 16px)",
+                    opacity: item.banner ? 1 : 0.45,
+                  }}
                 />
-              ) : null}
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(17,20,25,0.18)_0%,rgba(17,20,25,0.34)_48%,rgba(17,20,25,0.7)_100%),linear-gradient(90deg,rgba(17,20,25,0.84)_0%,rgba(17,20,25,0.72)_38%,rgba(17,20,25,0.22)_74%,rgba(17,20,25,0)_100%)] sm:bg-[linear-gradient(90deg,rgba(17,20,25,0.82)_0%,rgba(17,20,25,0.64)_28%,rgba(17,20,25,0.28)_54%,rgba(17,20,25,0.06)_78%,rgba(17,20,25,0)_100%)]" />
-            <div className="relative z-10 flex h-full items-start sm:items-center">
-              <div className="max-w-[13rem] sm:max-w-[31rem]">
-                <span className="inline-flex rounded-[10px] border border-white/10 bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/86 sm:px-3 sm:text-[11px] sm:tracking-[0.18em]">
-                  {slide.kicker}
-                </span>
-                <h1 className="mt-2 max-w-[12.25rem] font-display text-[0.9rem] font-semibold leading-[0.97] tracking-[-0.055em] sm:mt-3 sm:max-w-2xl sm:text-[2.65rem] lg:text-[3rem]">
-                  {slide.title}
-                </h1>
-                <p className="mt-1.5 max-w-[12.75rem] text-[0.64rem] leading-[1.45] text-white/76 sm:mt-3 sm:max-w-2xl sm:text-sm sm:leading-7 lg:text-[0.98rem]">
-                  {slide.description}
-                </p>
-                <div className="mt-2 sm:mt-4">{renderMeta()}</div>
-                <div className="mt-2.5 sm:mt-5">
-                  <button
-                    className={`rounded-[10px] px-3 py-1.5 text-[0.7rem] font-semibold shadow-soft transition duration-300 hover:-translate-y-0.5 hover:shadow-lift sm:rounded-[11px] sm:px-5 sm:py-2.5 sm:text-sm ${
-                      slide.kind === "event" ? "bg-orange text-white" : "bg-white text-navy"
-                    }`}
-                    type="button"
-                    onClick={handlePrimaryAction}
+                <div className="flex min-w-0 flex-col justify-between px-3.5 py-3 lg:px-6 lg:py-5">
+                  <span
+                    className="inline-flex self-start rounded px-[6px] py-[2px] text-[8px] uppercase tracking-[0.12em] lg:px-2 lg:py-1 lg:text-[10px]"
+                    style={{ fontWeight: 700, color: item.accent, background: `${item.accent}26` }}
                   >
-                    {slide.cta}
-                  </button>
+                    {item.tag}
+                  </span>
+                  <div className="mt-2 lg:mt-4">
+                    <p className="text-[15px] text-white lg:max-w-[32rem] lg:text-[36px]" style={{ fontWeight: 700, lineHeight: 1.08 }}>
+                      {item.title}
+                    </p>
+                    <p className="mt-[5px] text-[10.5px] lg:mt-3 lg:max-w-[30rem] lg:text-[14px]" style={{ fontWeight: 400, color: "#8b8b95", lineHeight: 1.45 }}>
+                      {item.subtitle}
+                    </p>
+                  </div>
+                </div>
+                <div className="relative flex items-end justify-end overflow-hidden pr-2 pt-2 lg:pr-5 lg:pt-5">
+                  <div
+                    className="absolute inset-y-0 left-0 w-10 lg:w-24"
+                    style={{ background: "linear-gradient(90deg, rgba(12,12,14,0.55), transparent)" }}
+                  />
+                  <div
+                    className="absolute right-2 top-3 h-16 w-16 rounded-full blur-2xl lg:right-8 lg:top-8 lg:h-40 lg:w-40 lg:blur-3xl"
+                    style={{ background: `${item.accent}33` }}
+                  />
+                  <div
+                    className="absolute right-5 top-4 h-[84px] w-[84px] rounded-[22px] lg:right-16 lg:top-8 lg:h-[190px] lg:w-[190px] lg:rounded-[36px]"
+                    style={{
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      transform: "rotate(-10deg)",
+                    }}
+                  />
+                  {item.isEvent ? (
+                    <div
+                      className="relative mr-1 flex h-[102px] w-[76px] flex-col items-center justify-center overflow-hidden rounded-[18px] px-2 lg:mr-3 lg:h-[190px] lg:w-[150px] lg:rounded-[28px] lg:px-4"
+                      style={{
+                        background: "rgba(8,8,10,0.58)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        boxShadow: desktopViewport ? "0 24px 60px rgba(0,0,0,0.28)" : "0 14px 36px rgba(0,0,0,0.28)",
+                      }}
+                    >
+                      {item.storeLogo ? (
+                        <div className="flex h-11 w-11 items-center justify-center overflow-hidden lg:h-16 lg:w-16">
+                          <img
+                            alt={item.storeName || "Store logo"}
+                            className="h-full w-full object-contain"
+                            decoding="async"
+                            loading="lazy"
+                            src={item.storeLogo}
+                          />
+                        </div>
+                      ) : (
+                        <div
+                          className="flex h-11 w-11 items-center justify-center rounded-[14px] text-[14px] text-white"
+                          style={{
+                            fontWeight: 800,
+                            background: `linear-gradient(135deg, ${item.accent}, ${item.accent}99)`,
+                          }}
+                        >
+                          {item.storeInitial}
+                        </div>
+                      )}
+                      <p
+                        className="mt-2 line-clamp-2 text-center text-[8px] lg:mt-4 lg:text-[13px]"
+                        style={{ fontWeight: 700, color: "#f4f4f5", lineHeight: 1.2 }}
+                      >
+                        {item.storeName || "Local store"}
+                      </p>
+                      <p className="mt-1 text-[7px] lg:mt-2 lg:text-[11px]" style={{ color: "#9ca3af", lineHeight: 1.2 }}>
+                        {item.gameLabel}
+                      </p>
+                    </div>
+                  ) : (
+                    <div
+                      className="relative mr-1 flex h-[102px] w-[76px] items-center justify-center overflow-hidden rounded-[18px] lg:mr-3 lg:h-[206px] lg:w-[152px] lg:rounded-[28px]"
+                      style={{
+                        background: item.cardImage
+                          ? "rgba(8,8,10,0.58)"
+                          : `linear-gradient(180deg, ${item.accent}22 0%, rgba(18,18,22,0.92) 100%)`,
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        boxShadow: desktopViewport ? "0 24px 60px rgba(0,0,0,0.28)" : "0 14px 36px rgba(0,0,0,0.28)",
+                      }}
+                    >
+                      {item.cardImage ? (
+                        <img
+                          alt={item.cardTitle || item.title}
+                          className="h-full w-full object-cover"
+                          decoding="async"
+                          loading={heroIndex === index ? "eager" : "lazy"}
+                          src={item.cardImage}
+                        />
+                      ) : (
+                        <div className="flex h-full w-full flex-col justify-between p-2">
+                          <span
+                            className="inline-flex self-start rounded px-[5px] py-[1px] text-[7px] uppercase tracking-[0.08em]"
+                            style={{ background: `${item.accent}1f`, color: item.accent, fontWeight: 700 }}
+                          >
+                            soon
+                          </span>
+                          <div>
+                            <p className="text-[9px] text-white" style={{ fontWeight: 700, lineHeight: 1.15 }}>
+                              Pokemon
+                            </p>
+                            <p className="mt-1 text-[7px]" style={{ color: "#9ca3af", lineHeight: 1.25 }}>
+                              Placeholder card art until the updated banner arrives.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            </motion.button>
+          ))}
         </div>
+
+        {slides.length > 1 ? (
+          <>
+            <button
+              className="absolute left-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full"
+              style={{ background: "rgba(0,0,0,0.45)", border: "1px solid rgba(255,255,255,0.08)" }}
+              type="button"
+              onClick={() => goToSlide((heroIndex - 1 + slides.length) % slides.length)}
+            >
+              <ChevronLeft size={12} className="text-white/70" />
+            </button>
+            <button
+              className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full"
+              style={{ background: "rgba(0,0,0,0.45)", border: "1px solid rgba(255,255,255,0.08)" }}
+              type="button"
+              onClick={() => goToSlide((heroIndex + 1) % slides.length)}
+            >
+              <ChevronRight size={12} className="text-white/70" />
+            </button>
+            <div className="absolute bottom-1.5 right-3 flex gap-[4px]">
+              {slides.map((item, index) => (
+                <button
+                  key={item.id}
+                  className="h-[5px] w-[5px] rounded-full transition-all"
+                  style={{ background: index === heroIndex ? "#ef4444" : "rgba(255,255,255,0.2)" }}
+                  type="button"
+                  onClick={() => goToSlide(index)}
+                />
+              ))}
+            </div>
+          </>
+        ) : null}
       </div>
-    </article>
+    </div>
   );
 }
 
-function BestSellerCard({ listing, formatCadPrice, onOpen, onToggleWishlist }) {
+function HotListingCard({ listing }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const tone = conditionStyle(listing.condition);
+
   return (
-    <article className="overflow-hidden rounded-[10px] border border-[var(--line)] bg-[var(--surface-solid)] shadow-[0_18px_40px_-34px_rgba(35,41,51,0.2)]">
-      <div className="flex min-h-[7rem]">
-        <button
-          className="block w-[4.95rem] shrink-0 text-left lg:w-[5.35rem]"
-          type="button"
-          onClick={() => onOpen(listing.id)}
+    <motion.button
+      className="w-[120px] shrink-0 cursor-pointer overflow-hidden rounded-xl text-left lg:w-auto lg:rounded-[18px]"
+      data-listing-link={listing.id}
+      style={{
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid rgba(255,255,255,0.05)",
+        contentVisibility: "auto",
+        containIntrinsicSize: "164px 180px",
+      }}
+      type="button"
+      whileTap={{ scale: 0.97 }}
+      onClick={() => rememberAndNavigateToListing(navigate, location, listing.id)}
+    >
+      <div className="relative h-[90px] overflow-hidden lg:h-[132px]">
+        <img
+          alt={listing.title}
+          className="h-full w-full object-cover"
+          decoding="async"
+          loading="lazy"
+          src={listingArtwork(listing)}
+        />
+        <div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(180deg, transparent 30%, rgba(10,10,12,0.85) 100%)" }}
+        />
+        <div
+          className="absolute left-1.5 top-1.5 rounded px-[4px] py-[1px]"
+          style={{ background: "rgba(0,0,0,0.55)", border: `1px solid ${tone.color}20` }}
         >
-          <div className="flex h-full items-center justify-center bg-[var(--surface-hover)] p-2">
-            <CardArtwork
-              className="aspect-[63/88] h-full max-h-[88px] rounded-[7px] object-cover shadow-[0_12px_26px_-18px_rgba(35,41,51,0.3)] lg:max-h-[94px]"
-              game={listing.game}
-              src={listing.imageUrl}
-              title={listing.title}
-            />
-          </div>
-        </button>
-        <div className="flex min-w-0 flex-1 flex-col justify-between p-2.5 lg:p-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="line-clamp-2 text-[0.86rem] font-semibold leading-5 text-ink">{listing.title}</p>
-              <p className="mt-0.5 text-[0.72rem] leading-4 text-slate-700">
-                {listing.game} | {listing.neighborhood}
-              </p>
-            </div>
-            <button
-              aria-label={listing.wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-              className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] border ${
-                listing.wishlisted
-                  ? "border-rose-200 bg-rose-100 text-rose-800"
-                  : "border-[var(--line)] bg-[var(--surface-hover)] text-steel"
-              }`}
-              type="button"
-              onClick={() => onToggleWishlist(listing.id)}
-            >
-              <Heart fill={listing.wishlisted ? "currentColor" : "none"} size={13} />
-            </button>
-          </div>
-          <div className="mt-1.5 flex items-end justify-between gap-3">
-            <p className="font-display text-[1.02rem] font-semibold tracking-[-0.05em] text-ink lg:text-[1.08rem]">
-              {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
-            </p>
-            <button
-              className="inline-flex items-center rounded-[8px] border border-[rgba(205,220,231,0.9)] px-2 py-1 text-[0.72rem] font-semibold text-navy"
-              type="button"
-              onClick={() => onOpen(listing.id)}
-            >
-              View
-            </button>
+          <span className="text-[7px]" style={{ fontWeight: 700, color: tone.color }}>
+            {tone.label}
+          </span>
+        </div>
+        <div
+          className="absolute right-1.5 top-1.5 flex h-[14px] w-[14px] items-center justify-center rounded-full"
+          style={{ background: "rgba(239,68,68,0.25)" }}
+        >
+          <Flame size={7} style={{ color: "#f87171" }} />
+        </div>
+        <span className="absolute bottom-1.5 left-1.5 text-[13px] text-white tabular-nums" style={{ fontWeight: 700 }}>
+          {formatPrice(listing.priceCad ?? listing.price, listing.priceCurrency || "CAD")}
+        </span>
+      </div>
+      <div className="px-2 py-1.5 lg:px-3 lg:py-2.5">
+        <p className="truncate text-[10.5px] lg:text-[12px]" style={{ fontWeight: 600, color: "#d0d0d8" }}>
+          {listing.title}
+        </p>
+        <p className="mt-[1px] truncate text-[9px] lg:text-[10px]" style={{ fontWeight: 400, color: "#444450" }}>
+          {sellerLabel(listing.seller || listing)}
+        </p>
+      </div>
+    </motion.button>
+  );
+}
+
+function SellerChip({ seller }) {
+  const location = useLocation();
+  const backTo = `${location.pathname}${location.search}${location.hash}`;
+  return (
+    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.92 }}>
+      <Link
+        className="flex shrink-0 flex-col items-center gap-1 lg:w-full lg:flex-row lg:items-center lg:gap-3 lg:rounded-[20px] lg:border lg:border-white/5 lg:bg-white/[0.025] lg:px-3.5 lg:py-3"
+        to={`/seller/${seller.id}`}
+        state={{ backTo }}
+        onClick={() => rememberListingReturnPath(backTo)}
+      >
+        <UserAvatar
+          className="h-[40px] w-[40px] border border-white/5 lg:h-[48px] lg:w-[48px]"
+          name={sellerLabel(seller)}
+          src={seller.avatarUrl}
+          textClassName="text-[13px]"
+          user={seller}
+        />
+        <div className="min-w-0 lg:flex-1">
+          <p className="max-w-[56px] truncate text-[9px] lg:max-w-none lg:text-[12px]" style={{ fontWeight: 600, color: "#d0d0d8" }}>
+            {sellerLabel(seller)}
+          </p>
+          <div className="flex items-center gap-[2px] lg:mt-1 lg:gap-1">
+            <Star size={7} fill="#fbbf24" style={{ color: "#fbbf24" }} />
+            <span className="text-[8px] lg:text-[10px]" style={{ fontWeight: 500, color: "#6c6c76" }}>
+              {Number(seller.overallRating || seller.rating || 0).toFixed(1)}
+            </span>
           </div>
         </div>
-      </div>
-    </article>
+      </Link>
+    </motion.div>
+  );
+}
+
+function StoreCard({ store }) {
+  const accent =
+    store.accent ||
+    (store.tone === "navy"
+      ? "#3b82f6"
+      : store.tone === "orange"
+        ? "#f59e0b"
+        : store.tone === "ice"
+          ? "#06b6d4"
+          : "#10b981");
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 12 }}
+      animate={{ opacity: 1, x: 0 }}
+      whileTap={{ scale: 0.97 }}
+    >
+      <Link
+        className="block w-[140px] shrink-0 cursor-pointer rounded-xl p-2.5 lg:w-full lg:rounded-[20px] lg:p-3.5"
+        style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.04)" }}
+        to={`/stores/${store.slug}`}
+      >
+        <div
+          className="mb-2 flex h-[30px] w-[30px] items-center justify-center overflow-hidden rounded-[9px] lg:h-[42px] lg:w-[42px] lg:rounded-[14px]"
+          style={{ background: store.logoUrl ? "rgba(255,255,255,0.06)" : `linear-gradient(135deg, ${accent}, ${accent}88)` }}
+        >
+          {store.logoUrl ? (
+            <img
+              alt={store.name}
+              className="h-full w-full object-contain p-1"
+              decoding="async"
+              loading="lazy"
+              src={store.logoUrl}
+            />
+          ) : (
+            <span className="text-[12px] text-white" style={{ fontWeight: 700 }}>
+              {String(store.name || "?").charAt(0)}
+            </span>
+          )}
+        </div>
+        <p className="truncate text-[11px] lg:text-[13px]" style={{ fontWeight: 600, color: "#c0c0c8" }}>
+          {store.name}
+        </p>
+        <div className="mt-[3px] flex items-center gap-1">
+          <MapPin size={8} style={{ color: "#3e3e48" }} />
+          <span className="truncate text-[9px] lg:text-[10px]" style={{ fontWeight: 400, color: "#4a4a54" }}>
+            {store.neighborhood}
+          </span>
+        </div>
+        <p
+          className="mt-1.5 border-t pt-1.5 text-[9px] lg:mt-2 lg:pt-2 lg:text-[10px]"
+          style={{ fontWeight: 500, color: "#6a6a74", borderColor: "rgba(255,255,255,0.04)" }}
+        >
+          {store.listingCount || 0} listings
+        </p>
+      </Link>
+    </motion.div>
   );
 }
 
@@ -257,611 +566,337 @@ export default function HomePage() {
   const navigate = useNavigate();
   const {
     activeListings,
-    formatCadPrice,
-    gameCatalog,
-    hotListings,
+    currentUser,
+    followedStoreSlugs,
     manualEvents,
+    notificationsForCurrentUser,
+    refreshMarketplaceData,
     sellers,
-    setGlobalSearch,
     siteSettings,
     toggleWishlist,
+    wishlist,
   } = useMarketplace();
   const [remoteEvents, setRemoteEvents] = useState([]);
-  const [activeBannerIndex, setActiveBannerIndex] = useState(0);
-  const homeSections = siteSettings?.homeSections || {};
-
-  const safeListings = Array.isArray(activeListings) ? activeListings.filter(Boolean) : [];
-  const safeHotListings = Array.isArray(hotListings) ? hotListings.filter(Boolean) : [];
-  const safeManualEvents = Array.isArray(manualEvents) ? manualEvents.filter(Boolean) : [];
-  const safeSellers = Array.isArray(sellers) ? sellers.filter(Boolean) : [];
-  const sellerFollowerCounts = useMemo(
-    () =>
-      safeSellers.reduce((accumulator, seller) => {
-        (seller.followedSellerIds || []).forEach((followedId) => {
-          accumulator[followedId] = (accumulator[followedId] || 0) + 1;
-        });
-        return accumulator;
-      }, {}),
-    [safeSellers],
-  );
-  const storeFollowerCounts = useMemo(
-    () =>
-      safeSellers.reduce((accumulator, seller) => {
-        (seller.followedStoreSlugs || []).forEach((slug) => {
-          accumulator[slug] = (accumulator[slug] || 0) + 1;
-        });
-        return accumulator;
-      }, {}),
-    [safeSellers],
-  );
-  const categorySummaries = useMemo(
-    () =>
-      (Array.isArray(gameCatalog) ? gameCatalog : [])
-        .filter((game) => game?.slug && game.slug !== "all")
-        .map((game) => ({
-        ...game,
-        count: safeListings.filter((listing) => listing?.gameSlug === game.slug).length,
-      })),
-    [gameCatalog, safeListings],
-  );
-
-  const topSellers = [...safeSellers]
-    .sort((left, right) => {
-      const dealsDiff = Number(right.completedDeals || 0) - Number(left.completedDeals || 0);
-      if (dealsDiff !== 0) {
-        return dealsDiff;
-      }
-      return Number(right.overallRating || 0) - Number(left.overallRating || 0);
-    })
-    .slice(0, 4);
-  const storeSpotlights = useMemo(
-    () =>
-      storeProfiles.map((store) => {
-        const relatedListings = safeListings.filter((listing) => {
-          const seller = listing.seller;
-          if (!seller) {
-            return false;
-          }
-
-          const trustedSpotMatch = Array.isArray(seller.trustedMeetupSpots)
-            ? seller.trustedMeetupSpots.includes(store.slug)
-            : false;
-          const neighborhoodMatch =
-            String(seller.neighborhood || "").toLowerCase() === store.neighborhood.toLowerCase();
-
-          return trustedSpotMatch || neighborhoodMatch;
-        });
-
-        return {
-          ...store,
-          activeCount: relatedListings.length,
-          featuredListing: relatedListings[0] || null,
-        };
-      }),
-    [safeListings],
-  );
-  const featuredGame = useMemo(() => {
-    const pinnedSlug = siteSettings?.homeHero?.spotlightGameSlug || null;
-    if (pinnedSlug) {
-      const pinnedGame = categorySummaries.find((game) => game.slug === pinnedSlug);
-      if (pinnedGame) {
-        const listings = safeListings.filter((listing) => listing?.gameSlug === pinnedGame.slug).slice(0, 3);
-        const neighborhoods = new Set(
-          safeListings
-            .filter((listing) => listing?.gameSlug === pinnedGame.slug && listing?.neighborhood)
-            .map((listing) => listing.neighborhood),
-        );
-        return {
-          ...pinnedGame,
-          count: safeListings.filter((listing) => listing?.gameSlug === pinnedGame.slug).length,
-          neighborhoodCount: neighborhoods.size,
-          gallery: listings.map((listing) => listing.imageUrl).filter(Boolean),
-        };
-      }
-    }
-
-    const rankedGames = categorySummaries
-      .map((game) => {
-        const listings = safeListings.filter((listing) => listing?.gameSlug === game.slug).slice(0, 3);
-        const neighborhoods = new Set(
-          safeListings
-            .filter((listing) => listing?.gameSlug === game.slug && listing?.neighborhood)
-            .map((listing) => listing.neighborhood),
-        );
-        return {
-          ...game,
-          count: listings.length ? safeListings.filter((listing) => listing?.gameSlug === game.slug).length : 0,
-          neighborhoodCount: neighborhoods.size,
-          gallery: listings.map((listing) => listing.imageUrl).filter(Boolean),
-        };
-      })
-      .sort((left, right) => right.count - left.count);
-    return rankedGames[0] || null;
-  }, [categorySummaries, safeListings, siteSettings]);
-
-  const mergedEvents = useMemo(
-    () =>
-      sortByUpcomingDate(
-        [...remoteEvents, ...safeManualEvents]
-          .filter((event) => event?.published !== false && event?.title && event?.dateStr)
-          .filter(
-            (event, index, items) =>
-              items.findIndex(
-                (candidate) =>
-                  String(candidate.title || "") === String(event.title || "") &&
-                  String(candidate.dateStr || "") === String(event.dateStr || "") &&
-                  String(candidate.store || "") === String(event.store || ""),
-              ) === index,
-          ),
-      ),
-    [remoteEvents, safeManualEvents],
-  );
-  const upcomingEvents = mergedEvents.slice(0, 4);
-  const nextEvent =
-    mergedEvents.find((event) => event.id === siteSettings?.homeHero?.pinnedEventId) ||
-    upcomingEvents[0] ||
-    null;
-  const featuredListing =
-    safeListings.find((listing) => listing.id === siteSettings?.homeHero?.featuredListingId) ||
-    safeHotListings[0] ||
-    safeListings[0] ||
-    null;
-  const newThisWeekListings = useMemo(() => {
-    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    return safeListings
-      .filter((listing) => {
-        const createdTime = new Date(listing.createdAt || listing.updatedAt || 0).getTime();
-        return Number.isFinite(createdTime) && createdTime >= weekAgo;
-      })
-      .sort((left, right) => (right.sortTimestamp || 0) - (left.sortTimestamp || 0))
-      .slice(0, 4);
-  }, [safeListings]);
-
-  const bannerSlides = useMemo(() => {
-    const slides = [];
-
-    if (featuredListing) {
-      const gallery = [
-        featuredListing.imageUrl,
-        ...(featuredListing.conditionImages || []),
-      ].filter(Boolean);
-      slides.push({
-        id: `listing-${featuredListing.id}`,
-        kind: "listing",
-        kicker: "Featured listing",
-        title: featuredListing.title,
-        description: "Featured locally with offers, seller context, and meetup planning built in.",
-        meta: [
-          featuredListing.game,
-          featuredListing.neighborhood,
-          `${featuredListing.views || 0} views`,
-        ],
-        cta: "Open listing",
-        payload: {
-          ...featuredListing,
-          gallery,
-        },
-      });
-    }
-
-    if (nextEvent) {
-      const eventGameKey = normalizeGameKey(nextEvent.game);
-      slides.push({
-        id: `event-${nextEvent.id}`,
-        kind: "event",
-        kicker: "Upcoming event",
-        title: nextEvent.title,
-        description: "Line up local nights, prereleases, and store events with what is moving in the market.",
-        meta: [nextEvent.store, nextEvent.game, nextEvent.time],
-        cta: "View events",
-        payload: {
-          ...nextEvent,
-          heroBackdrop: CURATED_HERO_ART[eventGameKey] || null,
-        },
-      });
-    }
-
-    if (featuredGame) {
-      slides.push({
-        id: `game-${featuredGame.slug}`,
-        kind: "game",
-        kicker: "Market channel",
-        title: `${featuredGame.name} is moving fastest in the market`,
-        description: "Jump into the busiest game channel and see what is actually getting posted locally.",
-        meta: [
-          `${featuredGame.count} listings`,
-          `${featuredGame.neighborhoodCount || 1} neighborhoods`,
-          featuredGame.shortName,
-        ],
-        cta: "Browse game",
-        payload: {
-          ...featuredGame,
-          heroBackdrop: CURATED_HERO_ART[normalizeGameKey(featuredGame.slug)] || null,
-        },
-      });
-    }
-
-    return slides;
-  }, [featuredGame, featuredListing, nextEvent]);
-  const homeSeoImage =
-    bannerSlides[0]?.payload?.heroBackdrop ||
-    CURATED_HERO_ART[normalizeGameKey(featuredGame?.slug)] ||
-    featuredListing?.imageUrl ||
-    null;
 
   useEffect(() => {
-    if (homeSections.showEvents === false) {
-      return undefined;
-    }
-
     let cancelled = false;
-    let timeoutId = null;
-    let idleId = null;
-
-    async function loadHomeEvents() {
+    async function loadEvents() {
       try {
         const data = await fetchLocalEvents();
         if (!cancelled) {
-          startTransition(() => {
-            setRemoteEvents(Array.isArray(data?.events) ? data.events.filter(Boolean) : []);
-          });
+          setRemoteEvents(Array.isArray(data?.events) ? data.events.filter(Boolean) : []);
         }
       } catch {
         if (!cancelled) {
-          startTransition(() => {
-            setRemoteEvents([]);
-          });
+          setRemoteEvents([]);
         }
       }
     }
-
-    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      idleId = window.requestIdleCallback(
-        () => {
-          void loadHomeEvents();
-        },
-        { timeout: 1200 },
-      );
-    } else if (typeof window !== "undefined") {
-      timeoutId = window.setTimeout(() => {
-        void loadHomeEvents();
-      }, 450);
-    } else {
-      void loadHomeEvents();
-    }
-
+    void loadEvents();
     return () => {
       cancelled = true;
-      if (typeof window !== "undefined" && idleId && "cancelIdleCallback" in window) {
-        window.cancelIdleCallback(idleId);
-      }
-      if (typeof window !== "undefined" && timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
     };
-  }, [homeSections.showEvents]);
+  }, []);
 
-  useEffect(() => {
-    if (bannerSlides.length <= 1) {
-      setActiveBannerIndex(0);
-      return undefined;
-    }
+  const liveListings = useMemo(
+    () => [...(Array.isArray(activeListings) ? activeListings : [])].filter(Boolean),
+    [activeListings],
+  );
 
-    const interval = window.setInterval(() => {
-      setActiveBannerIndex((current) => (current + 1) % bannerSlides.length);
-    }, 5400);
+  const hotListings = useMemo(
+    () =>
+      [...liveListings]
+        .sort(
+          (left, right) =>
+            Number(right.featured || 0) - Number(left.featured || 0) ||
+            Number(right.views || 0) - Number(left.views || 0) ||
+            Number(right.sortTimestamp || 0) - Number(left.sortTimestamp || 0),
+        )
+        .slice(0, 4),
+    [liveListings],
+  );
 
-    return () => window.clearInterval(interval);
-  }, [bannerSlides.length]);
+  const recentListings = useMemo(
+    () =>
+      [...liveListings]
+        .sort((left, right) => Number(right.sortTimestamp || 0) - Number(left.sortTimestamp || 0))
+        .slice(0, 6),
+    [liveListings],
+  );
 
-  function handleToggleWishlist(listingId) {
-    void toggleWishlist(listingId);
-  }
+  const topSellers = useMemo(
+    () =>
+      [...(sellers || [])]
+        .sort(
+          (left, right) =>
+            Number(right.completedDeals || 0) - Number(left.completedDeals || 0) ||
+            Number(right.overallRating || right.rating || 0) - Number(left.overallRating || left.rating || 0),
+        )
+        .slice(0, 5),
+    [sellers],
+  );
 
-  function openListing(listingId) {
-    navigate(`/listing/${listingId}`);
-  }
+  const upcomingEvents = useMemo(
+    () =>
+      [...remoteEvents, ...(manualEvents || [])]
+        .filter((event, index, items) =>
+          items.findIndex((candidate) =>
+            String(candidate.id || "") === String(event.id || "") ||
+            (
+              String(candidate.title || "") === String(event.title || "") &&
+              String(candidate.store || "") === String(event.store || "") &&
+              String(candidate.dateStr || "") === String(event.dateStr || "")
+            )
+          ) === index
+        )
+        .filter((event) => event?.published !== false)
+        .sort(
+          (left, right) =>
+            new Date(left.dateStr || left.date || 0).getTime() -
+            new Date(right.dateStr || right.date || 0).getTime(),
+        )
+        .slice(0, 3)
+        .map((event) => ({
+          ...event,
+          dateLabel: new Date(event.dateStr || event.date || Date.now()).toLocaleDateString("en-CA", {
+            weekday: "short",
+          }).slice(0, 3),
+          dateNumber: new Date(event.dateStr || event.date || Date.now()).getDate(),
+        })),
+    [manualEvents, remoteEvents],
+  );
 
-  function showPreviousBanner() {
-    setActiveBannerIndex((current) =>
-      bannerSlides.length ? (current - 1 + bannerSlides.length) % bannerSlides.length : 0,
-    );
-  }
+  const priorityStores = useMemo(
+    () =>
+      storeProfiles
+        .filter((store) => followedStoreSlugs?.includes(store.slug))
+        .concat(storeProfiles.filter((store) => !followedStoreSlugs?.includes(store.slug)))
+        .slice(0, 3)
+        .map((store) => {
+          const listingCount = liveListings.filter((listing) => {
+            const storeName = String(listing.storeName || listing.store || "").toLowerCase();
+            return (
+              storeName.includes(String(store.name || "").toLowerCase()) ||
+              storeName.includes(String(store.shortName || "").toLowerCase())
+            );
+          }).length;
 
-  function showNextBanner() {
-    setActiveBannerIndex((current) =>
-      bannerSlides.length ? (current + 1) % bannerSlides.length : 0,
-    );
-  }
+          return {
+            ...store,
+            listingCount,
+          };
+        }),
+    [followedStoreSlugs, liveListings],
+  );
+
+  const heroSlides = useMemo(() => {
+    const pinnedEventId = siteSettings?.homeHero?.pinnedEventId || null;
+
+    return HERO_GAMES.map((gameConfig) => {
+      const gameListings = liveListings
+        .filter((listing) => normalizeHeroGameSlug(listing.gameSlug || listing.game) === gameConfig.slug)
+        .sort(
+          (left, right) =>
+            Number(right.featured || 0) - Number(left.featured || 0) ||
+            Number(right.views || 0) - Number(left.views || 0) ||
+            Number(right.sortTimestamp || 0) - Number(left.sortTimestamp || 0),
+        );
+
+      const featuredListing = gameListings[0] || null;
+      const matchingEvents = upcomingEvents.filter(
+        (event) => normalizeHeroGameSlug(event.game) === gameConfig.slug,
+      );
+      const pinnedEvent =
+        matchingEvents.find((event) => String(event.id) === String(pinnedEventId)) || null;
+      const event = pinnedEvent || matchingEvents[0] || null;
+      const storeMatch = storeProfiles.find((store) => {
+        const eventStore = String(event?.store || event?.location || "").toLowerCase();
+        return (
+          eventStore.includes(String(store.name || "").toLowerCase()) ||
+          eventStore.includes(String(store.shortName || "").toLowerCase())
+        );
+      });
+
+      const defaultCard =
+        gameConfig.slug === "pokemon" ? buildPokemonPlaceholderCard() : null;
+      const cardImage = listingArtwork(featuredListing) || defaultCard?.image || "";
+      const cardTitle = featuredListing?.title || defaultCard?.title || `${gameConfig.game} featured card`;
+
+      return {
+        id: `hero-${gameConfig.slug}`,
+        tag: event ? "Event" : "Featured",
+        title: event ? event.title : featuredListing?.title || gameConfig.placeholderTitle,
+        subtitle: event
+          ? `${gameConfig.game} • ${event.store || event.location || "Local venue"} • ${event.time || compactTimeLabel(event.dateStr || event.date)}`
+          : featuredListing
+            ? `${formatPrice(featuredListing.priceCad ?? featuredListing.price, featuredListing.priceCurrency || "CAD")} • ${featuredListing.condition || "Listed now"} • ${featuredListing.neighborhood || "Winnipeg"}`
+            : gameConfig.placeholderSubtitle,
+        banner: gameConfig.banner,
+        accent: gameConfig.accent,
+        cardImage,
+        cardTitle,
+        isEvent: Boolean(event),
+        gameLabel: gameConfig.game,
+        storeName: storeMatch?.name || event?.store || event?.location || "",
+        storeLogo: storeMatch?.logoUrl || "",
+        storeInitial: String(storeMatch?.name || event?.store || event?.location || gameConfig.game)
+          .trim()
+          .charAt(0)
+          .toUpperCase(),
+        to: event ? "/events" : featuredListing ? listingHref(featuredListing.id) : "/market",
+      };
+    });
+  }, [liveListings, siteSettings?.homeHero?.pinnedEventId, upcomingEvents]);
 
   return (
-    <div className="stagger-stack space-y-4 sm:space-y-5 lg:space-y-8">
+    <MobileScreen>
       <SeoHead
         canonicalPath="/"
-        description="Local Winnipeg TCG marketplace for buying, selling, trading, events, and meetup planning."
-        image={homeSeoImage || undefined}
-        preloadImage={homeSeoImage || undefined}
+        description="TCG WPG is Winnipeg's local marketplace for buying, selling, and trading cards with events, trusted sellers, and live listings."
         title="Home"
       />
-      {homeSections.showHero !== false ? (
-      <section className="drop-in-item space-y-3 sm:space-y-4">
-        <div>
-          {bannerSlides.length ? (
-            <div className="relative min-h-[13.5rem] overflow-hidden rounded-[26px] sm:min-h-[33rem] sm:rounded-[36px] lg:min-h-[31rem]">
-              {bannerSlides.map((slide, index) => (
-                <BannerCard
-                  key={slide.id}
-                  active={activeBannerIndex === index}
-                  onOpenEvent={() => navigate("/events")}
-                  onOpenGame={(slug) => {
-                    setGlobalSearch("");
-                    navigate(`/market/${slug}`);
-                  }}
-                  onOpenListing={openListing}
-                  onOpenSeller={(sellerId) => navigate(`/seller/${sellerId}`)}
-                  shouldLoad={activeBannerIndex === index}
-                  slide={slide}
+
+      <header
+        className="relative z-10 px-4 pb-2.5 pt-3 lg:px-6 lg:pb-5 lg:pt-8"
+        style={{
+          background: m.bg,
+          transition: "background 0.2s ease",
+        }}
+      >
+        <div className="mb-2.5 flex items-center justify-between">
+          <CompactBrand />
+          <div className="flex items-center gap-2">
+            <motion.button
+              className="relative flex h-8 w-8 items-center justify-center rounded-[10px]"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.04)" }}
+              type="button"
+              whileTap={{ scale: 0.88 }}
+              onClick={() => navigate("/notifications")}
+            >
+              <Bell size={15} style={{ color: "#4a4a54" }} />
+              {(notificationsForCurrentUser || []).some((notification) => !notification.readAt) ? (
+                <div
+                  className="absolute right-1.5 top-1.5 h-[5px] w-[5px] rounded-full"
+                  style={{ background: "#ef4444", boxShadow: "0 0 4px rgba(239,68,68,0.5)" }}
+                />
+              ) : null}
+            </motion.button>
+            <motion.button
+              className="flex h-8 w-8 items-center justify-center rounded-full text-[11px] text-white"
+              style={{ fontWeight: 600, background: m.redGradient }}
+              type="button"
+              whileTap={{ scale: 0.88 }}
+              onClick={() => navigate("/account")}
+            >
+              {sellerInitial(currentUser)}
+            </motion.button>
+          </div>
+        </div>
+
+        <motion.button
+          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-[8px]"
+          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.04)" }}
+          type="button"
+          whileTap={{ scale: 0.98 }}
+          onClick={() => navigate("/market")}
+        >
+          <Search size={14} style={{ color: "#333340" }} />
+          <span className="text-[12.5px]" style={{ fontWeight: 400, color: "#333340" }}>
+            Search cards, sellers, sets...
+          </span>
+        </motion.button>
+      </header>
+
+      <PullToRefresh onRefresh={() => refreshMarketplaceData?.()}>
+        <main className="pb-[72px] lg:grid lg:grid-cols-[minmax(0,1.25fr)_380px] lg:gap-6 lg:px-6 lg:pb-10">
+          <div
+            className="min-w-0 lg:rounded-[24px] lg:border lg:border-white/5 lg:bg-white/[0.015] lg:p-5"
+          >
+            <HeroCarousel slides={heroSlides} />
+
+            <SectionHeader title="Hot Listings" to="/market" />
+            <div className="flex gap-2 overflow-x-auto px-4 no-scrollbar lg:grid lg:grid-cols-4 lg:gap-4 lg:px-0" style={{ scrollbarWidth: "none" }}>
+              {hotListings.map((listing) => (
+                <HotListingCard key={listing.id} listing={listing} />
+              ))}
+            </div>
+
+            <SectionHeader title="Recent Listings" to="/market" />
+            <div className="flex flex-col gap-[6px] px-4 lg:grid lg:grid-cols-2 lg:gap-3 lg:px-0">
+              {recentListings.map((listing) => (
+                <ListingRow
+                  key={listing.id}
+                  favorite={wishlist?.includes(listing.id)}
+                  listing={listing}
+                  onFavorite={() => toggleWishlist(listing.id)}
                 />
               ))}
-
-              {bannerSlides.length > 1 ? (
-                <div className="absolute bottom-2 left-1/2 z-10 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center gap-1 rounded-full border border-white/12 bg-[rgba(17,20,25,0.52)] px-1.5 py-1 backdrop-blur sm:bottom-6 sm:left-auto sm:right-6 sm:max-w-none sm:translate-x-0 sm:gap-3 sm:border-transparent sm:bg-transparent sm:px-0 sm:py-0">
-                  <button
-                    aria-label="Show previous banner"
-                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/18 bg-white/10 text-white backdrop-blur transition hover:bg-white/18 sm:h-10 sm:w-10"
-                    type="button"
-                    onClick={showPreviousBanner}
-                  >
-                    <ChevronLeft size={14} />
-                  </button>
-                  {bannerSlides.map((slide, index) => (
-                    <button
-                      key={slide.id}
-                      aria-label={`Show banner ${index + 1}`}
-                      className={`h-2.5 rounded-full transition-all ${
-                        activeBannerIndex === index
-                          ? "w-7 bg-white shadow-sm sm:w-10"
-                          : "w-2 bg-white/45 sm:w-2.5"
-                      }`}
-                      type="button"
-                      onClick={() => setActiveBannerIndex(index)}
-                    />
-                  ))}
-                  <button
-                    aria-label="Show next banner"
-                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/18 bg-white/10 text-white backdrop-blur transition hover:bg-white/18 sm:h-10 sm:w-10"
-                    type="button"
-                    onClick={showNextBanner}
-                  >
-                    <ChevronRight size={14} />
-                  </button>
-                </div>
-              ) : null}
             </div>
-          ) : (
-            <div className="rounded-[22px] border border-dashed border-[var(--line)] bg-[var(--surface-solid)] px-5 py-10 text-sm leading-7 text-steel sm:rounded-[30px] sm:px-6 sm:py-12">
-              Banner content will appear as soon as there are active listings and upcoming events.
+          </div>
+
+          <aside className="px-4 lg:sticky lg:top-6 lg:self-start lg:px-0">
+            <SectionHeader title="Top Sellers" to="/sellers" />
+            <div className="flex gap-3 overflow-x-auto no-scrollbar lg:flex-col lg:gap-3" style={{ scrollbarWidth: "none" }}>
+              {topSellers.map((seller) => (
+                <SellerChip key={seller.id} seller={seller} />
+              ))}
             </div>
-          )}
-        </div>
 
-      </section>
-      ) : null}
-
-      {homeSections.showBestSellers !== false ? (
-      <section className="drop-in-item space-y-3 sm:space-y-4">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="section-kicker">Best sellers</p>
-            <h2 className="mt-1.5 font-display text-[1.35rem] font-semibold tracking-[-0.05em] text-ink sm:text-[1.7rem]">
-              Hot listings right now
-            </h2>
-            <p className="mt-1.5 text-[0.82rem] text-steel sm:text-sm">A cleaner top shelf of live cards from the local market.</p>
-          </div>
-          <Link className="inline-flex items-center gap-2 text-sm font-semibold text-navy" to="/market">
-            Open full market
-            <ArrowRight size={14} />
-          </Link>
-        </div>
-        <div className="grid gap-2.5 lg:grid-cols-2 2xl:grid-cols-4">
-          {safeHotListings.slice(0, 4).map((listing) => (
-            <BestSellerCard
-              key={listing.id}
-              formatCadPrice={formatCadPrice}
-              listing={listing}
-              onOpen={openListing}
-              onToggleWishlist={handleToggleWishlist}
-            />
-          ))}
-        </div>
-      </section>
-      ) : null}
-
-      <section className="drop-in-item space-y-3 sm:space-y-4">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="section-kicker">New this week</p>
-            <h2 className="mt-1.5 font-display text-[1.35rem] font-semibold tracking-[-0.05em] text-ink sm:text-[1.7rem]">
-              Fresh cards that just hit the market
-            </h2>
-            <p className="mt-1.5 text-[0.82rem] text-steel sm:text-sm">
-              A quick shelf for the newest local posts before they get buried in the main feed.
-            </p>
-          </div>
-          <Link className="inline-flex items-center gap-2 text-sm font-semibold text-navy" to="/market">
-            Browse all new listings
-            <ArrowRight size={14} />
-          </Link>
-        </div>
-        <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
-          {newThisWeekListings.length ? (
-            newThisWeekListings.map((listing) => (
-              <ShelfCard
-                key={listing.id}
-                formatCadPrice={formatCadPrice}
-                listing={listing}
-                onOpen={openListing}
-              />
-            ))
-          ) : (
-            <div className="rounded-[20px] border border-dashed border-[var(--line)] bg-[var(--surface-solid)] px-4 py-8 text-sm leading-6 text-steel md:col-span-2 xl:col-span-4 sm:rounded-[24px] sm:px-5 sm:py-10 sm:leading-7">
-              New listings from the last seven days will appear here automatically.
-            </div>
-          )}
-        </div>
-      </section>
-      {(homeSections.showEvents !== false || homeSections.showTrustedSellers !== false) ? (
-      <section className="drop-in-cluster deferred-home-section grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        {homeSections.showEvents !== false ? (
-        <article className="drop-in-item console-panel binder-edge p-2.5 sm:p-3">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="section-kicker">Upcoming events</p>
-              <h2 className="mt-1.5 font-display text-[1.35rem] font-semibold tracking-[-0.05em] text-ink sm:text-[1.65rem]">
-                Local calendar
-              </h2>
-            </div>
-            <CalendarRange className="text-orange" size={20} />
-          </div>
-          <div className="mt-2.5 space-y-1.5 sm:mt-3 sm:space-y-2">
-            {upcomingEvents.length ? (
-              upcomingEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="flex items-start justify-between gap-2.5 rounded-[10px] border border-[var(--line)] bg-[var(--surface-solid)] px-2.5 py-2 sm:gap-3 sm:px-3 sm:py-2.5"
-                >
-                  <div>
-                    <p className="text-[0.84rem] font-semibold leading-5 text-ink sm:text-[0.9rem]">{event.title}</p>
-                    <p className="mt-0.5 text-[0.7rem] text-slate-700 sm:text-[0.76rem]">
-                      {event.store} | {event.dateStr} | {event.time}
-                    </p>
-                  </div>
-                  <Link className="whitespace-nowrap text-[0.76rem] font-semibold text-navy sm:text-[0.82rem]" to="/events">
-                    Details
-                  </Link>
-                </div>
-              ))
-            ) : (
-              <div className="rounded-[18px] border border-dashed border-[var(--line)] bg-[var(--surface-solid)] px-3 py-5 text-sm text-steel sm:rounded-[20px] sm:px-4 sm:py-6">
-                Event listings are still being refreshed.
-              </div>
-            )}
-          </div>
-        </article>
-        ) : null}
-
-        {homeSections.showTrustedSellers !== false ? (
-        <article className="drop-in-item console-panel binder-edge p-2.5 sm:p-3">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="section-kicker">Trusted sellers</p>
-              <h2 className="mt-1.5 font-display text-[1.35rem] font-semibold tracking-[-0.05em] text-ink sm:text-[1.65rem]">
-                Accounts worth browsing
-              </h2>
-            </div>
-            <Shield className="text-navy" size={20} />
-          </div>
-
-          <div className="mt-2.5 space-y-1.5 sm:mt-3 sm:space-y-2">
-            {topSellers.map((seller) => (
-              <button
-                key={seller.id}
-                className="flex w-full items-center justify-between gap-2.5 rounded-[10px] border border-[var(--line)] bg-[var(--surface-solid)] px-2.5 py-2 text-left transition hover:border-navy/20 sm:gap-3 sm:px-3 sm:py-2.5"
-                type="button"
-                onClick={() => navigate(`/seller/${seller.id}`)}
-              >
-                <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-                  <UserAvatar className="h-7 w-7 text-[0.68rem] font-bold sm:h-8 sm:w-8 sm:text-[0.72rem]" user={seller} />
-                  <div className="min-w-0">
-                    <p className="truncate text-[0.84rem] font-semibold text-ink sm:text-[0.9rem]">
-                      {seller.publicName || seller.firstName || seller.name}
-                    </p>
-                    <p className="mt-0.5 text-[0.68rem] text-slate-700 sm:text-[0.74rem]">
-                      {seller.completedDeals || 0} deals
-                      {seller.overallRating ? ` | ${seller.overallRating.toFixed(1)} rating` : ""}
-                      {` | ${sellerFollowerCounts[seller.id] || 0} followers`}
-                    </p>
-                  </div>
-                </div>
-                <span className="inline-flex items-center gap-1.5 text-[0.76rem] font-semibold text-navy sm:text-[0.82rem]">
-                  View
-                  <ArrowRight size={14} />
-                </span>
-              </button>
-            ))}
-          </div>
-        </article>
-        ) : null}
-      </section>
-      ) : null}
-
-      {homeSections.showStores !== false ? (
-      <section className="drop-in-item deferred-home-section console-panel binder-edge p-3 sm:p-4">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="section-kicker">Verified meetup spots</p>
-            <h2 className="mt-1.5 font-display text-[1.35rem] font-semibold tracking-[-0.05em] text-ink sm:text-[1.7rem]">
-              Local store profiles
-            </h2>
-            <p className="mt-1.5 text-[0.82rem] text-steel sm:text-sm">
-              Approved public meetup locations with their own event calendars and local listing lanes.
-            </p>
-          </div>
-          <Link className="inline-flex items-center gap-2 text-sm font-semibold text-navy" to="/stores">
-            View all stores
-            <ArrowRight size={14} />
-          </Link>
-        </div>
-        <div className="mt-2.5 grid gap-2.5 xl:grid-cols-4 sm:mt-3 sm:gap-3">
-          {storeSpotlights.map((store) => (
-            <Link
-              key={store.slug}
-              className="overflow-hidden rounded-[12px] border border-[var(--line)] bg-[var(--surface-solid)] transition duration-300 hover:-translate-y-0.5 hover:shadow-soft"
-              to={`/stores/${store.slug}`}
+            <SectionHeader title="This Week" to="/events" />
+            <div
+              className="overflow-hidden rounded-xl lg:rounded-[22px]"
+              style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}
             >
-              <div className="flex h-[4.8rem] items-center justify-center overflow-hidden border-b border-[var(--line)] bg-[var(--surface-hover)] px-3 py-2.5 sm:h-[5.2rem] sm:px-4 sm:py-3">
-                <div className="flex h-full w-full items-center justify-center bg-[var(--surface-hover)] px-2 py-1.5">
-                  {store.logoUrl ? (
-                    <img
-                      alt={store.name}
-                      className="max-h-full w-full object-contain"
-                      decoding="async"
-                      loading="lazy"
-                      src={store.logoUrl}
-                    />
-                  ) : null}
+              {upcomingEvents.map((event, index) => (
+                <button
+                  key={event.id}
+                  className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left active:bg-white/[0.02]"
+                  style={{ borderBottom: index < upcomingEvents.length - 1 ? "1px solid rgba(255,255,255,0.03)" : "none" }}
+                  type="button"
+                  onClick={() => navigate("/events")}
+                >
+                <div
+                  className="flex h-[34px] w-[34px] shrink-0 flex-col items-center justify-center rounded-[10px]"
+                  style={{ background: "rgba(220,38,38,0.07)" }}
+                >
+                  <span className="text-[7px] uppercase" style={{ fontWeight: 700, color: "#f87171", lineHeight: 1 }}>
+                    {event.dateLabel}
+                  </span>
+                  <span className="text-[14px]" style={{ fontWeight: 700, color: "#fca5a5", lineHeight: 1.1 }}>
+                    {event.dateNumber}
+                  </span>
                 </div>
-              </div>
-              <div className="space-y-2 p-3 sm:space-y-2.5 sm:p-3.5">
-                <div>
-                  <p className="font-display text-[0.96rem] font-semibold tracking-[-0.03em] text-ink sm:text-[1.02rem]">
-                    {store.name}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[11.5px]" style={{ fontWeight: 600, color: "#d0d0d8" }}>
+                    {event.title}
                   </p>
-                  <p className="mt-0.5 text-[0.72rem] text-slate-700 sm:text-[0.76rem]">{store.neighborhood}</p>
+                  <div className="mt-[2px] flex items-center gap-1">
+                    <MapPin size={8} style={{ color: "#3e3e48" }} />
+                    <span className="truncate text-[9px]" style={{ fontWeight: 400, color: "#4a4a54" }}>
+                      {event.store || event.location || "Local venue"}
+                    </span>
+                    <span className="mx-1 text-[6px]" style={{ color: "#2a2a32" }}>
+                      .
+                    </span>
+                    <span className="text-[9px]" style={{ fontWeight: 400, color: "#4a4a54" }}>
+                      {event.time || compactTimeLabel(event.dateStr || event.date)}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                  <span className="rounded-[8px] bg-navy/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-navy">
-                    {store.activeCount} listings
-                  </span>
-                  <span className="rounded-[8px] bg-[var(--surface-hover)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-700">
-                    {storeFollowerCounts[store.slug] || 0} followers
-                  </span>
-                  <span className="rounded-[8px] bg-[var(--surface-hover)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-700">
-                    Approved
-                  </span>
-                </div>
-                <p className="line-clamp-2 text-[0.76rem] leading-5 text-slate-700">
-                  {store.featuredListing
-                    ? `${store.featuredListing.title} is live and tied to this meetup area.`
-                    : "Browse upcoming events and sellers who prefer meeting here."}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-      ) : null}
-    </div>
+                <ChevronRight size={12} style={{ color: "#2a2a32" }} />
+                </button>
+              ))}
+            </div>
+
+            <SectionHeader title="Local Stores" to="/stores" />
+            <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar lg:flex-col lg:gap-3 lg:pb-0" style={{ scrollbarWidth: "none" }}>
+              {priorityStores.map((store) => (
+                <StoreCard key={store.slug} store={store} />
+              ))}
+            </div>
+          </aside>
+        </main>
+      </PullToRefresh>
+    </MobileScreen>
   );
 }
-

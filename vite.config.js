@@ -19,8 +19,8 @@ export default defineConfig({
             return "icons";
           }
 
-          if (id.includes("react")) {
-            return "react-vendor";
+          if (id.includes("@supabase/supabase-js")) {
+            return "supabase";
           }
 
           return "vendor";

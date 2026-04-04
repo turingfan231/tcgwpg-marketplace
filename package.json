@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently -k \"npm run server\" \"vite\"",
+    "dev:e2e": "concurrently -k \"npm run server\" \"npm run dev:web -- --host 127.0.0.1 --port 4174\"",
     "dev:web": "vite",
     "build": "vite build",
     "preview": "vite preview",
@@ -21,6 +22,7 @@
     "dotenv": "^16.5.0",
     "express": "^4.21.2",
     "lucide-react": "^0.511.0",
+    "motion": "^12.23.24",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.1"

@@ -1,6 +1,8 @@
 import { ImagePlus } from "lucide-react";
 import { useState } from "react";
 import { useMarketplace } from "../../hooks/useMarketplace";
+import { m } from "../../mobile/design";
+import { PrimaryButton, SecondaryButton, TextArea } from "../../mobile/primitives";
 import ModalShell from "../ui/ModalShell";
 import RatingStars from "../ui/RatingStars";
 
@@ -43,83 +45,67 @@ export default function ReviewModal({ seller, onClose }) {
   return (
     <ModalShell
       subtitle={`Leave a rating for ${seller.publicName || seller.name} based on your latest local meetup.`}
-      title="Leave Review"
+      title="Leave review"
       onClose={onClose}
     >
-      <form className="space-y-6 p-6" onSubmit={handleSubmit}>
-        <div className="rounded-[24px] bg-slate-50 p-5">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-steel">
-            Star Rating
+      <form className="space-y-5 p-4 sm:p-5" onSubmit={handleSubmit}>
+        <div className="rounded-[18px] border p-4" style={{ background: m.surface, borderColor: m.border }}>
+          <p className="text-[10px] uppercase tracking-[0.12em]" style={{ color: m.textTertiary, fontWeight: 700 }}>
+            Star rating
           </p>
-          <RatingStars
-            className="mt-3"
-            interactive
-            size={26}
-            value={rating}
-            onChange={setRating}
-          />
+          <div className="mt-3">
+            <RatingStars interactive size={26} value={rating} onChange={setRating} />
+          </div>
         </div>
 
         <label className="block">
-          <span className="mb-2 block text-sm font-semibold uppercase tracking-[0.2em] text-steel">
-            Written Review
+          <span className="text-[10px] uppercase tracking-[0.12em]" style={{ color: m.textTertiary, fontWeight: 700 }}>
+            Written review
           </span>
-          <textarea
+          <TextArea
             required
-            className="min-h-40 w-full rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3 text-ink outline-none transition focus:border-navy focus:bg-white"
+            className="mt-3 min-h-32 resize-y"
             placeholder="Call out condition accuracy, response time, and meetup experience."
             value={comment}
-            onChange={(event) => setComment(event.target.value)}
+            onChange={setComment}
           />
         </label>
 
-        <div className="rounded-[24px] bg-slate-50 p-5">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-steel">
+        <div className="rounded-[18px] border p-4" style={{ background: m.surface, borderColor: m.border }}>
+          <p className="text-[10px] uppercase tracking-[0.12em]" style={{ color: m.textTertiary, fontWeight: 700 }}>
             Optional photo
           </p>
-          <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-[20px] border border-dashed border-slate-300 bg-white px-4 py-4 text-steel transition hover:border-navy hover:text-ink">
+          <label
+            className="mt-3 flex cursor-pointer items-center gap-3 rounded-[14px] border px-4 py-4 text-[12px]"
+            style={{ background: m.surfaceStrong, borderColor: m.border, color: m.textSecondary, fontWeight: 600 }}
+          >
             <ImagePlus size={18} />
-            <span className="text-sm font-semibold">
-              Add a meetup, condition, or packaging photo
-            </span>
-            <input
-              className="hidden"
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-            />
+            <span>Add meetup or condition photo</span>
+            <input className="hidden" type="file" accept="image/*" onChange={handleImageUpload} />
           </label>
 
           {imageUrl ? (
             <img
               alt="Review upload preview"
-              className="mt-4 h-44 w-full rounded-[20px] border border-slate-200 object-cover"
+              className="mt-4 h-44 w-full object-cover"
               src={imageUrl}
             />
           ) : null}
         </div>
 
         {error ? (
-          <div className="rounded-[20px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <div className="rounded-[16px] px-4 py-3 text-[11px]" style={{ background: "rgba(239,68,68,0.08)", color: m.danger, fontWeight: 600 }}>
             {error}
           </div>
         ) : null}
 
-        <div className="flex justify-end gap-3">
-          <button
-            className="rounded-full border border-slate-200 px-5 py-3 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
-            type="button"
-            onClick={onClose}
-          >
+        <div className="flex flex-wrap justify-end gap-3">
+          <SecondaryButton type="button" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            disabled={submitting}
-            className="rounded-full bg-navy px-5 py-3 font-display text-sm font-bold uppercase tracking-[0.12em] text-white"
-            type="submit"
-          >
-            {submitting ? "Posting..." : "Post Review"}
-          </button>
+          </SecondaryButton>
+          <PrimaryButton disabled={submitting} type="submit">
+            {submitting ? "Posting..." : "Post review"}
+          </PrimaryButton>
         </div>
       </form>
     </ModalShell>

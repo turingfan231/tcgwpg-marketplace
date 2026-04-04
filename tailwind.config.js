@@ -4,28 +4,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        navy: "#b11d23",
-        orange: "#c62828",
-        mist: "#f3eeee",
-        ink: "#23262d",
-        steel: "#6f727b",
-        sand: "#f5efef",
-        paper: "#fbf8f8",
-        slatepaper: "#f0eaea",
+        navy: "#d32f2f",
+        orange: "#930010",
+        ink: "#e7e5e5",
+        steel: "#9f9d9d",
+        mist: "#191a1a",
+        paper: "#131313",
+        slatepaper: "#1f2020",
       },
       fontFamily: {
-        display: ['"Space Grotesk"', "sans-serif"],
-        body: ['"Public Sans"', "sans-serif"],
+        display: ['"Manrope"', "sans-serif"],
+        body: ['"Inter"', "sans-serif"],
       },
       boxShadow: {
-        soft: "0 18px 40px -24px rgba(91, 22, 22, 0.16)",
-        lift: "0 30px 70px -34px rgba(91, 22, 22, 0.24)",
-      },
-      backgroundImage: {
-        "market-grid":
-          "linear-gradient(rgba(177,29,35,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(177,29,35,0.06) 1px, transparent 1px)",
-        "hero-glow":
-          "radial-gradient(circle at top left, rgba(239,59,51,0.14), transparent 22%), radial-gradient(circle at bottom right, rgba(177,29,35,0.18), transparent 28%)",
+        soft: "0 24px 60px -36px rgba(0,0,0,0.62)",
+        lift: "0 34px 90px -44px rgba(0,0,0,0.74)",
       },
     },
   },

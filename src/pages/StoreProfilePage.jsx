@@ -1,53 +1,93 @@
 import { BellRing, CalendarDays, ExternalLink, Heart, MapPin, ShieldCheck, Store } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import ListingCard from "../components/cards/ListingCard";
+import UserAvatar from "../components/shared/UserAvatar";
 import SeoHead from "../components/seo/SeoHead";
-import EmptyState from "../components/ui/EmptyState";
-import PageSkeleton from "../components/ui/PageSkeleton";
-import { gameCatalog } from "../data/mockData";
 import { getStoreBySlug } from "../data/storefrontData";
 import { useMarketplace } from "../hooks/useMarketplace";
+import { m } from "../mobile/design";
+import {
+  BottomSheet,
+  ChoicePill,
+  EmptyBlock,
+  MobileScreen,
+  PrimaryButton,
+  ScreenHeader,
+  ScreenSection,
+  SecondaryButton,
+} from "../mobile/primitives";
 import { fetchLocalEvents } from "../services/cardDatabase";
 
 function normalizeStoreName(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function matchesStoreListing(store, listing, sellers) {
+  const seller = sellers.find((user) => String(user.id) === String(listing.sellerId));
+  if (!seller) {
+    return false;
+  }
+  const trustedSpotMatch = Array.isArray(seller.trustedMeetupSpots)
+    ? seller.trustedMeetupSpots.includes(store.slug)
+    : false;
+  const neighborhoodMatch =
+    normalizeStoreName(seller.neighborhood) === normalizeStoreName(store.neighborhood);
+  return trustedSpotMatch || neighborhoodMatch;
+}
+
+function PersonRow({ person }) {
+  return (
+    <Link
+      className="flex items-center gap-3 rounded-[16px] px-3 py-2"
+      style={{ background: m.surfaceStrong, border: `1px solid ${m.border}` }}
+      to={`/seller/${person.id}`}
+    >
+      <UserAvatar className="h-10 w-10 text-[12px]" user={person} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[12px] text-white" style={{ fontWeight: 700 }}>
+          {person.publicName || person.name}
+        </p>
+        <p className="mt-0.5 text-[10px]" style={{ color: m.textSecondary }}>
+          {person.neighborhood || "Winnipeg"}
+        </p>
+      </div>
+    </Link>
+  );
+}
+
 export default function StoreProfilePage() {
   const { storeSlug } = useParams();
   const {
     activeListings,
-    eventReminderIds,
     eventAttendance,
+    eventAttendanceFeed,
+    eventReminderIds,
     followedStoreSlugs,
-    loading,
     sellers,
     setEventAttendanceIntent,
     toggleEventReminder,
     toggleStoreFollow,
   } = useMarketplace();
   const [remoteEvents, setRemoteEvents] = useState([]);
-  const [eventsLoading, setEventsLoading] = useState(true);
+  const [sheet, setSheet] = useState("");
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   const store = getStoreBySlug(storeSlug);
 
   useEffect(() => {
     let cancelled = false;
-
     async function loadEvents() {
       try {
         const data = await fetchLocalEvents();
         if (!cancelled) {
           setRemoteEvents(Array.isArray(data?.events) ? data.events.filter(Boolean) : []);
         }
-      } finally {
+      } catch {
         if (!cancelled) {
-          setEventsLoading(false);
+          setRemoteEvents([]);
         }
       }
     }
-
     void loadEvents();
     return () => {
       cancelled = true;
@@ -58,63 +98,25 @@ export default function StoreProfilePage() {
     if (!store) {
       return [];
     }
-
-    const storeName = normalizeStoreName(store.name);
     return remoteEvents
-      .filter((event) => normalizeStoreName(event.store) === storeName)
-      .sort((left, right) => new Date(left.dateStr).getTime() - new Date(right.dateStr).getTime())
-      .slice(0, 8);
+      .filter((event) => normalizeStoreName(event.store) === normalizeStoreName(store.name))
+      .sort((left, right) => new Date(left.dateStr || left.date || 0) - new Date(right.dateStr || right.date || 0));
   }, [remoteEvents, store]);
 
   const featuredListings = useMemo(() => {
     if (!store) {
       return [];
     }
-
     return activeListings
-      .filter((listing) => {
-        const seller = sellers.find((user) => user.id === listing.sellerId);
-        if (!seller) {
-          return false;
-        }
-
-        const trustedSpotMatch = Array.isArray(seller.trustedMeetupSpots)
-          ? seller.trustedMeetupSpots.includes(store.slug)
-          : false;
-        const neighborhoodMatch =
-          normalizeStoreName(seller.neighborhood) === normalizeStoreName(store.neighborhood);
-
-        return trustedSpotMatch || neighborhoodMatch;
-      })
-      .sort(
-        (left, right) =>
-          Number(right.featured) - Number(left.featured) ||
-          (right.sortTimestamp || 0) - (left.sortTimestamp || 0),
-      )
-      .slice(0, 8);
+      .filter((listing) => matchesStoreListing(store, listing, sellers))
+      .sort((left, right) => Number(right.sortTimestamp || 0) - Number(left.sortTimestamp || 0))
+      .slice(0, 6);
   }, [activeListings, sellers, store]);
-
-  const listingsByGame = useMemo(() => {
-    const groups = Object.fromEntries(
-      gameCatalog
-        .filter((game) => game.slug !== "all")
-        .map((game) => [game.name, []]),
-    );
-
-    featuredListings.forEach((listing) => {
-      if (groups[listing.game]) {
-        groups[listing.game].push(listing);
-      }
-    });
-
-    return groups;
-  }, [featuredListings]);
 
   const sellerCount = useMemo(() => {
     if (!store) {
       return 0;
     }
-
     return sellers.filter((seller) =>
       Array.isArray(seller.trustedMeetupSpots) ? seller.trustedMeetupSpots.includes(store.slug) : false,
     ).length;
@@ -124,324 +126,341 @@ export default function StoreProfilePage() {
     if (!store) {
       return 0;
     }
-
     return sellers.filter((seller) =>
-      Array.isArray(seller.followedStoreSlugs)
-        ? seller.followedStoreSlugs.includes(store.slug)
-        : false,
+      Array.isArray(seller.followedStoreSlugs) ? seller.followedStoreSlugs.includes(store.slug) : false,
     ).length;
   }, [sellers, store]);
 
-  if (loading && !store) {
-    return (
-      <>
-        <SeoHead title="Store Profile" canonicalPath={`/stores/${storeSlug || ""}`} />
-        <PageSkeleton cards={4} titleWidth="w-80" />
-      </>
-    );
-  }
-
   if (!store) {
     return (
-      <>
-        <SeoHead title="Store Not Found" canonicalPath={`/stores/${storeSlug || ""}`} />
-        <EmptyState title="Store Not Found" description="That store profile does not exist." />
-      </>
+      <MobileScreen className="pb-[92px]">
+        <SeoHead canonicalPath={`/stores/${storeSlug}`} description="Store profile" title="Store not found" />
+        <ScreenHeader subtitle="Meetup spot" title="Store" />
+        <ScreenSection className="pt-2">
+          <EmptyBlock description="That store profile does not exist in the current directory." title="Store not found" />
+        </ScreenSection>
+      </MobileScreen>
     );
   }
 
   const isFollowingStore = followedStoreSlugs.includes(store.slug);
-  const storeStructuredData = {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    name: store.name,
-    image: store.logoUrl || undefined,
-    url: store.siteUrl || `https://tcgwpg.com/stores/${store.slug}`,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: store.address,
-      addressLocality: "Winnipeg",
-      addressRegion: "MB",
-      addressCountry: "CA",
-    },
-    areaServed: {
-      "@type": "City",
-      name: "Winnipeg",
-    },
-    event: matchingEvents.slice(0, 6).map((event) => ({
-      "@type": "Event",
-      name: event.title,
-      startDate: `${event.dateStr}T12:00:00`,
-      eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
-      eventStatus: "https://schema.org/EventScheduled",
-      location: {
-        "@type": "Place",
-        name: store.name,
-        address: {
-          "@type": "PostalAddress",
-          streetAddress: store.address,
-          addressLocality: "Winnipeg",
-          addressRegion: "MB",
-          addressCountry: "CA",
-        },
-      },
-      url: event.sourceUrl || store.eventsUrl || store.siteUrl,
-    })),
-  };
 
   return (
-    <main className="space-y-5 sm:space-y-8">
+    <MobileScreen className="pb-[92px]">
       <SeoHead
         canonicalPath={`/stores/${store.slug}`}
-        description={`${store.name} is an approved Winnipeg meetup spot with upcoming events and featured listings on TCG WPG Marketplace.`}
+        description={`${store.name} is an approved Winnipeg meetup spot with active listings and local events.`}
         title={store.name}
-        type="website"
-        jsonLd={storeStructuredData}
       />
-      <section className="console-panel binder-edge overflow-hidden p-0">
-        <div className="relative overflow-hidden bg-[linear-gradient(135deg,#4d0f13,#7a181d)] p-3.5 text-white sm:p-8">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.08),transparent_18%),radial-gradient(circle_at_82%_20%,rgba(239,59,51,0.14),transparent_18%)]" />
-          <div className="relative z-10 grid gap-3 sm:gap-6 lg:grid-cols-[1fr_16rem] lg:items-end">
-            <div>
-              <p className="section-kicker text-white/62">Store profile</p>
-              <h1 className="mt-2.5 font-display text-[1.6rem] font-semibold tracking-[-0.05em] text-white sm:mt-3 sm:text-[3.15rem]">
-                {store.name}
-              </h1>
-              <div className="mt-3 flex flex-wrap gap-2 sm:mt-4">
-                <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white sm:px-3 sm:text-xs sm:tracking-[0.18em]">
-                  <ShieldCheck size={14} />
-                  Approved meetup spot
+
+      <ScreenHeader className="lg:hidden" subtitle={store.neighborhood} title={store.name} />
+
+      <div className="hidden lg:block lg:px-8 lg:pt-8">
+        <div className="mx-auto grid w-full max-w-[1380px] grid-cols-[minmax(0,1fr)_340px] gap-8">
+          <div
+            className="rounded-[28px] px-6 py-6"
+            style={{
+              background:
+                "linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015))",
+              border: `1px solid ${m.borderStrong}`,
+            }}
+          >
+            <div className="flex items-start justify-between gap-8">
+              <div className="flex items-start gap-4">
+                <div
+                  className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[22px]"
+                  style={{ background: "rgba(255,255,255,0.94)" }}
+                >
+                  {store.logoUrl ? (
+                    <img alt={store.name} className="h-full w-full object-contain p-3" src={store.logoUrl} />
+                  ) : (
+                    <span className="text-2xl" style={{ color: "#111", fontWeight: 700 }}>
+                      {String(store.shortName || store.name).charAt(0)}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <p className="text-[30px] text-white" style={{ fontWeight: 800, lineHeight: 1.05 }}>{store.name}</p>
+                  <div className="mt-2 flex items-center gap-2 text-[12px]" style={{ color: "#7a7a82" }}>
+                    <MapPin size={12} />
+                    <span>{store.address}</span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {store.approvedMeetup ? (
+                      <span className="rounded-full px-2 py-[5px] text-[10px]" style={{ background: "rgba(239,68,68,0.14)", color: "#fca5a5", fontWeight: 700 }}>
+                        Approved meetup
+                      </span>
+                    ) : null}
+                    <span className="rounded-full px-2 py-[5px] text-[10px]" style={{ background: m.surfaceStrong, color: m.textSecondary, fontWeight: 600 }}>
+                      {storeFollowerCount} follows
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <PrimaryButton className="!rounded-[16px] !px-5" onClick={() => toggleStoreFollow(store.slug)}>
+                  <Heart size={14} />
+                  {isFollowingStore ? "Following" : "Follow"}
+                </PrimaryButton>
+                {store.siteUrl ? (
+                  <SecondaryButton className="!rounded-[16px] !px-5" onClick={() => window.open(store.siteUrl, "_blank", "noopener,noreferrer")}>
+                    <ExternalLink size={14} />
+                    Website
+                  </SecondaryButton>
+                ) : null}
+              </div>
+            </div>
+          </div>
+          <div className="rounded-[28px] border p-5" style={{ background: "rgba(255,255,255,0.015)", borderColor: "rgba(255,255,255,0.05)" }}>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-[18px] border px-3 py-3" style={{ background: m.surface, borderColor: m.border }}>
+                <p className="text-[10px]" style={{ color: m.textTertiary, fontWeight: 700 }}>Sellers</p>
+                <p className="mt-2 text-[24px] text-white" style={{ fontWeight: 800 }}>{sellerCount}</p>
+              </div>
+              <div className="rounded-[18px] border px-3 py-3" style={{ background: m.surface, borderColor: m.border }}>
+                <p className="text-[10px]" style={{ color: m.textTertiary, fontWeight: 700 }}>Events</p>
+                <p className="mt-2 text-[24px] text-white" style={{ fontWeight: 800 }}>{matchingEvents.length}</p>
+              </div>
+              <button className="rounded-[18px] border px-3 py-3 text-left" style={{ background: m.surface, borderColor: m.border }} type="button" onClick={() => setSheet("followers")}>
+                <p className="text-[10px]" style={{ color: m.textTertiary, fontWeight: 700 }}>Followers</p>
+                <p className="mt-2 text-[24px] text-white" style={{ fontWeight: 800 }}>{storeFollowerCount}</p>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ScreenSection className="pb-3 lg:hidden">
+        <div
+          className="rounded-[22px] px-4 py-4"
+          style={{
+            background:
+              "linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015))",
+            border: `1px solid ${m.borderStrong}`,
+          }}
+        >
+          <div className="flex gap-3">
+            <div
+              className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[18px]"
+              style={{ background: "rgba(255,255,255,0.94)" }}
+            >
+              {store.logoUrl ? (
+                <img alt={store.name} className="h-full w-full object-contain p-3" src={store.logoUrl} />
+              ) : (
+                <span className="text-lg" style={{ color: "#111", fontWeight: 700 }}>
+                  {String(store.shortName || store.name).charAt(0)}
                 </span>
-                <span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white sm:px-3 sm:text-xs sm:tracking-[0.18em]">
-                  {store.neighborhood}
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap gap-2">
+                {store.approvedMeetup ? (
+                  <span className="rounded-full px-2 py-[4px] text-[9px]" style={{ background: "rgba(239,68,68,0.14)", color: "#fca5a5", fontWeight: 700 }}>
+                    Approved meetup
+                  </span>
+                ) : null}
+                <span className="rounded-full px-2 py-[4px] text-[9px]" style={{ background: m.surfaceStrong, color: m.textSecondary, fontWeight: 600 }}>
+                  {storeFollowerCount} follows
                 </span>
               </div>
-              <div className="mt-3 grid gap-1.5 text-[0.78rem] text-white/82 sm:mt-5 sm:gap-3 sm:text-sm">
-                <span className="inline-flex items-center gap-2">
-                  <MapPin size={16} />
+              <div className="mt-2 grid gap-1 text-[10px]" style={{ color: m.textSecondary }}>
+                <span className="inline-flex items-center gap-1">
+                  <MapPin size={11} />
                   {store.address}
                 </span>
-                <span className="inline-flex items-center gap-2">
-                  <Store size={16} />
-                  {sellerCount} seller{sellerCount === 1 ? "" : "s"} use this spot
+                <span className="inline-flex items-center gap-1">
+                  <Store size={11} />
+                  {sellerCount} sellers use this spot
                 </span>
-                <span className="inline-flex items-center gap-2">
-                  <Heart size={16} />
-                  {storeFollowerCount} follower{storeFollowerCount === 1 ? "" : "s"}
-                </span>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2 sm:mt-5 sm:gap-3">
-                <button
-                  className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[0.76rem] font-semibold transition sm:px-4 sm:py-2 sm:text-sm ${
-                    isFollowingStore
-                      ? "bg-white text-navy"
-                      : "border border-white/16 bg-white/10 text-white hover:bg-white/16"
-                  }`}
-                  type="button"
-                  onClick={() => void toggleStoreFollow(store.slug)}
-                >
-                  <Heart fill={isFollowingStore ? "currentColor" : "none"} size={15} />
-                  {isFollowingStore ? "Following store" : "Follow store"}
-                </button>
-                {store.eventsUrl ? (
-                  <a
-                    className="inline-flex items-center gap-2 rounded-full border border-white/16 bg-white/10 px-3 py-1.5 text-[0.76rem] font-semibold text-white hover:bg-white/16 sm:px-4 sm:py-2 sm:text-sm"
-                    href={store.eventsUrl}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    Source calendar
-                    <ExternalLink size={14} />
-                  </a>
-                ) : null}
               </div>
             </div>
+          </div>
 
-            <div className="rounded-[16px] border border-white/14 bg-[rgba(255,255,255,0.08)] p-2 sm:rounded-[28px] sm:p-4">
-              <div className="flex h-full min-h-[4.75rem] items-center justify-center rounded-[14px] bg-[#f6f7f8] px-3 py-2 sm:min-h-[9rem] sm:rounded-[22px] sm:px-5 sm:py-4">
-                {store.logoUrl ? (
-                <img alt={store.name} className="h-12 w-full object-contain sm:h-24" src={store.logoUrl} />
-                ) : null}
-              </div>
-            </div>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <PrimaryButton className="w-full" onClick={() => toggleStoreFollow(store.slug)}>
+              <Heart size={14} />
+              {isFollowingStore ? "Following" : "Follow"}
+            </PrimaryButton>
+            {store.siteUrl ? (
+              <SecondaryButton className="w-full" onClick={() => window.open(store.siteUrl, "_blank", "noopener,noreferrer")}>
+                <ExternalLink size={14} />
+                Website
+              </SecondaryButton>
+            ) : (
+              <SecondaryButton className="w-full">
+                <ShieldCheck size={14} />
+                Trusted
+              </SecondaryButton>
+            )}
           </div>
         </div>
-      </section>
+      </ScreenSection>
 
-      <section className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr] sm:gap-6">
-        <article className="console-panel binder-edge p-4 sm:p-6">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="section-kicker">Upcoming events</p>
-              <h2 className="mt-2 font-display text-[1.55rem] font-semibold tracking-[-0.05em] text-ink sm:text-[1.95rem]">
-                Store calendar
-              </h2>
-            </div>
-            {store.eventsUrl ? (
-              <a
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-[0.82rem] font-semibold text-navy sm:px-4 sm:text-sm"
-                href={store.eventsUrl}
-                rel="noreferrer"
-                target="_blank"
-              >
-                Source
-                <ExternalLink size={14} />
-              </a>
-            ) : null}
-          </div>
+      <ScreenSection className="grid grid-cols-3 gap-2 pb-3 lg:hidden">
+        <div className="rounded-[18px] px-4 py-3" style={{ background: m.surface, border: `1px solid ${m.border}` }}>
+          <p className="text-[9px] uppercase tracking-[0.12em]" style={{ color: m.textTertiary, fontWeight: 700 }}>
+            Sellers
+          </p>
+          <p className="mt-1 text-[18px] text-white" style={{ fontWeight: 700 }}>
+            {sellerCount}
+          </p>
+        </div>
+        <div className="rounded-[18px] px-4 py-3" style={{ background: m.surface, border: `1px solid ${m.border}` }}>
+          <p className="text-[9px] uppercase tracking-[0.12em]" style={{ color: m.textTertiary, fontWeight: 700 }}>
+            Events
+          </p>
+          <p className="mt-1 text-[18px] text-white" style={{ fontWeight: 700 }}>
+            {matchingEvents.length}
+          </p>
+        </div>
+        <button
+          className="rounded-[18px] px-4 py-3 text-left"
+          style={{ background: m.surface, border: `1px solid ${m.border}` }}
+          type="button"
+          onClick={() => setSheet("followers")}
+        >
+          <p className="text-[9px] uppercase tracking-[0.12em]" style={{ color: m.textTertiary, fontWeight: 700 }}>
+            Followers
+          </p>
+          <p className="mt-1 text-[18px] text-white" style={{ fontWeight: 700 }}>
+            {storeFollowerCount}
+          </p>
+        </button>
+      </ScreenSection>
 
-          <div className="mt-4 space-y-2.5 sm:mt-5 sm:space-y-3">
-            {matchingEvents.length ? (
-              matchingEvents.map((event) => {
-                const eventKey = `${event.id || "event"}:${event.dateStr || ""}:${event.time || ""}`;
-                const reminderEnabled = eventReminderIds.includes(eventKey);
-                const selectedIntent = eventAttendance[eventKey] || "";
-                return (
-                <div key={event.id} className="rounded-[18px] border border-slate-200 bg-[#f7f7f8] p-3.5 sm:rounded-[22px] sm:p-4">
-                  <p className="text-[0.95rem] font-semibold text-ink sm:text-base">{event.title}</p>
-                  <p className="mt-1.5 text-[0.8rem] text-steel sm:mt-2 sm:text-sm">
-                    {event.dateStr} | {event.time} | {event.game}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] transition sm:text-xs sm:tracking-[0.18em] ${
-                        reminderEnabled
-                          ? "border-[rgba(177,29,35,0.22)] bg-[rgba(240,55,55,0.08)] text-navy"
-                          : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
-                      }`}
-                      type="button"
-                      onClick={() => void toggleEventReminder(eventKey)}
-                    >
-                      {reminderEnabled ? "Reminder on" : "Remind me"}
-                      <BellRing size={13} />
-                    </button>
-                    {[
-                      { id: "going", label: "Going" },
-                      { id: "maybe", label: "Maybe" },
-                      { id: "trading-there", label: "Trading there" },
-                    ].map((option) => (
-                      <button
-                        key={option.id}
-                        className={`rounded-full border px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] transition sm:text-xs sm:tracking-[0.18em] ${
-                          selectedIntent === option.id
-                            ? "border-[rgba(177,29,35,0.24)] bg-navy text-white"
-                            : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
-                        }`}
-                        type="button"
-                        onClick={() => void setEventAttendanceIntent(eventKey, option.id)}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
+      <ScreenSection className="pb-3 lg:px-8 lg:pt-8">
+        <div className="mx-auto w-full lg:max-w-[1380px]">
+        <p className="mb-2 text-[12px] text-white" style={{ fontWeight: 700 }}>
+          Upcoming events
+        </p>
+        {matchingEvents.length ? (
+          <div className="flex flex-col gap-2 lg:grid lg:grid-cols-2 lg:gap-4">
+            {matchingEvents.slice(0, 4).map((event) => (
+              <div key={event.id} className="rounded-[18px] px-4 py-4 lg:rounded-[24px] lg:p-5" style={{ background: m.surface, border: `1px solid ${m.border}` }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[13px] text-white" style={{ fontWeight: 700 }}>
+                      {event.title}
+                    </p>
+                    <div className="mt-2 grid gap-1 text-[10px]" style={{ color: m.textSecondary }}>
+                      <span className="inline-flex items-center gap-1">
+                        <CalendarDays size={11} />
+                        {new Date(`${event.dateStr}T12:00:00`).toLocaleDateString("en-CA", {
+                          month: "short",
+                          day: "numeric",
+                        })}{" "}
+                        · {event.time}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin size={11} />
+                        {event.neighborhood}
+                      </span>
+                    </div>
                   </div>
+                  <button
+                    className="inline-flex h-8 items-center justify-center gap-1 rounded-[12px] px-3 text-[10px]"
+                    style={{
+                      background: eventReminderIds.includes(event.id) ? "rgba(239,68,68,0.14)" : m.surfaceStrong,
+                      color: eventReminderIds.includes(event.id) ? "#fca5a5" : m.textSecondary,
+                      fontWeight: 700,
+                    }}
+                    type="button"
+                    onClick={() => toggleEventReminder(event.id)}
+                  >
+                    <BellRing size={12} />
+                    {eventReminderIds.includes(event.id) ? "Saved" : "Remind"}
+                  </button>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {[ 
+                    { id: "going", label: "Going" },
+                    { id: "maybe", label: "Maybe" },
+                    { id: "trading-there", label: "Trading" },
+                  ].map((option) => (
+                    <ChoicePill
+                      key={`${event.id}-${option.id}`}
+                      active={eventAttendance[event.id] === option.id}
+                      onClick={() => setEventAttendanceIntent(event.id, eventAttendance[event.id] === option.id ? "" : option.id)}
+                    >
+                      {option.label}
+                    </ChoicePill>
+                  ))}
+                  <button
+                    className="inline-flex h-[30px] items-center justify-center rounded-full px-3 text-[10px]"
+                    style={{ background: m.surfaceStrong, color: m.textSecondary, fontWeight: 600 }}
+                    type="button"
+                    onClick={() => {
+                      setSelectedEvent(event);
+                      setSheet("attendees");
+                    }}
+                  >
+                    {(eventAttendanceFeed[event.id] || []).length || 0} responses
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyBlock description="No store events are showing right now." title="No upcoming events" />
+        )}
+        </div>
+      </ScreenSection>
+
+      <BottomSheet open={sheet === "followers"} onClose={() => setSheet("")}>
+        <div className="px-4 pb-6 pt-4">
+          <p className="text-[14px] text-white" style={{ fontWeight: 700 }}>
+            Store followers
+          </p>
+          <div className="mt-4 grid gap-2">
+            {sellers.filter((seller) => Array.isArray(seller.followedStoreSlugs) && seller.followedStoreSlugs.includes(store.slug)).length ? (
+              sellers
+                .filter((seller) => Array.isArray(seller.followedStoreSlugs) && seller.followedStoreSlugs.includes(store.slug))
+                .map((seller) => <PersonRow key={`${store.slug}-${seller.id}`} person={seller} />)
+            ) : (
+              <p className="text-[11px]" style={{ color: m.textSecondary }}>
+                No followers yet.
+              </p>
+            )}
+          </div>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet
+        open={sheet === "attendees"}
+        onClose={() => {
+          setSheet("");
+          setSelectedEvent(null);
+        }}
+      >
+        <div className="px-4 pb-6 pt-4">
+          <p className="text-[14px] text-white" style={{ fontWeight: 700 }}>
+            {selectedEvent?.title || "Responses"}
+          </p>
+          <div className="mt-4 grid gap-4">
+            {["going", "maybe", "trading-there"].map((intent) => {
+              const people = (eventAttendanceFeed[selectedEvent?.id] || []).filter((entry) => entry.intent === intent);
+              return (
+                <div key={intent}>
+                  <p className="mb-2 text-[10px] uppercase tracking-[0.12em]" style={{ color: m.textTertiary, fontWeight: 700 }}>
+                    {intent === "trading-there" ? "Trading there" : intent}
+                  </p>
+                  {people.length ? (
+                    <div className="grid gap-2">
+                      {people.map((entry) => (
+                        <PersonRow key={`${selectedEvent?.id}-${intent}-${entry.id}`} person={entry.user} />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[11px]" style={{ color: m.textSecondary }}>
+                      No one marked {intent === "trading-there" ? "trading there" : intent} yet.
+                    </p>
+                  )}
                 </div>
               );
-            })
-            ) : eventsLoading ? (
-              <p className="text-sm leading-7 text-steel">Loading store events...</p>
-            ) : (
-              <p className="rounded-[18px] border border-dashed border-slate-200 bg-white/70 px-3 py-5 text-sm text-steel sm:rounded-[22px] sm:px-4 sm:py-6">
-                No upcoming events are available for this store right now.
-              </p>
-            )}
-          </div>
-        </article>
-
-        <article className="console-panel binder-edge p-4 sm:p-6">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="section-kicker">Featured listings</p>
-              <h2 className="mt-2 font-display text-[1.55rem] font-semibold tracking-[-0.05em] text-ink sm:text-[1.95rem]">
-                Meet here
-              </h2>
-            </div>
-            <Link className="inline-flex items-center gap-2 text-sm font-semibold text-navy" to="/market">
-              Open market
-            </Link>
-          </div>
-
-          <div className="mt-4 grid gap-3 sm:mt-5 sm:gap-4 sm:grid-cols-2">
-            {featuredListings.length ? (
-              featuredListings.map((listing) => <ListingCard key={listing.id} listing={listing} />)
-            ) : (
-              <p className="rounded-[18px] border border-dashed border-slate-200 bg-white/70 px-3 py-5 text-sm text-steel sm:col-span-2 sm:rounded-[22px] sm:px-4 sm:py-6">
-                No live listings are currently tied to this meetup spot.
-              </p>
-            )}
-          </div>
-        </article>
-      </section>
-
-      <section className="console-panel binder-edge p-4 sm:p-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="section-kicker">Featured lanes</p>
-            <h2 className="mt-2 font-display text-[1.55rem] font-semibold tracking-[-0.05em] text-ink sm:text-[1.95rem]">
-              Browse by game at this store
-            </h2>
+            })}
           </div>
         </div>
-        <div className="mt-4 grid gap-3 xl:grid-cols-3 sm:mt-5 sm:gap-5">
-          {Object.entries(listingsByGame).map(([game, listings]) => (
-            <article key={game} className="console-well p-3 sm:p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-steel sm:text-xs sm:tracking-[0.18em]">
-                    {game}
-                  </p>
-                  <p className="mt-1 text-[0.82rem] text-steel sm:text-sm">
-                    {listings.length} listing{listings.length === 1 ? "" : "s"} tied to this spot
-                  </p>
-                </div>
-                <Link className="text-[0.82rem] font-semibold text-navy hover:underline sm:text-sm" to={`/market/${game === "One Piece" ? "one-piece" : game.toLowerCase()}`}>
-                  Open lane
-                </Link>
-              </div>
-              <div className="mt-3 grid gap-2.5 sm:mt-4 sm:gap-3">
-                {listings.length ? (
-                  listings.slice(0, 2).map((listing) => (
-                    <ListingCard key={listing.id} listing={listing} />
-                  ))
-                ) : (
-                  <div className="rounded-[16px] border border-dashed border-slate-200 bg-white/72 px-3 py-4 text-[0.82rem] text-steel sm:rounded-[18px] sm:px-4 sm:py-5 sm:text-sm">
-                    Nothing active in {game} here yet.
-                  </div>
-                )}
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="console-panel binder-edge p-4 sm:p-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="section-kicker">Quick links</p>
-            <h2 className="mt-2 font-display text-[1.55rem] font-semibold tracking-[-0.05em] text-ink sm:text-[1.95rem]">
-              Store actions
-            </h2>
-          </div>
-        </div>
-        <div className="mt-4 flex flex-wrap gap-2.5 sm:mt-5 sm:gap-3">
-          <a
-            className="inline-flex items-center gap-2 rounded-full bg-navy px-4 py-2.5 text-[0.82rem] font-semibold text-white sm:px-5 sm:py-3 sm:text-sm"
-            href={store.siteUrl}
-            rel="noreferrer"
-            target="_blank"
-          >
-            Visit store site
-            <ExternalLink size={14} />
-          </a>
-          <Link
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-[0.82rem] font-semibold text-steel sm:px-5 sm:py-3 sm:text-sm"
-            to="/events"
-          >
-            <CalendarDays size={15} />
-            View all events
-          </Link>
-        </div>
-      </section>
-    </main>
+      </BottomSheet>
+    </MobileScreen>
   );
 }
-

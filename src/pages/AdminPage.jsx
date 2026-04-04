@@ -1,87 +1,103 @@
 import {
-  Activity,
-  Bug,
-  CalendarCog,
+  AlertTriangle,
+  BadgeCheck,
+  CalendarPlus,
   Eye,
-  ExternalLink,
   Flag,
   Home,
-  ScrollText,
   ShieldCheck,
+  ShieldX,
+  Star,
   Trash2,
   Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import SeoHead from "../components/seo/SeoHead";
+import UserAvatar from "../components/shared/UserAvatar";
 import { adminRoadmap } from "../data/adminRoadmap";
-import { neighborhoods } from "../data/mockData";
 import { useMarketplace } from "../hooks/useMarketplace";
-import { fetchLocalEvents } from "../services/cardDatabase";
+import { m } from "../mobile/design";
+import {
+  BottomSheet,
+  ChoicePill,
+  EmptyBlock,
+  MobileScreen,
+  PrimaryButton,
+  ScreenHeader,
+  ScreenSection,
+  SecondaryButton,
+  TextArea,
+  TextField,
+} from "../mobile/primitives";
 
-const badgeIds = ["fast", "trusted", "verified", "community", "power", "judge", "beta"];
-const storeOptions = ["Fusion Gaming", "Galaxy Comics", "A Muse N Games", "Arctic Rift Cards", "Other"];
-const gameOptions = [
-  "Magic",
-  "Pokemon",
-  "One Piece",
-  "Dragon Ball Super Fusion World",
-  "Union Arena",
+const ADMIN_SECTIONS = [
+  { id: "overview", label: "Overview" },
+  { id: "reports", label: "Reports" },
+  { id: "listings", label: "Listings" },
+  { id: "users", label: "Users" },
+  { id: "events", label: "Events" },
+  { id: "storefront", label: "Storefront" },
+  { id: "audit", label: "Audit" },
 ];
-function formatEventDate(dateStr) {
-  try {
-    return new Date(`${dateStr}T12:00:00`).toLocaleDateString("en-CA", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
-}
 
-function SectionButton({ active, count, label, onClick }) {
+const BADGE_IDS = ["fast", "trusted", "verified", "community", "power", "judge", "beta"];
+const STORE_OPTIONS = ["Fusion Gaming", "Galaxy Comics", "A Muse N Games", "Arctic Rift Cards", "Other"];
+const GAME_OPTIONS = ["Magic", "Pokemon", "One Piece", "Dragon Ball Super Fusion World", "Union Arena"];
+
+function AdminMetric({ label, value }) {
   return (
-    <button
-      className={`flex items-center justify-between gap-3 rounded-[18px] border px-4 py-3 text-left transition ${
-        active
-          ? "border-navy bg-navy text-white shadow-soft"
-          : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
-      }`}
-      type="button"
-      onClick={onClick}
-    >
-      <span className="text-sm font-semibold uppercase tracking-[0.18em]">{label}</span>
-      {count !== undefined ? (
-        <span
-          className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
-            active ? "bg-white/15 text-white" : "bg-slate-100 text-slate-600"
-          }`}
-        >
-          {count}
-        </span>
-      ) : null}
-    </button>
+    <div className="rounded-[18px] px-4 py-3" style={{ background: m.surface, border: `1px solid ${m.border}` }}>
+      <p className="text-[9px] uppercase tracking-[0.12em]" style={{ color: m.textTertiary, fontWeight: 700 }}>
+        {label}
+      </p>
+      <p className="mt-1 text-[20px] text-white" style={{ fontWeight: 700 }}>
+        {value}
+      </p>
+    </div>
   );
 }
 
-function EmptyAdminState({ children }) {
-  return <p className="text-sm leading-7 text-steel">{children}</p>;
+function SmallToggle({ active, children, onClick, tone = "default" }) {
+  const activeStyle =
+    tone === "danger"
+      ? { background: "rgba(239,68,68,0.14)", color: "#fca5a5" }
+      : tone === "success"
+        ? { background: "rgba(52,211,153,0.14)", color: "#86efac" }
+        : { background: "rgba(239,68,68,0.12)", color: "#fca5a5" };
+
+  return (
+    <button
+      className="inline-flex h-8 items-center justify-center rounded-[12px] px-3 text-[10px]"
+      style={
+        active
+          ? { ...activeStyle, fontWeight: 700 }
+          : { background: m.surfaceStrong, color: m.textSecondary, fontWeight: 600 }
+      }
+      type="button"
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
 }
 
 export default function AdminPage() {
   const navigate = useNavigate();
   const {
-    adminOverview,
     adminAuditLog,
     adminBugReports,
+    adminOverview,
+    addManualEvent,
     deleteUserAccount,
     enrichedListings,
-    formatCadPrice,
     isViewingAs,
     manualEvents,
+    removeManualEvent,
     openReportResolutionThread,
     openReports,
     reviewBadgeCatalog,
+    sellerMap,
     siteSettings,
     startViewAs,
     stopViewAs,
@@ -93,1470 +109,568 @@ export default function AdminPage() {
     toggleUserBadge,
     toggleUserSuspended,
     toggleUserVerified,
-    updateHomeHeroSettings,
-    updateStorefrontSettings,
     updateBugReport,
+    updateHomeHeroSettings,
     updateListingAdminNote,
     updateReportStatus,
+    updateStorefrontSettings,
     users,
-    viewedUserRecord,
-    addManualEvent,
-    removeManualEvent,
   } = useMarketplace();
+
   const [activeSection, setActiveSection] = useState("overview");
-  const [userSearch, setUserSearch] = useState("");
-  const [listingSearch, setListingSearch] = useState("");
+  const [listingQuery, setListingQuery] = useState("");
+  const [userQuery, setUserQuery] = useState("");
+  const [selectedListing, setSelectedListing] = useState(null);
+  const [listingNote, setListingNote] = useState("");
+  const [selectedBugReport, setSelectedBugReport] = useState(null);
+  const [bugNotes, setBugNotes] = useState("");
+  const [heroDraft, setHeroDraft] = useState(siteSettings?.homeHero || {});
+  const [sectionDraft, setSectionDraft] = useState(siteSettings?.homeSections || {});
   const [eventForm, setEventForm] = useState({
     title: "",
     store: "Galaxy Comics",
     sourceUrl: "",
     dateStr: "",
-    time: "6:00 PM",
-    game: "One Piece",
+    time: "6:30 PM",
+    game: "Pokemon",
     fee: "TBD",
-    neighborhood: "North Kildonan",
+    neighborhood: "Winnipeg",
     note: "",
   });
-  const [noteDrafts, setNoteDrafts] = useState({});
-  const [bugNoteDrafts, setBugNoteDrafts] = useState({});
-  const [listingFilter, setListingFilter] = useState("all");
-  const [userFilter, setUserFilter] = useState("all");
-  const [remoteHeroEvents, setRemoteHeroEvents] = useState([]);
-  const [heroSettingsDraft, setHeroSettingsDraft] = useState(
-    siteSettings?.homeHero || {
-      featuredListingId: null,
-      pinnedEventId: null,
-      spotlightGameSlug: null,
-    },
-  );
-  const [sectionSettingsDraft, setSectionSettingsDraft] = useState(
-    siteSettings?.homeSections || {},
-  );
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadHeroEvents() {
-      try {
-        const data = await fetchLocalEvents();
-        if (!cancelled) {
-          setRemoteHeroEvents(Array.isArray(data?.events) ? data.events.filter(Boolean) : []);
-        }
-      } catch {
-        if (!cancelled) {
-          setRemoteHeroEvents([]);
-        }
-      }
-    }
-
-    void loadHeroEvents();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    setHeroSettingsDraft(
-      siteSettings?.homeHero || {
-        featuredListingId: null,
-        pinnedEventId: null,
-        spotlightGameSlug: null,
-      },
-    );
+    setHeroDraft(siteSettings?.homeHero || {});
+    setSectionDraft(siteSettings?.homeSections || {});
   }, [siteSettings]);
-
-  useEffect(() => {
-    setSectionSettingsDraft(siteSettings?.homeSections || {});
-  }, [siteSettings]);
-
-  const sortedUsers = useMemo(
-    () =>
-      [...users].sort((left, right) => {
-        if (left.role !== right.role) {
-          return left.role === "admin" ? -1 : 1;
-        }
-
-        return right.activeListingCount - left.activeListingCount;
-      }),
-    [users],
-  );
-
-  const sortedListings = useMemo(
-    () => [...enrichedListings].sort((left, right) => right.sortTimestamp - left.sortTimestamp),
-    [enrichedListings],
-  );
-  const heroEventChoices = useMemo(
-    () =>
-      [...remoteHeroEvents, ...manualEvents]
-        .filter(Boolean)
-        .filter(
-          (event, index, items) =>
-            items.findIndex(
-              (candidate) =>
-                String(candidate.id || "") === String(event.id || "") ||
-                (String(candidate.title || "") === String(event.title || "") &&
-                  String(candidate.store || "") === String(event.store || "") &&
-                  String(candidate.dateStr || "") === String(event.dateStr || "")),
-            ) === index,
-        )
-        .sort((left, right) => new Date(left.dateStr).getTime() - new Date(right.dateStr).getTime()),
-    [manualEvents, remoteHeroEvents],
-  );
-
-  const filteredUsers = useMemo(() => {
-    const query = userSearch.trim().toLowerCase();
-    return sortedUsers.filter((user) => {
-      if (
-        userFilter === "admins" &&
-        String(user.role || "").toLowerCase() !== "admin"
-      ) {
-        return false;
-      }
-
-      if (userFilter === "suspended" && user.accountStatus !== "suspended") {
-        return false;
-      }
-
-      if (userFilter === "verified" && !user.verified) {
-        return false;
-      }
-
-      if (userFilter === "beta" && !user.badges.includes("beta")) {
-        return false;
-      }
-
-      if (!query) {
-        return true;
-      }
-
-      return [user.name, user.username, user.email, user.neighborhood, user.role]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(query));
-    });
-  }, [sortedUsers, userFilter, userSearch]);
 
   const filteredListings = useMemo(() => {
-    const query = listingSearch.trim().toLowerCase();
-    return sortedListings.filter((listing) => {
-      if (listingFilter === "flagged" && !listing.flagged) {
-        return false;
-      }
+    const query = listingQuery.trim().toLowerCase();
+    return [...enrichedListings]
+      .sort((left, right) => Number(right.sortTimestamp || 0) - Number(left.sortTimestamp || 0))
+      .filter((listing) =>
+        !query
+          ? true
+          : [listing.title, listing.game, listing.neighborhood, listing.seller?.publicName]
+              .filter(Boolean)
+              .join(" ")
+              .toLowerCase()
+              .includes(query),
+      );
+  }, [enrichedListings, listingQuery]);
 
-      if (listingFilter === "featured" && !listing.featured) {
-        return false;
-      }
+  const filteredUsers = useMemo(() => {
+    const query = userQuery.trim().toLowerCase();
+    return [...users]
+      .sort((left, right) => Number(right.completedDeals || 0) - Number(left.completedDeals || 0))
+      .filter((user) =>
+        !query
+          ? true
+          : [user.publicName, user.name, user.username, user.email, user.neighborhood]
+              .filter(Boolean)
+              .join(" ")
+              .toLowerCase()
+              .includes(query),
+      );
+  }, [userQuery, users]);
 
-      if (listingFilter === "removed" && listing.status !== "removed") {
-        return false;
-      }
+  const listingChoices = useMemo(
+    () => enrichedListings.filter((listing) => listing.status === "active").slice(0, 25),
+    [enrichedListings],
+  );
 
-      if (listingFilter === "active" && listing.status !== "active") {
-        return false;
-      }
+  async function handleOpenResolutionThread(report) {
+    const result = await openReportResolutionThread(report.id);
+    if (result?.ok && result.thread) {
+      navigate(`/inbox/${result.thread.id}`);
+    }
+  }
 
-      if (!query) {
-        return true;
-      }
+  async function handleSaveListingNote() {
+    if (!selectedListing) {
+      return;
+    }
+    await updateListingAdminNote(selectedListing.id, listingNote);
+    setSelectedListing(null);
+    setListingNote("");
+  }
 
-      return [
-        listing.title,
-        listing.game,
-        listing.neighborhood,
-        listing.seller?.name,
-        listing.seller?.publicName,
-        listing.type,
-        listing.status,
-      ]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(query));
-    });
-  }, [listingFilter, listingSearch, sortedListings]);
+  async function handleSaveBugNotes() {
+    if (!selectedBugReport) {
+      return;
+    }
+    await updateBugReport(selectedBugReport.id, { adminNotes: bugNotes });
+    setSelectedBugReport(null);
+    setBugNotes("");
+  }
 
-  const sectionButtons = [
-    { id: "overview", label: "Overview" },
-    { id: "moderation", label: "Moderation", count: openReports.length + adminBugReports.length },
-    { id: "listings", label: "Listings", count: sortedListings.length },
-    { id: "users", label: "Users", count: sortedUsers.length },
-    { id: "events", label: "Events", count: manualEvents.length },
-    { id: "audit", label: "Audit", count: adminAuditLog.length },
-    { id: "roadmap", label: "Roadmap" },
-    { id: "storefront", label: "Storefront" },
-  ];
-
-  function handleAddEvent(event) {
+  async function handleAddEvent(event) {
     event.preventDefault();
-    addManualEvent(eventForm);
+    await addManualEvent(eventForm);
     setEventForm({
       title: "",
       store: "Galaxy Comics",
       sourceUrl: "",
       dateStr: "",
-      time: "6:00 PM",
-      game: "One Piece",
+      time: "6:30 PM",
+      game: "Pokemon",
       fee: "TBD",
-      neighborhood: "North Kildonan",
+      neighborhood: "Winnipeg",
       note: "",
     });
   }
 
   return (
-    <div className="space-y-8">
-      <section className="surface-card p-7">
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <p className="section-kicker">Admin Console</p>
-            <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.05em] text-ink sm:text-5xl">
-              Admin controls
-            </h1>
-            <p className="mt-4 max-w-4xl text-base leading-8 text-steel">
-              Moderate listings, handle reports, manage user trust, and keep the local calendar
-              clean without digging through one long page.
-            </p>
-          </div>
+    <MobileScreen className="pb-[92px]">
+      <SeoHead canonicalPath="/admin" description="Moderation, user control, event management, and storefront settings for TCG WPG." title="Admin" />
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[420px] xl:max-w-[520px]">
-            {sectionButtons.map((section) => (
-              <SectionButton
-                key={section.id}
-                active={activeSection === section.id}
-                count={section.count}
-                label={section.label}
-                onClick={() => setActiveSection(section.id)}
-              />
-            ))}
-          </div>
-        </div>
+      <ScreenHeader subtitle="Operations console" title="Admin" />
 
-        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="surface-muted p-5">
-            <Flag className="text-orange" size={18} />
-            <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-steel">
-              Flagged listings
-            </p>
-            <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
-              {adminOverview.flaggedListings}
-            </p>
-          </div>
-          <div className="surface-muted p-5">
-            <Trash2 className="text-rose-600" size={18} />
-            <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-steel">
-              Removed listings
-            </p>
-            <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
-              {adminOverview.removedListings}
-            </p>
-          </div>
-          <div className="surface-muted p-5">
-            <Users className="text-navy" size={18} />
-            <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-steel">
-              Active users
-            </p>
-            <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
-              {adminOverview.activeUsers}
-            </p>
-          </div>
-          <div className="surface-muted p-5">
-            <Activity className="text-navy" size={18} />
-            <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-steel">
-              Message to sold
-            </p>
-            <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
-              {adminOverview.conversionRate}%
-            </p>
-          </div>
+      <ScreenSection className="pb-3">
+        <div className="no-scrollbar flex gap-1.5 overflow-x-auto pb-1">
+          {ADMIN_SECTIONS.map((section) => (
+            <ChoicePill key={section.id} active={activeSection === section.id} onClick={() => setActiveSection(section.id)}>
+              {section.label}
+            </ChoicePill>
+          ))}
         </div>
-      </section>
+      </ScreenSection>
 
       {activeSection === "overview" ? (
-        <section className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
-          <div className="space-y-8">
-            <section className="surface-card p-6">
-              <div className="flex items-center gap-3">
-                <Flag className="text-orange" size={20} />
-                <div>
-                  <p className="section-kicker">Queue snapshot</p>
-                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                    What needs attention now
-                  </h2>
-                </div>
-              </div>
+        <>
+          <ScreenSection className="grid grid-cols-2 gap-2 pb-3">
+            <AdminMetric label="Active users" value={adminOverview.activeUsers} />
+            <AdminMetric label="Open reports" value={adminOverview.openReports} />
+            <AdminMetric label="Flagged" value={adminOverview.flaggedListings} />
+            <AdminMetric label="Open bugs" value={adminOverview.openBugReports} />
+          </ScreenSection>
 
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <div className="rounded-[24px] bg-[#f2f3f5] p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                    Open reports
-                  </p>
-                  <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
-                    {adminOverview.openReports}
-                  </p>
-                  <p className="mt-3 text-sm text-steel">
-                    Buyer, seller, and listing disputes waiting for review.
-                  </p>
-                </div>
-                <div className="rounded-[24px] bg-[#f2f3f5] p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                    Open beta bugs
-                  </p>
-                  <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
-                    {adminOverview.openBugReports}
-                  </p>
-                  <p className="mt-3 text-sm text-steel">
-                    Tester issues reported from the live beta build.
-                  </p>
-                </div>
-                <div className="rounded-[24px] bg-[#f2f3f5] p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                    Featured listings
-                  </p>
-                  <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
-                    {adminOverview.featuredListings}
-                  </p>
-                </div>
-                <div className="rounded-[24px] bg-[#f2f3f5] p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                    Manual events
-                  </p>
-                  <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
-                    {manualEvents.length}
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <section className="surface-card p-6">
-              <div className="flex items-center gap-3">
-                <Activity className="text-orange" size={20} />
-                <div>
-                  <p className="section-kicker">Analytics</p>
-                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                    Search and neighborhood trends
-                  </h2>
-                </div>
-              </div>
-              <div className="mt-5 grid gap-4 lg:grid-cols-3">
-                <div className="rounded-[24px] bg-[#f2f3f5] p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                    Flagged listing rate
-                  </p>
-                  <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.03em] text-ink">
-                    {adminOverview.flaggedRate}%
-                  </p>
-                </div>
-                <div className="rounded-[24px] bg-[#f2f3f5] p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                    Top neighborhoods
-                  </p>
-                  <div className="mt-3 space-y-2">
-                    {adminOverview.topNeighborhoods.map((item) => (
-                      <div key={item.label} className="flex items-center justify-between text-sm">
-                        <span className="text-steel">{item.label}</span>
-                        <span className="font-semibold text-ink">{item.count}</span>
-                      </div>
-                    ))}
+          <ScreenSection className="pb-3">
+            <div className="rounded-[18px] px-4 py-4" style={{ background: m.surface, border: `1px solid ${m.border}` }}>
+              <p className="text-[12px] text-white" style={{ fontWeight: 700 }}>
+                Current focus
+              </p>
+              <div className="mt-3 flex flex-col gap-2">
+                {adminRoadmap.currentFocus.map((item) => (
+                  <div key={item.id} className="rounded-[14px] px-3 py-3" style={{ background: m.surfaceStrong }}>
+                    <p className="text-[11px] text-white" style={{ fontWeight: 700 }}>
+                      {item.title}
+                    </p>
+                    <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+                      {item.detail}
+                    </p>
                   </div>
-                </div>
-                <div className="rounded-[24px] bg-[#f2f3f5] p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                    Top searches
-                  </p>
-                  <div className="mt-3 space-y-2">
-                    {adminOverview.topSearches.length ? (
-                      adminOverview.topSearches.map((item) => (
-                        <div key={item.query} className="flex items-center justify-between text-sm">
-                          <span className="text-steel">{item.query}</span>
-                          <span className="font-semibold text-ink">{item.count}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-sm text-steel">No search telemetry yet.</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          <section className="surface-card p-6">
-            <div className="flex items-center gap-3">
-              <ShieldCheck className="text-navy" size={20} />
-              <div>
-                <p className="section-kicker">Quick actions</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                  Fast admin jumps
-                </h2>
+                ))}
               </div>
             </div>
-
-            <div className="mt-5 grid gap-3">
-              <button className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-slate-300" type="button" onClick={() => setActiveSection("moderation")}>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">Moderation</p>
-                <p className="mt-2 font-semibold text-ink">Open reports and bug triage</p>
-              </button>
-              <button className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-slate-300" type="button" onClick={() => setActiveSection("listings")}>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">Listings</p>
-                <p className="mt-2 font-semibold text-ink">Merchandising and removals</p>
-              </button>
-              <button className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-slate-300" type="button" onClick={() => setActiveSection("users")}>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">Users</p>
-                <p className="mt-2 font-semibold text-ink">Badges, roles, and access</p>
-              </button>
-              <button className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-slate-300" type="button" onClick={() => setActiveSection("events")}>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">Events</p>
-                <p className="mt-2 font-semibold text-ink">Calendar overrides</p>
-              </button>
-              <button className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-slate-300" type="button" onClick={() => setActiveSection("storefront")}>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">Storefront</p>
-                <p className="mt-2 font-semibold text-ink">Hero controls and homepage curation</p>
-              </button>
-              <button className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-slate-300" type="button" onClick={() => setActiveSection("roadmap")}>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">Roadmap</p>
-                <p className="mt-2 font-semibold text-ink">See what got pushed + what we're working on</p>
-              </button>
-            </div>
-          </section>
-        </section>
+          </ScreenSection>
+        </>
       ) : null}
 
-      {activeSection === "moderation" ? (
-        <div className="space-y-8">
-          <section className="surface-card p-6">
-            <div className="flex items-center gap-3">
-              <Flag className="text-orange" size={20} />
-              <div>
-                <p className="section-kicker">Reports</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                  Moderation queue
-                </h2>
-              </div>
-            </div>
+      {activeSection === "reports" ? (
+        <ScreenSection className="pb-2">
+          <div className="flex flex-col gap-2">
+            {openReports.map((report) => (
+              <article key={report.id} className="rounded-[18px] px-4 py-4" style={{ background: m.surface, border: `1px solid ${m.border}` }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[13px] text-white" style={{ fontWeight: 700 }}>
+                      {report.reason}
+                    </p>
+                    <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+                      {report.listing?.title || "Listing"} · {report.reporter?.publicName || report.reporter?.name || "Reporter"}
+                    </p>
+                    <p className="mt-2 text-[11px] leading-5" style={{ color: m.textSecondary }}>
+                      {report.details || "No details supplied."}
+                    </p>
+                  </div>
+                  <span className="rounded-full px-2 py-[4px] text-[8px]" style={{ background: m.surfaceStrong, color: m.textSecondary, fontWeight: 700 }}>
+                    {report.status}
+                  </span>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <SmallToggle active={report.status === "open"} onClick={() => updateReportStatus(report.id, "open")}>
+                    Open
+                  </SmallToggle>
+                  <SmallToggle active={report.status === "under-review"} onClick={() => updateReportStatus(report.id, "under-review")}>
+                    Review
+                  </SmallToggle>
+                  <SmallToggle active={report.status === "resolved"} onClick={() => updateReportStatus(report.id, "resolved")} tone="success">
+                    Resolve
+                  </SmallToggle>
+                  <SmallToggle active={false} onClick={() => handleOpenResolutionThread(report)}>
+                    Thread
+                  </SmallToggle>
+                </div>
+              </article>
+            ))}
 
-            <div className="mt-5 space-y-4">
-              {openReports.length ? (
-                openReports.map((report) => (
-                  <article
-                    key={report.id}
-                    className="rounded-[26px] border border-slate-200 bg-[#f7f7f8] p-5"
+            {adminBugReports.map((report) => (
+              <article key={report.id} className="rounded-[18px] px-4 py-4" style={{ background: m.surface, border: `1px solid ${m.border}` }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[13px] text-white" style={{ fontWeight: 700 }}>
+                      {report.title}
+                    </p>
+                    <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+                      {report.area} · {report.pagePath || "unknown route"}
+                    </p>
+                    <p className="mt-2 text-[11px] leading-5" style={{ color: m.textSecondary }}>
+                      {report.actualBehavior}
+                    </p>
+                  </div>
+                  <span className="rounded-full px-2 py-[4px] text-[8px]" style={{ background: "rgba(239,68,68,0.14)", color: "#fca5a5", fontWeight: 700 }}>
+                    {report.severity}
+                  </span>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {["open", "triaged", "in-progress", "fixed", "closed"].map((status) => (
+                    <SmallToggle
+                      key={`${report.id}-${status}`}
+                      active={report.status === status}
+                      onClick={() => updateBugReport(report.id, { status })}
+                      tone={status === "fixed" || status === "closed" ? "success" : "default"}
+                    >
+                      {status}
+                    </SmallToggle>
+                  ))}
+                  <SmallToggle
+                    active={false}
+                    onClick={() => {
+                      setSelectedBugReport(report);
+                      setBugNotes(report.adminNotes || "");
+                    }}
                   >
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                      <div>
-                        <p className="font-semibold text-ink">{report.reason}</p>
-                        <p className="mt-2 text-sm text-steel">
-                          Reporter: {report.reporter?.name || "Unknown"} | Reported:{" "}
-                          {report.reportedUser?.name || "Unknown"}
-                        </p>
-                        <p className="mt-1 text-sm text-steel">
-                          Listing: {report.listing?.title || "Removed listing"}
-                        </p>
-                        <p className="mt-2 text-sm leading-7 text-steel">{report.details}</p>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                          type="button"
-                          onClick={async () => {
-                            const result = await openReportResolutionThread(report.id);
-                            if (result.ok) {
-                              navigate(`/messages/${result.thread.id}`);
-                            }
-                          }}
-                        >
-                          Open resolution chat
-                        </button>
-                        <button
-                          className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
-                          type="button"
-                          onClick={() => updateReportStatus(report.id, "resolved")}
-                        >
-                          Mark resolved
-                        </button>
-                        <button
-                          className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                          type="button"
-                          onClick={() => updateReportStatus(report.id, "dismissed")}
-                        >
-                          Dismiss
-                        </button>
-                      </div>
-                    </div>
-                  </article>
-                ))
-              ) : (
-                <EmptyAdminState>No open reports right now.</EmptyAdminState>
-              )}
-            </div>
-          </section>
+                    Notes
+                  </SmallToggle>
+                </div>
+              </article>
+            ))}
 
-          <section className="surface-card p-6">
-            <div className="flex items-center gap-3">
-              <Bug className="text-orange" size={20} />
-              <div>
-                <p className="section-kicker">Beta bugs</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                  Bug tracker triage
-                </h2>
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-4">
-              {adminBugReports.length ? (
-                adminBugReports.map((report) => (
-                  <article
-                    key={report.id}
-                    className="rounded-[26px] border border-slate-200 bg-[#f7f7f8] p-5"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
-                            {report.title}
-                          </h3>
-                          <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
-                            {report.status}
-                          </span>
-                          <span className="rounded-full bg-rose-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-700">
-                            {report.severity}
-                          </span>
-                          <span className="rounded-full bg-navy/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">
-                            {report.area}
-                          </span>
-                        </div>
-                        <p className="mt-2 text-sm text-steel">
-                          Reporter: {report.reporter?.name || "Unknown"}
-                          {report.pagePath ? ` | Page: ${report.pagePath}` : ""}
-                          {report.environmentLabel ? ` | Env: ${report.environmentLabel}` : ""}
-                        </p>
-                        <div className="mt-3 grid gap-3 text-sm leading-7 text-steel lg:grid-cols-2">
-                          <div>
-                            <p className="font-semibold text-ink">Actual behavior</p>
-                            <p>{report.actualBehavior}</p>
-                          </div>
-                          <div>
-                            <p className="font-semibold text-ink">Expected behavior</p>
-                            <p>{report.expectedBehavior || "Not provided."}</p>
-                          </div>
-                        </div>
-                        <div className="mt-3">
-                          <p className="text-sm font-semibold text-ink">Reproduction steps</p>
-                          <p className="mt-1 text-sm leading-7 text-steel">
-                            {report.reproductionSteps}
-                          </p>
-                        </div>
-                        {report.screenshotUrl ? (
-                          <a
-                            className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-navy"
-                            href={report.screenshotUrl}
-                            rel="noreferrer"
-                            target="_blank"
-                          >
-                            Screenshot
-                            <ExternalLink size={14} />
-                          </a>
-                        ) : null}
-                      </div>
-
-                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-                        <select
-                          className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                          value={report.status}
-                          onChange={(event) =>
-                            updateBugReport(report.id, { status: event.target.value })
-                          }
-                        >
-                          <option value="open">Open</option>
-                          <option value="triaged">Triaged</option>
-                          <option value="in-progress">In progress</option>
-                          <option value="fixed">Fixed</option>
-                          <option value="closed">Closed</option>
-                        </select>
-                        <select
-                          className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                          value={report.severity}
-                          onChange={(event) =>
-                            updateBugReport(report.id, { severity: event.target.value })
-                          }
-                        >
-                          <option value="low">Low</option>
-                          <option value="medium">Medium</option>
-                          <option value="high">High</option>
-                          <option value="critical">Critical</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-                      <textarea
-                        className="min-h-24 rounded-[20px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-navy"
-                        placeholder="Admin notes, reproduction findings, workaround, or release note"
-                        value={bugNoteDrafts[report.id] ?? report.adminNotes ?? ""}
-                        onChange={(event) =>
-                          setBugNoteDrafts((current) => ({
-                            ...current,
-                            [report.id]: event.target.value,
-                          }))
-                        }
-                      />
-                      <button
-                        className="rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
-                        type="button"
-                        onClick={() =>
-                          updateBugReport(report.id, {
-                            adminNotes: bugNoteDrafts[report.id] ?? report.adminNotes ?? "",
-                          })
-                        }
-                      >
-                        Save bug note
-                      </button>
-                    </div>
-                  </article>
-                ))
-              ) : (
-                <EmptyAdminState>No beta bug reports yet.</EmptyAdminState>
-              )}
-            </div>
-          </section>
-        </div>
+            {!openReports.length && !adminBugReports.length ? (
+              <EmptyBlock description="Open listing reports and bug reports will show here." title="No moderation queue right now" />
+            ) : null}
+          </div>
+        </ScreenSection>
       ) : null}
 
       {activeSection === "listings" ? (
-        <section className="surface-card p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <div className="flex items-center gap-3">
-                <Trash2 className="text-navy" size={20} />
-                <div>
-                  <p className="section-kicker">Listings</p>
-                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                    Moderation and merchandising
-                  </h2>
-                </div>
-              </div>
-              <p className="mt-4 max-w-3xl text-sm leading-7 text-steel">
-                Search the live listing pool, then flag, feature, remove, restore, or leave internal
-                notes without jumping around the app.
-              </p>
-            </div>
-
-            <input
-              className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 text-sm outline-none transition focus:border-navy lg:max-w-sm"
-              placeholder="Search listings, sellers, neighborhoods..."
-              value={listingSearch}
-              onChange={(event) => setListingSearch(event.target.value)}
-            />
-          </div>
-
-          <div className="mt-5 space-y-4">
-            {isViewingAs && viewedUserRecord ? (
-              <div className="rounded-[22px] border border-[rgba(240,55,55,0.18)] bg-[rgba(240,55,55,0.08)] px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                  Active troubleshooting mode
-                </p>
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-                  <p className="font-semibold text-ink">
-                    Viewing the public storefront as {viewedUserRecord.publicName || viewedUserRecord.name}
+        <>
+          <ScreenSection className="pb-3">
+            <TextField onChange={setListingQuery} placeholder="Search listings, seller, neighborhood..." value={listingQuery} />
+          </ScreenSection>
+          <ScreenSection className="pb-2">
+            <div className="flex flex-col gap-2">
+              {filteredListings.slice(0, 20).map((listing) => (
+                <article key={listing.id} className="rounded-[18px] px-4 py-4" style={{ background: m.surface, border: `1px solid ${m.border}` }}>
+                  <p className="text-[13px] text-white" style={{ fontWeight: 700 }}>
+                    {listing.title}
                   </p>
-                  <button
-                    className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                    type="button"
-                    onClick={() => void stopViewAs()}
-                  >
-                    Exit view-as
-                  </button>
-                </div>
-              </div>
-            ) : null}
-            <div className="flex flex-wrap gap-2">
-              {[
-                { id: "all", label: "All" },
-                { id: "flagged", label: "Flagged" },
-                { id: "featured", label: "Featured" },
-                { id: "removed", label: "Removed" },
-                { id: "active", label: "Active" },
-              ].map((filter) => (
-                <button
-                  key={filter.id}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                    listingFilter === filter.id
-                      ? "bg-navy text-white"
-                      : "border border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
-                  }`}
-                  type="button"
-                  onClick={() => setListingFilter(filter.id)}
-                >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="space-y-4">
-            {filteredListings.length ? (
-              filteredListings.map((listing) => (
-                <article
-                  key={listing.id}
-                  className="rounded-[26px] border border-slate-200 bg-[#f7f7f8] p-5"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
-                          {listing.title}
-                        </h3>
-                        <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
-                          {listing.status}
-                        </span>
-                        {listing.flagged ? (
-                          <span className="rounded-full bg-rose-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-700">
-                            Flagged
-                          </span>
-                        ) : null}
-                        {listing.featured ? (
-                          <span className="rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-700">
-                            Featured
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="mt-2 text-sm text-steel">
-                        {listing.game} | {listing.neighborhood}
-                        {listing.postalCode ? ` | ${listing.postalCode}` : ""} |{" "}
-                        {listing.seller?.name}
-                      </p>
-                      <p className="mt-2 text-sm font-semibold text-ink">
-                        {formatCadPrice(listing.price, listing.priceCurrency || "CAD")}
-                      </p>
-                    </div>
-
-                    <div className="grid gap-2 sm:grid-cols-3">
-                      <button
-                        className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                        type="button"
-                        onClick={() => toggleListingFlag(listing.id)}
-                      >
-                        {listing.flagged ? "Unflag" : "Flag"}
-                      </button>
-                      <button
-                        className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                        type="button"
-                        onClick={() => toggleListingFeatured(listing.id)}
-                      >
-                        {listing.featured ? "Unfeature" : "Feature"}
-                      </button>
-                      <button
-                        className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                        type="button"
-                        onClick={() => toggleListingRemoved(listing.id)}
-                      >
-                        {listing.status === "removed" ? "Restore" : "Remove"}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-                    <textarea
-                      className="min-h-24 rounded-[20px] border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-navy"
-                      placeholder="Admin notes for this listing"
-                      value={noteDrafts[listing.id] ?? listing.adminNotes ?? ""}
-                      onChange={(event) =>
-                        setNoteDrafts((current) => ({
-                          ...current,
-                          [listing.id]: event.target.value,
-                        }))
-                      }
-                    />
-                    <button
-                      className="rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
-                      type="button"
-                      onClick={() =>
-                        updateListingAdminNote(
-                          listing.id,
-                          noteDrafts[listing.id] ?? listing.adminNotes ?? "",
-                        )
-                      }
+                  <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+                    {[listing.game, listing.neighborhood, listing.seller?.publicName || listing.seller?.name].filter(Boolean).join(" · ")}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <SmallToggle active={listing.flagged} onClick={() => toggleListingFlag(listing.id)}>
+                      <Flag size={12} />
+                      Flag
+                    </SmallToggle>
+                    <SmallToggle active={listing.featured} onClick={() => toggleListingFeatured(listing.id)}>
+                      <Star size={12} />
+                      Featured
+                    </SmallToggle>
+                    <SmallToggle active={listing.status === "removed"} onClick={() => toggleListingRemoved(listing.id)} tone="danger">
+                      <ShieldX size={12} />
+                      Removed
+                    </SmallToggle>
+                    <SmallToggle
+                      active={false}
+                      onClick={() => {
+                        setSelectedListing(listing);
+                        setListingNote(listing.adminNotes || "");
+                      }}
                     >
-                      Save note
-                    </button>
+                      Note
+                    </SmallToggle>
                   </div>
                 </article>
-              ))
-            ) : (
-              <EmptyAdminState>No listings match this search.</EmptyAdminState>
-            )}
+              ))}
             </div>
-          </div>
-        </section>
+          </ScreenSection>
+        </>
       ) : null}
 
       {activeSection === "users" ? (
-        <section className="surface-card p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="text-navy" size={20} />
-                <div>
-                  <p className="section-kicker">Users</p>
-                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                    Roles, badges, and access
-                  </h2>
-                </div>
-              </div>
-              <p className="mt-4 max-w-3xl text-sm leading-7 text-steel">
-                Search accounts, promote admins, verify sellers, grant beta access, or suspend bad
-                actors from one queue.
-              </p>
-            </div>
-
-            <input
-              className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 text-sm outline-none transition focus:border-navy lg:max-w-sm"
-              placeholder="Search users, email, role, neighborhood..."
-              value={userSearch}
-              onChange={(event) => setUserSearch(event.target.value)}
-            />
-          </div>
-
-          <div className="mt-5 space-y-4">
-            <div className="flex flex-wrap gap-2">
-              {[
-                { id: "all", label: "All" },
-                { id: "admins", label: "Admins" },
-                { id: "suspended", label: "Suspended" },
-                { id: "verified", label: "Verified" },
-                { id: "beta", label: "Beta testers" },
-              ].map((filter) => (
-                <button
-                  key={filter.id}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                    userFilter === filter.id
-                      ? "bg-navy text-white"
-                      : "border border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
-                  }`}
-                  type="button"
-                  onClick={() => setUserFilter(filter.id)}
-                >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="space-y-4">
-            {filteredUsers.length ? (
-              filteredUsers.map((user) => (
-                <article
-                  key={user.id}
-                  className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-5"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
-                          {user.name}
-                        </h3>
-                        <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
-                          {user.role}
-                        </span>
-                        {user.accountStatus === "suspended" ? (
-                          <span className="rounded-full bg-rose-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-700">
-                            Suspended
-                          </span>
-                        ) : null}
+        <>
+          <ScreenSection className="pb-3">
+            <TextField onChange={setUserQuery} placeholder="Search users, usernames, neighborhoods..." value={userQuery} />
+          </ScreenSection>
+          <ScreenSection className="pb-2">
+            <div className="flex flex-col gap-2">
+              {filteredUsers.slice(0, 20).map((user) => (
+                <article key={user.id} className="rounded-[18px] px-4 py-4" style={{ background: m.surface, border: `1px solid ${m.border}` }}>
+                  <div className="flex items-start gap-3">
+                    <UserAvatar className="h-11 w-11 shrink-0 rounded-[14px] text-[13px] font-bold" user={user} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-[13px] text-white" style={{ fontWeight: 700 }}>
+                            {user.publicName || user.name}
+                          </p>
+                          <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+                            {user.username ? `@${user.username} · ` : ""}{user.neighborhood}
+                          </p>
+                        </div>
                       </div>
-                      <p className="mt-2 text-sm text-steel">
-                        {user.email} | {user.neighborhood}
-                        {user.postalCode ? ` | ${user.postalCode}` : ""}
-                      </p>
-                      <p className="mt-2 text-sm text-steel">
-                        {user.activeListingCount} active listings | {user.reviewCount} reviews |{" "}
-                        {user.overallRating.toFixed(1)} rating
-                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <SmallToggle active={user.verified} onClick={() => toggleUserVerified(user.id)} tone="success">
+                          <BadgeCheck size={12} />
+                          Verified
+                        </SmallToggle>
+                        <SmallToggle active={user.accountStatus === "suspended"} onClick={() => toggleUserSuspended(user.id)} tone="danger">
+                          Suspend
+                        </SmallToggle>
+                        <SmallToggle active={user.role === "admin"} onClick={() => toggleUserAdmin(user.id)}>
+                          Admin
+                        </SmallToggle>
+                        <SmallToggle active={false} onClick={() => startViewAs(user.id)}>
+                          <Eye size={12} />
+                          View as
+                        </SmallToggle>
+                        <SmallToggle active={false} onClick={() => deleteUserAccount(user.id)} tone="danger">
+                          <Trash2 size={12} />
+                          Delete
+                        </SmallToggle>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {BADGE_IDS.map((badge) => (
+                          <SmallToggle
+                            key={`${user.id}-${badge}`}
+                            active={(user.badges || []).includes(badge)}
+                            onClick={() => toggleUserBadge(user.id, badge)}
+                          >
+                            {reviewBadgeCatalog[badge]?.label || badge}
+                          </SmallToggle>
+                        ))}
+                      </div>
                     </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                        type="button"
-                        onClick={() => {
-                          void startViewAs(user.id);
-                          navigate(`/seller/${user.id}`);
-                        }}
-                      >
-                        <Eye size={14} className="mr-2 inline" />
-                        {String(viewedUserRecord?.id || "") === String(user.id) ? "Viewing as" : "View as"}
-                      </button>
-                      <button
-                        className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                        type="button"
-                        onClick={() => toggleUserVerified(user.id)}
-                      >
-                        {user.verified ? "Remove verification" : "Verify seller"}
-                      </button>
-                      <button
-                        className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                        type="button"
-                        onClick={() => toggleUserAdmin(user.id)}
-                      >
-                        {user.role === "admin" ? "Set seller" : "Set admin"}
-                      </button>
-                      <button
-                        className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                        type="button"
-                        onClick={() => toggleUserSuspended(user.id)}
-                      >
-                        {user.accountStatus === "suspended" ? "Unsuspend" : "Suspend"}
-                      </button>
-                      <button
-                        className="rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700"
-                        type="button"
-                        onClick={() => void deleteUserAccount(user.id)}
-                      >
-                        Delete account
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {badgeIds.map((badgeId) => {
-                      const active = user.badges.includes(badgeId);
-                      return (
-                        <button
-                          key={`${user.id}-${badgeId}`}
-                          className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition ${
-                            active
-                              ? "bg-navy text-white"
-                              : "border border-slate-200 bg-white text-slate-600"
-                          }`}
-                          type="button"
-                          onClick={() => toggleUserBadge(user.id, badgeId)}
-                        >
-                          {reviewBadgeCatalog[badgeId]?.label || badgeId}
-                        </button>
-                      );
-                    })}
                   </div>
                 </article>
-              ))
-            ) : (
-              <EmptyAdminState>No users match this search.</EmptyAdminState>
-            )}
+              ))}
             </div>
-          </div>
-        </section>
+            {isViewingAs ? (
+              <div className="mt-3">
+                <SecondaryButton className="w-full" onClick={stopViewAs}>
+                  Stop view-as
+                </SecondaryButton>
+              </div>
+            ) : null}
+          </ScreenSection>
+        </>
       ) : null}
 
       {activeSection === "events" ? (
-        <section className="surface-card p-6">
-          <div className="flex items-center gap-3">
-            <CalendarCog className="text-orange" size={20} />
-            <div>
-              <p className="section-kicker">Manual events</p>
-              <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                Store overrides and calendar fixes
-              </h2>
-            </div>
-          </div>
-
-          <form className="mt-5 grid gap-4 md:grid-cols-2" onSubmit={handleAddEvent}>
-            <input
-              required
-              className="rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
-              placeholder="Event title"
-              value={eventForm.title}
-              onChange={(event) =>
-                setEventForm((current) => ({ ...current, title: event.target.value }))
-              }
-            />
-            <select
-              className="rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
-              value={eventForm.store}
-              onChange={(event) =>
-                setEventForm((current) => ({ ...current, store: event.target.value }))
-              }
-            >
-              {storeOptions.map((store) => (
-                <option key={store}>{store}</option>
-              ))}
-            </select>
-            <input
-              required
-              className="rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
-              type="date"
-              value={eventForm.dateStr}
-              onChange={(event) =>
-                setEventForm((current) => ({ ...current, dateStr: event.target.value }))
-              }
-            />
-            <input
-              required
-              className="rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
-              placeholder="6:30 PM"
-              value={eventForm.time}
-              onChange={(event) =>
-                setEventForm((current) => ({ ...current, time: event.target.value }))
-              }
-            />
-            <select
-              className="rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
-              value={eventForm.game}
-              onChange={(event) =>
-                setEventForm((current) => ({ ...current, game: event.target.value }))
-              }
-            >
-              {gameOptions.map((game) => (
-                <option key={game}>{game}</option>
-              ))}
-            </select>
-            <input
-              className="rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
-              placeholder="Entry fee"
-              value={eventForm.fee}
-              onChange={(event) =>
-                setEventForm((current) => ({ ...current, fee: event.target.value }))
-              }
-            />
-            <select
-              className="rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
-              value={eventForm.neighborhood}
-              onChange={(event) =>
-                setEventForm((current) => ({ ...current, neighborhood: event.target.value }))
-              }
-            >
-              {neighborhoods.slice(1).map((neighborhood) => (
-                <option key={neighborhood}>{neighborhood}</option>
-              ))}
-            </select>
-            <input
-              className="rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
-              placeholder="Source URL"
-              value={eventForm.sourceUrl}
-              onChange={(event) =>
-                setEventForm((current) => ({ ...current, sourceUrl: event.target.value }))
-              }
-            />
-            <textarea
-              className="min-h-24 rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy md:col-span-2"
-              placeholder="Why this override exists"
-              value={eventForm.note}
-              onChange={(event) =>
-                setEventForm((current) => ({ ...current, note: event.target.value }))
-              }
-            />
-            <div className="md:col-span-2">
-              <button
-                className="rounded-full bg-orange px-5 py-3 text-sm font-semibold text-white"
-                type="submit"
-              >
-                Add manual event
-              </button>
-            </div>
-          </form>
-
-          <div className="mt-6 space-y-3">
-            {manualEvents.length ? (
-              manualEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-slate-200 bg-white px-4 py-4"
-                >
-                  <div>
-                    <p className="font-semibold text-ink">
-                      {event.title} | {event.store}
-                    </p>
-                    <p className="mt-1 text-sm text-steel">
-                      {formatEventDate(event.dateStr)} | {event.time} | {event.game} | {event.fee}
-                    </p>
-                    {event.sourceUrl ? (
-                      <a
-                        className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-navy hover:underline"
-                        href={event.sourceUrl}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        Event link
-                        <ExternalLink size={14} />
-                      </a>
-                    ) : null}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel"
-                      type="button"
-                      onClick={() => toggleManualEventPublished(event.id)}
-                    >
-                      {event.published ? "Hide" : "Publish"}
-                    </button>
-                    <button
-                      className="rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700"
-                      type="button"
-                      onClick={() => removeManualEvent(event.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <EmptyAdminState>No manual event overrides yet.</EmptyAdminState>
-            )}
-          </div>
-        </section>
-      ) : null}
-
-      {activeSection === "audit" ? (
-        <section className="surface-card p-6">
-          <div className="flex items-center gap-3">
-            <ScrollText className="text-orange" size={20} />
-            <div>
-              <p className="section-kicker">Admin audit log</p>
-              <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                Recent control-room actions
-              </h2>
-            </div>
-          </div>
-          <p className="mt-4 max-w-4xl text-sm leading-7 text-steel">
-            Track moderation, merchandising, role changes, manual events, and storefront edits from this admin console.
-          </p>
-
-          <div className="mt-6 space-y-3">
-            {adminAuditLog.length ? (
-              adminAuditLog.map((entry) => (
-                <article
-                  key={entry.id}
-                  className="rounded-[22px] border border-slate-200 bg-[#f7f7f8] px-4 py-4"
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="font-semibold text-ink">{entry.title}</p>
-                      <p className="mt-1 text-sm text-steel">
-                        {entry.actorName} | {new Date(entry.createdAt).toLocaleString("en-CA", {
-                          month: "short",
-                          day: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                      {entry.details ? (
-                        <p className="mt-2 text-sm leading-7 text-steel">{entry.details}</p>
-                      ) : null}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
-                        {entry.targetType}
-                      </span>
-                      <span className="rounded-full bg-navy/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">
-                        {entry.action}
-                      </span>
-                    </div>
-                  </div>
-                </article>
-              ))
-            ) : (
-              <EmptyAdminState>No audit entries yet.</EmptyAdminState>
-            )}
-          </div>
-        </section>
-      ) : null}
-
-      {activeSection === "roadmap" ? (
-        <div className="space-y-8">
-          <section className="surface-card p-6">
-            <div className="flex items-center gap-3">
-              <ScrollText className="text-navy" size={20} />
-              <div>
-                <p className="section-kicker">Roadmap</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                  what got pushed + what we doing next
-                </h2>
+        <>
+          <ScreenSection className="pb-3">
+            <form className="flex flex-col gap-3 rounded-[18px] px-4 py-4" style={{ background: m.surface, border: `1px solid ${m.border}` }} onSubmit={handleAddEvent}>
+              <div className="flex items-center gap-2">
+                <CalendarPlus size={14} style={{ color: m.red }} />
+                <p className="text-[12px] text-white" style={{ fontWeight: 700 }}>
+                  Add manual event
+                </p>
               </div>
-            </div>
-            <p className="mt-4 max-w-4xl text-sm leading-7 text-steel">
-              quick admin dev feed so u can see what changed, what still needs work, and what is probably next without digging through github every time.
-            </p>
-
-            <div className="mt-5 grid gap-4 lg:grid-cols-2">
-              {adminRoadmap.currentFocus.map((item) => (
-                <article key={item.id} className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
-                      {item.title}
-                    </h3>
-                    <span className="rounded-full bg-navy/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">
-                      {item.status}
-                    </span>
+              <TextField onChange={(value) => setEventForm((current) => ({ ...current, title: value }))} placeholder="Event title" value={eventForm.title} />
+              <div className="grid grid-cols-2 gap-2">
+                <select className="h-[42px] rounded-[14px] border px-3 text-[12px] outline-none" style={{ background: m.surfaceStrong, borderColor: m.border, color: m.text }} value={eventForm.store} onChange={(event) => setEventForm((current) => ({ ...current, store: event.target.value }))}>
+                  {STORE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+                <select className="h-[42px] rounded-[14px] border px-3 text-[12px] outline-none" style={{ background: m.surfaceStrong, borderColor: m.border, color: m.text }} value={eventForm.game} onChange={(event) => setEventForm((current) => ({ ...current, game: event.target.value }))}>
+                  {GAME_OPTIONS.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <TextField onChange={(value) => setEventForm((current) => ({ ...current, dateStr: value }))} placeholder="2026-04-10" value={eventForm.dateStr} />
+                <TextField onChange={(value) => setEventForm((current) => ({ ...current, time: value }))} placeholder="6:30 PM" value={eventForm.time} />
+              </div>
+              <TextArea onChange={(value) => setEventForm((current) => ({ ...current, note: value }))} placeholder="Optional notes" rows={3} value={eventForm.note} />
+              <PrimaryButton className="w-full" type="submit">
+                Add event
+              </PrimaryButton>
+            </form>
+          </ScreenSection>
+          <ScreenSection className="pb-2">
+            <div className="flex flex-col gap-2">
+              {manualEvents.map((event) => (
+                <article key={event.id} className="rounded-[18px] px-4 py-4" style={{ background: m.surface, border: `1px solid ${m.border}` }}>
+                  <p className="text-[13px] text-white" style={{ fontWeight: 700 }}>
+                    {event.title}
+                  </p>
+                  <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+                    {[event.store, event.game, event.dateStr, event.time].filter(Boolean).join(" · ")}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <SmallToggle active={event.published !== false} onClick={() => toggleManualEventPublished(event.id)} tone="success">
+                      Publish
+                    </SmallToggle>
+                    <SmallToggle active={false} onClick={() => toggleManualEventPublished(event.id)}>
+                      Toggle
+                    </SmallToggle>
+                    <SmallToggle active={false} onClick={() => removeManualEvent(event.id)} tone="danger">
+                      Remove
+                    </SmallToggle>
                   </div>
-                  <p className="mt-3 text-sm leading-7 text-steel">{item.detail}</p>
                 </article>
               ))}
             </div>
-          </section>
-
-          <section className="surface-card p-6">
-            <div className="flex items-center gap-3">
-              <Activity className="text-orange" size={20} />
-              <div>
-                <p className="section-kicker">Recent pushes</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                  latest stuff that got shipped
-                </h2>
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-4">
-              {adminRoadmap.recentPushes.map((item) => (
-                <article key={item.id} className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] p-5">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
-                        {item.title}
-                      </h3>
-                      <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
-                        {item.status}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                        {item.date}
-                      </span>
-                      <a
-                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-steel transition hover:border-navy/20 hover:text-ink"
-                        href={`https://github.com/turingfan231/tcgwpg-marketplace/commit/${item.id}`}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        {item.id}
-                        <ExternalLink size={12} />
-                      </a>
-                    </div>
-                  </div>
-                  <p className="mt-3 text-sm leading-7 text-steel">{item.summary}</p>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section className="grid gap-8 xl:grid-cols-[1fr_0.8fr]">
-            <section className="surface-card p-6">
-              <div className="flex items-center gap-3">
-                <CalendarCog className="text-navy" size={20} />
-                <div>
-                  <p className="section-kicker">Next up</p>
-                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                    probable next passes
-                  </h2>
-                </div>
-              </div>
-              <div className="mt-5 space-y-3">
-                {adminRoadmap.nextUp.map((item) => (
-                  <div key={item} className="rounded-[22px] border border-slate-200 bg-[#f7f7f8] px-4 py-4 text-sm leading-7 text-steel">
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="surface-card p-6">
-              <div className="flex items-center gap-3">
-                <Home className="text-navy" size={20} />
-                <div>
-                  <p className="section-kicker">Notes</p>
-                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                    how this section works
-                  </h2>
-                </div>
-              </div>
-              <div className="mt-5 space-y-3">
-                {adminRoadmap.notes.map((item) => (
-                  <div key={item} className="rounded-[22px] border border-slate-200 bg-[#f7f7f8] px-4 py-4 text-sm leading-7 text-steel">
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </section>
-          </section>
-        </div>
+          </ScreenSection>
+        </>
       ) : null}
 
       {activeSection === "storefront" ? (
-        <section className="surface-card p-6">
-          <div className="flex items-center gap-3">
-            <Home className="text-orange" size={20} />
-            <div>
-              <p className="section-kicker">Storefront CMS</p>
-              <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-                Homepage controls
-              </h2>
-            </div>
-          </div>
-          <p className="mt-4 max-w-4xl text-sm leading-7 text-steel">
-            Pick the featured listing, pin a specific event, choose the spotlight game, and toggle homepage lanes on or off without touching code.
-          </p>
-
-          <div className="mt-6 grid gap-4 xl:grid-cols-3">
-            <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-steel">Featured listing</span>
-              <select
-                className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
-                value={heroSettingsDraft.featuredListingId || ""}
-                onChange={(event) =>
-                  setHeroSettingsDraft((current) => ({
-                    ...current,
-                    featuredListingId: event.target.value || null,
-                  }))
-                }
-              >
-                <option value="">Auto-pick featured listing</option>
-                {sortedListings
-                  .filter((listing) => listing.status === "active")
-                  .map((listing) => (
-                    <option key={listing.id} value={listing.id}>
-                      {listing.title} | {listing.game}
-                    </option>
+        <>
+          <ScreenSection className="pb-3">
+            <div className="rounded-[18px] px-4 py-4" style={{ background: m.surface, border: `1px solid ${m.border}` }}>
+              <div className="flex items-center gap-2">
+                <Home size={14} style={{ color: m.red }} />
+                <p className="text-[12px] text-white" style={{ fontWeight: 700 }}>
+                  Homepage hero
+                </p>
+              </div>
+              <div className="mt-3 flex flex-col gap-3">
+                <select className="h-[42px] rounded-[14px] border px-3 text-[12px] outline-none" style={{ background: m.surfaceStrong, borderColor: m.border, color: m.text }} value={heroDraft.featuredListingId || ""} onChange={(event) => setHeroDraft((current) => ({ ...current, featuredListingId: event.target.value || null }))}>
+                  <option value="">Auto featured listing</option>
+                  {listingChoices.map((listing) => (
+                    <option key={listing.id} value={listing.id}>{listing.title}</option>
                   ))}
-              </select>
-            </label>
-
-            <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-steel">Pinned event</span>
-              <select
-                className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
-                value={heroSettingsDraft.pinnedEventId || ""}
-                onChange={(event) =>
-                  setHeroSettingsDraft((current) => ({
-                    ...current,
-                    pinnedEventId: event.target.value || null,
-                  }))
-                }
-              >
-                <option value="">Auto-pick next event</option>
-                {heroEventChoices.map((event) => (
-                  <option key={event.id} value={event.id}>
-                    {event.title} | {event.store} | {formatEventDate(event.dateStr)}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-steel">Spotlight game</span>
-              <select
-                className="w-full rounded-[20px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy"
-                value={heroSettingsDraft.spotlightGameSlug || ""}
-                onChange={(event) =>
-                  setHeroSettingsDraft((current) => ({
-                    ...current,
-                    spotlightGameSlug: event.target.value || null,
-                  }))
-                }
-              >
-                <option value="">Auto-pick busiest channel</option>
-                <option value="pokemon">Pokemon</option>
-                <option value="magic">Magic</option>
-                <option value="one-piece">One Piece</option>
-              </select>
-            </label>
-          </div>
-
-          <div className="mt-5 flex flex-wrap gap-3">
-            <button
-              className="rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
-              type="button"
-              onClick={() => void updateHomeHeroSettings(heroSettingsDraft)}
-            >
-              Save storefront hero
-            </button>
-            <button
-              className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel"
-              type="button"
-              onClick={() => {
-                const nextSettings = {
-                  featuredListingId: null,
-                  pinnedEventId: null,
-                  spotlightGameSlug: null,
-                };
-                setHeroSettingsDraft(nextSettings);
-                void updateHomeHeroSettings(nextSettings);
-              }}
-            >
-              Reset to automatic
-            </button>
-          </div>
-
-          <div className="mt-8 border-t border-slate-200 pt-8">
-            <div className="flex items-center gap-3">
-              <Home className="text-navy" size={18} />
-              <div>
-                <p className="section-kicker">Section visibility</p>
-                <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-0.04em] text-ink">
-                  Homepage lanes
-                </h3>
+                </select>
+                <select className="h-[42px] rounded-[14px] border px-3 text-[12px] outline-none" style={{ background: m.surfaceStrong, borderColor: m.border, color: m.text }} value={heroDraft.pinnedEventId || ""} onChange={(event) => setHeroDraft((current) => ({ ...current, pinnedEventId: event.target.value || null }))}>
+                  <option value="">Auto pinned event</option>
+                  {manualEvents.map((event) => (
+                    <option key={event.id} value={event.id}>{event.title}</option>
+                  ))}
+                </select>
+                <select className="h-[42px] rounded-[14px] border px-3 text-[12px] outline-none" style={{ background: m.surfaceStrong, borderColor: m.border, color: m.text }} value={heroDraft.spotlightGameSlug || ""} onChange={(event) => setHeroDraft((current) => ({ ...current, spotlightGameSlug: event.target.value || null }))}>
+                  <option value="">Auto spotlight game</option>
+                  <option value="pokemon">Pokemon</option>
+                  <option value="magic">Magic</option>
+                  <option value="one-piece">One Piece</option>
+                  <option value="dragon-ball-super-fusion-world">Dragon Ball Super Fusion World</option>
+                  <option value="union-arena">Union Arena</option>
+                </select>
+                <PrimaryButton className="w-full" onClick={() => updateHomeHeroSettings(heroDraft)}>
+                  Save hero
+                </PrimaryButton>
               </div>
             </div>
-            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {[
-                ["showHero", "Hero banner"],
-                ["showPromo", "Secondary promo"],
-                ["showBestSellers", "Best sellers"],
-                ["showFreshFeed", "Fresh feed"],
-                ["showFollowedFeed", "Followed sellers"],
-                ["showGameShelves", "Game shelves"],
-                ["showEvents", "Events lane"],
-                ["showTrustedSellers", "Trusted sellers"],
-                ["showStores", "Store profiles"],
-              ].map(([key, label]) => {
-                const active = sectionSettingsDraft[key] !== false;
-                return (
-                  <button
-                    key={key}
-                    className={`rounded-[22px] border px-4 py-4 text-left transition ${
-                      active
-                        ? "border-navy bg-navy text-white shadow-soft"
-                        : "border-slate-200 bg-white text-steel hover:border-slate-300 hover:text-ink"
-                    }`}
-                    type="button"
-                    onClick={() =>
-                      setSectionSettingsDraft((current) => ({
-                        ...current,
-                        [key]: !active,
-                      }))
-                    }
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em]">
-                      {active ? "Visible" : "Hidden"}
-                    </p>
-                    <p className="mt-2 font-semibold">{label}</p>
-                  </button>
-                );
-              })}
+          </ScreenSection>
+          <ScreenSection className="pb-2">
+            <div className="rounded-[18px] px-4 py-4" style={{ background: m.surface, border: `1px solid ${m.border}` }}>
+              <p className="text-[12px] text-white" style={{ fontWeight: 700 }}>
+                Homepage sections
+              </p>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {Object.entries(sectionDraft).map(([key, value]) => (
+                  <ChoicePill key={key} active={Boolean(value)} onClick={() => setSectionDraft((current) => ({ ...current, [key]: !current[key] }))}>
+                    {key.replace("show", "")}
+                  </ChoicePill>
+                ))}
+              </div>
+              <div className="mt-4">
+                <PrimaryButton className="w-full" onClick={() => updateStorefrontSettings({ homeSections: sectionDraft })}>
+                  Save layout
+                </PrimaryButton>
+              </div>
             </div>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <button
-                className="rounded-full bg-navy px-5 py-3 text-sm font-semibold text-white"
-                type="button"
-                onClick={() => void updateStorefrontSettings({ homeSections: sectionSettingsDraft })}
-              >
-                Save section visibility
-              </button>
-              <button
-                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-steel"
-                type="button"
-                onClick={() =>
-                  setSectionSettingsDraft({
-                    showHero: true,
-                    showPromo: true,
-                    showBestSellers: true,
-                    showFreshFeed: true,
-                    showFollowedFeed: true,
-                    showGameShelves: true,
-                    showEvents: true,
-                    showTrustedSellers: true,
-                    showStores: true,
-                  })
-                }
-              >
-                Reset sections
-              </button>
+          </ScreenSection>
+        </>
+      ) : null}
+
+      {activeSection === "audit" ? (
+        <ScreenSection className="pb-2">
+          <div className="flex flex-col gap-2">
+            {adminAuditLog.slice(0, 16).map((entry) => (
+              <article key={entry.id} className="rounded-[18px] px-4 py-4" style={{ background: m.surface, border: `1px solid ${m.border}` }}>
+                <p className="text-[12px] text-white" style={{ fontWeight: 700 }}>
+                  {entry.title}
+                </p>
+                <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+                  {entry.action} · {new Date(entry.createdAt).toLocaleString("en-CA", {
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </p>
+                {entry.details ? (
+                  <p className="mt-2 text-[11px] leading-5" style={{ color: m.textSecondary }}>
+                    {entry.details}
+                  </p>
+                ) : null}
+              </article>
+            ))}
+
+            <div className="rounded-[18px] px-4 py-4" style={{ background: m.surface, border: `1px solid ${m.border}` }}>
+              <p className="text-[12px] text-white" style={{ fontWeight: 700 }}>
+                Dev feed
+              </p>
+              <div className="mt-3 flex flex-col gap-2">
+                {adminRoadmap.recentPushes.slice(0, 4).map((item) => (
+                  <div key={item.id} className="rounded-[14px] px-3 py-3" style={{ background: m.surfaceStrong }}>
+                    <p className="text-[11px] text-white" style={{ fontWeight: 700 }}>
+                      {item.title}
+                    </p>
+                    <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+                      {item.summary}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </section>
+        </ScreenSection>
       ) : null}
-    </div>
+
+      <BottomSheet open={Boolean(selectedListing)} onClose={() => setSelectedListing(null)}>
+        <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
+          <p className="text-[15px] text-white" style={{ fontWeight: 700 }}>
+            Listing admin note
+          </p>
+          <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+            {selectedListing?.title}
+          </p>
+          <TextArea className="mt-4" onChange={setListingNote} placeholder="Internal admin note" rows={5} value={listingNote} />
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <SecondaryButton className="w-full" onClick={() => setSelectedListing(null)}>
+              Cancel
+            </SecondaryButton>
+            <PrimaryButton className="w-full" onClick={handleSaveListingNote}>
+              Save note
+            </PrimaryButton>
+          </div>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet open={Boolean(selectedBugReport)} onClose={() => setSelectedBugReport(null)}>
+        <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
+          <p className="text-[15px] text-white" style={{ fontWeight: 700 }}>
+            Bug report note
+          </p>
+          <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+            {selectedBugReport?.title}
+          </p>
+          <TextArea className="mt-4" onChange={setBugNotes} placeholder="Admin note for triage" rows={5} value={bugNotes} />
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <SecondaryButton className="w-full" onClick={() => setSelectedBugReport(null)}>
+              Cancel
+            </SecondaryButton>
+            <PrimaryButton className="w-full" onClick={handleSaveBugNotes}>
+              Save note
+            </PrimaryButton>
+          </div>
+        </div>
+      </BottomSheet>
+    </MobileScreen>
   );
 }
-
-

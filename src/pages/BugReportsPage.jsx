@@ -1,32 +1,39 @@
 import { Bug, ExternalLink, ShieldCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import EmptyState from "../components/ui/EmptyState";
-import PageSkeleton from "../components/ui/PageSkeleton";
+import SeoHead from "../components/seo/SeoHead";
 import { useMarketplace } from "../hooks/useMarketplace";
+import { m } from "../mobile/design";
+import {
+  ChoicePill,
+  EmptyBlock,
+  MobileScreen,
+  PrimaryButton,
+  ScreenHeader,
+  ScreenSection,
+  TextArea,
+  TextField,
+} from "../mobile/primitives";
 
-const areaOptions = [
-  { value: "general", label: "General app" },
+const AREA_OPTIONS = [
+  { value: "general", label: "General" },
   { value: "create-listing", label: "Create listing" },
-  { value: "search", label: "Card search" },
+  { value: "search", label: "Search" },
   { value: "messages", label: "Messages" },
-  { value: "market", label: "Market feed" },
-  { value: "seller", label: "Seller page" },
+  { value: "market", label: "Market" },
+  { value: "seller", label: "Seller" },
   { value: "events", label: "Events" },
-  { value: "mobile", label: "Mobile layout" },
+  { value: "mobile", label: "Mobile" },
   { value: "performance", label: "Performance" },
 ];
 
-const severityOptions = ["low", "medium", "high", "critical"];
+const SEVERITY_OPTIONS = ["low", "medium", "high", "critical"];
 
 function buildEnvironmentLabel() {
   if (typeof window === "undefined") {
     return "Unknown environment";
   }
-
-  const viewport = `${window.innerWidth}x${window.innerHeight}`;
-  const userAgent = window.navigator?.userAgent || "Unknown browser";
-  return `${viewport} | ${userAgent.slice(0, 120)}`;
+  return `${window.innerWidth}x${window.innerHeight} · ${window.navigator?.userAgent?.slice(0, 90) || "Browser"}`;
 }
 
 function formatStatusLabel(value) {
@@ -37,16 +44,59 @@ function formatStatusLabel(value) {
     .join(" ");
 }
 
+function ReportCard({ report }) {
+  return (
+    <article className="rounded-[18px] px-4 py-4" style={{ background: m.surface, border: `1px solid ${m.border}` }}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap gap-1.5">
+            <span className="rounded-full px-2 py-[4px] text-[8px]" style={{ background: m.surfaceStrong, color: m.textSecondary, fontWeight: 700 }}>
+              {formatStatusLabel(report.status)}
+            </span>
+            <span className="rounded-full px-2 py-[4px] text-[8px]" style={{ background: "rgba(239,68,68,0.14)", color: "#fca5a5", fontWeight: 700 }}>
+              {formatStatusLabel(report.severity)}
+            </span>
+          </div>
+          <p className="mt-2 text-[13px] text-white" style={{ fontWeight: 700 }}>
+            {report.title}
+          </p>
+          <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+            {formatStatusLabel(report.area)}{report.pagePath ? ` · ${report.pagePath}` : ""}
+          </p>
+        </div>
+        {report.screenshotUrl ? (
+          <a
+            className="inline-flex h-8 items-center justify-center gap-1 rounded-[12px] px-3 text-[10px]"
+            href={report.screenshotUrl}
+            rel="noreferrer"
+            style={{ background: m.surfaceStrong, color: m.textSecondary, fontWeight: 600 }}
+            target="_blank"
+          >
+            Shot
+            <ExternalLink size={11} />
+          </a>
+        ) : null}
+      </div>
+      <p className="mt-3 text-[11px] leading-5" style={{ color: m.textSecondary }}>
+        {report.actualBehavior}
+      </p>
+      {report.adminNotes ? (
+        <div className="mt-3 rounded-[14px] px-3 py-3" style={{ background: m.surfaceStrong, border: `1px solid ${m.border}` }}>
+          <p className="text-[9px] uppercase tracking-[0.12em]" style={{ color: m.textTertiary, fontWeight: 700 }}>
+            Admin note
+          </p>
+          <p className="mt-2 text-[11px] leading-5" style={{ color: m.textSecondary }}>
+            {report.adminNotes}
+          </p>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
 export default function BugReportsPage() {
   const location = useLocation();
-  const {
-    bugReportsForCurrentUser,
-    currentUser,
-    isAdmin,
-    isBetaTester,
-    loading,
-    submitBugReport,
-  } = useMarketplace();
+  const { bugReportsForCurrentUser, isAdmin, isBetaTester, submitBugReport } = useMarketplace();
   const [form, setForm] = useState({
     title: "",
     area: "general",
@@ -66,21 +116,22 @@ export default function BugReportsPage() {
     [bugReportsForCurrentUser.length],
   );
 
+  function updateField(field, value) {
+    setError("");
+    setMessage("");
+    setForm((current) => ({ ...current, [field]: value }));
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
     setMessage("");
     const result = await submitBugReport(form);
-
     if (!result?.ok) {
       setError(result?.error || "Bug report could not be submitted.");
       return;
     }
-
-    setMessage(
-      result.warning ||
-        "Bug report submitted. Admins can now triage it from the beta tracker queue.",
-    );
+    setMessage(result.warning || "Bug report submitted for triage.");
     setForm((current) => ({
       ...current,
       title: "",
@@ -93,260 +144,114 @@ export default function BugReportsPage() {
     }));
   }
 
-  function updateField(field, value) {
-    setError("");
-    setMessage("");
-    setForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
-  }
-
-  if (loading && !bugReportsForCurrentUser.length) {
-    return <PageSkeleton cards={3} rows={1} titleWidth="w-56" />;
-  }
-
   if (!isAdmin && !isBetaTester) {
     return (
-      <EmptyState
-        description="Ask an admin to grant the Beta Tester badge if you need access to the shared bug tracker."
-        title="Bug tracker access required"
-      />
+      <MobileScreen className="pb-[92px]">
+        <SeoHead canonicalPath="/beta/bugs" description="Bug tracker access" title="Bug tracker access" />
+        <ScreenHeader subtitle="Beta access required" title="Bug Tracker" />
+        <ScreenSection className="pt-2">
+          <EmptyBlock
+            description="Ask an admin to grant the Beta Tester badge if you need access to the shared bug tracker."
+            title="Access required"
+          />
+        </ScreenSection>
+      </MobileScreen>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <section className="surface-card p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="section-kicker">Beta bug tracker</p>
-            <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.04em] text-ink">
-              Report app issues with real reproduction details
-            </h1>
-            <p className="mt-3 max-w-3xl text-base leading-8 text-steel">
-              This section is only available to users with the Beta Tester badge. Include
-              the page, exact steps, and what you expected to happen so issues can be
-              triaged quickly.
-            </p>
-          </div>
+    <MobileScreen className="pb-[92px]">
+      <SeoHead canonicalPath="/beta/bugs" description="Submit reproducible issues and track triage notes from the beta bug queue." title="Bug Tracker" />
 
-          <div className="rounded-[24px] bg-[#f2f3f5] px-5 py-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-              Access
-            </p>
-            <p className="mt-2 inline-flex items-center gap-2 font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
-              <ShieldCheck size={18} className="text-orange" />
-              {isAdmin ? "Admin" : "Beta tester"}
-            </p>
-            <p className="mt-2 text-sm text-steel">{bugCountLabel}</p>
-          </div>
-        </div>
-      </section>
+      <ScreenHeader subtitle={bugCountLabel} title="Bug Tracker" />
 
-      <section className="surface-card p-6">
-        <div className="flex items-center gap-3">
-          <Bug className="text-orange" size={20} />
-          <div>
-            <p className="section-kicker">New report</p>
-            <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-              File a reproducible bug
-            </h2>
-          </div>
-        </div>
-
-        <form className="mt-6 grid gap-5 lg:grid-cols-2" onSubmit={handleSubmit}>
-          <label className="block lg:col-span-2">
-            <span className="mb-2 block text-sm font-semibold text-steel">Bug title</span>
-            <input
-              required
-              className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-              placeholder="Unread message badge stays after opening thread"
-              value={form.title}
-              onChange={(event) => updateField("title", event.target.value)}
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-steel">Area</span>
-            <select
-              className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-              value={form.area}
-              onChange={(event) => updateField("area", event.target.value)}
-            >
-              {areaOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-steel">Severity</span>
-            <select
-              className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-              value={form.severity}
-              onChange={(event) => updateField("severity", event.target.value)}
-            >
-              {severityOptions.map((option) => (
-                <option key={option} value={option}>
-                  {formatStatusLabel(option)}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-steel">Page / route</span>
-            <input
-              className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-              placeholder="/messages"
-              value={form.pagePath}
-              onChange={(event) => updateField("pagePath", event.target.value)}
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-steel">
-              Screenshot URL
-            </span>
-            <input
-              className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-              placeholder="https://..."
-              value={form.screenshotUrl}
-              onChange={(event) => updateField("screenshotUrl", event.target.value)}
-            />
-          </label>
-
-          <label className="block lg:col-span-2">
-            <span className="mb-2 block text-sm font-semibold text-steel">Actual behavior</span>
-            <textarea
-              required
-              className="min-h-28 w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-              placeholder="What happened instead?"
-              value={form.actualBehavior}
-              onChange={(event) => updateField("actualBehavior", event.target.value)}
-            />
-          </label>
-
-          <label className="block lg:col-span-2">
-            <span className="mb-2 block text-sm font-semibold text-steel">Expected behavior</span>
-            <textarea
-              className="min-h-24 w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-              placeholder="What should have happened?"
-              value={form.expectedBehavior}
-              onChange={(event) => updateField("expectedBehavior", event.target.value)}
-            />
-          </label>
-
-          <label className="block lg:col-span-2">
-            <span className="mb-2 block text-sm font-semibold text-steel">
-              Reproduction steps
-            </span>
-            <textarea
-              required
-              className="min-h-32 w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-              placeholder="1. Open messages  2. Reply to thread  3. Refresh  4. Unread badge returns"
-              value={form.reproductionSteps}
-              onChange={(event) => updateField("reproductionSteps", event.target.value)}
-            />
-          </label>
-
-          <label className="block lg:col-span-2">
-            <span className="mb-2 block text-sm font-semibold text-steel">
-              Environment details
-            </span>
-            <textarea
-              className="min-h-24 w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-              value={form.environmentLabel}
-              onChange={(event) => updateField("environmentLabel", event.target.value)}
-            />
-          </label>
-
-          <div className="lg:col-span-2 flex flex-wrap items-center justify-between gap-3 pt-2">
-            <div className="space-y-2">
-              {message ? (
-                <p className="text-sm font-semibold text-emerald-700">{message}</p>
-              ) : null}
-              {error ? (
-                <p className="text-sm font-semibold text-rose-700">{error}</p>
-              ) : null}
+      <ScreenSection className="pb-3">
+        <div className="rounded-[18px] px-4 py-4" style={{ background: m.surfaceStrong, border: `1px solid ${m.border}` }}>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[12px]" style={{ background: "rgba(239,68,68,0.12)" }}>
+              <Bug size={15} style={{ color: m.red }} />
             </div>
-            <button
-              className="rounded-full bg-navy px-6 py-3 text-sm font-semibold text-white"
-              type="submit"
-            >
-              Submit bug report
-            </button>
+            <div>
+              <p className="text-[12px] text-white" style={{ fontWeight: 700 }}>
+                Beta reporting lane
+              </p>
+              <p className="text-[10px]" style={{ color: m.textSecondary }}>
+                {isAdmin ? "Admin access" : "Beta tester access"} · include route, exact behavior, and reproduction steps
+              </p>
+            </div>
+            <div className="ml-auto inline-flex items-center gap-1 text-[10px]" style={{ color: m.textSecondary }}>
+              <ShieldCheck size={12} style={{ color: m.red }} />
+              Access
+            </div>
           </div>
-        </form>
-      </section>
-
-      <section className="surface-card p-6">
-        <p className="section-kicker">My reports</p>
-        <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink">
-          Submitted issues
-        </h2>
-
-        <div className="mt-5 space-y-4">
-          {bugReportsForCurrentUser.length ? (
-            bugReportsForCurrentUser.map((report) => (
-              <article
-                key={report.id}
-                className="rounded-[26px] border border-slate-200 bg-[#f7f7f8] p-5"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-display text-2xl font-semibold tracking-[-0.03em] text-ink">
-                        {report.title}
-                      </h3>
-                      <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
-                        {formatStatusLabel(report.status)}
-                      </span>
-                      <span className="rounded-full bg-rose-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-700">
-                        {formatStatusLabel(report.severity)}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm text-steel">
-                      {formatStatusLabel(report.area)}
-                      {report.pagePath ? ` | ${report.pagePath}` : ""}
-                    </p>
-                    <p className="mt-3 text-sm leading-7 text-steel">{report.actualBehavior}</p>
-                    {report.adminNotes ? (
-                      <div className="mt-4 rounded-[20px] border border-slate-200 bg-white px-4 py-3">
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                          Admin note
-                        </p>
-                        <p className="mt-2 text-sm leading-7 text-steel">{report.adminNotes}</p>
-                      </div>
-                    ) : null}
-                  </div>
-                  {report.screenshotUrl ? (
-                    <a
-                      className="inline-flex items-center gap-2 text-sm font-semibold text-navy"
-                      href={report.screenshotUrl}
-                      rel="noreferrer"
-                      target="_blank"
-                    >
-                      Screenshot
-                      <ExternalLink size={14} />
-                    </a>
-                  ) : null}
-                </div>
-              </article>
-            ))
-          ) : (
-            <EmptyState
-              description="Submitted bugs will show status changes, admin notes, and fix progress here."
-              title="No bug reports yet"
-            />
-          )}
         </div>
-      </section>
-    </div>
+      </ScreenSection>
+
+      <ScreenSection className="pb-3">
+        <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+          <TextField onChange={(value) => updateField("title", value)} placeholder="Unread badge comes back after opening thread" value={form.title} />
+
+          <div className="rounded-[18px] px-4 py-4" style={{ background: m.surface, border: `1px solid ${m.border}` }}>
+            <p className="text-[10px] uppercase tracking-[0.12em]" style={{ color: m.textTertiary, fontWeight: 700 }}>
+              Area
+            </p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {AREA_OPTIONS.map((option) => (
+                <ChoicePill key={option.value} active={form.area === option.value} onClick={() => updateField("area", option.value)}>
+                  {option.label}
+                </ChoicePill>
+              ))}
+            </div>
+
+            <p className="mt-4 text-[10px] uppercase tracking-[0.12em]" style={{ color: m.textTertiary, fontWeight: 700 }}>
+              Severity
+            </p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {SEVERITY_OPTIONS.map((option) => (
+                <ChoicePill key={option} active={form.severity === option} onClick={() => updateField("severity", option)}>
+                  {formatStatusLabel(option)}
+                </ChoicePill>
+              ))}
+            </div>
+          </div>
+
+          <TextField onChange={(value) => updateField("pagePath", value)} placeholder="/inbox/thread-id" value={form.pagePath} />
+          <TextArea onChange={(value) => updateField("actualBehavior", value)} placeholder="What actually happened?" rows={4} value={form.actualBehavior} />
+          <TextArea onChange={(value) => updateField("expectedBehavior", value)} placeholder="What should have happened?" rows={3} value={form.expectedBehavior} />
+          <TextArea onChange={(value) => updateField("reproductionSteps", value)} placeholder="Step-by-step reproduction notes" rows={4} value={form.reproductionSteps} />
+          <TextField onChange={(value) => updateField("screenshotUrl", value)} placeholder="Optional screenshot URL" value={form.screenshotUrl} />
+
+          {error ? (
+            <p className="text-[11px]" style={{ color: "#fca5a5" }}>
+              {error}
+            </p>
+          ) : null}
+          {message ? (
+            <p className="text-[11px]" style={{ color: "#86efac" }}>
+              {message}
+            </p>
+          ) : null}
+
+          <PrimaryButton className="w-full" type="submit">
+            Submit bug report
+          </PrimaryButton>
+        </form>
+      </ScreenSection>
+
+      <ScreenSection className="pb-2">
+        <p className="mb-2 text-[12px] text-white" style={{ fontWeight: 700 }}>
+          Your reports
+        </p>
+        {bugReportsForCurrentUser.length ? (
+          <div className="flex flex-col gap-2">
+            {bugReportsForCurrentUser.map((report) => (
+              <ReportCard key={report.id} report={report} />
+            ))}
+          </div>
+        ) : (
+          <EmptyBlock description="Submitted bug reports will appear here after you send them." title="No reports yet" />
+        )}
+      </ScreenSection>
+    </MobileScreen>
   );
 }
-
-

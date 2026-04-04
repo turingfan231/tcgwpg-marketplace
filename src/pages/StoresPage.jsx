@@ -1,12 +1,78 @@
-import { ArrowRight, CalendarRange, MapPin, ShieldCheck } from "lucide-react";
+import { ExternalLink, MapPin, ShieldCheck } from "lucide-react";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import SeoHead from "../components/seo/SeoHead";
 import { storeProfiles } from "../data/storefrontData";
 import { useMarketplace } from "../hooks/useMarketplace";
+import { m } from "../mobile/design";
+import { MobileScreen, ScreenHeader, ScreenSection } from "../mobile/primitives";
+
+function StoreCard({ followerCount, store }) {
+  return (
+    <Link
+      className="block rounded-[18px] px-4 py-4"
+      style={{ background: m.surface, border: `1px solid ${m.border}`, boxShadow: m.shadowPanel }}
+      to={`/stores/${store.slug}`}
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[14px]"
+          style={{ background: "rgba(255,255,255,0.08)" }}
+        >
+          {store.logoUrl ? (
+            <img alt={store.name} className="h-full w-full object-contain p-2" src={store.logoUrl} />
+          ) : (
+            <span className="text-sm text-white" style={{ fontWeight: 700 }}>
+              {String(store.shortName || store.name).charAt(0)}
+            </span>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-[14px] text-white" style={{ fontWeight: 700 }}>
+                {store.name}
+              </p>
+              <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+                {store.neighborhood}
+              </p>
+            </div>
+            {store.approvedMeetup ? (
+              <span
+                className="rounded-full px-2 py-[3px] text-[8px] uppercase"
+                style={{ background: "rgba(239,68,68,0.14)", color: "#fca5a5", fontWeight: 700 }}
+              >
+                Approved
+              </span>
+            ) : null}
+          </div>
+
+          <div className="mt-3 grid gap-1 text-[10px]" style={{ color: m.textSecondary }}>
+            <span className="inline-flex items-center gap-1">
+              <MapPin size={11} />
+              {store.address}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <ShieldCheck size={11} style={{ color: m.red }} />
+              {followerCount} follows · meetup enabled
+            </span>
+          </div>
+
+          {store.siteUrl ? (
+            <span className="mt-3 inline-flex items-center gap-1 text-[10px]" style={{ color: m.textSecondary }}>
+              Open store
+              <ExternalLink size={11} />
+            </span>
+          ) : null}
+        </div>
+      </div>
+    </Link>
+  );
+}
 
 export default function StoresPage() {
   const { sellers } = useMarketplace();
+
   const storeFollowerCounts = useMemo(
     () =>
       sellers.reduce((accumulator, seller) => {
@@ -19,76 +85,39 @@ export default function StoresPage() {
   );
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <SeoHead
-        canonicalPath="/stores"
-        description="Browse approved Winnipeg card shops used for meetups, local events, and trusted store-based TCG deals."
-        title="Browse Stores"
-        type="website"
-      />
-      <section className="console-shell p-4 sm:p-7">
-        <p className="section-kicker">Meetup Spots</p>
-        <h1 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.05em] text-ink sm:text-[3.2rem]">
-          Approved local stores
-        </h1>
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-steel sm:mt-4 sm:text-base sm:leading-8">
-          Browse the shops most people use for safe public meetups, store events, and quick local pickups.
-        </p>
-      </section>
+    <MobileScreen className="pb-[92px]">
+      <SeoHead canonicalPath="/stores" description="Browse approved Winnipeg meetup spots, local store profiles, and trusted pickup locations." title="Stores" />
 
-      <section className="grid gap-3 sm:gap-5 xl:grid-cols-2">
-        {storeProfiles.map((store) => (
-          <Link
-            key={store.slug}
-            className="console-panel overflow-hidden p-0 transition hover:-translate-y-0.5 hover:shadow-lift"
-            to={`/stores/${store.slug}`}
-          >
-            <div className="h-28 overflow-hidden border-b border-[rgba(203,220,231,0.92)] bg-[#f6f7f8] p-4 sm:h-48 sm:p-6">
-              <div className="flex h-full items-center justify-center rounded-[18px] bg-[#f6f7f8] px-4 py-3 sm:rounded-[24px] sm:px-8 sm:py-6">
-              {store.bannerUrl ? (
-                <img alt={store.name} className="h-full w-full object-contain" src={store.bannerUrl} />
-              ) : null}
-              </div>
-            </div>
-            <div className="space-y-3 p-4 sm:space-y-4 sm:p-6">
-              <div className="flex items-start justify-between gap-3 sm:gap-4">
-                <div>
-                  <p className="section-kicker">Store profile</p>
-                  <h2 className="mt-2 font-display text-[1.35rem] font-semibold tracking-[-0.04em] text-ink sm:text-[2rem]">
-                    {store.name}
-                  </h2>
-                </div>
-                {store.approvedMeetup ? (
-                  <span className="inline-flex items-center gap-2 rounded-full bg-orange/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-orange sm:px-3 sm:text-xs sm:tracking-[0.18em]">
-                    <ShieldCheck size={14} />
-                    Approved meetup
-                  </span>
-                ) : null}
-              </div>
+      <ScreenHeader subtitle={`${storeProfiles.length} approved meetup spots`} title="Stores" />
 
-              <div className="grid gap-2 text-[0.84rem] text-steel sm:gap-3 sm:text-sm">
-                <span className="inline-flex items-center gap-2">
-                  <MapPin size={16} />
-                  {store.address}
-                </span>
-                <span className="inline-flex items-center gap-2">
-                  <CalendarRange size={16} />
-                  Local event page and featured market listings
-                </span>
-                <span className="inline-flex items-center gap-2">
-                  <ShieldCheck size={16} />
-                  {storeFollowerCounts[store.slug] || 0} follower{storeFollowerCounts[store.slug] === 1 ? "" : "s"}
-                </span>
-              </div>
+      <ScreenSection className="pb-3">
+        <div
+          className="rounded-[18px] px-4 py-4"
+          style={{
+            background:
+              "linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015))",
+            border: `1px solid ${m.borderStrong}`,
+          }}
+        >
+          <p className="text-[10px] uppercase tracking-[0.12em]" style={{ color: "#fca5a5", fontWeight: 700 }}>
+            Store network
+          </p>
+          <p className="mt-2 text-[18px] text-white" style={{ fontWeight: 700 }}>
+            Local meetup-safe locations
+          </p>
+          <p className="mt-2 text-[11px] leading-5" style={{ color: m.textSecondary }}>
+            These store profiles anchor public meetups, event discovery, and trusted handoffs across Winnipeg.
+          </p>
+        </div>
+      </ScreenSection>
 
-              <div className="inline-flex items-center gap-2 text-[0.84rem] font-semibold text-navy sm:text-sm">
-                Open store profile
-                <ArrowRight size={14} />
-              </div>
-            </div>
-          </Link>
-        ))}
-      </section>
-    </div>
+      <ScreenSection className="flex-1 pb-2">
+        <div className="flex flex-col gap-2">
+          {storeProfiles.map((store) => (
+            <StoreCard key={store.slug} followerCount={storeFollowerCounts[store.slug] || 0} store={store} />
+          ))}
+        </div>
+      </ScreenSection>
+    </MobileScreen>
   );
 }

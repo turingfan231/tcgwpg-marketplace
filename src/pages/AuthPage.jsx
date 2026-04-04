@@ -1,15 +1,36 @@
+import { ArrowLeft, Eye, EyeOff, Lock, Mail, MapPin, UserPlus } from "lucide-react";
+import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import SeoHead from "../components/seo/SeoHead";
 import { neighborhoods } from "../data/mockData";
 import { useMarketplace } from "../hooks/useMarketplace";
-import { trackEvent } from "../lib/analytics";
+import { m } from "../mobile/design";
+import {
+  ChoicePill,
+  MobileScreen,
+  PrimaryButton,
+  ScreenSection,
+  SecondaryButton,
+  TextField,
+} from "../mobile/primitives";
 
 function normalizePostalInput(value) {
   return String(value || "")
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, "")
     .slice(0, 3);
+}
+
+function AuthField({ children, label }) {
+  return (
+    <label className="block">
+      <p className="mb-2 text-[10px] uppercase tracking-[0.12em]" style={{ color: m.textTertiary, fontWeight: 700 }}>
+        {label}
+      </p>
+      {children}
+    </label>
+  );
 }
 
 export default function AuthPage() {
@@ -23,25 +44,21 @@ export default function AuthPage() {
     requestPasswordReset,
     signup,
   } = useMarketplace();
+
   const [mode, setMode] = useState("login");
+  const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [loginForm, setLoginForm] = useState({
-    email: "",
-    password: "",
-  });
+  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [forgotEmail, setForgotEmail] = useState("");
-  const [recoveryForm, setRecoveryForm] = useState({
-    newPassword: "",
-    confirmPassword: "",
-  });
+  const [recoveryForm, setRecoveryForm] = useState({ newPassword: "", confirmPassword: "" });
   const [signupForm, setSignupForm] = useState({
     username: "",
     name: "",
     email: "",
     password: "",
-    neighborhood: "St. Vital",
+    neighborhood: neighborhoods[1] || "St. Vital",
     postalCode: "",
   });
 
@@ -55,486 +72,288 @@ export default function AuthPage() {
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
-    const isRecoveryRoute = searchParams.get("mode") === "recovery";
     const hashParams = new URLSearchParams(String(location.hash || "").replace(/^#/, ""));
-    const isRecoveryHash = hashParams.get("type") === "recovery";
-
-    if (isRecoveryRoute || isRecoveryHash) {
+    if (searchParams.get("mode") === "recovery" || hashParams.get("type") === "recovery") {
       setMode("recovery");
-      setError("");
       setMessage("Set a new password to finish recovering your account.");
+      setError("");
     }
   }, [location.hash, location.search]);
 
   async function handleLoginSubmit(event) {
     event.preventDefault();
+    setSubmitting(true);
     setError("");
     setMessage("");
-    setSubmitting(true);
-    trackEvent("auth_login_submitted", {
-      hasEmail: Boolean(loginForm.email),
-    });
-    try {
-      const result = await login(loginForm);
-
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-
-      setMessage("Signing you in...");
-    } catch (error) {
-      setError(error?.message || "Login failed. Try again.");
-    } finally {
-      setSubmitting(false);
+    const result = await login(loginForm);
+    setSubmitting(false);
+    if (!result?.ok) {
+      setError(result?.error || "Login failed.");
+      return;
     }
+    setMessage("Signing you in...");
   }
 
   async function handleSignupSubmit(event) {
     event.preventDefault();
+    setSubmitting(true);
     setError("");
     setMessage("");
-    setSubmitting(true);
-    trackEvent("auth_signup_submitted", {
-      neighborhood: signupForm.neighborhood,
-      hasPostalCode: Boolean(signupForm.postalCode),
-    });
-    try {
-      const result = await signup(signupForm);
-
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-
-      if (result.requiresEmailConfirmation) {
-        setMode("login");
-        setLoginForm({
-          email: result.email || signupForm.email,
-          password: signupForm.password,
-        });
-        setMessage(
-          "Account created. Check your email, confirm the account, then log in with the same email and password.",
-        );
-        return;
-      }
-
-      setMessage("Account created. Finishing sign-in...");
-    } catch (error) {
-      setError(error?.message || "Signup failed. Try again.");
-    } finally {
-      setSubmitting(false);
+    const result = await signup(signupForm);
+    setSubmitting(false);
+    if (!result?.ok) {
+      setError(result?.error || "Signup failed.");
+      return;
     }
+    if (result.requiresEmailConfirmation) {
+      setMode("login");
+      setLoginForm({ email: result.email || signupForm.email, password: signupForm.password });
+      setMessage("Account created. Confirm your email, then sign in here.");
+      return;
+    }
+    setMessage("Account created. Finishing sign-in...");
   }
 
   async function handleForgotSubmit(event) {
     event.preventDefault();
+    setSubmitting(true);
     setError("");
     setMessage("");
-    setSubmitting(true);
-    trackEvent("auth_password_reset_requested", {
-      hasEmail: Boolean(forgotEmail),
-    });
-    try {
-      const result = await requestPasswordReset(forgotEmail);
-
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-
-      setMessage("Password reset email sent. Check your inbox and open the recovery link.");
-    } catch (error) {
-      setError(error?.message || "Password reset email could not be sent.");
-    } finally {
-      setSubmitting(false);
+    const result = await requestPasswordReset(forgotEmail);
+    setSubmitting(false);
+    if (!result?.ok) {
+      setError(result?.error || "Password reset email could not be sent.");
+      return;
     }
+    setMessage("Password reset email sent. Check your inbox for the recovery link.");
   }
 
   async function handleRecoverySubmit(event) {
     event.preventDefault();
+    setSubmitting(true);
     setError("");
     setMessage("");
-    setSubmitting(true);
-    try {
-      const result = await completePasswordRecovery(recoveryForm);
-
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-
-      setMode("login");
-      setRecoveryForm({ newPassword: "", confirmPassword: "" });
-      setMessage("Password updated. You can sign in now.");
-    } catch (error) {
-      setError(error?.message || "Password reset failed. Try again.");
-    } finally {
-      setSubmitting(false);
+    const result = await completePasswordRecovery(recoveryForm);
+    setSubmitting(false);
+    if (!result?.ok) {
+      setError(result?.error || "Password reset failed.");
+      return;
     }
+    setMode("login");
+    setRecoveryForm({ newPassword: "", confirmPassword: "" });
+    setMessage("Password updated. You can sign in now.");
   }
 
+  const title =
+    mode === "signup" ? "Create account" : mode === "forgot" ? "Reset password" : mode === "recovery" ? "Choose a new password" : "Sign in";
+
   return (
-    <main className="mx-auto max-w-6xl" aria-labelledby="auth-page-title">
+    <MobileScreen className="px-5 pb-10 pt-[max(1rem,env(safe-area-inset-top))]">
       <SeoHead
         canonicalPath="/auth"
-        description="Sign in or create your TCG Wpg Marketplace account to manage listings, messages, offers, and local meetup plans."
-        title={mode === "signup" ? "Create Account" : mode === "recovery" ? "Recover Account" : "Sign In"}
+        description="Sign in or create your TCG WPG account to manage listings, messages, offers, and local marketplace activity."
+        title={title}
         type="website"
       />
-      <section className="grid gap-4 xl:grid-cols-[0.78fr_1.22fr] xl:items-start">
-        <div className="console-panel p-5 sm:p-6">
-          <p className="section-kicker">Account access</p>
-          <h1
-            className="mt-2 font-display text-[2rem] font-semibold leading-[1.02] tracking-[-0.05em] text-ink sm:text-[2.4rem]"
-            id="auth-page-title"
-          >
-            Sign in or create your account
-          </h1>
-          <p className="mt-3 max-w-lg text-[0.96rem] leading-7 text-steel">
-            Use one account for messages, listings, saved cards, and offers.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <span className="rounded-full border border-[rgba(203,220,231,0.92)] bg-white px-3 py-1.5 text-[0.76rem] font-semibold text-ink">
-              Local messages
-            </span>
-            <span className="rounded-full border border-[rgba(203,220,231,0.92)] bg-white px-3 py-1.5 text-[0.76rem] font-semibold text-ink">
-              Listing tools
-            </span>
-            <span className="rounded-full border border-[rgba(203,220,231,0.92)] bg-white px-3 py-1.5 text-[0.76rem] font-semibold text-ink">
-              Faster deals
-            </span>
-          </div>
+
+      <div className="flex items-center justify-between">
+        <motion.button
+          className="inline-flex h-9 w-9 items-center justify-center rounded-[12px]"
+          style={{ background: m.surfaceStrong, border: `1px solid ${m.border}` }}
+          type="button"
+          whileTap={{ scale: 0.9 }}
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft size={16} style={{ color: m.textSecondary }} />
+        </motion.button>
+        <div className="rounded-full px-3 py-1" style={{ background: "rgba(239,68,68,0.12)" }}>
+          <span className="text-[10px]" style={{ color: "#fca5a5", fontWeight: 700 }}>
+            TCG WPG
+          </span>
         </div>
+      </div>
 
-        <div className="surface-card p-7">
-          <div className="inline-flex rounded-full bg-[#f2f3f5] p-1">
-            <button
-              aria-pressed={mode === "login"}
-              className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
-                mode === "login" ? "bg-white text-ink shadow-sm" : "text-ink opacity-70 hover:opacity-100"
-              }`}
-              type="button"
-              onClick={() => {
-                setMode("login");
-                setError("");
-                setMessage("");
-              }}
-            >
-              Login
-            </button>
-            <button
-              aria-pressed={mode === "signup"}
-              className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
-                mode === "signup" ? "bg-white text-ink shadow-sm" : "text-ink opacity-70 hover:opacity-100"
-              }`}
-              type="button"
-              onClick={() => {
-                setMode("signup");
-                setError("");
-                setMessage("");
-              }}
-            >
-              Sign Up
-            </button>
+      <ScreenSection className="px-0 pt-10">
+        <p className="text-[11px]" style={{ color: m.textTertiary, fontWeight: 600 }}>
+          Winnipeg marketplace access
+        </p>
+        <h1 className="mt-2 text-[30px] tracking-tight text-white" style={{ fontWeight: 700, lineHeight: 1 }}>
+          {title}
+        </h1>
+        <p className="mt-3 text-[13px]" style={{ color: m.textSecondary, lineHeight: 1.55 }}>
+          One account for listings, offers, messages, saved cards, and your local seller workspace.
+        </p>
+      </ScreenSection>
+
+      {mode !== "recovery" ? (
+        <ScreenSection className="px-0 pt-5">
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            <ChoicePill active={mode === "login"} onClick={() => setMode("login")}>
+              Sign In
+            </ChoicePill>
+            <ChoicePill active={mode === "signup"} onClick={() => setMode("signup")}>
+              Create Account
+            </ChoicePill>
+            <ChoicePill active={mode === "forgot"} onClick={() => setMode("forgot")}>
+              Reset
+            </ChoicePill>
           </div>
+        </ScreenSection>
+      ) : null}
 
-          {error ? (
-            <div
-              aria-live="assertive"
-              className="mt-5 rounded-[20px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
-              role="alert"
-            >
-              {error}
+      <ScreenSection className="px-0 pt-5">
+        <div className="rounded-[24px] border p-4" style={{ background: m.surface, borderColor: m.border, boxShadow: m.shadowPanel }}>
+          {message ? (
+            <div className="mb-3 rounded-[16px] px-3 py-2 text-[11px]" style={{ background: "rgba(239,68,68,0.08)", color: "#fca5a5", fontWeight: 600 }}>
+              {message}
             </div>
           ) : null}
-          {message ? (
-            <div
-              aria-live="polite"
-              className="mt-5 rounded-[20px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-              role="status"
-            >
-              {message}
+          {error ? (
+            <div className="mb-3 rounded-[16px] px-3 py-2 text-[11px]" style={{ background: "rgba(248,113,113,0.08)", color: m.danger, fontWeight: 600 }}>
+              {error}
             </div>
           ) : null}
 
           {mode === "login" ? (
-            <form aria-label="Login form" className="mt-7 space-y-5" onSubmit={handleLoginSubmit}>
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-steel">Email</span>
-                <input
-                  autoComplete="email"
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  name="email"
-                  required
-                  type="email"
-                  value={loginForm.email}
-                  onChange={(event) =>
-                    setLoginForm((current) => ({
-                      ...current,
-                      email: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-steel">Password</span>
-                <input
-                  autoComplete="current-password"
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  name="password"
-                  required
-                  type="password"
-                  value={loginForm.password}
-                  onChange={(event) =>
-                    setLoginForm((current) => ({
-                      ...current,
-                      password: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <button
-                  className="text-sm font-semibold text-navy transition hover:text-orange"
-                  type="button"
-                  onClick={() => {
-                    setMode("forgot");
-                    setForgotEmail(loginForm.email);
-                    setError("");
-                    setMessage("");
-                  }}
-                >
-                  Reset password
-                </button>
-                <button
-                className="rounded-full bg-navy px-6 py-3.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-400"
-                disabled={submitting}
-                type="submit"
-              >
-                {submitting ? "Signing in..." : "Login"}
-              </button>
-              </div>
+            <form className="space-y-3" onSubmit={handleLoginSubmit}>
+              <AuthField label="Email">
+                <TextField value={loginForm.email} onChange={(value) => setLoginForm((current) => ({ ...current, email: value }))} placeholder="you@example.com" type="email" />
+              </AuthField>
+              <AuthField label="Password">
+                <div className="relative">
+                  <TextField value={loginForm.password} onChange={(value) => setLoginForm((current) => ({ ...current, password: value }))} placeholder="Password" type={showPassword ? "text" : "password"} />
+                  <button className="absolute right-3 top-1/2 -translate-y-1/2" type="button" onClick={() => setShowPassword((current) => !current)}>
+                    {showPassword ? <EyeOff size={14} style={{ color: m.textSecondary }} /> : <Eye size={14} style={{ color: m.textSecondary }} />}
+                  </button>
+                </div>
+              </AuthField>
+              <PrimaryButton disabled={submitting || !loginForm.email || !loginForm.password} type="submit">
+                {submitting ? "Signing in..." : "Sign In"}
+              </PrimaryButton>
             </form>
-          ) : mode === "forgot" ? (
-            <form aria-label="Password reset form" className="mt-7 space-y-5" onSubmit={handleForgotSubmit}>
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-steel">Email</span>
-                <input
-                  autoComplete="email"
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  name="reset-email"
-                  required
-                  type="email"
-                  value={forgotEmail}
-                  onChange={(event) => setForgotEmail(event.target.value)}
-                />
-              </label>
-              <p className="text-sm leading-7 text-steel">
-                We will send a branded reset email to this address with a secure button to recover your account.
-              </p>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <button
-                  className="text-sm font-semibold text-steel transition hover:text-ink"
-                  type="button"
-                  onClick={() => {
-                    setMode("login");
-                    setError("");
-                    setMessage("");
-                  }}
-                >
-                  Back to login
-                </button>
-                <button
-                  className="rounded-full bg-navy px-6 py-3.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-400"
-                  disabled={submitting}
-                  type="submit"
-                >
-                  {submitting ? "Sending..." : "Send reset email"}
-                </button>
+          ) : null}
+
+          {mode === "signup" ? (
+            <form className="space-y-3" onSubmit={handleSignupSubmit}>
+              <AuthField label="Username">
+                <TextField value={signupForm.username} onChange={(value) => setSignupForm((current) => ({ ...current, username: value }))} placeholder="cardkingwpg" />
+              </AuthField>
+              <AuthField label="Public name">
+                <TextField value={signupForm.name} onChange={(value) => setSignupForm((current) => ({ ...current, name: value }))} placeholder="CardKingWPG" />
+              </AuthField>
+              <AuthField label="Email">
+                <TextField value={signupForm.email} onChange={(value) => setSignupForm((current) => ({ ...current, email: value }))} placeholder="you@example.com" type="email" />
+              </AuthField>
+              <AuthField label="Password">
+                <div className="relative">
+                  <TextField value={signupForm.password} onChange={(value) => setSignupForm((current) => ({ ...current, password: value }))} placeholder="Create a password" type={showPassword ? "text" : "password"} />
+                  <button className="absolute right-3 top-1/2 -translate-y-1/2" type="button" onClick={() => setShowPassword((current) => !current)}>
+                    {showPassword ? <EyeOff size={14} style={{ color: m.textSecondary }} /> : <Eye size={14} style={{ color: m.textSecondary }} />}
+                  </button>
+                </div>
+              </AuthField>
+              <div className="grid grid-cols-[1fr_5.5rem] gap-3">
+                <AuthField label="Neighborhood">
+                  <select
+                    className="h-[42px] w-full rounded-[14px] border px-3 text-[12.5px] outline-none"
+                    style={{ background: m.surfaceStrong, borderColor: m.border, color: m.text, fontWeight: 500 }}
+                    value={signupForm.neighborhood}
+                    onChange={(event) => setSignupForm((current) => ({ ...current, neighborhood: event.target.value }))}
+                  >
+                    {neighborhoods.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </AuthField>
+                <AuthField label="Postal">
+                  <TextField value={signupForm.postalCode} onChange={(value) => setSignupForm((current) => ({ ...current, postalCode: normalizePostalInput(value) }))} placeholder="R3C" />
+                </AuthField>
               </div>
+              <PrimaryButton disabled={submitting || !signupForm.username || !signupForm.email || !signupForm.password || !signupForm.name} type="submit">
+                {submitting ? "Creating..." : "Create Account"}
+              </PrimaryButton>
             </form>
-          ) : mode === "recovery" ? (
-            <form aria-label="Password recovery form" className="mt-7 space-y-5" onSubmit={handleRecoverySubmit}>
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-steel">New password</span>
-                <input
-                  autoComplete="new-password"
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  name="new-password"
-                  required
-                  type="password"
-                  value={recoveryForm.newPassword}
-                  onChange={(event) =>
-                    setRecoveryForm((current) => ({
-                      ...current,
-                      newPassword: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-steel">Confirm password</span>
-                <input
-                  autoComplete="new-password"
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  name="confirm-password"
-                  required
-                  type="password"
-                  value={recoveryForm.confirmPassword}
-                  onChange={(event) =>
-                    setRecoveryForm((current) => ({
-                      ...current,
-                      confirmPassword: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <button
-                  className="text-sm font-semibold text-steel transition hover:text-ink"
-                  type="button"
-                  onClick={() => {
-                    setMode("login");
-                    setError("");
-                  }}
-                >
-                  Back to login
-                </button>
-                <button
-                  className="rounded-full bg-orange px-6 py-3.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-400"
-                  disabled={submitting}
-                  type="submit"
-                >
-                  {submitting ? "Updating..." : "Set new password"}
-                </button>
-              </div>
+          ) : null}
+
+          {mode === "forgot" ? (
+            <form className="space-y-3" onSubmit={handleForgotSubmit}>
+              <AuthField label="Email">
+                <TextField value={forgotEmail} onChange={setForgotEmail} placeholder="you@example.com" type="email" />
+              </AuthField>
+              <PrimaryButton disabled={submitting || !forgotEmail} type="submit">
+                {submitting ? "Sending..." : "Send Reset Link"}
+              </PrimaryButton>
+              <SecondaryButton onClick={() => setMode("login")}>Back to sign in</SecondaryButton>
             </form>
-          ) : (
-            <form aria-label="Sign up form" className="mt-7 grid gap-5 sm:grid-cols-2" onSubmit={handleSignupSubmit}>
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-steel">Username</span>
-                <input
-                  autoComplete="username"
-                  required
-                  maxLength={24}
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  name="username"
-                  placeholder="localcardguy"
-                  value={signupForm.username}
-                  onChange={(event) =>
-                    setSignupForm((current) => ({
-                      ...current,
-                      username: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <label className="block sm:col-span-2">
-                <span className="mb-2 block text-sm font-semibold text-steel">
-                  Actual name
-                </span>
-                <input
-                  autoComplete="name"
-                  required
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  name="name"
-                  value={signupForm.name}
-                  onChange={(event) =>
-                    setSignupForm((current) => ({
-                      ...current,
-                      name: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-steel">Email</span>
-                <input
-                  autoComplete="email"
-                  required
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  name="signup-email"
-                  type="email"
-                  value={signupForm.email}
-                  onChange={(event) =>
-                    setSignupForm((current) => ({
-                      ...current,
-                      email: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-steel">Neighborhood</span>
-                <select
-                  autoComplete="address-level2"
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  name="neighborhood"
-                  value={signupForm.neighborhood}
-                  onChange={(event) =>
-                    setSignupForm((current) => ({
-                      ...current,
-                      neighborhood: event.target.value,
-                    }))
-                  }
-                >
-                  {neighborhoods.slice(1).map((neighborhood) => (
-                    <option key={neighborhood}>{neighborhood}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-steel">
-                  Postal code area
-                </span>
-                <input
-                  autoComplete="postal-code"
-                  maxLength={3}
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  name="postal-code"
-                  placeholder="R2P"
-                  value={signupForm.postalCode}
-                  onChange={(event) =>
-                    setSignupForm((current) => ({
-                      ...current,
-                      postalCode: normalizePostalInput(event.target.value),
-                    }))
-                  }
-                />
-              </label>
-              <label className="block sm:col-span-2">
-                <span className="mb-2 block text-sm font-semibold text-steel">Password</span>
-                <input
-                  autoComplete="new-password"
-                  required
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  name="signup-password"
-                  type="password"
-                  value={signupForm.password}
-                  onChange={(event) =>
-                    setSignupForm((current) => ({
-                      ...current,
-                      password: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <div className="sm:col-span-2">
-                <button
-                  className="rounded-full bg-orange px-6 py-3.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-400"
-                  disabled={submitting}
-                  type="submit"
-                >
-                  {submitting ? "Creating account..." : "Create account"}
-                </button>
-              </div>
+          ) : null}
+
+          {mode === "recovery" ? (
+            <form className="space-y-3" onSubmit={handleRecoverySubmit}>
+              <AuthField label="New password">
+                <TextField value={recoveryForm.newPassword} onChange={(value) => setRecoveryForm((current) => ({ ...current, newPassword: value }))} placeholder="New password" type="password" />
+              </AuthField>
+              <AuthField label="Confirm password">
+                <TextField value={recoveryForm.confirmPassword} onChange={(value) => setRecoveryForm((current) => ({ ...current, confirmPassword: value }))} placeholder="Confirm password" type="password" />
+              </AuthField>
+              <PrimaryButton disabled={submitting || !recoveryForm.newPassword || !recoveryForm.confirmPassword} type="submit">
+                {submitting ? "Updating..." : "Update Password"}
+              </PrimaryButton>
             </form>
-          )}
+          ) : null}
         </div>
-      </section>
-    </main>
+      </ScreenSection>
+
+      <ScreenSection className="px-0 pt-5">
+        <div className="grid gap-2">
+          <div className="rounded-[18px] border px-4 py-3" style={{ background: m.surface, borderColor: m.border }}>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-[14px]" style={{ background: "rgba(239,68,68,0.12)" }}>
+                <Mail size={16} style={{ color: "#fca5a5" }} />
+              </div>
+              <div>
+                <p className="text-[12px] text-white" style={{ fontWeight: 700 }}>
+                  Messages and offers
+                </p>
+                <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+                  Keep every local negotiation in one thread.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-[18px] border px-4 py-3" style={{ background: m.surface, borderColor: m.border }}>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-[14px]" style={{ background: "rgba(96,165,250,0.12)" }}>
+                <MapPin size={16} style={{ color: m.blue }} />
+              </div>
+              <div>
+                <p className="text-[12px] text-white" style={{ fontWeight: 700 }}>
+                  Local meetup ready
+                </p>
+                <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+                  Your account powers listings, meetup preferences, and seller trust.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-[18px] border px-4 py-3" style={{ background: m.surface, borderColor: m.border }}>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-[14px]" style={{ background: "rgba(52,211,153,0.12)" }}>
+                <UserPlus size={16} style={{ color: m.success }} />
+              </div>
+              <div>
+                <p className="text-[12px] text-white" style={{ fontWeight: 700 }}>
+                  Collector workspace
+                </p>
+                <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+                  Save cards, track listings, and stay on top of activity.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ScreenSection>
+    </MobileScreen>
   );
 }
-
-

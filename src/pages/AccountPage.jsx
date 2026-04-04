@@ -1,728 +1,817 @@
-import { AlertTriangle, LockKeyhole, MapPin, ShieldCheck, Trash2 } from "lucide-react";
+import {
+  BarChart3,
+  Bell,
+  BookOpenText,
+  Bug,
+  Camera,
+  CheckCircle2,
+  ChevronRight,
+  Eye,
+  Flag,
+  Gamepad2,
+  Heart,
+  HelpCircle,
+  Lock,
+  LogOut,
+  MapPin,
+  Shield,
+  ShieldCheck,
+  Star,
+  Trash2,
+  Users,
+  Zap,
+} from "lucide-react";
+import { motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import ProfileWorkspaceNav from "../components/account/ProfileWorkspaceNav";
 import SeoHead from "../components/seo/SeoHead";
+import UserAvatar from "../components/shared/UserAvatar";
 import { neighborhoods } from "../data/mockData";
 import { approvedMeetupSpots } from "../data/storefrontData";
 import { useMarketplace } from "../hooks/useMarketplace";
-import UserAvatar from "../components/shared/UserAvatar";
-import { trackEvent } from "../lib/analytics";
+import { m } from "../mobile/design";
+import {
+  BottomSheet,
+  ChoicePill,
+  EmptyBlock,
+  MobileScreen,
+  PrimaryButton,
+  SecondaryButton,
+  TextArea,
+  TextField,
+} from "../mobile/primitives";
 
-const GAME_OPTIONS = [
-  "Magic",
-  "Pokemon",
-  "One Piece",
-  "Dragon Ball Super Fusion World",
-  "Union Arena",
-];
+const GAME_OPTIONS = ["Magic", "Pokemon", "One Piece", "Dragon Ball Super Fusion World", "Union Arena"];
 
-function normalizePostalInput(value) {
-  return String(value || "")
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "")
-    .slice(0, 3);
+const normalizePostalInput = (value) => String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 3);
+
+const buildProfileForm = (user) => ({
+  username: user?.username || "",
+  neighborhood: user?.neighborhood || neighborhoods[1],
+  postalCode: normalizePostalInput(user?.postalCode || ""),
+  defaultListingGame: user?.defaultListingGame || user?.favoriteGames?.[0] || "Pokemon",
+  favoriteGames: user?.favoriteGames || [],
+  trustedMeetupSpots: user?.trustedMeetupSpots || [],
+  meetupPreferences: user?.meetupPreferences || "",
+  responseTime: user?.responseTime || "~ 1 hour",
+  bannerStyle: user?.bannerStyle || "neutral",
+  bio: user?.bio || "",
+});
+
+function SettingsGroup({ title, children }) {
+  return (
+    <div className="mb-4 lg:mb-0">
+      <p className="mb-1.5 px-4 text-[10px] uppercase tracking-[0.08em] lg:px-0 lg:text-[11px]" style={{ fontWeight: 600, color: "#3e3e46" }}>
+        {title}
+      </p>
+      <div
+        className="mx-4 overflow-hidden rounded-[14px] lg:mx-0 lg:rounded-[18px]"
+        style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.04)" }}
+      >
+        {children}
+      </div>
+    </div>
+  );
 }
 
-function buildProfileForm(user) {
-  return {
-    username: user?.username || "",
-    neighborhood: user?.neighborhood || neighborhoods[1],
-    postalCode: normalizePostalInput(user?.postalCode || ""),
-    defaultListingGame: user?.defaultListingGame || user?.favoriteGames?.[0] || "Pokemon",
-    favoriteGames: user?.favoriteGames || [],
-    trustedMeetupSpots: user?.trustedMeetupSpots || [],
-    meetupPreferences: user?.meetupPreferences || "",
-    responseTime: user?.responseTime || "~ 1 hour",
-    bannerStyle: user?.bannerStyle || "neutral",
-    bio: user?.bio || "",
-  };
+function SettingsRow({ badge, destructive, icon: Icon, iconColor, isLast, label, onClick, sublabel, value }) {
+  return (
+    <motion.button
+      className="flex w-full items-center gap-3 px-3 py-[11px] text-left active:bg-white/[0.015]"
+      style={{ borderBottom: isLast ? "none" : "1px solid rgba(255,255,255,0.035)" }}
+      type="button"
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+    >
+      <div
+        className="flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-[9px]"
+        style={{ background: destructive ? "rgba(248,113,113,0.08)" : `${iconColor}0d` }}
+      >
+        <Icon size={14} style={{ color: destructive ? "#f87171" : iconColor }} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <span className="block truncate text-[13px]" style={{ fontWeight: 500, color: destructive ? "#f87171" : "#c0c0c8" }}>
+          {label}
+        </span>
+        {sublabel ? (
+          <span className="mt-[1px] block truncate text-[10px]" style={{ fontWeight: 400, color: "#3e3e46" }}>
+            {sublabel}
+          </span>
+        ) : null}
+      </div>
+      {badge ? (
+        <span
+          className="shrink-0 rounded-md px-[6px] py-[2px] text-[9px]"
+          style={{ fontWeight: 600, color: "#fbbf24", background: "rgba(251,191,36,0.1)" }}
+        >
+          {badge}
+        </span>
+      ) : null}
+      <div className="flex shrink-0 items-center gap-1">
+        {value ? <span className="text-[11px]" style={{ color: "#3e3e46" }}>{value}</span> : null}
+        <ChevronRight size={13} style={{ color: "#2a2a32" }} />
+      </div>
+    </motion.button>
+  );
+}
+
+function FollowerRow({ seller, onClick }) {
+  return (
+    <button
+      className="flex w-full items-center gap-3 rounded-[16px] px-3 py-2 text-left"
+      style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.04)" }}
+      type="button"
+      onClick={onClick}
+    >
+      <UserAvatar className="h-10 w-10 text-[12px]" user={seller} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[12px] text-white" style={{ fontWeight: 700 }}>
+          {seller.publicName || seller.name}
+        </p>
+        <p className="mt-0.5 text-[10px]" style={{ color: "#5e5e66" }}>
+          {seller.neighborhood || "Winnipeg"}
+        </p>
+      </div>
+      <ChevronRight size={13} style={{ color: "#2a2a32" }} />
+    </button>
+  );
 }
 
 export default function AccountPage() {
   const navigate = useNavigate();
   const {
+    bugReportsForCurrentUser,
     changeCurrentUserPassword,
+    collectionItems,
     currentUser,
+    currentUserListings,
     deleteCurrentUserAccount,
+    isAdmin,
     isSuspended,
+    logout,
+    sellers,
     submitSuspensionAppeal,
+    unreadNotificationCount,
     updateCurrentUserProfile,
+    wishlist,
   } = useMarketplace();
+
   const [profileForm, setProfileForm] = useState(() => buildProfileForm(currentUser));
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [appealBody, setAppealBody] = useState("");
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(currentUser?.avatarUrl || "");
   const [profileMessage, setProfileMessage] = useState("");
   const [profileError, setProfileError] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const [appealBody, setAppealBody] = useState("");
   const [appealMessage, setAppealMessage] = useState("");
   const [appealError, setAppealError] = useState("");
   const [deleteError, setDeleteError] = useState("");
-  const [avatarFile, setAvatarFile] = useState(null);
-  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(currentUser?.avatarUrl || "");
-  const [isProfileDirty, setIsProfileDirty] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [sheet, setSheet] = useState("");
   const lastSyncedAccountIdRef = useRef(currentUser?.id || "");
 
-  const accountStatus = useMemo(
+  const publicProfileHref = currentUser?.id ? `/seller/${currentUser.id}` : "/";
+  const joinedLabel = currentUser?.createdAt
+    ? new Date(currentUser.createdAt).toLocaleDateString("en-CA", { month: "short", year: "numeric" })
+    : "Marketplace member";
+  const favoriteGamesLabel = profileForm.favoriteGames.length ? profileForm.favoriteGames.join(", ") : "Not set";
+  const meetupSummary = profileForm.trustedMeetupSpots.length ? `${profileForm.trustedMeetupSpots.length} saved` : "Not set";
+  const followerUsers = useMemo(
     () =>
-      isSuspended
-        ? "Suspended account"
-        : currentUser?.verified
-          ? "Verified local account"
-          : "Standard local account",
-    [currentUser, isSuspended],
+      (Array.isArray(sellers) ? sellers : []).filter((seller) =>
+        Array.isArray(seller.followedSellerIds) ? seller.followedSellerIds.includes(currentUser?.id) : false,
+      ),
+    [currentUser?.id, sellers],
   );
+  const followerCount = followerUsers.length;
 
   useEffect(() => {
     const nextAccountId = currentUser?.id || "";
-    const accountChanged = nextAccountId !== lastSyncedAccountIdRef.current;
-
-    if (!accountChanged && (isProfileDirty || isSavingProfile)) {
-      return;
-    }
-
+    if (nextAccountId === lastSyncedAccountIdRef.current) return;
     setProfileForm(buildProfileForm(currentUser));
     setAvatarFile(null);
     setAvatarPreviewUrl(currentUser?.avatarUrl || "");
-    setIsProfileDirty(false);
     lastSyncedAccountIdRef.current = nextAccountId;
-  }, [currentUser, isProfileDirty, isSavingProfile]);
+  }, [currentUser]);
 
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       if (String(avatarPreviewUrl || "").startsWith("blob:")) {
         URL.revokeObjectURL(avatarPreviewUrl);
       }
-    };
-  }, [avatarPreviewUrl]);
+    },
+    [avatarPreviewUrl],
+  );
 
-  async function handleProfileSubmit(event) {
-    event.preventDefault();
+  function updateProfile(field, value) {
+    setProfileError("");
+    setProfileMessage("");
+    setProfileForm((current) => ({ ...current, [field]: value }));
+  }
+
+  async function saveProfile() {
     setProfileError("");
     setProfileMessage("");
     setIsSavingProfile(true);
-
     const result = await updateCurrentUserProfile({
       ...profileForm,
       avatarFile,
       removeAvatar: !avatarFile && !avatarPreviewUrl,
     });
-
     setIsSavingProfile(false);
-
-    if (!result.ok) {
-      setProfileError(result.error);
+    if (!result?.ok) {
+      setProfileError(result?.error || "Profile could not be updated.");
       return;
     }
-
-    trackEvent("profile_settings_saved", {
-      defaultListingGame: profileForm.defaultListingGame,
-      favoriteGameCount: profileForm.favoriteGames.length,
-      trustedMeetupSpotCount: profileForm.trustedMeetupSpots.length,
-      hasAvatarUpload: Boolean(avatarFile),
-    });
-    setProfileMessage(result.warning || "Account location details updated.");
+    setProfileMessage(result.warning || "Account settings updated.");
     setAvatarFile(null);
-    if (typeof result.avatarUrl === "string") {
-      setAvatarPreviewUrl(result.avatarUrl);
-    }
-    setIsProfileDirty(false);
+    if (typeof result.avatarUrl === "string") setAvatarPreviewUrl(result.avatarUrl);
+    setSheet("");
   }
 
-  function updateProfileFormField(field, value) {
-    setProfileError("");
-    setProfileMessage("");
-    setIsProfileDirty(true);
-    setProfileForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
-  }
-
-  async function handlePasswordSubmit(event) {
-    event.preventDefault();
+  async function savePassword() {
     setPasswordError("");
     setPasswordMessage("");
     const result = await changeCurrentUserPassword(passwordForm);
-
-    if (!result.ok) {
-      setPasswordError(result.error);
+    if (!result?.ok) {
+      setPasswordError(result?.error || "Password could not be changed.");
       return;
     }
-
-    setPasswordForm({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    });
+    setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
     setPasswordMessage("Password updated.");
+    setSheet("");
   }
 
-  async function handleAppealSubmit(event) {
-    event.preventDefault();
-    setAppealMessage("");
+  async function saveAppeal() {
     setAppealError("");
+    setAppealMessage("");
     const result = await submitSuspensionAppeal(appealBody);
-
-    if (!result.ok) {
-      setAppealError(result.error);
+    if (!result?.ok) {
+      setAppealError(result?.error || "Appeal could not be submitted.");
       return;
     }
-
     setAppealBody("");
     setAppealMessage("Appeal sent to admin support.");
-    if (result.threadId) {
-      navigate(`/messages/${result.threadId}`);
+    setSheet("");
+    if (result.threadId) navigate(`/inbox/${result.threadId}`);
+  }
+
+  async function handleDeleteAccount() {
+    const confirmed = window.confirm("Delete this account permanently?");
+    if (!confirmed) return;
+    setDeleteError("");
+    const result = await deleteCurrentUserAccount();
+    if (!result?.ok) {
+      setDeleteError(result?.error || "Account could not be deleted.");
+      return;
     }
+    navigate("/");
+  }
+
+  async function handleLogout() {
+    await logout();
+    navigate("/");
+  }
+
+  if (!currentUser) {
+    return (
+      <MobileScreen>
+        <SeoHead
+          canonicalPath="/account"
+          description="Manage your TCG WPG account settings, meetup details, and security preferences."
+          title="Account"
+          type="profile"
+        />
+        <div className="px-4 pt-[max(0.9rem,env(safe-area-inset-top))]">
+          <h1 className="text-[24px] text-white" style={{ fontWeight: 700 }}>Account</h1>
+        </div>
+        <div className="px-4 pt-6">
+          <EmptyBlock
+            title="Sign in required"
+            description="Log in to manage your seller profile, security, and marketplace preferences."
+            action={<PrimaryButton onClick={() => navigate("/auth")}>Go to login</PrimaryButton>}
+          />
+        </div>
+      </MobileScreen>
+    );
   }
 
   return (
-    <main className="space-y-8">
+    <MobileScreen>
       <SeoHead
         canonicalPath="/account"
-        description="Manage your TCG WPG Marketplace account settings, meetup area, seller bio, and password."
-        title="Account Settings"
+        description="Manage your TCG WPG account settings, meetup details, and security preferences."
+        title="Account"
         type="profile"
       />
-      <ProfileWorkspaceNav sellerId={currentUser?.id} />
-      <section aria-labelledby="account-settings-heading" className="surface-card p-7">
-        <p className="section-kicker">Account</p>
-        <h1 className="mt-3 font-display text-5xl font-semibold tracking-[-0.05em] text-ink" id="account-settings-heading">
-          Manage your local account
-        </h1>
-        <p className="mt-4 max-w-4xl text-base leading-8 text-steel">
-          Actual name and email stay locked once the account is created. Username,
-          default listing game, neighborhood, meetup area, and password can be updated here.
-        </p>
-      </section>
 
-      {isSuspended ? (
-        <section className="rounded-[28px] border border-rose-200 bg-rose-50 px-6 py-5">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-1 text-rose-700" size={18} />
-            <div>
-              <p className="font-semibold text-rose-900">Account suspended</p>
-              <p className="mt-2 max-w-3xl text-sm leading-7 text-rose-800">
-                Browsing stays available, but messaging, listing changes, offers, and seller
-                actions are locked. You can still change your password, review your account, and
-                send an appeal below.
-              </p>
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      <section className="grid items-start gap-7 xl:grid-cols-[0.92fr_1.08fr]">
-        <article aria-labelledby="account-identity-heading" className="surface-card self-start p-6">
+      <header className="relative overflow-hidden lg:hidden">
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 60% at 50% -5%, rgba(220,38,38,0.1) 0%, transparent 50%), linear-gradient(180deg, #111114 0%, #0c0c0e 100%)",
+          }}
+        />
+        <div className="relative z-10 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] lg:px-6 lg:pb-6 lg:pt-8">
           <div className="flex items-center gap-3">
-            <ShieldCheck className="text-navy" size={20} />
-            <div>
-              <p className="section-kicker">Identity</p>
-              <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink" id="account-identity-heading">
-                Locked profile details
-              </h2>
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-4">
-            <div className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] px-5 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                Username
-              </p>
-              <p className="mt-2 text-lg font-semibold text-ink">
-                {currentUser?.username || currentUser?.publicName}
-              </p>
-            </div>
-            <div className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] px-5 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                Full name
-              </p>
-              <p className="mt-2 text-lg font-semibold text-ink">{currentUser?.name}</p>
-            </div>
-            <div className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] px-5 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                Email
-              </p>
-              <p className="mt-2 text-lg font-semibold text-ink">{currentUser?.email}</p>
-            </div>
-            <div className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] px-5 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                Profile photo
-              </p>
-              <div className="mt-4 flex items-center gap-4">
-                <UserAvatar
-                  className="h-16 w-16"
-                  name={currentUser?.name}
+            <div className="relative">
+              {avatarPreviewUrl ? (
+                <img
+                  alt="Profile"
+                  className="h-[50px] w-[50px] rounded-[16px] object-cover"
                   src={avatarPreviewUrl}
-                  user={currentUser}
+                  style={{ boxShadow: `0 4px 16px ${m.redGlow}` }}
                 />
-                <p className="text-sm leading-7 text-steel">
-                  Upload a square-ish photo to show on seller pages and listing details.
-                </p>
-              </div>
+              ) : (
+                <div
+                  className="flex h-[50px] w-[50px] items-center justify-center rounded-[16px] text-[19px] text-white"
+                  style={{ background: m.redGradient, boxShadow: `0 4px 16px ${m.redGlow}`, fontWeight: 700 }}
+                >
+                  {String(currentUser?.publicName || currentUser?.name || currentUser?.username || "U").charAt(0).toUpperCase()}
+                </div>
+              )}
+              {currentUser?.verified ? (
+                <div
+                  className="absolute -bottom-[2px] -right-[2px] flex h-[17px] w-[17px] items-center justify-center rounded-full"
+                  style={{ background: "#0c0c0e", border: "2px solid #0c0c0e" }}
+                >
+                  <CheckCircle2 size={13} fill="#3b82f6" style={{ color: "#fff" }} />
+                </div>
+              ) : null}
+              <label
+                className="absolute -right-1 -top-1 flex h-[18px] w-[18px] items-center justify-center rounded-full"
+                style={{ background: "rgba(30,30,36,0.9)", border: "1px solid rgba(255,255,255,0.08)" }}
+              >
+                <Camera size={8} style={{ color: "#78787f" }} />
+                <input
+                  accept="image/*"
+                  className="hidden"
+                  type="file"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    if (String(avatarPreviewUrl || "").startsWith("blob:")) URL.revokeObjectURL(avatarPreviewUrl);
+                    setAvatarFile(file);
+                    setAvatarPreviewUrl(URL.createObjectURL(file));
+                  }}
+                />
+              </label>
             </div>
-            <div className="rounded-[24px] border border-slate-200 bg-[#f7f7f8] px-5 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-steel">
-                Account status
-              </p>
-              <p className="mt-2 text-lg font-semibold text-ink">{accountStatus}</p>
+
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-[17px] text-white" style={{ fontWeight: 700, lineHeight: 1.15 }}>
+                {currentUser?.publicName || currentUser?.name || currentUser?.username || "Account"}
+              </h1>
+              <div className="mt-[2px] flex items-center gap-1">
+                <MapPin size={9} style={{ color: "#4e4e56" }} />
+                <span className="text-[11px]" style={{ color: "#5e5e66" }}>{currentUser?.neighborhood || "Winnipeg, MB"}</span>
+                <span className="text-[10px]" style={{ color: "#2a2a32" }}>/</span>
+                <span className="text-[11px]" style={{ color: "#4e4e56" }}>Since {joinedLabel}</span>
+              </div>
+              <div className="mt-[5px] flex items-center gap-1.5">
+                {(currentUser?.overallRating || currentUser?.rating) ? (
+                  <>
+                    <Star size={10} fill="#fbbf24" style={{ color: "#fbbf24" }} />
+                    <span className="text-[11px]" style={{ color: "#d0d0d4", fontWeight: 600 }}>
+                      {Number(currentUser?.overallRating || currentUser?.rating).toFixed(1)}
+                    </span>
+                  </>
+                ) : null}
+                <span className="text-[10px]" style={{ color: "#5e5e66" }}>{currentUserListings.length} active</span>
+                <span className="text-[10px]" style={{ color: "#2a2a32" }}>/</span>
+                <span className="text-[10px]" style={{ color: "#5e5e66" }}>{wishlist.length} saved</span>
+              </div>
             </div>
           </div>
-        </article>
 
-        <div className="space-y-7">
-          <article aria-labelledby="account-meetup-heading" className="surface-card p-6">
-            <div className="flex items-center gap-3">
-              <MapPin className="text-orange" size={20} />
-              <div>
-                <p className="section-kicker">Meetup Area</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink" id="account-meetup-heading">
-                  Neighborhood and postal code
-                </h2>
-              </div>
-            </div>
-
-            <form className="mt-6 grid gap-5 sm:grid-cols-2" onSubmit={handleProfileSubmit}>
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-steel">Username</span>
-                <input
-                  required
-                  maxLength={24}
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  placeholder="localcardguy"
-                  value={profileForm.username}
-                  onChange={(event) =>
-                    updateProfileFormField("username", event.target.value)
-                  }
-                />
-              </label>
-              <label className="block sm:col-span-2">
-                <span className="mb-2 block text-sm font-semibold text-steel">Profile photo</span>
-                <div className="rounded-[22px] border border-slate-200 bg-[#f2f3f5] p-4">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                    <UserAvatar
-                      className="h-20 w-20"
-                      name={currentUser?.name}
-                      src={avatarPreviewUrl}
-                      user={currentUser}
-                    />
-                    <div className="flex-1 space-y-3">
-                      <input
-                        accept="image/*"
-                        className="block w-full text-sm text-steel file:mr-3 file:rounded-full file:border-0 file:bg-navy file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
-                        type="file"
-                        onChange={(event) => {
-                          const file = event.target.files?.[0] || null;
-                          setProfileError("");
-                          setProfileMessage("");
-                          setIsProfileDirty(true);
-                          setAvatarFile(file);
-
-                          if (!file) {
-                            setAvatarPreviewUrl(currentUser?.avatarUrl || "");
-                            return;
-                          }
-
-                          const previewUrl = URL.createObjectURL(file);
-                          setAvatarPreviewUrl(previewUrl);
-                        }}
-                      />
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-steel transition hover:border-slate-300 hover:text-ink"
-                          type="button"
-                          onClick={() => {
-                            setAvatarFile(null);
-                            setAvatarPreviewUrl(currentUser?.avatarUrl || "");
-                            setProfileError("");
-                            setProfileMessage("");
-                            setIsProfileDirty(true);
-                          }}
-                        >
-                          Revert
-                        </button>
-                        <button
-                          className="rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:border-rose-300"
-                          type="button"
-                          onClick={() => {
-                            setAvatarFile(null);
-                            setAvatarPreviewUrl("");
-                            setProfileError("");
-                            setProfileMessage("");
-                            setIsProfileDirty(true);
-                          }}
-                        >
-                          Remove photo
-                        </button>
-                      </div>
-                      <p className="text-sm text-steel">JPG, PNG, or WebP up to 1.5 MB.</p>
-                    </div>
-                  </div>
-                </div>
-              </label>
-
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-steel">
-                  Default listing game
-                </span>
-                <select
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  value={profileForm.defaultListingGame}
-                  onChange={(event) =>
-                    updateProfileFormField("defaultListingGame", event.target.value)
-                  }
-                >
-                  {GAME_OPTIONS.map((game) => (
-                    <option key={game} value={game}>
-                      {game}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-steel">Neighborhood</span>
-                <select
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  value={profileForm.neighborhood}
-                  onChange={(event) =>
-                    updateProfileFormField("neighborhood", event.target.value)
-                  }
-                >
-                  {neighborhoods.slice(1).map((neighborhood) => (
-                    <option key={neighborhood}>{neighborhood}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-steel">
-                  Postal code area
-                </span>
-                <input
-                  maxLength={3}
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  placeholder="R2P"
-                  value={profileForm.postalCode}
-                  onChange={(event) =>
-                    updateProfileFormField("postalCode", normalizePostalInput(event.target.value))
-                  }
-                />
-              </label>
-
-              <div className="block sm:col-span-2">
-                <span className="mb-2 block text-sm font-semibold text-steel">Favorite games</span>
-                <div className="flex flex-wrap gap-2">
-                  {GAME_OPTIONS.map((game) => {
-                    const active = profileForm.favoriteGames.includes(game);
-                    return (
-                      <button
-                        key={game}
-                        className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                          active
-                            ? "bg-navy text-white"
-                            : "border border-slate-200 bg-white text-steel"
-                        }`}
-                        type="button"
-                        onClick={() =>
-                          updateProfileFormField(
-                            "favoriteGames",
-                            active
-                              ? profileForm.favoriteGames.filter((item) => item !== game)
-                              : [...profileForm.favoriteGames, game],
-                          )
-                        }
-                      >
-                        {game}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-steel">Banner style</span>
-                <select
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  value={profileForm.bannerStyle}
-                  onChange={(event) =>
-                    updateProfileFormField("bannerStyle", event.target.value)
-                  }
-                >
-                  <option value="neutral">Neutral</option>
-                  <option value="magic">Magic</option>
-                  <option value="pokemon">Pokemon</option>
-                  <option value="one-piece">One Piece</option>
-                  <option value="dragon-ball-fusion-world">Dragon Ball Super Fusion World</option>
-                  <option value="union-arena">Union Arena</option>
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-steel">Response time</span>
-                <select
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  value={profileForm.responseTime}
-                  onChange={(event) =>
-                    updateProfileFormField("responseTime", event.target.value)
-                  }
-                >
-                  <option value="< 15 min">&lt; 15 min</option>
-                  <option value="~ 30 min">~ 30 min</option>
-                  <option value="~ 1 hour">~ 1 hour</option>
-                  <option value="Same day">Same day</option>
-                </select>
-              </label>
-
-              <div className="block sm:col-span-2">
-                <span className="mb-2 block text-sm font-semibold text-steel">Trusted meetup spots</span>
-                <div className="flex flex-wrap gap-2">
-                  {approvedMeetupSpots.map((spot) => {
-                    const active = profileForm.trustedMeetupSpots.includes(spot.id);
-                    return (
-                      <button
-                        key={spot.id}
-                        className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                          active
-                            ? "bg-navy text-white"
-                            : "border border-slate-200 bg-white text-steel"
-                        }`}
-                        type="button"
-                        onClick={() =>
-                          updateProfileFormField(
-                            "trustedMeetupSpots",
-                            active
-                              ? profileForm.trustedMeetupSpots.filter((item) => item !== spot.id)
-                              : [...profileForm.trustedMeetupSpots, spot.id],
-                          )
-                        }
-                      >
-                        {spot.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <label className="block sm:col-span-2">
-                <span className="mb-2 block text-sm font-semibold text-steel">Meetup preferences</span>
-                <textarea
-                  className="min-h-24 w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  value={profileForm.meetupPreferences}
-                  onChange={(event) =>
-                    updateProfileFormField("meetupPreferences", event.target.value)
-                  }
-                />
-              </label>
-
-              <label className="block sm:col-span-2">
-                <span className="mb-2 block text-sm font-semibold text-steel">Seller bio</span>
-                <textarea
-                  className="min-h-28 w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  value={profileForm.bio}
-                  onChange={(event) =>
-                    updateProfileFormField("bio", event.target.value)
-                  }
-                />
-              </label>
-
-              {profileError ? (
-                <div className="sm:col-span-2 rounded-[18px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                  {profileError}
-                </div>
-              ) : null}
-              {profileMessage ? (
-                <div className="sm:col-span-2 rounded-[18px] border border-navy/20 bg-navy/5 px-4 py-3 text-sm text-navy">
-                  {profileMessage}
-                </div>
-              ) : null}
-
-              <div className="sm:col-span-2">
-                <button
-                  className="rounded-full bg-navy px-6 py-3 text-sm font-semibold text-white"
-                  disabled={isSavingProfile}
-                  type="submit"
-                >
-                  {isSavingProfile ? "Saving..." : "Save profile settings"}
-                </button>
-              </div>
-            </form>
-          </article>
-
-          <article aria-labelledby="account-security-heading" className="surface-card p-6">
-            <div className="flex items-center gap-3">
-              <LockKeyhole className="text-navy" size={20} />
-              <div>
-                <p className="section-kicker">Security</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink" id="account-security-heading">
-                  Change password
-                </h2>
-              </div>
-            </div>
-
-            <form className="mt-6 grid gap-5" onSubmit={handlePasswordSubmit}>
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-steel">Current password</span>
-                <input
-                  required
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  type="password"
-                  value={passwordForm.currentPassword}
-                  onChange={(event) =>
-                    setPasswordForm((current) => ({
-                      ...current,
-                      currentPassword: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-steel">New password</span>
-                <input
-                  required
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  type="password"
-                  value={passwordForm.newPassword}
-                  onChange={(event) =>
-                    setPasswordForm((current) => ({
-                      ...current,
-                      newPassword: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-steel">Confirm new password</span>
-                <input
-                  required
-                  className="w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                  type="password"
-                  value={passwordForm.confirmPassword}
-                  onChange={(event) =>
-                    setPasswordForm((current) => ({
-                      ...current,
-                      confirmPassword: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-
-              {passwordError ? (
-                <div className="rounded-[18px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                  {passwordError}
-                </div>
-              ) : null}
-              {passwordMessage ? (
-                <div className="rounded-[18px] border border-navy/20 bg-navy/5 px-4 py-3 text-sm text-navy">
-                  {passwordMessage}
-                </div>
-              ) : null}
-
-              <div>
-                <button
-                  className="rounded-full bg-orange px-6 py-3 text-sm font-semibold text-white"
-                  type="submit"
-                >
-                  Update password
-                </button>
-              </div>
-            </form>
-          </article>
-
-          {isSuspended ? (
-            <article aria-labelledby="account-appeal-heading" className="surface-card p-6">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="text-rose-700" size={20} />
-                <div>
-                  <p className="section-kicker">Appeal</p>
-                  <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink" id="account-appeal-heading">
-                    Request review
-                  </h2>
-                </div>
-              </div>
-
-              <form className="mt-6 grid gap-5" onSubmit={handleAppealSubmit}>
-                <label className="block">
-                  <span className="mb-2 block text-sm font-semibold text-steel">Appeal message</span>
-                  <textarea
-                    required
-                    className="min-h-28 w-full rounded-[22px] border border-slate-200 bg-[#f2f3f5] px-4 py-3 outline-none transition focus:border-navy focus:bg-white"
-                    placeholder="Add your context, what happened, and anything an admin should review."
-                    value={appealBody}
-                    onChange={(event) => setAppealBody(event.target.value)}
-                  />
-                </label>
-                {appealError ? (
-                  <div className="rounded-[18px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                    {appealError}
-                  </div>
-                ) : null}
-                {appealMessage ? (
-                  <div className="rounded-[18px] border border-navy/20 bg-navy/5 px-4 py-3 text-sm text-navy">
-                    {appealMessage}
-                  </div>
-                ) : null}
-                <div>
-                  <button
-                    className="rounded-full bg-navy px-6 py-3 text-sm font-semibold text-white"
-                    type="submit"
-                  >
-                    Send appeal
-                  </button>
-                </div>
-              </form>
-            </article>
-          ) : null}
-
-          <article aria-labelledby="account-delete-heading" className="surface-card p-6">
-            <div className="flex items-center gap-3">
-              <Trash2 className="text-rose-700" size={20} />
-              <div>
-                <p className="section-kicker">Delete account</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-ink" id="account-delete-heading">
-                  Remove this account
-                </h2>
-              </div>
-            </div>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-steel">
-              This removes your marketplace account. For full auth deletion the API server needs
-              Supabase service-role access.
-            </p>
-            {deleteError ? (
-              <div className="mt-4 rounded-[18px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {deleteError}
+          <div className="mt-3 flex gap-1.5">
+            {currentUser?.verified ? (
+              <div className="flex items-center gap-1 rounded-lg px-2 py-[4px]" style={{ background: "#60a5fa08", border: "1px solid #60a5fa0d" }}>
+                <Shield size={9} style={{ color: "#60a5fa" }} />
+                <span className="text-[9px]" style={{ color: "#60a5fa", fontWeight: 600 }}>Verified</span>
               </div>
             ) : null}
-            <div className="mt-5">
-              <button
-                className="rounded-full bg-rose-600 px-6 py-3 text-sm font-semibold text-white"
-                type="button"
-                  onClick={async () => {
-                    setDeleteError("");
-                    trackEvent("account_delete_requested", {
-                      userId: currentUser?.id || null,
-                    });
-                    const result = await deleteCurrentUserAccount();
-                    if (!result.ok) {
-                      setDeleteError(result.error);
-                    return;
-                  }
-                  navigate("/");
-                }}
-              >
-                Delete my account
-              </button>
+            <div className="flex items-center gap-1 rounded-lg px-2 py-[4px]" style={{ background: "#6ee7b708", border: "1px solid #6ee7b70d" }}>
+              <Zap size={9} style={{ color: "#6ee7b7" }} />
+              <span className="text-[9px]" style={{ color: "#6ee7b7", fontWeight: 600 }}>{profileForm.responseTime || "Fast responder"}</span>
             </div>
-          </article>
+            {isAdmin ? (
+              <div className="flex items-center gap-1 rounded-lg px-2 py-[4px]" style={{ background: "#fbbf2408", border: "1px solid #fbbf240d" }}>
+                <ShieldCheck size={9} style={{ color: "#fbbf24" }} />
+                <span className="text-[9px]" style={{ color: "#fbbf24", fontWeight: 600 }}>Admin</span>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="mt-3.5 flex gap-2 lg:flex-wrap">
+            <motion.button
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl py-[9px] lg:min-w-[220px] lg:flex-none lg:px-5"
+              style={{ background: "linear-gradient(135deg, rgba(239,68,68,0.1), rgba(185,28,28,0.06))", border: "1px solid rgba(239,68,68,0.1)" }}
+              type="button"
+              whileTap={{ scale: 0.94 }}
+              onClick={() => navigate("/dashboard")}
+            >
+              <BarChart3 size={13} style={{ color: "#f87171" }} />
+              <span className="text-[12px]" style={{ color: "#fca5a5", fontWeight: 600 }}>Seller Dashboard</span>
+            </motion.button>
+            <motion.button
+              className="flex items-center justify-center gap-1.5 rounded-xl px-4 py-[9px] lg:min-w-[180px]"
+              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}
+              type="button"
+              whileTap={{ scale: 0.94 }}
+              onClick={() => navigate(publicProfileHref)}
+            >
+              <Eye size={13} style={{ color: "#5e5e66" }} />
+              <span className="text-[12px]" style={{ color: "#7a7a82", fontWeight: 500 }}>View Profile</span>
+            </motion.button>
+          </div>
         </div>
-      </section>
-    </main>
+        <div className="h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.05) 50%, transparent)" }} />
+      </header>
+
+      <main className="hidden min-h-0 flex-1 overflow-y-auto lg:block">
+        <div className="mx-auto grid w-full max-w-[1400px] grid-cols-[320px_minmax(0,1fr)] gap-8 px-8 py-8">
+          <aside className="sticky top-8 self-start">
+            <div
+              className="overflow-hidden rounded-[28px]"
+              style={{
+                background:
+                  "linear-gradient(180deg, rgba(18,18,22,0.98) 0%, rgba(13,13,16,0.98) 100%)",
+                border: "1px solid rgba(255,255,255,0.05)",
+                boxShadow: "0 24px 60px rgba(0,0,0,0.24)",
+              }}
+            >
+              <div
+                className="h-28"
+                style={{
+                  background:
+                    "radial-gradient(circle at top left, rgba(239,68,68,0.2) 0%, transparent 48%), linear-gradient(135deg, rgba(35,10,12,0.94), rgba(18,18,22,0.96))",
+                }}
+              />
+              <div className="-mt-10 px-5 pb-5">
+                <div className="flex items-start gap-3">
+                  <div className="relative">
+                    {avatarPreviewUrl ? (
+                      <img
+                        alt="Profile"
+                        className="h-[72px] w-[72px] rounded-[20px] object-cover"
+                        src={avatarPreviewUrl}
+                        style={{ boxShadow: `0 10px 28px ${m.redGlow}` }}
+                      />
+                    ) : (
+                      <div
+                        className="flex h-[72px] w-[72px] items-center justify-center rounded-[20px] text-[28px] text-white"
+                        style={{ background: m.redGradient, boxShadow: `0 10px 28px ${m.redGlow}`, fontWeight: 700 }}
+                      >
+                        {String(currentUser?.publicName || currentUser?.name || currentUser?.username || "U").charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    {currentUser?.verified ? (
+                      <div
+                        className="absolute -bottom-[3px] -right-[3px] flex h-[22px] w-[22px] items-center justify-center rounded-full"
+                        style={{ background: "#0c0c0e", border: "2px solid #0c0c0e" }}
+                      >
+                        <CheckCircle2 size={16} fill="#3b82f6" style={{ color: "#fff" }} />
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="min-w-0 flex-1 pt-2">
+                    <h1 className="truncate text-[28px] text-white" style={{ fontWeight: 800, lineHeight: 1.05 }}>
+                      {currentUser?.publicName || currentUser?.name || currentUser?.username || "Account"}
+                    </h1>
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <MapPin size={11} style={{ color: "#5e5e66" }} />
+                      <span className="text-[12px]" style={{ color: "#8a8a92" }}>{currentUser?.neighborhood || "Winnipeg, MB"}</span>
+                    </div>
+                    <p className="mt-1 text-[12px]" style={{ color: "#5e5e66" }}>
+                      Since {joinedLabel}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {currentUser?.verified ? (
+                    <div className="flex items-center gap-1 rounded-lg px-2 py-[5px]" style={{ background: "#60a5fa08", border: "1px solid #60a5fa0d" }}>
+                      <Shield size={10} style={{ color: "#60a5fa" }} />
+                      <span className="text-[10px]" style={{ color: "#60a5fa", fontWeight: 700 }}>Verified</span>
+                    </div>
+                  ) : null}
+                  <div className="flex items-center gap-1 rounded-lg px-2 py-[5px]" style={{ background: "#6ee7b708", border: "1px solid #6ee7b70d" }}>
+                    <Zap size={10} style={{ color: "#6ee7b7" }} />
+                    <span className="text-[10px]" style={{ color: "#6ee7b7", fontWeight: 700 }}>{profileForm.responseTime || "Fast responder"}</span>
+                  </div>
+                  {isAdmin ? (
+                    <div className="flex items-center gap-1 rounded-lg px-2 py-[5px]" style={{ background: "#fbbf2408", border: "1px solid #fbbf240d" }}>
+                      <ShieldCheck size={10} style={{ color: "#fbbf24" }} />
+                      <span className="text-[10px]" style={{ color: "#fbbf24", fontWeight: 700 }}>Admin</span>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="mt-5 grid grid-cols-3 gap-2">
+                  <div className="rounded-[18px] border px-3 py-3" style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.05)" }}>
+                    <p className="text-[22px] text-white" style={{ fontWeight: 800 }}>{currentUserListings.length}</p>
+                    <p className="mt-1 text-[10px]" style={{ color: "#5e5e66", fontWeight: 600 }}>Active</p>
+                  </div>
+                  <div className="rounded-[18px] border px-3 py-3" style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.05)" }}>
+                    <p className="text-[22px] text-white" style={{ fontWeight: 800 }}>{wishlist.length}</p>
+                    <p className="mt-1 text-[10px]" style={{ color: "#5e5e66", fontWeight: 600 }}>Saved</p>
+                  </div>
+                  <button
+                    className="rounded-[18px] border px-3 py-3 text-left"
+                    style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.05)" }}
+                    type="button"
+                    onClick={() => setSheet("followers")}
+                  >
+                    <p className="text-[22px] text-white" style={{ fontWeight: 800 }}>{followerCount}</p>
+                    <p className="mt-1 text-[10px]" style={{ color: "#5e5e66", fontWeight: 600 }}>Followers</p>
+                  </button>
+                </div>
+
+                <div className="mt-5 grid gap-2">
+                  <PrimaryButton className="w-full !rounded-[16px]" onClick={() => navigate("/dashboard")}>
+                    Seller Dashboard
+                  </PrimaryButton>
+                  <SecondaryButton className="w-full !rounded-[16px]" onClick={() => navigate(publicProfileHref)}>
+                    View Public Profile
+                  </SecondaryButton>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <div className="min-w-0 space-y-6">
+            {(profileMessage || profileError || passwordMessage || passwordError || appealMessage || appealError || deleteError) ? (
+              <div className="grid gap-3">
+                {profileMessage ? <div className="rounded-[18px] px-4 py-3 text-[12px]" style={{ background: "rgba(52,211,153,0.08)", color: m.success, fontWeight: 700 }}>{profileMessage}</div> : null}
+                {profileError ? <div className="rounded-[18px] px-4 py-3 text-[12px]" style={{ background: "rgba(248,113,113,0.08)", color: m.danger, fontWeight: 700 }}>{profileError}</div> : null}
+                {passwordMessage ? <div className="rounded-[18px] px-4 py-3 text-[12px]" style={{ background: "rgba(52,211,153,0.08)", color: m.success, fontWeight: 700 }}>{passwordMessage}</div> : null}
+                {passwordError ? <div className="rounded-[18px] px-4 py-3 text-[12px]" style={{ background: "rgba(248,113,113,0.08)", color: m.danger, fontWeight: 700 }}>{passwordError}</div> : null}
+                {appealMessage ? <div className="rounded-[18px] px-4 py-3 text-[12px]" style={{ background: "rgba(52,211,153,0.08)", color: m.success, fontWeight: 700 }}>{appealMessage}</div> : null}
+                {appealError ? <div className="rounded-[18px] px-4 py-3 text-[12px]" style={{ background: "rgba(248,113,113,0.08)", color: m.danger, fontWeight: 700 }}>{appealError}</div> : null}
+                {deleteError ? <div className="rounded-[18px] px-4 py-3 text-[12px]" style={{ background: "rgba(248,113,113,0.08)", color: m.danger, fontWeight: 700 }}>{deleteError}</div> : null}
+              </div>
+            ) : null}
+
+            <div className="rounded-[28px] border p-6" style={{ background: "rgba(255,255,255,0.015)", borderColor: "rgba(255,255,255,0.05)" }}>
+              <div className="flex items-start justify-between gap-6">
+                <div>
+                  <p className="text-[28px] text-white" style={{ fontWeight: 800, lineHeight: 1.05 }}>Account Workspace</p>
+                  <p className="mt-2 max-w-[40rem] text-[13px]" style={{ color: "#7a7a82", lineHeight: 1.6 }}>
+                    Manage your marketplace identity, seller preferences, security, and account tools from one desktop workspace.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <SettingsGroup title="Notifications">
+                <SettingsRow icon={Bell} iconColor="#f87171" label="Notification Center" sublabel="Messages, offers, reminders, and updates" value={String(unreadNotificationCount)} isLast onClick={() => navigate("/notifications")} />
+              </SettingsGroup>
+
+              <SettingsGroup title="Marketplace">
+                <SettingsRow icon={Heart} iconColor="#f87171" label="Wishlist" sublabel="Saved cards and watchlist" value={String(wishlist.length)} onClick={() => navigate("/wishlist")} />
+                <SettingsRow icon={BookOpenText} iconColor="#60a5fa" label="Collection" sublabel="Your binder and collection value" value={String(collectionItems.length)} onClick={() => navigate("/collection")} />
+                <SettingsRow icon={BarChart3} iconColor="#ef4444" label="Seller Dashboard" sublabel="Listings, drafts, and offers" value={String(currentUserListings.length)} onClick={() => navigate("/dashboard")} />
+                <SettingsRow icon={Users} iconColor="#6ee7b7" label="Followers" sublabel="See who follows your seller profile" value={String(followerCount)} onClick={() => setSheet("followers")} />
+                <SettingsRow icon={Eye} iconColor="#a78bfa" isLast label="Public Seller Profile" sublabel="See how buyers view your profile" onClick={() => navigate(publicProfileHref)} />
+              </SettingsGroup>
+
+              <SettingsGroup title="Meetup">
+                <SettingsRow icon={MapPin} iconColor="#f87171" label="Trusted Meetup Spots" sublabel="Manage your preferred public meetup locations" value={meetupSummary} onClick={() => setSheet("preferences")} />
+                <SettingsRow icon={MapPin} iconColor="#60a5fa" label="Meetup Notes" sublabel={profileForm.meetupPreferences || "No meetup notes added"} isLast onClick={() => setSheet("preferences")} />
+              </SettingsGroup>
+
+              <SettingsGroup title="Seller">
+                <SettingsRow icon={Gamepad2} iconColor="#fbbf24" label="Favorite Games" sublabel={favoriteGamesLabel} onClick={() => setSheet("preferences")} />
+                <SettingsRow icon={Shield} iconColor="#60a5fa" label="Profile Details" sublabel={`${profileForm.username || "No username"} / ${profileForm.neighborhood || "Winnipeg"}`} onClick={() => setSheet("profile")} />
+                <SettingsRow icon={Star} iconColor="#6ee7b7" label="Default Listing Game" sublabel={profileForm.defaultListingGame || "Not set"} isLast onClick={() => setSheet("preferences")} />
+              </SettingsGroup>
+
+              <SettingsGroup title="Privacy & Security">
+                <SettingsRow icon={Lock} iconColor="#a78bfa" label="Password & Security" sublabel="Change your password" onClick={() => setSheet("security")} />
+                {isAdmin ? (
+                  <SettingsRow badge="Admin" icon={ShieldCheck} iconColor="#fbbf24" label="Admin Panel" sublabel="Moderation and controls" isLast onClick={() => navigate("/admin")} />
+                ) : (
+                  <SettingsRow icon={Flag} iconColor="#fb7185" label="Suspension Appeal" sublabel={isSuspended ? "Explain the situation to admin support" : "Appeal options unavailable"} value={isSuspended ? undefined : "Locked"} isLast onClick={() => { if (isSuspended) setSheet("appeal"); }} />
+                )}
+              </SettingsGroup>
+
+              <SettingsGroup title="Support">
+                {!isAdmin ? (
+                  <SettingsRow badge={bugReportsForCurrentUser.length ? String(bugReportsForCurrentUser.length) : undefined} icon={Bug} iconColor="#fb7185" label="Bug Reports" sublabel="Beta feedback and QA reports" onClick={() => navigate("/beta/bugs")} />
+                ) : null}
+                <SettingsRow icon={HelpCircle} iconColor="#60a5fa" label="Help & Support" sublabel="Open a support conversation in inbox" onClick={() => navigate("/inbox")} />
+                <SettingsRow destructive icon={LogOut} iconColor="#f87171" label="Log Out" onClick={() => void handleLogout()} />
+                <SettingsRow destructive icon={Trash2} iconColor="#f87171" isLast label="Delete Account" sublabel="Remove your marketplace profile and access" onClick={() => void handleDeleteAccount()} />
+              </SettingsGroup>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto pt-4 lg:hidden">
+        <div className="lg:mx-auto lg:w-full lg:max-w-[1320px]">
+        <div className="px-4 lg:px-0">
+        {profileMessage ? <div className="mb-3 rounded-[14px] px-3 py-2 text-[11px] lg:rounded-[16px]" style={{ background: "rgba(52,211,153,0.08)", color: m.success, fontWeight: 600 }}>{profileMessage}</div> : null}
+        {profileError ? <div className="mb-3 rounded-[14px] px-3 py-2 text-[11px] lg:rounded-[16px]" style={{ background: "rgba(248,113,113,0.08)", color: m.danger, fontWeight: 600 }}>{profileError}</div> : null}
+        {passwordMessage ? <div className="mb-3 rounded-[14px] px-3 py-2 text-[11px] lg:rounded-[16px]" style={{ background: "rgba(52,211,153,0.08)", color: m.success, fontWeight: 600 }}>{passwordMessage}</div> : null}
+        {passwordError ? <div className="mb-3 rounded-[14px] px-3 py-2 text-[11px] lg:rounded-[16px]" style={{ background: "rgba(248,113,113,0.08)", color: m.danger, fontWeight: 600 }}>{passwordError}</div> : null}
+        {appealMessage ? <div className="mb-3 rounded-[14px] px-3 py-2 text-[11px] lg:rounded-[16px]" style={{ background: "rgba(52,211,153,0.08)", color: m.success, fontWeight: 600 }}>{appealMessage}</div> : null}
+        {appealError ? <div className="mb-3 rounded-[14px] px-3 py-2 text-[11px] lg:rounded-[16px]" style={{ background: "rgba(248,113,113,0.08)", color: m.danger, fontWeight: 600 }}>{appealError}</div> : null}
+        {deleteError ? <div className="mb-3 rounded-[14px] px-3 py-2 text-[11px] lg:rounded-[16px]" style={{ background: "rgba(248,113,113,0.08)", color: m.danger, fontWeight: 600 }}>{deleteError}</div> : null}
+        </div>
+
+        <div className="lg:grid lg:grid-cols-2 lg:gap-x-8 lg:gap-y-6">
+        <SettingsGroup title="Notifications">
+          <SettingsRow icon={Bell} iconColor="#f87171" label="Notification Center" sublabel="Messages, offers, reminders, and updates" value={String(unreadNotificationCount)} isLast onClick={() => navigate("/notifications")} />
+        </SettingsGroup>
+
+        <SettingsGroup title="Marketplace">
+          <SettingsRow icon={Heart} iconColor="#f87171" label="Wishlist" sublabel="Saved cards and watchlist" value={String(wishlist.length)} onClick={() => navigate("/wishlist")} />
+          <SettingsRow icon={BookOpenText} iconColor="#60a5fa" label="Collection" sublabel="Your binder and collection value" value={String(collectionItems.length)} onClick={() => navigate("/collection")} />
+          <SettingsRow icon={BarChart3} iconColor="#ef4444" label="Seller Dashboard" sublabel="Listings, drafts, and offers" value={String(currentUserListings.length)} onClick={() => navigate("/dashboard")} />
+          <SettingsRow icon={Users} iconColor="#6ee7b7" label="Followers" sublabel="See who follows your seller profile" value={String(followerCount)} onClick={() => setSheet("followers")} />
+          <SettingsRow icon={Eye} iconColor="#a78bfa" isLast label="Public Seller Profile" sublabel="See how buyers view your profile" onClick={() => navigate(publicProfileHref)} />
+        </SettingsGroup>
+
+        <SettingsGroup title="Meetup">
+          <SettingsRow icon={MapPin} iconColor="#f87171" label="Trusted Meetup Spots" sublabel="Manage your preferred public meetup locations" value={meetupSummary} onClick={() => setSheet("preferences")} />
+          <SettingsRow icon={MapPin} iconColor="#60a5fa" label="Meetup Notes" sublabel={profileForm.meetupPreferences || "No meetup notes added"} isLast onClick={() => setSheet("preferences")} />
+        </SettingsGroup>
+
+        <SettingsGroup title="Seller">
+          <SettingsRow icon={Gamepad2} iconColor="#fbbf24" label="Favorite Games" sublabel={favoriteGamesLabel} onClick={() => setSheet("preferences")} />
+          <SettingsRow icon={Shield} iconColor="#60a5fa" label="Profile Details" sublabel={`${profileForm.username || "No username"} / ${profileForm.neighborhood || "Winnipeg"}`} onClick={() => setSheet("profile")} />
+          <SettingsRow icon={Star} iconColor="#6ee7b7" label="Default Listing Game" sublabel={profileForm.defaultListingGame || "Not set"} isLast onClick={() => setSheet("preferences")} />
+        </SettingsGroup>
+
+        <SettingsGroup title="Privacy & Security">
+          <SettingsRow icon={Lock} iconColor="#a78bfa" label="Password & Security" sublabel="Change your password" onClick={() => setSheet("security")} />
+          {isAdmin ? (
+            <SettingsRow badge="Admin" icon={ShieldCheck} iconColor="#fbbf24" label="Admin Panel" sublabel="Moderation and controls" isLast onClick={() => navigate("/admin")} />
+          ) : (
+            <SettingsRow icon={Flag} iconColor="#fb7185" label="Suspension Appeal" sublabel={isSuspended ? "Explain the situation to admin support" : "Appeal options unavailable"} value={isSuspended ? undefined : "Locked"} isLast onClick={() => { if (isSuspended) setSheet("appeal"); }} />
+          )}
+        </SettingsGroup>
+
+        <SettingsGroup title="Support">
+          {!isAdmin ? (
+            <SettingsRow badge={bugReportsForCurrentUser.length ? String(bugReportsForCurrentUser.length) : undefined} icon={Bug} iconColor="#fb7185" label="Bug Reports" sublabel="Beta feedback and QA reports" onClick={() => navigate("/beta/bugs")} />
+          ) : null}
+          <SettingsRow icon={HelpCircle} iconColor="#60a5fa" label="Help & Support" sublabel="Open a support conversation in inbox" onClick={() => navigate("/inbox")} />
+          <SettingsRow destructive icon={LogOut} iconColor="#f87171" label="Log Out" onClick={() => void handleLogout()} />
+          <SettingsRow destructive icon={Trash2} iconColor="#f87171" isLast label="Delete Account" sublabel="Remove your marketplace profile and access" onClick={() => void handleDeleteAccount()} />
+        </SettingsGroup>
+        </div>
+        </div>
+
+        <div className="pb-4 pt-6 text-center lg:pb-8">
+          <p className="text-[10px]" style={{ color: "#252530", fontWeight: 400 }}>TCG WPG / Winnipeg&apos;s Trading Card Marketplace</p>
+          <p className="mt-[2px] text-[9px]" style={{ color: "#1e1e28", fontWeight: 400 }}>Local mobile rebuild / Manitoba</p>
+        </div>
+      </main>
+
+      <BottomSheet open={sheet === "profile"} onClose={() => setSheet("")}>
+        <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+          <p className="text-[14px] text-white" style={{ fontWeight: 700 }}>Profile details</p>
+          <div className="mt-4 grid gap-3">
+            <TextField value={profileForm.username} onChange={(value) => updateProfile("username", value)} placeholder="Username" />
+            <div className="grid grid-cols-[1fr_5.5rem] gap-3">
+              <select
+                className="h-[42px] w-full rounded-[14px] border px-3 text-[12.5px] outline-none"
+                style={{ background: m.surfaceStrong, borderColor: m.border, color: m.text, fontWeight: 500 }}
+                value={profileForm.neighborhood}
+                onChange={(event) => updateProfile("neighborhood", event.target.value)}
+              >
+                {neighborhoods.map((option) => <option key={option} value={option}>{option}</option>)}
+              </select>
+              <TextField value={profileForm.postalCode} onChange={(value) => updateProfile("postalCode", normalizePostalInput(value))} placeholder="R3C" />
+            </div>
+            <TextArea value={profileForm.bio} onChange={(value) => updateProfile("bio", value)} placeholder="Short seller bio..." rows={4} />
+            <div className="grid grid-cols-2 gap-2">
+              <SecondaryButton onClick={() => setSheet("")}>Cancel</SecondaryButton>
+              <PrimaryButton disabled={isSavingProfile} onClick={() => void saveProfile()}>{isSavingProfile ? "Saving..." : "Save profile"}</PrimaryButton>
+            </div>
+          </div>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet open={sheet === "preferences"} onClose={() => setSheet("")}>
+        <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+          <p className="text-[14px] text-white" style={{ fontWeight: 700 }}>Seller preferences</p>
+          <div className="mt-4 grid gap-3">
+            <select
+              className="h-[42px] w-full rounded-[14px] border px-3 text-[12.5px] outline-none"
+              style={{ background: m.surfaceStrong, borderColor: m.border, color: m.text, fontWeight: 500 }}
+              value={profileForm.defaultListingGame}
+              onChange={(event) => updateProfile("defaultListingGame", event.target.value)}
+            >
+              {GAME_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+            <TextField value={profileForm.responseTime} onChange={(value) => updateProfile("responseTime", value)} placeholder="Response time" />
+            <TextArea value={profileForm.meetupPreferences} onChange={(value) => updateProfile("meetupPreferences", value)} placeholder="Meetup preferences..." rows={3} />
+            <div>
+              <p className="mb-2 text-[10px] uppercase tracking-[0.12em]" style={{ color: m.textTertiary, fontWeight: 700 }}>Favorite games</p>
+              <div className="flex flex-wrap gap-2">
+                {GAME_OPTIONS.map((game) => (
+                  <ChoicePill
+                    key={game}
+                    active={profileForm.favoriteGames.includes(game)}
+                    onClick={() =>
+                      updateProfile(
+                        "favoriteGames",
+                        profileForm.favoriteGames.includes(game)
+                          ? profileForm.favoriteGames.filter((value) => value !== game)
+                          : [...profileForm.favoriteGames, game],
+                      )
+                    }
+                  >
+                    {game}
+                  </ChoicePill>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-2 text-[10px] uppercase tracking-[0.12em]" style={{ color: m.textTertiary, fontWeight: 700 }}>Trusted meetup spots</p>
+              <div className="flex flex-wrap gap-2">
+                {approvedMeetupSpots.slice(0, 8).map((spot) => (
+                  <ChoicePill
+                    key={spot.id}
+                    active={profileForm.trustedMeetupSpots.includes(spot.id)}
+                    onClick={() =>
+                      updateProfile(
+                        "trustedMeetupSpots",
+                        profileForm.trustedMeetupSpots.includes(spot.id)
+                          ? profileForm.trustedMeetupSpots.filter((value) => value !== spot.id)
+                          : [...profileForm.trustedMeetupSpots, spot.id],
+                      )
+                    }
+                  >
+                    {spot.label}
+                  </ChoicePill>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <SecondaryButton onClick={() => setSheet("")}>Cancel</SecondaryButton>
+              <PrimaryButton disabled={isSavingProfile} onClick={() => void saveProfile()}>{isSavingProfile ? "Saving..." : "Save preferences"}</PrimaryButton>
+            </div>
+          </div>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet open={sheet === "followers"} onClose={() => setSheet("")}>
+        <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+          <p className="text-[14px] text-white" style={{ fontWeight: 700 }}>Followers</p>
+          <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+            People following your seller profile.
+          </p>
+          <div className="mt-4 grid gap-2">
+            {followerUsers.length ? (
+              followerUsers.map((seller) => (
+                <FollowerRow key={`account-follower-${seller.id}`} seller={seller} onClick={() => navigate(`/seller/${seller.id}`)} />
+              ))
+            ) : (
+              <p className="text-[11px]" style={{ color: m.textSecondary }}>
+                No followers yet.
+              </p>
+            )}
+          </div>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet open={sheet === "security"} onClose={() => setSheet("")}>
+        <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+          <p className="text-[14px] text-white" style={{ fontWeight: 700 }}>Password & security</p>
+          <div className="mt-4 grid gap-3">
+            <TextField value={passwordForm.currentPassword} onChange={(value) => setPasswordForm((current) => ({ ...current, currentPassword: value }))} placeholder="Current password" type="password" />
+            <TextField value={passwordForm.newPassword} onChange={(value) => setPasswordForm((current) => ({ ...current, newPassword: value }))} placeholder="New password" type="password" />
+            <TextField value={passwordForm.confirmPassword} onChange={(value) => setPasswordForm((current) => ({ ...current, confirmPassword: value }))} placeholder="Confirm new password" type="password" />
+            <div className="grid grid-cols-2 gap-2">
+              <SecondaryButton onClick={() => setSheet("")}>Cancel</SecondaryButton>
+              <PrimaryButton onClick={() => void savePassword()}>Update password</PrimaryButton>
+            </div>
+          </div>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet open={sheet === "appeal"} onClose={() => setSheet("")}>
+        <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+          <p className="text-[14px] text-white" style={{ fontWeight: 700 }}>Suspension appeal</p>
+          <p className="mt-1 text-[11px]" style={{ color: m.textSecondary }}>Explain the situation and we will send it to admin support.</p>
+          <div className="mt-4 grid gap-3">
+            <TextArea value={appealBody} onChange={setAppealBody} placeholder="Describe what happened and any supporting context..." rows={5} />
+            <div className="grid grid-cols-2 gap-2">
+              <SecondaryButton onClick={() => setSheet("")}>Cancel</SecondaryButton>
+              <PrimaryButton onClick={() => void saveAppeal()}>Submit appeal</PrimaryButton>
+            </div>
+          </div>
+        </div>
+      </BottomSheet>
+    </MobileScreen>
   );
 }
-
-

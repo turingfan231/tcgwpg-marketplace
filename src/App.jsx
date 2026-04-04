@@ -10,6 +10,7 @@ import AdminPageDev from "./pages/AdminPage";
 import AuthPageDev from "./pages/AuthPage";
 import BugReportsPageDev from "./pages/BugReportsPage";
 import CollectionPageDev from "./pages/CollectionPage";
+import CreateListingPageDev from "./pages/CreateListingPage";
 import DashboardPageDev from "./pages/DashboardPage";
 import EventsPageDev from "./pages/EventsPage";
 import HomePageDev from "./pages/HomePage";
@@ -17,6 +18,7 @@ import ListingDetailPageDev from "./pages/ListingDetailPage";
 import MarketPageDev from "./pages/MarketPage";
 import MessagesPageDev from "./pages/MessagesPage";
 import NotificationsPageDev from "./pages/NotificationsPage";
+import OfferPageDev from "./pages/OfferPage";
 import SellerProfilePageDev from "./pages/SellerProfilePage";
 import SellersPageDev from "./pages/SellersPage";
 import StoreProfilePageDev from "./pages/StoreProfilePage";
@@ -31,6 +33,9 @@ const AdminPage = isDev ? AdminPageDev : lazy(() => import("./pages/AdminPage"))
 const AuthPage = isDev ? AuthPageDev : lazy(() => import("./pages/AuthPage"));
 const BugReportsPage = isDev ? BugReportsPageDev : lazy(() => import("./pages/BugReportsPage"));
 const CollectionPage = isDev ? CollectionPageDev : lazy(() => import("./pages/CollectionPage"));
+const CreateListingPage = isDev
+  ? CreateListingPageDev
+  : lazy(() => import("./pages/CreateListingPage"));
 const DashboardPage = isDev ? DashboardPageDev : lazy(() => import("./pages/DashboardPage"));
 const EventsPage = isDev ? EventsPageDev : lazy(() => import("./pages/EventsPage"));
 const HomePage = isDev ? HomePageDev : lazy(() => import("./pages/HomePage"));
@@ -42,6 +47,7 @@ const MessagesPage = isDev ? MessagesPageDev : lazy(() => import("./pages/Messag
 const NotificationsPage = isDev
   ? NotificationsPageDev
   : lazy(() => import("./pages/NotificationsPage"));
+const OfferPage = isDev ? OfferPageDev : lazy(() => import("./pages/OfferPage"));
 const SellerProfilePage = isDev
   ? SellerProfilePageDev
   : lazy(() => import("./pages/SellerProfilePage"));
@@ -71,6 +77,8 @@ export default function App() {
                 <Route path="/market" element={<MarketPage />} />
                 <Route path="/market/:gameSlug" element={<MarketPage />} />
                 <Route path="/listing/:listingId" element={<ListingDetailPage />} />
+                <Route path="/sell" element={<CreateListingPage />} />
+                <Route path="/offer/:listingId" element={<OfferPage />} />
                 <Route path="/seller/:sellerId" element={<SellerProfilePage />} />
                 <Route path="/sellers" element={<SellersPage />} />
                 <Route path="/stores" element={<StoresPage />} />
@@ -80,10 +88,13 @@ export default function App() {
                 <Route element={<ProtectedRoute />}>
                   <Route path="/account" element={<AccountPage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/account/dashboard" element={<DashboardPage />} />
                   <Route path="/collection" element={<CollectionPage />} />
                   <Route path="/wishlist" element={<WishlistPage />} />
                   <Route path="/notifications" element={<NotificationsPage />} />
-                  <Route path="/messages" element={<MessagesPage />} />
+                  <Route path="/inbox" element={<MessagesPage />} />
+                  <Route path="/inbox/:threadId" element={<MessagesPage />} />
+                  <Route path="/messages" element={<Navigate replace to="/inbox" />} />
                   <Route path="/messages/:threadId" element={<MessagesPage />} />
                 </Route>
                 <Route element={<ProtectedRoute />}>
