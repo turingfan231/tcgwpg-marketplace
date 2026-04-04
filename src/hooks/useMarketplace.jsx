@@ -902,6 +902,37 @@ function omitMissingProfileColumns(payload, error) {
   return nextPayload;
 }
 
+function omitMissingProfileSelectColumns(columns, error) {
+  const nextColumns = String(columns || "")
+    .split(",")
+    .map((column) => column.trim())
+    .filter(Boolean);
+
+  const missingProfileColumns = [
+    "username",
+    "avatar_url",
+    "default_listing_game",
+    "followed_seller_ids",
+    "followed_store_slugs",
+    "favorite_games",
+    "banner_style",
+    "onboarding_complete",
+    "response_time",
+    "completed_deals",
+    "meetup_preferences",
+    "badges",
+    "verified",
+    "account_status",
+    "postal_code",
+    "bio",
+    "email",
+  ];
+
+  return nextColumns
+    .filter((column) => !missingProfileColumns.some((missing) => isMissingColumnError(error, missing) && column === missing))
+    .join(",");
+}
+
 function omitMissingOfferColumns(payload, error) {
   const nextPayload = { ...payload };
 
@@ -2544,11 +2575,24 @@ export function MarketplaceProvider({ children }) {
       return null;
     }
 
-    const { data: existingProfile, error: profileError } = await supabase
+    let profileResult = await supabase
       .from("profiles")
       .select(PROFILE_FULL_COLUMNS)
       .eq("id", authUser.id)
       .maybeSingle();
+
+    if (profileResult.error) {
+      const fallbackColumns = omitMissingProfileSelectColumns(PROFILE_FULL_COLUMNS, profileResult.error);
+      if (fallbackColumns && fallbackColumns !== PROFILE_FULL_COLUMNS) {
+        profileResult = await supabase
+          .from("profiles")
+          .select(fallbackColumns)
+          .eq("id", authUser.id)
+          .maybeSingle();
+      }
+    }
+
+    const { data: existingProfile, error: profileError } = profileResult;
 
     if (profileError) {
       throw profileError;
@@ -2890,15 +2934,16 @@ export function MarketplaceProvider({ children }) {
           authUser = authResult.data?.user || null;
         }
 
+        let profilesPromise = supabase.from("profiles").select(PROFILE_BOOT_COLUMNS);
         const [
-          profilesRes,
+          profilesInitialRes,
           listingsRes,
           manualEventsRes,
           siteSettingsRes,
           wishlistsRes,
         ] =
           await Promise.all([
-          supabase.from("profiles").select(PROFILE_BOOT_COLUMNS),
+          profilesPromise,
           supabase.from("listings").select(LISTING_BOOT_COLUMNS),
           supabase.from("manual_events").select(MANUAL_EVENT_COLUMNS),
           supabase.from("site_settings").select(SITE_SETTINGS_COLUMNS).eq("key", "global").maybeSingle(),
@@ -2906,6 +2951,14 @@ export function MarketplaceProvider({ children }) {
             ? supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId)
             : Promise.resolve({ data: [], error: null }),
         ]);
+
+        let profilesRes = profilesInitialRes;
+        if (profilesRes.error) {
+          const fallbackColumns = omitMissingProfileSelectColumns(PROFILE_BOOT_COLUMNS, profilesRes.error);
+          if (fallbackColumns && fallbackColumns !== PROFILE_BOOT_COLUMNS) {
+            profilesRes = await supabase.from("profiles").select(fallbackColumns);
+          }
+        }
 
         if (profilesRes.error) throw profilesRes.error;
         if (listingsRes.error) throw listingsRes.error;
