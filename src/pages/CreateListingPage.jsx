@@ -147,6 +147,7 @@ function buildInitialDraft(draft, currentUser, fallbackGame, preset = null) {
     : [];
   return {
     draftId: draft?.id || "",
+    manualEntry: Boolean(draft?.manualEntry),
     query: draft?.query || "",
     game: draft?.game || preset?.game || fallbackGame,
     title: draft?.title || "",
@@ -172,6 +173,7 @@ function buildInitialDraft(draft, currentUser, fallbackGame, preset = null) {
 function serializeDraft(state) {
   return {
     id: state.draftId || undefined,
+    manualEntry: Boolean(state.manualEntry),
     query: state.query,
     game: state.game,
     title: state.title,
@@ -340,7 +342,7 @@ export default function CreateListingPage() {
 
   const canContinue = useMemo(() => {
     if (step === 0) {
-      return Boolean(state.selectedPrinting);
+      return Boolean(state.selectedPrinting) || Boolean(state.manualEntry);
     }
     if (step === 1) {
       return photos.length > 0;
@@ -361,6 +363,7 @@ export default function CreateListingPage() {
   function selectPrinting(printing) {
     setState((current) => ({
       ...current,
+      manualEntry: false,
       title: printing.title || current.title,
       game: printing.game || current.game,
       selectedPrinting: printing,
@@ -368,6 +371,23 @@ export default function CreateListingPage() {
       query: printing.title || current.query,
       description: current.description || printing.description || "",
       price: current.price || (printing.marketPrice ? String(Math.round(printing.marketPrice)) : ""),
+    }));
+  }
+
+  function enableManualEntry() {
+    setState((current) => ({
+      ...current,
+      manualEntry: true,
+      selectedPrinting: null,
+      includeSelectedPrintingImage: false,
+      title: current.title || current.query || "",
+    }));
+  }
+
+  function disableManualEntry() {
+    setState((current) => ({
+      ...current,
+      manualEntry: false,
     }));
   }
 
@@ -469,6 +489,7 @@ export default function CreateListingPage() {
       );
       const payload = {
         id: state.draftId || undefined,
+        manualEntry: Boolean(state.manualEntry),
         title: state.title.trim(),
         type: state.listingType,
         game: state.selectedPrinting?.game || state.game,
@@ -550,6 +571,8 @@ export default function CreateListingPage() {
                     setState((current) => ({
                       ...current,
                       game: game.name,
+                      manualEntry:
+                        current.manualEntry && current.game !== game.name ? true : current.manualEntry,
                       selectedPrinting: current.selectedPrinting?.game === game.name ? current.selectedPrinting : null,
                     }))
                   }
@@ -571,6 +594,28 @@ export default function CreateListingPage() {
           </ScreenSection>
 
           <ScreenSection className="pt-4">
+            <div className="mb-3 rounded-[18px] border p-3" style={{ background: m.surface, borderColor: m.border }}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[12px] text-white" style={{ fontWeight: 700 }}>
+                    Can’t find your card?
+                  </p>
+                  <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+                    Switch to manual mode and create the listing yourself. You can set the title, price, details, and
+                    photos in the next steps.
+                  </p>
+                </div>
+                {state.manualEntry ? (
+                  <SecondaryButton className="shrink-0 px-3 py-2 text-[10px]" onClick={disableManualEntry}>
+                    Use search
+                  </SecondaryButton>
+                ) : (
+                  <PrimaryButton className="shrink-0 px-3 py-2 text-[10px]" onClick={enableManualEntry}>
+                    Manual listing
+                  </PrimaryButton>
+                )}
+              </div>
+            </div>
             {state.selectedPrinting ? (
               <div className="rounded-[18px] border p-3" style={{ background: "rgba(239,68,68,0.05)", borderColor: "rgba(239,68,68,0.12)" }}>
                 <div className="flex gap-3">
@@ -627,6 +672,25 @@ export default function CreateListingPage() {
                   </div>
                 </div>
               </div>
+            ) : state.manualEntry ? (
+              <div className="rounded-[18px] border p-3" style={{ background: "rgba(59,130,246,0.06)", borderColor: "rgba(59,130,246,0.14)" }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[13px] text-white" style={{ fontWeight: 700 }}>
+                      Manual listing active
+                    </p>
+                    <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+                      {state.game} card not in the database? Continue and enter the details manually.
+                    </p>
+                  </div>
+                  <span
+                    className="rounded-full px-2 py-[3px] text-[9px]"
+                    style={{ background: m.surfaceStrong, color: m.textSecondary, fontWeight: 700 }}
+                  >
+                    {state.game}
+                  </span>
+                </div>
+              </div>
             ) : null}
           </ScreenSection>
 
@@ -634,13 +698,19 @@ export default function CreateListingPage() {
             <p className="mb-2 text-[10px] uppercase" style={{ color: m.textTertiary, fontWeight: 700, letterSpacing: "0.08em" }}>
               {state.query.trim().length >= 2 ? "Results" : "Popular now"}
             </p>
-            <div className="flex flex-col gap-2">
+            <div className="flex max-h-[min(52vh,24rem)] flex-col gap-2 overflow-y-auto pr-1">
               {searching ? (
                 <div className="flex h-24 items-center justify-center rounded-[18px]" style={{ background: m.surfaceStrong }}>
                   <LoaderCircle className="animate-spin" size={16} style={{ color: m.textSecondary }} />
                 </div>
               ) : null}
               {!searching && searchError ? <EmptyBlock description={searchError} title="Search unavailable" /> : null}
+              {!searching && !searchError && state.query.trim().length >= 2 && !searchResults.length ? (
+                <EmptyBlock
+                  title="No matching cards"
+                  description="Switch to manual listing if your card is not in the database yet."
+                />
+              ) : null}
               {!searching &&
                 !(searchError || "").length &&
                 (state.query.trim().length >= 2 ? searchResults : popularCards).map((item) => (
@@ -915,7 +985,7 @@ export default function CreateListingPage() {
                 Checklist
               </p>
               {[
-                { ok: Boolean(state.selectedPrinting), label: "Card selected" },
+                { ok: Boolean(state.selectedPrinting) || Boolean(state.manualEntry), label: state.manualEntry ? "Manual entry enabled" : "Card selected" },
                 { ok: photos.length > 0, label: "Photos attached" },
                 { ok: Boolean(state.title.trim()), label: "Title set" },
                 { ok: Boolean(Number(state.price)), label: "Price set" },
