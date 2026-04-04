@@ -86,7 +86,7 @@ const DEFAULT_SITE_SETTINGS = {
   },
 };
 
-const PROFILE_BOOT_COLUMNS = [
+const PROFILE_CRITICAL_COLUMNS = [
   "id",
   "role",
   "name",
@@ -108,7 +108,7 @@ const PROFILE_BOOT_COLUMNS = [
   "created_at",
   "onboarding_complete",
 ].join(",");
-const PROFILE_FULL_COLUMNS = `${PROFILE_BOOT_COLUMNS},email,bio`;
+const PROFILE_FULL_COLUMNS = `${PROFILE_CRITICAL_COLUMNS},email,bio`;
 const LISTING_BOOT_COLUMNS = [
   "id",
   "seller_id",
@@ -131,15 +131,12 @@ const LISTING_BOOT_COLUMNS = [
   "description",
   "primary_image",
   "image_gallery",
-  "condition_images",
   "status",
   "featured",
   "flagged",
   "admin_notes",
   "views",
   "offers",
-  "price_history",
-  "edit_history",
   "created_at",
   "updated_at",
 ].join(",");
@@ -2022,7 +2019,7 @@ export function MarketplaceProvider({ children }) {
   const listingsRef = useRef(listings);
   const viewedListingsRef = useRef(readViewedListingIds());
   const pendingViewedListingsRef = useRef(new Set());
-  const profileBootColumnsRef = useRef(PROFILE_BOOT_COLUMNS);
+  const profileBootColumnsRef = useRef(PROFILE_CRITICAL_COLUMNS);
   const profileFullColumnsRef = useRef(PROFILE_FULL_COLUMNS);
   const eventsSyncRunningRef = useRef(false);
   const secondaryStateRef = useRef({
@@ -3008,11 +3005,7 @@ export function MarketplaceProvider({ children }) {
       }
 
       try {
-        let authUser = null;
-        if (authedUserId) {
-          const authResult = await supabase.auth.getUser();
-          authUser = authResult.data?.user || null;
-        }
+        const authUser = options.authUser || null;
 
         const profilesPromise = selectWithProfileFallback(
           (columns) => supabase.from("profiles").select(columns),
@@ -3029,21 +3022,11 @@ export function MarketplaceProvider({ children }) {
           }
           return result;
         })();
-        const [
-          profilesRes,
-          listingsRes,
-          manualEventsRes,
-          siteSettingsRes,
-          wishlistsRes,
-        ] =
-          await Promise.all([
+        const [profilesRes, listingsRes, manualEventsRes, siteSettingsRes] = await Promise.all([
           profilesPromise,
           supabase.from("listings").select(LISTING_BOOT_COLUMNS),
           manualEventsPromise,
           supabase.from("site_settings").select(SITE_SETTINGS_COLUMNS).eq("key", "global").maybeSingle(),
-          authedUserId
-            ? supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId)
-            : Promise.resolve({ data: [], error: null }),
         ]);
 
         if (profilesRes.error) throw profilesRes.error;
@@ -3052,7 +3035,6 @@ export function MarketplaceProvider({ children }) {
         if (siteSettingsRes.error && !isMissingTableError(siteSettingsRes.error, "site_settings")) {
           throw siteSettingsRes.error;
         }
-        if (wishlistsRes.error) throw wishlistsRes.error;
         if (profilesRes.resolvedColumns) {
           profileBootColumnsRef.current = profilesRes.resolvedColumns;
         }
@@ -3068,21 +3050,23 @@ export function MarketplaceProvider({ children }) {
         let nextManualEvents = (manualEventsRes.data || []).map(fromEventRow);
 
         if (!nextManualEvents.length) {
-          try {
-            const syncedPayload = await syncLocalEventsCache();
-            if (Array.isArray(syncedPayload?.events) && syncedPayload.events.length) {
-              nextManualEvents = syncedPayload.events.map(normalizeManualEventRecord);
-              writeEventSyncTimestamp(Date.now());
-            }
-          } catch (syncError) {
-            console.error("Boot event sync fallback failed:", syncError);
-          }
+          window.setTimeout(() => {
+            void syncLocalEventsCache()
+              .then((syncedPayload) => {
+                if (Array.isArray(syncedPayload?.events) && syncedPayload.events.length) {
+                  setManualEvents(syncedPayload.events.map(normalizeManualEventRecord));
+                  writeEventSyncTimestamp(Date.now());
+                }
+              })
+              .catch((syncError) => {
+                console.error("Boot event sync fallback failed:", syncError);
+              });
+          }, 0);
         }
 
         setUsers(normalizedProfiles);
         setListings(nextListings);
         setManualEvents(nextManualEvents);
-        setWishlist((wishlistsRes.data || []).map((item) => item.listing_id));
         if (!siteSettingsRes.error && siteSettingsRes.data) {
           setSiteSettings(fromSiteSettingsRow(siteSettingsRes.data));
         }
@@ -3444,25 +3428,31 @@ export function MarketplaceProvider({ children }) {
       try {
         if (authUser) {
           updateBootState(hasUsableCache ? 0.28 : 0.16, "Checking your account");
-          const profile = await bootstrapProfile(authUser);
-          if (!mounted) {
-            return;
-          }
-          if (profile) {
-            setUsers((current) => {
-              const nextUsers = current.filter((user) => user.id !== profile.id);
-              return [profile, ...nextUsers];
-            });
-          }
           setCurrentUserId(authUser.id);
           setAuthReady(true);
+          window.setTimeout(() => {
+            void bootstrapProfile(authUser)
+              .then((profile) => {
+                if (!mounted || !profile) {
+                  return;
+                }
+                setUsers((current) => {
+                  const nextUsers = current.filter((user) => user.id !== profile.id);
+                  return [profile, ...nextUsers];
+                });
+              })
+              .catch((error) => {
+                console.error("Profile bootstrap fallback failed:", error);
+              });
+          }, 0);
           void refreshMarketplaceData(authUser.id, {
             silent: Boolean(hasUsableCache),
             deferSecondary: true,
             loadSellerTrust: true,
-            loadWorkspace: false,
+            loadWorkspace: true,
             loadEventAttendance: false,
             loadAdmin: false,
+            authUser,
           });
         } else {
           if (!mounted) {
@@ -7573,6 +7563,7 @@ export function MarketplaceProvider({ children }) {
       gameCatalog,
       getThreadById,
       globalSearch,
+      hasBootCache: hasUsableCache,
       hideThreadForCurrentUser,
       hotListings,
     isAdmin: currentUser?.role === "admin",
