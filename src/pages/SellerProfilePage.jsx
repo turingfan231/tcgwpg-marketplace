@@ -220,7 +220,7 @@ export default function SellerProfilePage() {
 
   const isOwnProfile = String(currentUser?.id || "") === String(seller?.id || sellerId || "");
   const canReview = currentUser && !isOwnProfile;
-  const canModerateReviews = currentUser?.role === "admin" || isOwnProfile;
+  const canModerateReviews = currentUser?.role === "admin";
   const resolvedSellerId = String(seller?.id || sellerId || "");
   const normalizedSellerSlug = slugify(seller?.publicName || seller?.username || seller?.name || "");
 
@@ -688,7 +688,7 @@ export default function SellerProfilePage() {
                   {sellerReviews.map((review) => (
                     <ReviewCard
                       key={review.id}
-                      canDelete={canModerateReviews || String(review.reviewerId || "") === String(currentUser?.id || "")}
+                      canDelete={canModerateReviews}
                       onDelete={() => deleteReview(review.id)}
                       review={review}
                     />

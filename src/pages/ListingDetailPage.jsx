@@ -7,6 +7,8 @@ import {
   Heart,
   MapPin,
   MessageCircle,
+  ShieldCheck,
+  ShieldX,
   Share2,
   Shield,
   Star,
@@ -69,7 +71,11 @@ export default function ListingDetailPage() {
     findOrCreateThread,
     offersByListingId,
     recordListingView,
+    toggleListingFeatured,
+    toggleListingFlag,
+    toggleListingRemoved,
     toggleWishlist,
+    updateListingAdminNote,
     wishlist,
   } = useMarketplace();
 
@@ -77,8 +83,11 @@ export default function ListingDetailPage() {
   const [saved, setSaved] = useState(false);
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [showOfferSheet, setShowOfferSheet] = useState(false);
+  const [showAdminSheet, setShowAdminSheet] = useState(false);
   const [offerAmount, setOfferAmount] = useState("");
   const [lightboxSrc, setLightboxSrc] = useState("");
+  const [adminNote, setAdminNote] = useState("");
+  const [adminSaving, setAdminSaving] = useState(false);
   const galleryRef = useRef(null);
   const recordedViewsRef = useRef(new Set());
 
@@ -113,6 +122,10 @@ export default function ListingDetailPage() {
     setSaved(Boolean(listing && wishlist?.includes(listing.id)));
   }, [listing, wishlist]);
 
+  useEffect(() => {
+    setAdminNote(listing?.adminNotes || "");
+  }, [listing?.adminNotes, listing?.id]);
+
   const gallery = useMemo(() => {
     if (!listing) {
       return [];
@@ -129,6 +142,7 @@ export default function ListingDetailPage() {
   }, [listing]);
 
   const seller = listing?.seller || listing;
+  const isAdmin = currentUser?.role === "admin";
   const tone = conditionStyle(listing?.condition);
   const offerCount = listing ? (offersByListingId[listing.id] || []).length : 0;
   const marketPrice = Number(listing?.marketPriceCad || listing?.marketPrice || 0);
@@ -184,6 +198,19 @@ export default function ListingDetailPage() {
 
     if (result?.ok && result.thread?.id) {
       navigate(`/inbox/${result.thread.id}`);
+    }
+  }
+
+  async function handleAdminNoteSave() {
+    if (!listing?.id || !isAdmin || adminSaving) {
+      return;
+    }
+    setAdminSaving(true);
+    try {
+      await updateListingAdminNote(listing.id, adminNote);
+      setShowAdminSheet(false);
+    } finally {
+      setAdminSaving(false);
     }
   }
 
@@ -278,6 +305,17 @@ export default function ListingDetailPage() {
           >
             <Share2 size={16} style={{ color: "#808088" }} />
           </motion.button>
+          {isAdmin ? (
+            <motion.button
+              className="flex h-9 w-9 items-center justify-center rounded-xl"
+              style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.12)" }}
+              type="button"
+              whileTap={{ scale: 0.85 }}
+              onClick={() => setShowAdminSheet(true)}
+            >
+              <ShieldCheck size={16} style={{ color: "#fca5a5" }} />
+            </motion.button>
+          ) : null}
         </div>
       </motion.header>
 
@@ -673,6 +711,17 @@ export default function ListingDetailPage() {
               Safety tips
             </span>
           </button>
+          {isAdmin ? (
+            <>
+              <div className="h-3 w-px" style={{ background: "rgba(255,255,255,0.04)" }} />
+              <button className="flex items-center gap-1" type="button" onClick={() => setShowAdminSheet(true)}>
+                <ShieldCheck size={11} style={{ color: "#fca5a5" }} />
+                <span className="text-[10px]" style={{ color: "#fca5a5", fontWeight: 600 }}>
+                  Admin controls
+                </span>
+              </button>
+            </>
+          ) : null}
         </div>
         </div>
         </div>
@@ -770,6 +819,100 @@ export default function ListingDetailPage() {
           >
             Continue to Offer
           </PrimaryButton>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet open={showAdminSheet} onClose={() => setShowAdminSheet(false)}>
+        <div className="px-5 pb-8 pt-4">
+          <div className="mb-1">
+            <h2 className="text-[18px] text-white" style={{ fontWeight: 700 }}>
+              Listing admin controls
+            </h2>
+            <p className="mt-1 text-[12px]" style={{ color: "#5e5e66", fontWeight: 400 }}>
+              Moderate this listing and keep notes without leaving the page.
+            </p>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button
+              className="rounded-[16px] px-4 py-3 text-left"
+              style={{
+                background: listing.flagged ? "rgba(248,113,113,0.12)" : "rgba(255,255,255,0.04)",
+                border: `1px solid ${listing.flagged ? "rgba(248,113,113,0.18)" : "rgba(255,255,255,0.05)"}`,
+              }}
+              type="button"
+              onClick={() => void toggleListingFlag(listing.id)}
+            >
+              <Flag size={14} style={{ color: listing.flagged ? "#fca5a5" : "#9aa0ab" }} />
+              <p className="mt-2 text-[12px] text-white" style={{ fontWeight: 700 }}>
+                {listing.flagged ? "Unflag" : "Flag"}
+              </p>
+            </button>
+            <button
+              className="rounded-[16px] px-4 py-3 text-left"
+              style={{
+                background: listing.featured ? "rgba(251,191,36,0.12)" : "rgba(255,255,255,0.04)",
+                border: `1px solid ${listing.featured ? "rgba(251,191,36,0.18)" : "rgba(255,255,255,0.05)"}`,
+              }}
+              type="button"
+              onClick={() => void toggleListingFeatured(listing.id)}
+            >
+              <Star size={14} style={{ color: listing.featured ? "#fbbf24" : "#9aa0ab" }} />
+              <p className="mt-2 text-[12px] text-white" style={{ fontWeight: 700 }}>
+                {listing.featured ? "Unfeature" : "Feature"}
+              </p>
+            </button>
+            <button
+              className="rounded-[16px] px-4 py-3 text-left"
+              style={{
+                background: listing.status === "removed" ? "rgba(248,113,113,0.12)" : "rgba(255,255,255,0.04)",
+                border: `1px solid ${listing.status === "removed" ? "rgba(248,113,113,0.18)" : "rgba(255,255,255,0.05)"}`,
+              }}
+              type="button"
+              onClick={() => void toggleListingRemoved(listing.id)}
+            >
+              <ShieldX size={14} style={{ color: listing.status === "removed" ? "#f87171" : "#9aa0ab" }} />
+              <p className="mt-2 text-[12px] text-white" style={{ fontWeight: 700 }}>
+                {listing.status === "removed" ? "Restore" : "Remove"}
+              </p>
+            </button>
+            <div
+              className="rounded-[16px] px-4 py-3"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.05)" }}
+            >
+              <p className="text-[10px]" style={{ color: "#5e5e66", fontWeight: 700 }}>
+                STATUS
+              </p>
+              <p className="mt-2 text-[12px] text-white" style={{ fontWeight: 700 }}>
+                {listing.status === "removed" ? "Removed" : listing.flagged ? "Flagged" : "Active"}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <p className="mb-2 text-[11px] text-white" style={{ fontWeight: 700 }}>
+              Admin note
+            </p>
+            <textarea
+              className="min-h-[120px] w-full rounded-[18px] px-4 py-3 text-[12px] outline-none"
+              placeholder="Internal admin note"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.05)",
+                color: "#ffffff",
+                resize: "none",
+              }}
+              value={adminNote}
+              onChange={(event) => setAdminNote(event.target.value)}
+            />
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <SecondaryButton onClick={() => setShowAdminSheet(false)}>Close</SecondaryButton>
+            <PrimaryButton disabled={adminSaving} onClick={() => void handleAdminNoteSave()}>
+              {adminSaving ? "Saving..." : "Save note"}
+            </PrimaryButton>
+          </div>
         </div>
       </BottomSheet>
 

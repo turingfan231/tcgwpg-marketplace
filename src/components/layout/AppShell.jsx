@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import UserAvatar from "../shared/UserAvatar";
 import { useMarketplace } from "../../hooks/useMarketplace";
+import AppLaunchScreen from "../ui/AppLaunchScreen";
 import MobileTabBar from "./MobileTabBar";
 import { m } from "../../mobile/design";
 
@@ -154,10 +155,12 @@ function DesktopSidebar({ pathname }) {
 }
 
 export default function AppShell() {
+  const { authReady, loading } = useMarketplace();
   const location = useLocation();
   const [isDesktop, setIsDesktop] = useState(() =>
     typeof window === "undefined" ? false : window.matchMedia("(min-width: 1024px)").matches,
   );
+  const [bootReady, setBootReady] = useState(false);
   const hideNav = HIDE_NAV_PATTERNS.some((pattern) => pattern.test(location.pathname));
 
   useEffect(() => {
@@ -174,6 +177,26 @@ export default function AppShell() {
     media.addListener(handleChange);
     return () => media.removeListener(handleChange);
   }, []);
+
+  useEffect(() => {
+    if (bootReady) {
+      return undefined;
+    }
+
+    if (!authReady || loading) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setBootReady(true);
+    }, isDesktop ? 220 : 180);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [authReady, bootReady, isDesktop, loading]);
+
+  if (!bootReady) {
+    return <AppLaunchScreen compact={isDesktop} />;
+  }
 
   return (
     <div className="flex h-[100dvh] overflow-hidden" style={{ background: "radial-gradient(circle at top left, rgba(56,56,64,0.12) 0%, rgba(10,10,12,1) 32%)" }}>
