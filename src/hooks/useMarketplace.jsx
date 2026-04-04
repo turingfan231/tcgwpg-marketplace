@@ -2009,13 +2009,13 @@ export function MarketplaceProvider({ children }) {
     [cachedState],
   );
   const [users, setUsers] = useState(() =>
-    isSupabaseConfigured ? cachedState?.users || [] : seedState.users,
+    isSupabaseConfigured ? cachedState?.users || seedState.users : seedState.users,
   );
   const [currentUserId, setCurrentUserId] = useState(() =>
     isSupabaseConfigured ? null : readLocalAuthUserId(),
   );
   const [listings, setListings] = useState(() =>
-    isSupabaseConfigured ? cachedState?.listings || [] : seedState.listings,
+    isSupabaseConfigured ? cachedState?.listings || seedState.listings : seedState.listings,
   );
   const [wishlist, setWishlist] = useState(() =>
     isSupabaseConfigured ? cachedState?.wishlist || [] : seedState.wishlist,
@@ -2028,7 +2028,7 @@ export function MarketplaceProvider({ children }) {
   );
   const [hiddenThreadMap, setHiddenThreadMap] = useState({});
   const [manualEvents, setManualEvents] = useState(() =>
-    isSupabaseConfigured ? cachedState?.manualEvents || [] : seedState.manualEvents,
+    isSupabaseConfigured ? cachedState?.manualEvents || seedState.manualEvents : seedState.manualEvents,
   );
   const [offers, setOffers] = useState(() =>
     isSupabaseConfigured ? cachedState?.offers || [] : seedState.offers,
