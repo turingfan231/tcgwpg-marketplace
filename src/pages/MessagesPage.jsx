@@ -198,7 +198,7 @@ export default function MessagesPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { threadId } = useParams();
-  const { authReady, currentUserId, getThreadById, hideThreadForCurrentUser, isAuthenticated, loading, markThreadRead, offersByListingId, respondToOffer, sendMessage, threadsForCurrentUser, unreadMessageCount } = useMarketplace();
+  const { authReady, currentUserId, ensureWorkspaceDataLoaded, getThreadById, hideThreadForCurrentUser, isAuthenticated, loading, markThreadRead, offersByListingId, respondToOffer, sendMessage, threadsForCurrentUser, unreadMessageCount } = useMarketplace();
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [tab, setTab] = useState("all");
@@ -213,6 +213,10 @@ export default function MessagesPage() {
   const [respondingOfferId, setRespondingOfferId] = useState("");
   const [showThreadActions, setShowThreadActions] = useState(false);
   const feedRef = useRef(null);
+
+  useEffect(() => {
+    void ensureWorkspaceDataLoaded();
+  }, [ensureWorkspaceDataLoaded]);
   const desktopFeedRef = useRef(null);
   const fileInputRef = useRef(null);
   const filteredThreads = useMemo(() => {
@@ -473,7 +477,7 @@ export default function MessagesPage() {
     <MobileScreen>
       <SeoHead canonicalPath={`/inbox/${activeThread.id}`} description="Manage conversations, offers, and meetup details." title={participantName} />
 
-      <div className="hidden lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-[340px_minmax(0,1fr)_320px] lg:gap-6 lg:px-6 lg:py-6">
+      <div className="hidden lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-[360px_minmax(0,1fr)_340px] lg:gap-6 lg:px-6 lg:py-6 xl:px-8">
         <aside className="min-h-0 overflow-hidden rounded-[28px] border" style={{ background: "rgba(255,255,255,0.015)", borderColor: "rgba(255,255,255,0.05)" }}>
           <div className="border-b px-5 py-5" style={{ borderColor: "rgba(255,255,255,0.04)" }}>
             <div className="flex items-center justify-between gap-3">
@@ -531,7 +535,7 @@ export default function MessagesPage() {
           </div>
         </aside>
 
-        <section className="min-h-0 overflow-hidden rounded-[28px] border" style={{ background: "rgba(255,255,255,0.015)", borderColor: "rgba(255,255,255,0.05)" }}>
+        <section className="min-h-0 overflow-hidden rounded-[30px] border" style={{ background: "linear-gradient(180deg, rgba(20,20,24,0.95), rgba(13,13,16,0.98))", borderColor: "rgba(255,255,255,0.05)" }}>
           <div className="flex items-center gap-3 border-b px-5 py-4" style={{ borderColor: "rgba(255,255,255,0.04)" }}>
             {participant.avatarUrl ? <img alt={participantName} className="h-[42px] w-[42px] rounded-[14px] object-cover" src={participant.avatarUrl} style={{ border: "1px solid rgba(255,255,255,0.06)" }} /> : <div className="flex h-[42px] w-[42px] items-center justify-center rounded-[14px] text-[15px] text-white" style={{ background: m.redGradient, fontWeight: 700 }}>{sellerInitial(participant)}</div>}
             <div className="min-w-0 flex-1">
@@ -549,7 +553,7 @@ export default function MessagesPage() {
             </SecondaryButton>
           </div>
 
-          <div ref={desktopFeedRef} className="min-h-0 flex-1 overflow-y-auto px-5 py-5" style={{ height: "calc(100dvh - 220px)" }}>
+          <div ref={desktopFeedRef} className="min-h-0 flex-1 overflow-y-auto px-5 py-5" style={{ height: "calc(100dvh - 232px)" }}>
             <div className="flex flex-col gap-[6px]">
               {error ? <div className="mb-2 rounded-xl px-3 py-2 text-[11px]" style={{ background: "rgba(248,113,113,0.08)", color: "#fca5a5", fontWeight: 600 }}>{error}</div> : null}
               {timeline.map((entry) => entry.type === "offer" ? (

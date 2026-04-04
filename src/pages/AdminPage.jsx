@@ -90,6 +90,8 @@ export default function AdminPage() {
     adminOverview,
     addManualEvent,
     deleteUserAccount,
+    ensureAdminDataLoaded,
+    ensureWorkspaceDataLoaded,
     enrichedListings,
     isViewingAs,
     manualEvents,
@@ -137,6 +139,11 @@ export default function AdminPage() {
     neighborhood: "Winnipeg",
     note: "",
   });
+
+  useEffect(() => {
+    void ensureWorkspaceDataLoaded();
+    void ensureAdminDataLoaded();
+  }, [ensureAdminDataLoaded, ensureWorkspaceDataLoaded]);
 
   useEffect(() => {
     setHeroDraft(siteSettings?.homeHero || {});

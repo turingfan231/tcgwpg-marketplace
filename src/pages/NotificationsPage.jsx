@@ -1,4 +1,5 @@
 import { BellRing, CheckCheck, Trash2 } from "lucide-react";
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import ProfileWorkspaceNav from "../components/account/ProfileWorkspaceNav";
 import SeoHead from "../components/seo/SeoHead";
@@ -124,10 +125,15 @@ export default function NotificationsPage() {
     clearReadNotifications,
     currentUser,
     deleteNotification,
+    ensureWorkspaceDataLoaded,
     markAllNotificationsRead,
     markNotificationRead,
     notificationsForCurrentUser,
   } = useMarketplace();
+
+  useEffect(() => {
+    void ensureWorkspaceDataLoaded();
+  }, [ensureWorkspaceDataLoaded]);
 
   return (
     <MobileScreen className="pb-[92px]">

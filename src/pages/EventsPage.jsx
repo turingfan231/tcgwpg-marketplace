@@ -213,6 +213,7 @@ function EventCard({
 export default function EventsPage() {
   const {
     activeListings,
+    ensureEventAttendanceFeedLoaded,
     eventAttendance,
     eventAttendanceFeed,
     eventReminderIds,
@@ -224,6 +225,10 @@ export default function EventsPage() {
   const [remoteEvents, setRemoteEvents] = useState([]);
   const [activeGame, setActiveGame] = useState("All");
   const [selectedEvent, setSelectedEvent] = useState(null);
+
+  useEffect(() => {
+    void ensureEventAttendanceFeedLoaded();
+  }, [ensureEventAttendanceFeedLoaded]);
 
   useEffect(() => {
     let cancelled = false;

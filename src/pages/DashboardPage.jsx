@@ -160,6 +160,7 @@ export default function DashboardPage() {
     currentUserDrafts,
     currentUserListings,
     deleteListing,
+    ensureWorkspaceDataLoaded,
     editListing,
     formatCadPrice,
     listingDraft,
@@ -178,6 +179,10 @@ export default function DashboardPage() {
   const [offerMessage, setOfferMessage] = useState("");
   const [resolvedOfferIds, setResolvedOfferIds] = useState([]);
   const draftsRef = useRef(null);
+
+  useEffect(() => {
+    void ensureWorkspaceDataLoaded();
+  }, [ensureWorkspaceDataLoaded]);
 
   const activeListings = useMemo(
     () => currentUserListings.filter((listing) => listing.status !== "sold"),
@@ -300,15 +305,23 @@ export default function DashboardPage() {
       </div>
 
       <div className="hidden lg:block lg:px-6 lg:pt-8">
-        <div className="mx-auto w-full max-w-[1400px] rounded-[28px] border p-6" style={{ background: "rgba(255,255,255,0.015)", borderColor: "rgba(255,255,255,0.05)" }}>
-          <div className="flex items-start justify-between gap-8">
+        <div
+          className="mx-auto w-full max-w-[1480px] rounded-[30px] border px-7 py-6"
+          style={{
+            background:
+              "radial-gradient(circle at top right, rgba(239,68,68,0.1) 0%, transparent 26%), linear-gradient(180deg, rgba(18,18,22,0.96), rgba(12,12,14,0.98))",
+            borderColor: "rgba(255,255,255,0.05)",
+          }}
+        >
+          <div className="flex items-end justify-between gap-8">
             <div>
-              <p className="text-[30px] text-white" style={{ fontWeight: 800, lineHeight: 1.05 }}>Seller Dashboard</p>
-              <p className="mt-2 max-w-[42rem] text-[13px]" style={{ color: "#7a7a82", lineHeight: 1.6 }}>
-                Monitor live listings, handle buyer offers, and manage drafts from a desktop-first seller workspace.
+              <p className="text-[12px] uppercase tracking-[0.12em]" style={{ color: "#f87171", fontWeight: 700 }}>Seller workspace</p>
+              <p className="mt-3 text-[32px] text-white" style={{ fontWeight: 800, lineHeight: 1.02 }}>Manage listings, offers, and drafts</p>
+              <p className="mt-2 max-w-[44rem] text-[13px]" style={{ color: "#7a7a82", lineHeight: 1.6 }}>
+                Review live inventory, respond to buyers, and keep draft listings moving without dropping into the mobile stack.
               </p>
             </div>
-            <PrimaryButton className="!h-[46px] !rounded-[16px] !px-5" onClick={() => navigate("/sell")}>
+            <PrimaryButton className="!h-[48px] !rounded-[16px] !px-5" onClick={() => navigate("/sell")}>
               <Plus size={14} />
               New Listing
             </PrimaryButton>
@@ -317,7 +330,7 @@ export default function DashboardPage() {
       </div>
 
       <ScreenSection className="pt-3 lg:px-6 lg:pt-6">
-        <div className="mx-auto grid w-full grid-cols-2 gap-2.5 lg:max-w-[1400px] lg:grid-cols-4 lg:gap-4">
+        <div className="mx-auto grid w-full grid-cols-2 gap-2.5 lg:max-w-[1480px] lg:grid-cols-4 lg:gap-4">
           <DashboardStat icon={Package} label="Active" tone={m.blue} value={activeListings.length} />
           <DashboardStat icon={Tag} label="Pending offers" tone={m.warning} value={sellerOffers.length} />
           <DashboardStat icon={Eye} label="Views" tone={m.success} value={formatNumber(totalViews)} />
@@ -326,7 +339,7 @@ export default function DashboardPage() {
       </ScreenSection>
 
       <div className="lg:px-6 lg:pb-8">
-      <div className="mx-auto lg:grid lg:max-w-[1400px] lg:grid-cols-[minmax(0,1.45fr)_390px] lg:gap-8">
+      <div className="mx-auto lg:grid lg:max-w-[1480px] lg:grid-cols-[minmax(0,1.55fr)_400px] lg:gap-8">
         <div className="min-w-0">
           <ScreenSection className="pt-5 lg:px-0">
             <div className="mb-2 flex items-center justify-between">

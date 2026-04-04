@@ -146,6 +146,7 @@ export default function AccountPage() {
     currentUser,
     currentUserListings,
     deleteCurrentUserAccount,
+    ensureWorkspaceDataLoaded,
     isAdmin,
     isSuspended,
     logout,
@@ -173,6 +174,10 @@ export default function AccountPage() {
   const lastSyncedAccountIdRef = useRef(currentUser?.id || "");
 
   const publicProfileHref = currentUser?.id ? `/seller/${currentUser.id}` : "/";
+
+  useEffect(() => {
+    void ensureWorkspaceDataLoaded();
+  }, [ensureWorkspaceDataLoaded]);
   const joinedLabel = currentUser?.createdAt
     ? new Date(currentUser.createdAt).toLocaleDateString("en-CA", { month: "short", year: "numeric" })
     : "Marketplace member";
@@ -433,116 +438,7 @@ export default function AccountPage() {
       </header>
 
       <main className="hidden min-h-0 flex-1 overflow-y-auto lg:block">
-        <div className="mx-auto grid w-full max-w-[1400px] grid-cols-[320px_minmax(0,1fr)] gap-8 px-8 py-8">
-          <aside className="sticky top-8 self-start">
-            <div
-              className="overflow-hidden rounded-[28px]"
-              style={{
-                background:
-                  "linear-gradient(180deg, rgba(18,18,22,0.98) 0%, rgba(13,13,16,0.98) 100%)",
-                border: "1px solid rgba(255,255,255,0.05)",
-                boxShadow: "0 24px 60px rgba(0,0,0,0.24)",
-              }}
-            >
-              <div
-                className="h-28"
-                style={{
-                  background:
-                    "radial-gradient(circle at top left, rgba(239,68,68,0.2) 0%, transparent 48%), linear-gradient(135deg, rgba(35,10,12,0.94), rgba(18,18,22,0.96))",
-                }}
-              />
-              <div className="-mt-10 px-5 pb-5">
-                <div className="flex items-start gap-3">
-                  <div className="relative">
-                    {avatarPreviewUrl ? (
-                      <img
-                        alt="Profile"
-                        className="h-[72px] w-[72px] rounded-[20px] object-cover"
-                        src={avatarPreviewUrl}
-                        style={{ boxShadow: `0 10px 28px ${m.redGlow}` }}
-                      />
-                    ) : (
-                      <div
-                        className="flex h-[72px] w-[72px] items-center justify-center rounded-[20px] text-[28px] text-white"
-                        style={{ background: m.redGradient, boxShadow: `0 10px 28px ${m.redGlow}`, fontWeight: 700 }}
-                      >
-                        {String(currentUser?.publicName || currentUser?.name || currentUser?.username || "U").charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    {currentUser?.verified ? (
-                      <div
-                        className="absolute -bottom-[3px] -right-[3px] flex h-[22px] w-[22px] items-center justify-center rounded-full"
-                        style={{ background: "#0c0c0e", border: "2px solid #0c0c0e" }}
-                      >
-                        <CheckCircle2 size={16} fill="#3b82f6" style={{ color: "#fff" }} />
-                      </div>
-                    ) : null}
-                  </div>
-                  <div className="min-w-0 flex-1 pt-2">
-                    <h1 className="truncate text-[28px] text-white" style={{ fontWeight: 800, lineHeight: 1.05 }}>
-                      {currentUser?.publicName || currentUser?.name || currentUser?.username || "Account"}
-                    </h1>
-                    <div className="mt-2 flex items-center gap-1.5">
-                      <MapPin size={11} style={{ color: "#5e5e66" }} />
-                      <span className="text-[12px]" style={{ color: "#8a8a92" }}>{currentUser?.neighborhood || "Winnipeg, MB"}</span>
-                    </div>
-                    <p className="mt-1 text-[12px]" style={{ color: "#5e5e66" }}>
-                      Since {joinedLabel}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {currentUser?.verified ? (
-                    <div className="flex items-center gap-1 rounded-lg px-2 py-[5px]" style={{ background: "#60a5fa08", border: "1px solid #60a5fa0d" }}>
-                      <Shield size={10} style={{ color: "#60a5fa" }} />
-                      <span className="text-[10px]" style={{ color: "#60a5fa", fontWeight: 700 }}>Verified</span>
-                    </div>
-                  ) : null}
-                  <div className="flex items-center gap-1 rounded-lg px-2 py-[5px]" style={{ background: "#6ee7b708", border: "1px solid #6ee7b70d" }}>
-                    <Zap size={10} style={{ color: "#6ee7b7" }} />
-                    <span className="text-[10px]" style={{ color: "#6ee7b7", fontWeight: 700 }}>{profileForm.responseTime || "Fast responder"}</span>
-                  </div>
-                  {isAdmin ? (
-                    <div className="flex items-center gap-1 rounded-lg px-2 py-[5px]" style={{ background: "#fbbf2408", border: "1px solid #fbbf240d" }}>
-                      <ShieldCheck size={10} style={{ color: "#fbbf24" }} />
-                      <span className="text-[10px]" style={{ color: "#fbbf24", fontWeight: 700 }}>Admin</span>
-                    </div>
-                  ) : null}
-                </div>
-
-                <div className="mt-5 grid grid-cols-3 gap-2">
-                  <div className="rounded-[18px] border px-3 py-3" style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.05)" }}>
-                    <p className="text-[22px] text-white" style={{ fontWeight: 800 }}>{currentUserListings.length}</p>
-                    <p className="mt-1 text-[10px]" style={{ color: "#5e5e66", fontWeight: 600 }}>Active</p>
-                  </div>
-                  <div className="rounded-[18px] border px-3 py-3" style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.05)" }}>
-                    <p className="text-[22px] text-white" style={{ fontWeight: 800 }}>{wishlist.length}</p>
-                    <p className="mt-1 text-[10px]" style={{ color: "#5e5e66", fontWeight: 600 }}>Saved</p>
-                  </div>
-                  <button
-                    className="rounded-[18px] border px-3 py-3 text-left"
-                    style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.05)" }}
-                    type="button"
-                    onClick={() => setSheet("followers")}
-                  >
-                    <p className="text-[22px] text-white" style={{ fontWeight: 800 }}>{followerCount}</p>
-                    <p className="mt-1 text-[10px]" style={{ color: "#5e5e66", fontWeight: 600 }}>Followers</p>
-                  </button>
-                </div>
-
-                <div className="mt-5 grid gap-2">
-                  <PrimaryButton className="w-full !rounded-[16px]" onClick={() => navigate("/dashboard")}>
-                    Seller Dashboard
-                  </PrimaryButton>
-                  <SecondaryButton className="w-full !rounded-[16px]" onClick={() => navigate(publicProfileHref)}>
-                    View Public Profile
-                  </SecondaryButton>
-                </div>
-              </div>
-            </div>
-          </aside>
-
+        <div className="mx-auto w-full max-w-[1540px] px-8 py-8">
           <div className="min-w-0 space-y-6">
             {(profileMessage || profileError || passwordMessage || passwordError || appealMessage || appealError || deleteError) ? (
               <div className="grid gap-3">
@@ -556,14 +452,104 @@ export default function AccountPage() {
               </div>
             ) : null}
 
-            <div className="rounded-[28px] border p-6" style={{ background: "rgba(255,255,255,0.015)", borderColor: "rgba(255,255,255,0.05)" }}>
-              <div className="flex items-start justify-between gap-6">
-                <div>
-                  <p className="text-[28px] text-white" style={{ fontWeight: 800, lineHeight: 1.05 }}>Account Workspace</p>
-                  <p className="mt-2 max-w-[40rem] text-[13px]" style={{ color: "#7a7a82", lineHeight: 1.6 }}>
-                    Manage your marketplace identity, seller preferences, security, and account tools from one desktop workspace.
-                  </p>
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_380px]">
+              <div
+                className="overflow-hidden rounded-[30px] border p-6"
+                style={{
+                  background:
+                    "radial-gradient(circle at top right, rgba(239,68,68,0.12) 0%, transparent 28%), linear-gradient(180deg, rgba(20,20,24,0.96), rgba(12,12,16,0.98))",
+                  borderColor: "rgba(255,255,255,0.05)",
+                }}
+              >
+                <div className="flex items-start justify-between gap-6">
+                  <div className="flex items-start gap-4">
+                    <div className="relative">
+                      {avatarPreviewUrl ? (
+                        <img
+                          alt="Profile"
+                          className="h-[82px] w-[82px] rounded-[24px] object-cover"
+                          src={avatarPreviewUrl}
+                          style={{ boxShadow: `0 10px 28px ${m.redGlow}` }}
+                        />
+                      ) : (
+                        <div
+                          className="flex h-[82px] w-[82px] items-center justify-center rounded-[24px] text-[30px] text-white"
+                          style={{ background: m.redGradient, boxShadow: `0 10px 28px ${m.redGlow}`, fontWeight: 700 }}
+                        >
+                          {String(currentUser?.publicName || currentUser?.name || currentUser?.username || "U").charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      {currentUser?.verified ? (
+                        <div
+                          className="absolute -bottom-[4px] -right-[4px] flex h-[24px] w-[24px] items-center justify-center rounded-full"
+                          style={{ background: "#0c0c0e", border: "2px solid #0c0c0e" }}
+                        >
+                          <CheckCircle2 size={16} fill="#3b82f6" style={{ color: "#fff" }} />
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="min-w-0 pt-2">
+                      <p className="text-[30px] text-white" style={{ fontWeight: 800, lineHeight: 1.05 }}>
+                        {currentUser?.publicName || currentUser?.name || currentUser?.username || "Account"}
+                      </p>
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <MapPin size={12} style={{ color: "#5e5e66" }} />
+                        <span className="text-[12px]" style={{ color: "#8a8a92" }}>{currentUser?.neighborhood || "Winnipeg, MB"}</span>
+                        <span className="text-[12px]" style={{ color: "#44444c" }}>•</span>
+                        <span className="text-[12px]" style={{ color: "#5e5e66" }}>Since {joinedLabel}</span>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {currentUser?.verified ? (
+                          <div className="flex items-center gap-1 rounded-lg px-2 py-[5px]" style={{ background: "#60a5fa08", border: "1px solid #60a5fa0d" }}>
+                            <Shield size={10} style={{ color: "#60a5fa" }} />
+                            <span className="text-[10px]" style={{ color: "#60a5fa", fontWeight: 700 }}>Verified</span>
+                          </div>
+                        ) : null}
+                        <div className="flex items-center gap-1 rounded-lg px-2 py-[5px]" style={{ background: "#6ee7b708", border: "1px solid #6ee7b70d" }}>
+                          <Zap size={10} style={{ color: "#6ee7b7" }} />
+                          <span className="text-[10px]" style={{ color: "#6ee7b7", fontWeight: 700 }}>{profileForm.responseTime || "Fast responder"}</span>
+                        </div>
+                        {isAdmin ? (
+                          <div className="flex items-center gap-1 rounded-lg px-2 py-[5px]" style={{ background: "#fbbf2408", border: "1px solid #fbbf240d" }}>
+                            <ShieldCheck size={10} style={{ color: "#fbbf24" }} />
+                            <span className="text-[10px]" style={{ color: "#fbbf24", fontWeight: 700 }}>Admin</span>
+                          </div>
+                        ) : null}
+                      </div>
+                      <p className="mt-4 max-w-[42rem] text-[13px]" style={{ color: "#7a7a82", lineHeight: 1.6 }}>
+                        Manage your marketplace identity, seller preferences, security, and account tools from one desktop workspace.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid shrink-0 gap-2">
+                    <PrimaryButton className="!h-[44px] !rounded-[16px] !px-5" onClick={() => navigate("/dashboard")}>
+                      Seller Dashboard
+                    </PrimaryButton>
+                    <SecondaryButton className="!h-[44px] !rounded-[16px] !px-5" onClick={() => navigate(publicProfileHref)}>
+                      View Public Profile
+                    </SecondaryButton>
+                  </div>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-[24px] border px-4 py-4" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
+                  <p className="text-[10px] uppercase tracking-[0.08em]" style={{ color: "#5e5e66", fontWeight: 700 }}>Active</p>
+                  <p className="mt-3 text-[30px] text-white" style={{ fontWeight: 800 }}>{currentUserListings.length}</p>
+                </div>
+                <div className="rounded-[24px] border px-4 py-4" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
+                  <p className="text-[10px] uppercase tracking-[0.08em]" style={{ color: "#5e5e66", fontWeight: 700 }}>Saved</p>
+                  <p className="mt-3 text-[30px] text-white" style={{ fontWeight: 800 }}>{wishlist.length}</p>
+                </div>
+                <button
+                  className="rounded-[24px] border px-4 py-4 text-left"
+                  style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}
+                  type="button"
+                  onClick={() => setSheet("followers")}
+                >
+                  <p className="text-[10px] uppercase tracking-[0.08em]" style={{ color: "#5e5e66", fontWeight: 700 }}>Followers</p>
+                  <p className="mt-3 text-[30px] text-white" style={{ fontWeight: 800 }}>{followerCount}</p>
+                </button>
               </div>
             </div>
 

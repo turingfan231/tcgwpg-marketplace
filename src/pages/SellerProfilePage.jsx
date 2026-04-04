@@ -17,7 +17,7 @@ import {
   Zap,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import UserAvatar from "../components/shared/UserAvatar";
 import ReviewModal from "../components/modals/ReviewModal";
@@ -192,6 +192,7 @@ export default function SellerProfilePage() {
     activeListings,
     currentUser,
     deleteReview,
+    ensureSellerTrustLoaded,
     findOrCreateThread,
     reviews,
     sellerMap,
@@ -204,6 +205,10 @@ export default function SellerProfilePage() {
   const [followMessage, setFollowMessage] = useState("");
   const [reviewOpen, setReviewOpen] = useState(false);
   const [showFollowers, setShowFollowers] = useState(false);
+
+  useEffect(() => {
+    void ensureSellerTrustLoaded();
+  }, [ensureSellerTrustLoaded]);
 
   const seller = useMemo(() => {
     if (sellerMap?.[sellerId]) return sellerMap[sellerId];
@@ -377,8 +382,8 @@ export default function SellerProfilePage() {
       </motion.header>
 
       <main className="flex-1 overflow-y-auto pb-4 lg:px-8 lg:py-8">
-        <div className="mx-auto lg:max-w-[1380px]">
-        <div className="hidden lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-8">
+      <div className="mx-auto lg:max-w-[1480px]">
+        <div className="hidden lg:grid lg:grid-cols-[minmax(0,1.08fr)_340px] lg:gap-8">
           <div className="rounded-[28px] border p-6" style={{ background: "rgba(255,255,255,0.015)", borderColor: "rgba(255,255,255,0.05)" }}>
             <div className="flex items-start justify-between gap-6">
               <div className="flex items-start gap-4">

@@ -1,5 +1,5 @@
 import { Plus, Search, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ProfileWorkspaceNav from "../components/account/ProfileWorkspaceNav";
 import SeoHead from "../components/seo/SeoHead";
 import CardArtwork from "../components/shared/CardArtwork";
@@ -108,6 +108,7 @@ export default function CollectionPage() {
     collectionItems,
     collectionSummary,
     currentUser,
+    ensureWorkspaceDataLoaded,
     formatCadPrice,
     removeCollectionItem,
     updateCollectionItem,
@@ -120,6 +121,10 @@ export default function CollectionPage() {
   const [searchError, setSearchError] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  useEffect(() => {
+    void ensureWorkspaceDataLoaded();
+  }, [ensureWorkspaceDataLoaded]);
 
   const filteredItems = useMemo(() => {
     const normalizedFilter = filter.trim().toLowerCase();

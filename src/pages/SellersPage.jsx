@@ -1,5 +1,5 @@
 import { Search, ShieldCheck, Star } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import SeoHead from "../components/seo/SeoHead";
 import UserAvatar from "../components/shared/UserAvatar";
@@ -85,8 +85,12 @@ function SellerCard({ seller, badgeLabels, followerCount }) {
 }
 
 export default function SellersPage() {
-  const { reviewBadgeCatalog, sellers } = useMarketplace();
+  const { ensureSellerTrustLoaded, reviewBadgeCatalog, sellers } = useMarketplace();
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    void ensureSellerTrustLoaded();
+  }, [ensureSellerTrustLoaded]);
 
   const sellerFollowerCounts = useMemo(
     () =>

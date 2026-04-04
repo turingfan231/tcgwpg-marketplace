@@ -1,5 +1,5 @@
 import { Bug, ExternalLink, ShieldCheck } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import SeoHead from "../components/seo/SeoHead";
 import { useMarketplace } from "../hooks/useMarketplace";
@@ -96,7 +96,7 @@ function ReportCard({ report }) {
 
 export default function BugReportsPage() {
   const location = useLocation();
-  const { bugReportsForCurrentUser, isAdmin, isBetaTester, submitBugReport } = useMarketplace();
+  const { bugReportsForCurrentUser, ensureWorkspaceDataLoaded, isAdmin, isBetaTester, submitBugReport } = useMarketplace();
   const [form, setForm] = useState({
     title: "",
     area: "general",
@@ -110,6 +110,10 @@ export default function BugReportsPage() {
   });
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    void ensureWorkspaceDataLoaded();
+  }, [ensureWorkspaceDataLoaded]);
 
   const bugCountLabel = useMemo(
     () => `${bugReportsForCurrentUser.length} submitted`,

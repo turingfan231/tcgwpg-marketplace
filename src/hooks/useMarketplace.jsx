@@ -84,6 +84,157 @@ const DEFAULT_SITE_SETTINGS = {
   },
 };
 
+const PROFILE_BOOT_COLUMNS = [
+  "id",
+  "role",
+  "name",
+  "username",
+  "default_listing_game",
+  "avatar_url",
+  "neighborhood",
+  "postal_code",
+  "badges",
+  "verified",
+  "account_status",
+  "banner_style",
+  "favorite_games",
+  "followed_seller_ids",
+  "followed_store_slugs",
+  "meetup_preferences",
+  "response_time",
+  "completed_deals",
+  "created_at",
+  "onboarding_complete",
+].join(",");
+const PROFILE_FULL_COLUMNS = `${PROFILE_BOOT_COLUMNS},email,bio`;
+const LISTING_BOOT_COLUMNS = [
+  "id",
+  "seller_id",
+  "type",
+  "game",
+  "game_slug",
+  "title",
+  "price",
+  "price_currency",
+  "previous_price",
+  "market_price",
+  "market_price_currency",
+  "condition",
+  "neighborhood",
+  "postal_code",
+  "accepts_trade",
+  "listing_format",
+  "quantity",
+  "bundle_items",
+  "description",
+  "primary_image",
+  "image_gallery",
+  "condition_images",
+  "status",
+  "featured",
+  "flagged",
+  "admin_notes",
+  "views",
+  "offers",
+  "price_history",
+  "edit_history",
+  "created_at",
+  "updated_at",
+].join(",");
+const REVIEW_COLUMNS = [
+  "id",
+  "seller_id",
+  "author_id",
+  "author_name",
+  "rating",
+  "comment",
+  "image_url",
+  "created_at",
+].join(",");
+const MANUAL_EVENT_COLUMNS = [
+  "id",
+  "title",
+  "store",
+  "source",
+  "source_type",
+  "source_url",
+  "date_str",
+  "time",
+  "game",
+  "fee",
+  "neighborhood",
+  "note",
+  "published",
+].join(",");
+const OFFER_COLUMNS = [
+  "id",
+  "listing_id",
+  "seller_id",
+  "buyer_id",
+  "offer_type",
+  "cash_amount",
+  "trade_items",
+  "note",
+  "status",
+  "last_actor_id",
+  "created_at",
+  "updated_at",
+].join(",");
+const REPORT_COLUMNS = ["id", "listing_id", "seller_id", "reporter_id", "reason", "details", "status", "resolution_thread_id", "created_at", "updated_at"].join(",");
+const BUG_REPORT_COLUMNS = [
+  "id",
+  "reporter_id",
+  "title",
+  "area",
+  "severity",
+  "status",
+  "page_path",
+  "expected_behavior",
+  "actual_behavior",
+  "reproduction_steps",
+  "environment_label",
+  "screenshot_url",
+  "admin_notes",
+  "created_at",
+  "updated_at",
+].join(",");
+const NOTIFICATION_COLUMNS = ["id", "user_id", "type", "title", "body", "entity_id", "read", "created_at"].join(",");
+const THREAD_COLUMNS = ["id", "listing_id", "participant_ids", "hidden_by", "created_at", "updated_at"].join(",");
+const MESSAGE_COLUMNS = ["id", "thread_id", "sender_id", "body", "read_by", "created_at"].join(",");
+const SITE_SETTINGS_COLUMNS = ["key", "payload"].join(",");
+const SEARCH_HISTORY_COLUMNS = ["id", "query", "game", "source", "created_at"].join(",");
+const COLLECTION_ITEM_COLUMNS = [
+  "id",
+  "game",
+  "language",
+  "title",
+  "set_name",
+  "print_label",
+  "rarity",
+  "condition",
+  "quantity",
+  "market_price",
+  "market_price_currency",
+  "source_label",
+  "image_url",
+  "notes",
+  "added_at",
+  "updated_at",
+].join(",");
+const EVENT_PREF_COLUMNS = ["event_id", "reminder_enabled", "attendance_intent"].join(",");
+const EVENT_ATTENDANCE_COLUMNS = ["event_id", "user_id", "attendance_intent"].join(",");
+const AUDIT_LOG_COLUMNS = [
+  "id",
+  "actor_id",
+  "actor_name",
+  "action",
+  "title",
+  "details",
+  "target_id",
+  "target_type",
+  "created_at",
+].join(",");
+
 const CLIENT_MUTATION_LIMITS = {
   login: { windowMs: 60 * 1000, limit: 6 },
   signup: { windowMs: 10 * 60 * 1000, limit: 3 },
@@ -1701,6 +1852,16 @@ function buildSeedState() {
 export function MarketplaceProvider({ children }) {
   const seedState = useMemo(() => buildSeedState(), []);
   const cachedState = useMemo(() => readMarketplaceCache(), []);
+  const hasUsableCache = useMemo(
+    () =>
+      Boolean(
+        cachedState &&
+          (cachedState.listings?.length ||
+            cachedState.users?.length ||
+            cachedState.manualEvents?.length),
+      ),
+    [cachedState],
+  );
   const [users, setUsers] = useState(() =>
     isSupabaseConfigured ? cachedState?.users || [] : seedState.users,
   );
@@ -1762,15 +1923,21 @@ export function MarketplaceProvider({ children }) {
   const [createListingPreset, setCreateListingPreset] = useState(null);
   const [authReady, setAuthReady] = useState(!isSupabaseConfigured);
   const [loading, setLoading] = useState(
-    Boolean(isSupabaseConfigured && !cachedState?.listings?.length),
+    Boolean(isSupabaseConfigured && !hasUsableCache),
   );
-    const [toastItems, setToastItems] = useState([]);
-    const seenNotificationIdsRef = useRef(new Set());
-    const seededRealtimeStateRef = useRef(false);
-    const mutationLimitRef = useRef(new Map());
-    const listingsRef = useRef(listings);
-    const viewedListingsRef = useRef(readViewedListingIds());
-    const pendingViewedListingsRef = useRef(new Set());
+  const [toastItems, setToastItems] = useState([]);
+  const seenNotificationIdsRef = useRef(new Set());
+  const seededRealtimeStateRef = useRef(false);
+  const mutationLimitRef = useRef(new Map());
+  const listingsRef = useRef(listings);
+  const viewedListingsRef = useRef(readViewedListingIds());
+  const pendingViewedListingsRef = useRef(new Set());
+  const secondaryStateRef = useRef({
+    reviewsLoaded: Boolean(cachedState?.reviews?.length),
+    workspaceUserId: null,
+    eventAttendanceLoaded: false,
+    adminUserId: null,
+  });
 
   const currentUser = useMemo(
     () => sanitizeUser(users.find((user) => user.id === currentUserId)) || null,
@@ -1842,28 +2009,77 @@ export function MarketplaceProvider({ children }) {
   }, [collectionItems]);
 
   const reviewBadgeCatalog = sellerBadgeCatalog;
+  const reviewStatsBySeller = useMemo(() => {
+    const stats = {};
+
+    reviews.forEach((review) => {
+      const sellerId = String(review.sellerId || "");
+      if (!sellerId) {
+        return;
+      }
+      if (!stats[sellerId]) {
+        stats[sellerId] = { count: 0, ratings: [] };
+      }
+      stats[sellerId].count += 1;
+      stats[sellerId].ratings.push(review.rating);
+    });
+
+    return stats;
+  }, [reviews]);
+  const listingStatsBySeller = useMemo(() => {
+    const stats = {};
+
+    listings.forEach((listing) => {
+      const sellerId = String(listing.sellerId || "");
+      if (!sellerId) {
+        return;
+      }
+      if (!stats[sellerId]) {
+        stats[sellerId] = { activeCount: 0, flaggedOrRemovedCount: 0 };
+      }
+      if (String(listing.status || "") === "active") {
+        stats[sellerId].activeCount += 1;
+      }
+      if (listing.flagged || String(listing.status || "") === "removed") {
+        stats[sellerId].flaggedOrRemovedCount += 1;
+      }
+    });
+
+    return stats;
+  }, [listings]);
+  const openReportCountBySeller = useMemo(() => {
+    const stats = {};
+
+    reports.forEach((report) => {
+      const sellerId = String(report.sellerId || "");
+      if (!sellerId || String(report.status || "").toLowerCase() === "dismissed") {
+        return;
+      }
+      stats[sellerId] = (stats[sellerId] || 0) + 1;
+    });
+
+    return stats;
+  }, [reports]);
 
   const sellerMap = useMemo(() => {
     const map = {};
 
     users.forEach((user) => {
-      const sellerReviews = reviews.filter((review) => review.sellerId === user.id);
-      const sellerListings = listings.filter((listing) => listing.sellerId === user.id);
-      const listingCount = sellerListings.filter((listing) => listing.status === "active").length;
+      const userId = String(user.id || "");
+      const reviewStats = reviewStatsBySeller[userId] || { count: 0, ratings: [] };
+      const listingStats = listingStatsBySeller[userId] || {
+        activeCount: 0,
+        flaggedOrRemovedCount: 0,
+      };
       const moderationActions =
-        sellerListings.filter((listing) => listing.flagged || listing.status === "removed").length +
-        reports.filter(
-          (report) =>
-            report.sellerId === user.id &&
-            String(report.status || "").toLowerCase() !== "dismissed",
-        ).length;
-      const responseRate = estimateResponseRate(user, sellerReviews.length);
+        listingStats.flaggedOrRemovedCount + (openReportCountBySeller[userId] || 0);
+      const responseRate = estimateResponseRate(user, reviewStats.count);
       map[user.id] = {
         ...sanitizeUser(user),
-        activeListingCount: listingCount,
+        activeListingCount: listingStats.activeCount,
         followedByCurrentUser: followedSellerSet.has(user.id),
-        reviewCount: sellerReviews.length,
-        overallRating: average(sellerReviews.map((review) => review.rating)),
+        reviewCount: reviewStats.count,
+        overallRating: average(reviewStats.ratings),
         accountAgeLabel: buildAccountAgeLabel(user.createdAt),
         responseRate,
         moderationActions,
@@ -1877,7 +2093,7 @@ export function MarketplaceProvider({ children }) {
     });
 
     return map;
-  }, [followedSellerSet, listings, reports, reviews, users]);
+  }, [followedSellerSet, listingStatsBySeller, openReportCountBySeller, reviewStatsBySeller, users]);
   const normalizedWishlist = useMemo(
     () =>
       wishlist.filter((listingId) =>
@@ -2330,7 +2546,7 @@ export function MarketplaceProvider({ children }) {
 
     const { data: existingProfile, error: profileError } = await supabase
       .from("profiles")
-      .select("*")
+      .select(PROFILE_FULL_COLUMNS)
       .eq("id", authUser.id)
       .maybeSingle();
 
@@ -2374,7 +2590,7 @@ export function MarketplaceProvider({ children }) {
           .from("profiles")
           .update(nextProfilePatch)
           .eq("id", authUser.id)
-          .select("*")
+          .select(PROFILE_FULL_COLUMNS)
           .single();
 
         if (!updateResult.error) {
@@ -2396,7 +2612,7 @@ export function MarketplaceProvider({ children }) {
             .from("profiles")
             .update(fallbackPatch)
             .eq("id", authUser.id)
-            .select("*")
+            .select(PROFILE_FULL_COLUMNS)
             .single();
 
           if (!fallbackResult.error) {
@@ -2445,7 +2661,7 @@ export function MarketplaceProvider({ children }) {
     let insertResult = await supabase
       .from("profiles")
       .insert(profilePayload)
-      .select("*")
+      .select(PROFILE_FULL_COLUMNS)
       .single();
 
     if (
@@ -2459,7 +2675,7 @@ export function MarketplaceProvider({ children }) {
       insertResult = await supabase
         .from("profiles")
         .insert(legacyProfilePayload)
-        .select("*")
+        .select(PROFILE_FULL_COLUMNS)
         .single();
     }
 
@@ -2470,6 +2686,191 @@ export function MarketplaceProvider({ children }) {
     }
 
     return fromProfileRow(insertedProfile);
+  }, []);
+
+  const loadSellerTrustData = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      return [];
+    }
+
+    const reviewsRes = await supabase.from("reviews").select(REVIEW_COLUMNS);
+    if (reviewsRes.error) {
+      throw reviewsRes.error;
+    }
+
+    const nextReviews = (reviewsRes.data || []).map(fromReviewRow);
+    setReviews(nextReviews);
+    secondaryStateRef.current.reviewsLoaded = true;
+    return nextReviews;
+  }, []);
+
+  const loadWorkspaceData = useCallback(
+    async (authedUserId, normalizedProfiles = users) => {
+      if (!isSupabaseConfigured || !authedUserId) {
+        return;
+      }
+
+      const [
+        wishlistsRes,
+        draftRes,
+        threadRowsRes,
+        offersRes,
+        bugReportsRes,
+        notificationsRes,
+        searchHistoryRes,
+        collectionItemsRes,
+        eventPreferencesRes,
+      ] = await Promise.all([
+        supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId),
+        supabase.from("listing_drafts").select("payload,updated_at").eq("user_id", authedUserId).maybeSingle(),
+        supabase.from("message_threads").select(THREAD_COLUMNS).contains("participant_ids", [authedUserId]),
+        supabase.from("offers").select(OFFER_COLUMNS).or(`seller_id.eq.${authedUserId},buyer_id.eq.${authedUserId}`),
+        supabase.from("bug_reports").select(BUG_REPORT_COLUMNS).eq("reporter_id", authedUserId),
+        supabase.from("notifications").select(NOTIFICATION_COLUMNS).eq("user_id", authedUserId),
+        supabase.from("search_history").select(SEARCH_HISTORY_COLUMNS).eq("user_id", authedUserId).order("created_at", { ascending: false }),
+        supabase.from("collection_items").select(COLLECTION_ITEM_COLUMNS).eq("user_id", authedUserId).order("updated_at", { ascending: false }),
+        supabase.from("user_event_preferences").select(EVENT_PREF_COLUMNS).eq("user_id", authedUserId),
+      ]);
+
+      if (wishlistsRes.error) throw wishlistsRes.error;
+      if (draftRes.error) throw draftRes.error;
+      if (threadRowsRes.error) throw threadRowsRes.error;
+      if (offersRes.error) throw offersRes.error;
+      if (bugReportsRes.error && !isMissingTableError(bugReportsRes.error, "bug_reports")) {
+        throw bugReportsRes.error;
+      }
+      if (notificationsRes.error) throw notificationsRes.error;
+      if (searchHistoryRes.error) throw searchHistoryRes.error;
+      if (collectionItemsRes.error && !isMissingTableError(collectionItemsRes.error, "collection_items")) {
+        throw collectionItemsRes.error;
+      }
+      if (
+        eventPreferencesRes.error &&
+        !isMissingTableError(eventPreferencesRes.error, "user_event_preferences")
+      ) {
+        throw eventPreferencesRes.error;
+      }
+
+      const threadRows = threadRowsRes.data || [];
+      let messageRows = [];
+      if (threadRows.length) {
+        const messagesRes = await supabase
+          .from("messages")
+          .select(MESSAGE_COLUMNS)
+          .in(
+            "thread_id",
+            threadRows.map((thread) => thread.id),
+          );
+
+        if (messagesRes.error) throw messagesRes.error;
+        messageRows = messagesRes.data || [];
+      }
+
+      const draftPayload = draftRes.data?.payload || null;
+      const nextDrafts = normalizeDraftCollection(draftPayload).map((draft, index) => ({
+        id: draft.id || `legacy-draft-${index + 1}`,
+        name: draft.name || draft.title || "Untitled draft",
+        updatedAt: draft.updatedAt || draftRes.data?.updated_at || new Date().toISOString(),
+        ...draft,
+      }));
+
+      setWishlist((wishlistsRes.data || []).map((item) => item.listing_id));
+      setListingDrafts(nextDrafts);
+      setActiveDraftId(draftPayload?.activeDraftId || nextDrafts[0]?.id || null);
+      if (!collectionItemsRes.error) {
+        setCollectionItems((collectionItemsRes.data || []).map(fromCollectionItemRow));
+      } else {
+        setCollectionItems(readCollectionStorage(authedUserId).map(normalizeCollectionRecord));
+      }
+      if (!eventPreferencesRes.error) {
+        const nextEventPreferences = normalizeEventPreferences(eventPreferencesRes.data || []);
+        setEventReminderIds(nextEventPreferences.reminderIds);
+        setEventAttendance(nextEventPreferences.attendance);
+      } else {
+        setEventReminderIds(readEventReminderStorage(authedUserId));
+        setEventAttendance(readEventAttendanceStorage(authedUserId));
+      }
+      setThreads(buildThreadMap(threadRows, messageRows));
+      setOffers((offersRes.data || []).map(fromOfferRow));
+      if (!bugReportsRes.error) {
+        setBugReports((bugReportsRes.data || []).map(fromBugReportRow));
+      }
+      setNotifications((notificationsRes.data || []).map(fromNotificationRow));
+      setSearchHistory(
+        (searchHistoryRes.data || []).map((row) => ({
+          id: row.id,
+          query: row.query,
+          game: row.game,
+          source: row.source,
+          createdAt: row.created_at,
+        })),
+      );
+      secondaryStateRef.current.workspaceUserId = String(authedUserId);
+      return normalizedProfiles;
+    },
+    [users],
+  );
+
+  const loadEventAttendanceFeed = useCallback(
+    async (normalizedProfiles = users) => {
+      if (!isSupabaseConfigured) {
+        return {};
+      }
+
+      const eventAttendanceFeedRes = await supabase
+        .from("user_event_preferences")
+        .select(EVENT_ATTENDANCE_COLUMNS);
+
+      if (
+        eventAttendanceFeedRes.error &&
+        !isMissingTableError(eventAttendanceFeedRes.error, "user_event_preferences")
+      ) {
+        throw eventAttendanceFeedRes.error;
+      }
+
+      const nextFeed = eventAttendanceFeedRes.error
+        ? {}
+        : normalizeEventAttendanceFeed(eventAttendanceFeedRes.data || [], normalizedProfiles);
+      setEventAttendanceFeed(nextFeed);
+      secondaryStateRef.current.eventAttendanceLoaded = true;
+      return nextFeed;
+    },
+    [users],
+  );
+
+  const loadAdminData = useCallback(async (authedUserId) => {
+    if (!isSupabaseConfigured || !authedUserId) {
+      return;
+    }
+
+    const [reportsRes, bugReportsRes, auditLogRes] = await Promise.all([
+      supabase.from("reports").select(REPORT_COLUMNS),
+      supabase.from("bug_reports").select(BUG_REPORT_COLUMNS),
+      supabase
+        .from("admin_audit_log")
+        .select(AUDIT_LOG_COLUMNS)
+        .order("created_at", { ascending: false })
+        .limit(200),
+    ]);
+
+    if (reportsRes.error) throw reportsRes.error;
+    if (bugReportsRes.error && !isMissingTableError(bugReportsRes.error, "bug_reports")) {
+      throw bugReportsRes.error;
+    }
+    if (auditLogRes.error && !isMissingTableError(auditLogRes.error, "admin_audit_log")) {
+      throw auditLogRes.error;
+    }
+
+    setReports((reportsRes.data || []).map(fromReportRow));
+    if (!bugReportsRes.error) {
+      setBugReports((bugReportsRes.data || []).map(fromBugReportRow));
+    }
+    if (!auditLogRes.error) {
+      setAdminAuditLog((auditLogRes.data || []).map(fromAuditRow));
+    } else {
+      setAdminAuditLog([]);
+    }
+    secondaryStateRef.current.adminUserId = String(authedUserId);
   }, []);
 
   const refreshMarketplaceData = useCallback(
@@ -2489,31 +2890,40 @@ export function MarketplaceProvider({ children }) {
           authUser = authResult.data?.user || null;
         }
 
-        const [profilesRes, listingsRes, reviewsRes, manualEventsRes, siteSettingsRes] =
+        const [
+          profilesRes,
+          listingsRes,
+          manualEventsRes,
+          siteSettingsRes,
+          wishlistsRes,
+        ] =
           await Promise.all([
-          supabase.from("profiles").select("*"),
-          supabase.from("listings").select("*"),
-          supabase.from("reviews").select("*"),
-          supabase.from("manual_events").select("*"),
-          supabase.from("site_settings").select("*").eq("key", "global").maybeSingle(),
+          supabase.from("profiles").select(PROFILE_BOOT_COLUMNS),
+          supabase.from("listings").select(LISTING_BOOT_COLUMNS),
+          supabase.from("manual_events").select(MANUAL_EVENT_COLUMNS),
+          supabase.from("site_settings").select(SITE_SETTINGS_COLUMNS).eq("key", "global").maybeSingle(),
+          authedUserId
+            ? supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId)
+            : Promise.resolve({ data: [], error: null }),
         ]);
 
         if (profilesRes.error) throw profilesRes.error;
         if (listingsRes.error) throw listingsRes.error;
-        if (reviewsRes.error) throw reviewsRes.error;
         if (manualEventsRes.error) throw manualEventsRes.error;
         if (siteSettingsRes.error && !isMissingTableError(siteSettingsRes.error, "site_settings")) {
           throw siteSettingsRes.error;
         }
+        if (wishlistsRes.error) throw wishlistsRes.error;
 
         const normalizedProfiles = (profilesRes.data || [])
           .map((row) => mergeAuthedProfileMetadata(row, authUser))
           .map(fromProfileRow);
+        const nextListings = (listingsRes.data || []).map(fromListingRow).filter(isSupportedListing);
 
         setUsers(normalizedProfiles);
-        setListings((listingsRes.data || []).map(fromListingRow).filter(isSupportedListing));
-        setReviews((reviewsRes.data || []).map(fromReviewRow));
+        setListings(nextListings);
         setManualEvents((manualEventsRes.data || []).map(fromEventRow));
+        setWishlist((wishlistsRes.data || []).map((item) => item.listing_id));
         if (!siteSettingsRes.error && siteSettingsRes.data) {
           setSiteSettings(fromSiteSettingsRow(siteSettingsRes.data));
         }
@@ -2521,24 +2931,6 @@ export function MarketplaceProvider({ children }) {
         const authedProfile = authedUserId
           ? normalizedProfiles.find((profile) => String(profile.id) === String(authedUserId)) || null
           : null;
-
-        if (authedProfile?.role === "admin") {
-          const auditLogRes = await supabase
-            .from("admin_audit_log")
-            .select("*")
-            .order("created_at", { ascending: false })
-            .limit(200);
-
-          if (auditLogRes.error && !isMissingTableError(auditLogRes.error, "admin_audit_log")) {
-            throw auditLogRes.error;
-          }
-
-          if (!auditLogRes.error) {
-            setAdminAuditLog((auditLogRes.data || []).map(fromAuditRow));
-          }
-        } else {
-          setAdminAuditLog([]);
-        }
 
         if (!authedUserId) {
           setWishlist([]);
@@ -2548,162 +2940,132 @@ export function MarketplaceProvider({ children }) {
           setBugReports([]);
           setNotifications([]);
           setListingDrafts([]);
+          setCollectionItems([]);
           setActiveDraftId(null);
           setSearchHistory([]);
           setAdminAuditLog([]);
+          setEventReminderIds([]);
+          setEventAttendance({});
           setEventAttendanceFeed({});
+          secondaryStateRef.current.workspaceUserId = null;
+          secondaryStateRef.current.eventAttendanceLoaded = false;
+          secondaryStateRef.current.adminUserId = null;
           return;
         }
 
-        const [
-          wishlistsRes,
-            draftRes,
-            threadRowsRes,
-            offersRes,
-            reportsRes,
-            bugReportsRes,
-            notificationsRes,
-            searchHistoryRes,
-            collectionItemsRes,
-            eventPreferencesRes,
-            eventAttendanceFeedRes,
-          ] = await Promise.all([
-          supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId),
-          supabase
-            .from("listing_drafts")
-            .select("*")
-            .eq("user_id", authedUserId)
-            .maybeSingle(),
-            supabase
-              .from("message_threads")
-              .select("*")
-              .contains("participant_ids", [authedUserId]),
-            supabase.from("offers").select("*"),
-            supabase.from("reports").select("*"),
-            supabase.from("bug_reports").select("*"),
-            supabase
-              .from("notifications")
-              .select("*")
-            .eq("user_id", authedUserId),
-          supabase
-            .from("search_history")
-            .select("*")
-            .eq("user_id", authedUserId)
-            .order("created_at", { ascending: false }),
-          supabase
-            .from("collection_items")
-            .select("*")
-            .eq("user_id", authedUserId)
-            .order("updated_at", { ascending: false }),
-          supabase
-            .from("user_event_preferences")
-            .select("*")
-            .eq("user_id", authedUserId),
-          supabase
-            .from("user_event_preferences")
-            .select("event_id, user_id, attendance_intent"),
-        ]);
-
-        if (wishlistsRes.error) throw wishlistsRes.error;
-        if (draftRes.error) throw draftRes.error;
-          if (threadRowsRes.error) throw threadRowsRes.error;
-          if (offersRes.error) throw offersRes.error;
-          if (reportsRes.error) throw reportsRes.error;
-          if (bugReportsRes.error && !isMissingTableError(bugReportsRes.error, "bug_reports")) {
-            throw bugReportsRes.error;
-          }
-          if (notificationsRes.error) throw notificationsRes.error;
-        if (searchHistoryRes.error) throw searchHistoryRes.error;
-        if (
-          collectionItemsRes.error &&
-          !isMissingTableError(collectionItemsRes.error, "collection_items")
-        ) {
-          throw collectionItemsRes.error;
-        }
-        if (
-          eventPreferencesRes.error &&
-          !isMissingTableError(eventPreferencesRes.error, "user_event_preferences")
-        ) {
-          throw eventPreferencesRes.error;
-        }
-        if (
-          eventAttendanceFeedRes.error &&
-          !isMissingTableError(eventAttendanceFeedRes.error, "user_event_preferences")
-        ) {
-          throw eventAttendanceFeedRes.error;
-        }
-
-        const threadRows = threadRowsRes.data || [];
-        let messageRows = [];
-        if (threadRows.length) {
-          const messagesRes = await supabase
-            .from("messages")
-            .select("*")
-            .in(
-              "thread_id",
-              threadRows.map((thread) => thread.id),
-            );
-
-          if (messagesRes.error) throw messagesRes.error;
-          messageRows = messagesRes.data || [];
-        }
-
-        const draftPayload = draftRes.data?.payload || null;
-        const nextDrafts = normalizeDraftCollection(draftPayload).map((draft, index) => ({
-          id: draft.id || `legacy-draft-${index + 1}`,
-          name: draft.name || draft.title || "Untitled draft",
-          updatedAt: draft.updatedAt || draftRes.data?.updated_at || new Date().toISOString(),
-          ...draft,
-        }));
-
-        setWishlist((wishlistsRes.data || []).map((item) => item.listing_id));
-        setListingDrafts(nextDrafts);
-        setActiveDraftId(
-          draftPayload?.activeDraftId ||
-            nextDrafts[0]?.id ||
-            null,
+        const shouldDeferSecondary = Boolean(options.deferSecondary);
+        const shouldLoadSellerTrust = options.loadSellerTrust ?? true;
+        const shouldLoadWorkspace = options.loadWorkspace ?? !shouldDeferSecondary;
+        const shouldLoadEventAttendance = options.loadEventAttendance ?? !shouldDeferSecondary;
+        const shouldLoadAdmin = Boolean(
+          authedProfile?.role === "admin" && (options.loadAdmin ?? !shouldDeferSecondary),
         );
-        if (!collectionItemsRes.error) {
-          setCollectionItems((collectionItemsRes.data || []).map(fromCollectionItemRow));
-        } else {
-          setCollectionItems(readCollectionStorage(authedUserId).map(normalizeCollectionRecord));
+
+        const secondaryTasks = [];
+        if (shouldLoadSellerTrust) {
+          secondaryTasks.push(() => loadSellerTrustData());
         }
-        if (!eventPreferencesRes.error) {
-          const nextEventPreferences = normalizeEventPreferences(eventPreferencesRes.data || []);
-          setEventReminderIds(nextEventPreferences.reminderIds);
-          setEventAttendance(nextEventPreferences.attendance);
-        } else {
-          setEventReminderIds(readEventReminderStorage(authedUserId));
-          setEventAttendance(readEventAttendanceStorage(authedUserId));
+        if (shouldLoadWorkspace) {
+          secondaryTasks.push(() => loadWorkspaceData(authedUserId, normalizedProfiles));
         }
-        if (!eventAttendanceFeedRes.error) {
-          setEventAttendanceFeed(
-            normalizeEventAttendanceFeed(eventAttendanceFeedRes.data || [], normalizedProfiles),
-          );
-        } else {
-          setEventAttendanceFeed({});
+        if (shouldLoadEventAttendance) {
+          secondaryTasks.push(() => loadEventAttendanceFeed(normalizedProfiles));
         }
-          setThreads(buildThreadMap(threadRows, messageRows));
-          setOffers((offersRes.data || []).map(fromOfferRow));
-          setReports((reportsRes.data || []).map(fromReportRow));
-          if (!bugReportsRes.error) {
-            setBugReports((bugReportsRes.data || []).map(fromBugReportRow));
-          }
-          setNotifications((notificationsRes.data || []).map(fromNotificationRow));
-        setSearchHistory(
-          (searchHistoryRes.data || []).map((row) => ({
-            id: row.id,
-            query: row.query,
-            game: row.game,
-            source: row.source,
-            createdAt: row.created_at,
-          })),
-        );
+        if (shouldLoadAdmin) {
+          secondaryTasks.push(() => loadAdminData(authedUserId));
+        } else if (authedProfile?.role !== "admin") {
+          setReports([]);
+          setAdminAuditLog([]);
+        }
+
+        if (shouldDeferSecondary) {
+          window.setTimeout(() => {
+            secondaryTasks.forEach((task) => {
+              Promise.resolve(task()).catch((error) => {
+                console.error("Deferred marketplace hydration failed:", error);
+              });
+            });
+          }, 0);
+        } else if (secondaryTasks.length) {
+          await Promise.all(secondaryTasks.map((task) => task()));
+        }
       } finally {
         setLoading(false);
       }
     },
-    [currentUserId],
+    [currentUserId, loadAdminData, loadEventAttendanceFeed, loadSellerTrustData, loadWorkspaceData],
+  );
+
+  const ensureSellerTrustLoaded = useCallback(
+    async ({ force = false } = {}) => {
+      if (!isSupabaseConfigured) {
+        return { ok: true };
+      }
+      if (secondaryStateRef.current.reviewsLoaded && !force) {
+        return { ok: true };
+      }
+      try {
+        await loadSellerTrustData();
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: error?.message || "Seller trust data failed to load." };
+      }
+    },
+    [loadSellerTrustData],
+  );
+
+  const ensureWorkspaceDataLoaded = useCallback(
+    async ({ force = false } = {}) => {
+      if (!isSupabaseConfigured || !currentUserId) {
+        return { ok: true };
+      }
+      if (secondaryStateRef.current.workspaceUserId === String(currentUserId) && !force) {
+        return { ok: true };
+      }
+      try {
+        await loadWorkspaceData(currentUserId);
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: error?.message || "Workspace data failed to load." };
+      }
+    },
+    [currentUserId, loadWorkspaceData],
+  );
+
+  const ensureEventAttendanceFeedLoaded = useCallback(
+    async ({ force = false } = {}) => {
+      if (!isSupabaseConfigured) {
+        return { ok: true };
+      }
+      if (secondaryStateRef.current.eventAttendanceLoaded && !force) {
+        return { ok: true };
+      }
+      try {
+        await loadEventAttendanceFeed();
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: error?.message || "Event responses failed to load." };
+      }
+    },
+    [loadEventAttendanceFeed],
+  );
+
+  const ensureAdminDataLoaded = useCallback(
+    async ({ force = false } = {}) => {
+      if (!isSupabaseConfigured || !currentUserId || currentUser?.role !== "admin") {
+        return { ok: true };
+      }
+      if (secondaryStateRef.current.adminUserId === String(currentUserId) && !force) {
+        return { ok: true };
+      }
+      try {
+        await loadAdminData(currentUserId);
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: error?.message || "Admin data failed to load." };
+      }
+    },
+    [currentUser?.role, currentUserId, loadAdminData],
   );
 
   useEffect(() => {
@@ -2927,14 +3289,28 @@ export function MarketplaceProvider({ children }) {
           }
           setCurrentUserId(authUser.id);
           setAuthReady(true);
-          void refreshMarketplaceData(authUser.id, { silent: true });
+          void refreshMarketplaceData(authUser.id, {
+            silent: Boolean(hasUsableCache),
+            deferSecondary: true,
+            loadSellerTrust: true,
+            loadWorkspace: false,
+            loadEventAttendance: false,
+            loadAdmin: false,
+          });
         } else {
           if (!mounted) {
             return;
           }
           setCurrentUserId(null);
           setAuthReady(true);
-          void refreshMarketplaceData(null, { silent: true });
+          void refreshMarketplaceData(null, {
+            silent: Boolean(hasUsableCache),
+            deferSecondary: true,
+            loadSellerTrust: true,
+            loadWorkspace: false,
+            loadEventAttendance: false,
+            loadAdmin: false,
+          });
         }
       } catch (error) {
         console.error("Supabase auth hydration failed:", error);
@@ -2974,7 +3350,7 @@ export function MarketplaceProvider({ children }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [bootstrapProfile, refreshMarketplaceData]);
+  }, [bootstrapProfile, hasUsableCache, refreshMarketplaceData]);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !currentUserId || !authReady) {
@@ -2986,7 +3362,14 @@ export function MarketplaceProvider({ children }) {
         return;
       }
 
-      void refreshMarketplaceData(currentUserId, { silent: true });
+      void refreshMarketplaceData(currentUserId, {
+        silent: true,
+        deferSecondary: true,
+        loadSellerTrust: false,
+        loadWorkspace: false,
+        loadEventAttendance: false,
+        loadAdmin: false,
+      });
     };
 
     const intervalId = window.setInterval(() => {
@@ -6975,6 +7358,10 @@ export function MarketplaceProvider({ children }) {
     deleteCurrentUserAccount,
     deleteUserAccount,
     dismissToast,
+    ensureAdminDataLoaded,
+    ensureEventAttendanceFeedLoaded,
+    ensureSellerTrustLoaded,
+    ensureWorkspaceDataLoaded,
     editListing,
     enrichedListings,
     eventAttendance,

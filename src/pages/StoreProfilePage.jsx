@@ -59,6 +59,7 @@ export default function StoreProfilePage() {
   const { storeSlug } = useParams();
   const {
     activeListings,
+    ensureEventAttendanceFeedLoaded,
     eventAttendance,
     eventAttendanceFeed,
     eventReminderIds,
@@ -73,6 +74,10 @@ export default function StoreProfilePage() {
   const [selectedEvent, setSelectedEvent] = useState(null);
 
   const store = getStoreBySlug(storeSlug);
+
+  useEffect(() => {
+    void ensureEventAttendanceFeedLoaded();
+  }, [ensureEventAttendanceFeedLoaded]);
 
   useEffect(() => {
     let cancelled = false;
@@ -156,7 +161,7 @@ export default function StoreProfilePage() {
       <ScreenHeader className="lg:hidden" subtitle={store.neighborhood} title={store.name} />
 
       <div className="hidden lg:block lg:px-8 lg:pt-8">
-        <div className="mx-auto grid w-full max-w-[1380px] grid-cols-[minmax(0,1fr)_340px] gap-8">
+        <div className="mx-auto grid w-full max-w-[1480px] grid-cols-[minmax(0,1.08fr)_360px] gap-8">
           <div
             className="rounded-[28px] px-6 py-6"
             style={{
@@ -329,7 +334,7 @@ export default function StoreProfilePage() {
       </ScreenSection>
 
       <ScreenSection className="pb-3 lg:px-8 lg:pt-8">
-        <div className="mx-auto w-full lg:max-w-[1380px]">
+      <div className="mx-auto w-full lg:max-w-[1480px]">
         <p className="mb-2 text-[12px] text-white" style={{ fontWeight: 700 }}>
           Upcoming events
         </p>
