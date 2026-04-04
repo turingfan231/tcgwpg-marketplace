@@ -109,7 +109,30 @@ const PROFILE_CRITICAL_COLUMNS = [
   "onboarding_complete",
 ].join(",");
 const PROFILE_FULL_COLUMNS = `${PROFILE_CRITICAL_COLUMNS},email,bio`;
-const LISTING_BOOT_COLUMNS = [
+const LISTING_SUMMARY_COLUMNS = [
+  "id",
+  "seller_id",
+  "type",
+  "game",
+  "game_slug",
+  "title",
+  "price",
+  "price_currency",
+  "previous_price",
+  "market_price",
+  "condition",
+  "neighborhood",
+  "postal_code",
+  "accepts_trade",
+  "primary_image",
+  "status",
+  "featured",
+  "views",
+  "offers",
+  "created_at",
+  "updated_at",
+].join(",");
+const LISTING_FULL_COLUMNS = [
   "id",
   "seller_id",
   "type",
@@ -150,7 +173,19 @@ const REVIEW_COLUMNS = [
   "image_url",
   "created_at",
 ].join(",");
-const MANUAL_EVENT_COLUMNS = [
+const MANUAL_EVENT_SUMMARY_COLUMNS = [
+  "id",
+  "title",
+  "store",
+  "date_str",
+  "time",
+  "game",
+  "fee",
+  "neighborhood",
+  "note",
+  "published",
+].join(",");
+const MANUAL_EVENT_FULL_COLUMNS = [
   "id",
   "title",
   "store",
@@ -165,19 +200,7 @@ const MANUAL_EVENT_COLUMNS = [
   "note",
   "published",
 ].join(",");
-const MANUAL_EVENT_FALLBACK_COLUMNS = [
-  "id",
-  "title",
-  "store",
-  "source",
-  "date_str",
-  "time",
-  "game",
-  "fee",
-  "neighborhood",
-  "note",
-  "published",
-].join(",");
+const MANUAL_EVENT_FALLBACK_COLUMNS = MANUAL_EVENT_SUMMARY_COLUMNS;
 const OFFER_COLUMNS = [
   "id",
   "listing_id",
@@ -3067,6 +3090,8 @@ export function MarketplaceProvider({ children }) {
       }
 
       const useCachedBootSnapshot = hasUsableCache && !options.forceDirect;
+      const allowServerBootstrap = !options.forceDirect;
+      const allowServerEventSync = import.meta.env.DEV;
 
       if (!options.silent && !useCachedBootSnapshot) {
         setLoading(true);
@@ -3081,54 +3106,69 @@ export function MarketplaceProvider({ children }) {
         let nextSiteSettings = null;
 
         let bootstrapLoaded = false;
-        try {
-          const bootstrapPayload = await fetchMarketplaceBootstrap({
-            timeoutMs: useCachedBootSnapshot ? 2500 : 4000,
-          });
-          normalizedProfiles = (bootstrapPayload?.users || [])
-            .map((row) => mergeAuthedProfileMetadata(row, authUser))
-            .map(fromProfileRow);
-          nextListings = (bootstrapPayload?.listings || [])
-            .map(fromListingRow)
-            .filter(isSupportedListing);
-          nextManualEvents = (bootstrapPayload?.manualEvents || []).map(fromEventRow);
-          nextSiteSettings = bootstrapPayload?.siteSettings
-            ? fromSiteSettingsRow(bootstrapPayload.siteSettings)
-            : null;
-          bootstrapLoaded = true;
-        } catch (bootstrapError) {
-          console.error("Marketplace bootstrap failed, falling back to direct queries:", bootstrapError);
-          if (useCachedBootSnapshot) {
-            normalizedProfiles = users;
-            nextListings = listings;
-            nextManualEvents = manualEvents;
-            nextSiteSettings = siteSettings;
+        if (allowServerBootstrap) {
+          try {
+            const bootstrapPayload = await fetchMarketplaceBootstrap({
+              timeoutMs: useCachedBootSnapshot ? 2500 : 4000,
+            });
+            normalizedProfiles = (bootstrapPayload?.users || [])
+              .map((row) => mergeAuthedProfileMetadata(row, authUser))
+              .map(fromProfileRow);
+            nextListings = (bootstrapPayload?.listings || [])
+              .map(fromListingRow)
+              .filter(isSupportedListing);
+            nextManualEvents = (bootstrapPayload?.manualEvents || []).map(fromEventRow);
+            nextSiteSettings = bootstrapPayload?.siteSettings
+              ? fromSiteSettingsRow(bootstrapPayload.siteSettings)
+              : null;
             bootstrapLoaded = true;
-            window.setTimeout(() => {
-              void refreshMarketplaceData(authedUserId, {
-                ...options,
-                silent: true,
-                forceDirect: true,
-              });
-            }, 0);
+          } catch (bootstrapError) {
+            console.error("Marketplace bootstrap failed, falling back to direct queries:", bootstrapError);
+            if (useCachedBootSnapshot) {
+              normalizedProfiles = users;
+              nextListings = listings;
+              nextManualEvents = manualEvents;
+              nextSiteSettings = siteSettings;
+              bootstrapLoaded = true;
+              window.setTimeout(() => {
+                void refreshMarketplaceData(authedUserId, {
+                  ...options,
+                  silent: true,
+                  forceDirect: true,
+                });
+              }, 0);
+            }
           }
         }
 
         if (!bootstrapLoaded) {
           const manualEventsPromise = (async () => {
-            let result = await supabase.from("manual_events").select(MANUAL_EVENT_COLUMNS);
+            let result = await supabase
+              .from("manual_events")
+              .select(MANUAL_EVENT_SUMMARY_COLUMNS)
+              .eq("published", true)
+              .limit(24);
             if (
               result.error &&
               (isMissingColumnError(result.error, "source_type") ||
                 isMissingColumnError(result.error, "source_url"))
             ) {
-              result = await supabase.from("manual_events").select(MANUAL_EVENT_FALLBACK_COLUMNS);
+              result = await supabase
+                .from("manual_events")
+                .select(MANUAL_EVENT_FALLBACK_COLUMNS)
+                .eq("published", true)
+                .limit(24);
             }
             return result;
           })();
           const [listingsRes, manualEventsRes, siteSettingsRes] = await withAsyncTimeout(
             Promise.all([
-              supabase.from("listings").select(LISTING_BOOT_COLUMNS),
+              supabase
+                .from("listings")
+                .select(LISTING_SUMMARY_COLUMNS)
+                .eq("status", "active")
+                .order("created_at", { ascending: false })
+                .limit(120),
               manualEventsPromise,
               supabase
                 .from("site_settings")
@@ -3176,7 +3216,7 @@ export function MarketplaceProvider({ children }) {
           updateBootState(hasUsableCache ? 0.7 : 0.58, "Preparing listings");
         }
 
-        if (!nextManualEvents.length) {
+        if (allowServerEventSync && !nextManualEvents.length) {
           window.setTimeout(() => {
             void syncLocalEventsCache()
               .then((syncedPayload) => {
@@ -3686,7 +3726,7 @@ export function MarketplaceProvider({ children }) {
   }, [authReady, currentUserId, refreshMarketplaceData]);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !authReady || eventsSyncRunningRef.current) {
+    if (!import.meta.env.DEV || !isSupabaseConfigured || !authReady || eventsSyncRunningRef.current) {
       return;
     }
 

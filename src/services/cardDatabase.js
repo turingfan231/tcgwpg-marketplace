@@ -39,12 +39,12 @@ const ONE_PIECE_VARIANT_STOPWORDS = new Set([
 ]);
 
 function buildLiveApiUrls(path) {
-  if (DEPLOY_API_BASE_URL) {
-    return [new URL(path, `${DEPLOY_API_BASE_URL}/`)];
-  }
-
   if (!import.meta.env.DEV) {
-    return [new URL(path, window.location.origin)];
+    const urls = [new URL(path, window.location.origin)];
+    if (DEPLOY_API_BASE_URL && DEPLOY_API_BASE_URL !== window.location.origin) {
+      urls.push(new URL(path, `${DEPLOY_API_BASE_URL}/`));
+    }
+    return uniqueBy(urls, (item) => item.toString());
   }
 
   const urls = [new URL(path, window.location.origin)];
