@@ -3092,6 +3092,9 @@ export function MarketplaceProvider({ children }) {
       const useCachedBootSnapshot = hasUsableCache && !options.forceDirect;
       const allowServerBootstrap = !options.forceDirect;
       const allowServerEventSync = import.meta.env.DEV;
+      const hasRenderableBaseline = Boolean(
+        useCachedBootSnapshot || users.length || listings.length || manualEvents.length,
+      );
 
       if (!options.silent && !useCachedBootSnapshot) {
         setLoading(true);
@@ -3109,7 +3112,7 @@ export function MarketplaceProvider({ children }) {
         if (allowServerBootstrap) {
           try {
             const bootstrapPayload = await fetchMarketplaceBootstrap({
-              timeoutMs: useCachedBootSnapshot ? 2500 : 4000,
+              timeoutMs: useCachedBootSnapshot ? 1200 : 1600,
             });
             normalizedProfiles = (bootstrapPayload?.users || [])
               .map((row) => mergeAuthedProfileMetadata(row, authUser))
@@ -3124,7 +3127,7 @@ export function MarketplaceProvider({ children }) {
             bootstrapLoaded = true;
           } catch (bootstrapError) {
             console.error("Marketplace bootstrap failed, falling back to direct queries:", bootstrapError);
-            if (useCachedBootSnapshot) {
+            if (hasRenderableBaseline) {
               normalizedProfiles = users;
               nextListings = listings;
               nextManualEvents = manualEvents;

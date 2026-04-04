@@ -40,11 +40,7 @@ const ONE_PIECE_VARIANT_STOPWORDS = new Set([
 
 function buildLiveApiUrls(path) {
   if (!import.meta.env.DEV) {
-    const urls = [new URL(path, window.location.origin)];
-    if (DEPLOY_API_BASE_URL && DEPLOY_API_BASE_URL !== window.location.origin) {
-      urls.push(new URL(path, `${DEPLOY_API_BASE_URL}/`));
-    }
-    return uniqueBy(urls, (item) => item.toString());
+    return [new URL(path, window.location.origin)];
   }
 
   const urls = [new URL(path, window.location.origin)];
