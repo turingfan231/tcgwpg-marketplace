@@ -8,6 +8,8 @@ import {
   Store,
   UserRound,
 } from "lucide-react";
+import { motion } from "motion/react";
+import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import UserAvatar from "../shared/UserAvatar";
 import { useMarketplace } from "../../hooks/useMarketplace";
@@ -153,14 +155,45 @@ function DesktopSidebar({ pathname }) {
 
 export default function AppShell() {
   const location = useLocation();
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window === "undefined" ? false : window.matchMedia("(min-width: 1024px)").matches,
+  );
   const hideNav = HIDE_NAV_PATTERNS.some((pattern) => pattern.test(location.pathname));
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+    const media = window.matchMedia("(min-width: 1024px)");
+    const handleChange = () => setIsDesktop(media.matches);
+    handleChange();
+    if (typeof media.addEventListener === "function") {
+      media.addEventListener("change", handleChange);
+      return () => media.removeEventListener("change", handleChange);
+    }
+    media.addListener(handleChange);
+    return () => media.removeListener(handleChange);
+  }, []);
+
   return (
     <div className="flex h-[100dvh] overflow-hidden" style={{ background: "radial-gradient(circle at top left, rgba(56,56,64,0.12) 0%, rgba(10,10,12,1) 32%)" }}>
       <DesktopSidebar pathname={location.pathname} />
       <div className="flex min-w-0 flex-1 overflow-hidden">
         <div className="relative flex h-[100dvh] min-h-0 w-full max-w-[430px] flex-col overflow-hidden lg:max-w-none lg:flex-1 lg:px-6 lg:py-6">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:w-full lg:overflow-visible lg:rounded-[28px] lg:border lg:border-white/5 lg:bg-[linear-gradient(180deg,rgba(16,16,20,0.94),rgba(12,12,14,0.98))] lg:shadow-[0_18px_48px_rgba(0,0,0,0.24)]">
-          <Outlet />
+          {isDesktop ? (
+            <Outlet />
+          ) : (
+            <motion.div
+              key={location.pathname}
+              className="flex min-h-0 flex-1 flex-col"
+              initial={{ opacity: 0, y: 12, scale: 0.992 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <Outlet />
+            </motion.div>
+          )}
         </div>
         {hideNav ? null : <MobileTabBar />}
       </div>
