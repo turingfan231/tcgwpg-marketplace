@@ -1926,19 +1926,10 @@ function toListingPayload(payload, seller) {
   const marketPrice = Number(payload.marketPrice) || null;
   const now = new Date().toISOString();
   const normalizedGameSlug = normalizeSupportedGameSlug(payload.game);
-  const rawType = String(payload.type || "WTS").trim().toUpperCase();
-  const normalizedType =
-    rawType === "WTS/WTT"
-      ? "WTS"
-      : rawType === "WTB"
-        ? "WTB"
-        : rawType === "WTT"
-          ? "WTT"
-          : "WTS";
 
   return {
     seller_id: seller.id,
-    type: normalizedType,
+    type: payload.type || "WTS",
     game: payload.game,
     game_slug: normalizedGameSlug,
     title: payload.title,
