@@ -138,7 +138,7 @@ function DesktopSidebar({ pathname }) {
 }
 
 export default function AppShell() {
-  const { authReady, bootProgress, bootStatus, hasBootCache, loading } = useMarketplace();
+  const { authReady, bootProgress, bootStatus, loading } = useMarketplace();
   const location = useLocation();
   const [isDesktop, setIsDesktop] = useState(() =>
     typeof window === "undefined" ? false : window.matchMedia("(min-width: 1024px)").matches,
@@ -166,17 +166,16 @@ export default function AppShell() {
       return undefined;
     }
 
-    const canRevealFromCache = hasBootCache && !loading;
-    if (loading || (!authReady && !canRevealFromCache)) {
+    if (!authReady || loading) {
       return undefined;
     }
 
     const timeoutId = window.setTimeout(() => {
       setBootReady(true);
-    }, canRevealFromCache ? 50 : isDesktop ? 120 : 90);
+    }, isDesktop ? 120 : 90);
 
     return () => window.clearTimeout(timeoutId);
-  }, [authReady, bootReady, hasBootCache, isDesktop, loading]);
+  }, [authReady, bootReady, isDesktop, loading]);
 
   if (!bootReady) {
     return <AppLaunchScreen compact={isDesktop} progress={bootProgress} status={bootStatus} />;
