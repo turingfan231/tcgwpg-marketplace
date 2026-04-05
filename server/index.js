@@ -2516,6 +2516,200 @@ function normalizeEventRecord(event) {
   };
 }
 
+function buildEventExternalKey(event) {
+  return [
+    String(event.store || "").trim().toLowerCase(),
+    String(event.title || "").trim().toLowerCase(),
+    String(event.dateStr || "").trim(),
+    String(event.time || "").trim().toLowerCase(),
+  ]
+    .filter(Boolean)
+    .join("::");
+}
+
+function sortEventsAscending(events = []) {
+  return [...events].sort((left, right) => {
+    const leftTime = new Date(`${left.dateStr}T12:00:00`).getTime();
+    const rightTime = new Date(`${right.dateStr}T12:00:00`).getTime();
+    return leftTime - rightTime;
+  });
+}
+
+function mapManualEventRow(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    store: row.store,
+    source: row.source,
+    sourceType: row.source_type,
+    sourceUrl: row.source_url,
+    dateStr: row.date_str,
+    time: row.time,
+    game: row.game,
+    fee: row.fee,
+    neighborhood: row.neighborhood,
+    note: row.note,
+    published: row.published,
+    externalKey: row.external_key || "",
+    updatedAt: row.updated_at || null,
+  };
+}
+
+async function readCachedSyncedEvents() {
+  if (!supabaseAdmin) {
+    return { ok: false, events: [], stale: true };
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("manual_events")
+    .select("id,title,store,source,source_type,source_url,date_str,time,game,fee,neighborhood,note,published,external_key,updated_at")
+    .eq("source_type", "synced")
+    .eq("published", true)
+    .gte("date_str", new Date().toISOString().slice(0, 10));
+
+  if (error) {
+    if (
+      isMissingTableError(error, "manual_events") ||
+      isMissingColumnError(error, "external_key") ||
+      isMissingColumnError(error, "updated_at")
+    ) {
+      return { ok: false, events: [], stale: true };
+    }
+    throw error;
+  }
+
+  const events = sortEventsAscending((data || []).map(mapManualEventRow));
+  const freshestUpdatedAt = events.reduce((latest, event) => {
+    const timestamp = new Date(event.updatedAt || 0).getTime();
+    return timestamp > latest ? timestamp : latest;
+  }, 0);
+  const stale = !freshestUpdatedAt || Date.now() - freshestUpdatedAt > 45 * 60 * 1000;
+  return { ok: true, events, stale };
+}
+
+async function syncExternalEventsToSupabase(events = []) {
+  if (!supabaseAdmin) {
+    return { ok: false, skipped: true, reason: "Supabase admin client is not configured." };
+  }
+
+  const timestamp = new Date().toISOString();
+  const latestEvents = uniqueBy(
+    events
+      .map((event) => ({
+        ...normalizeEventRecord(event),
+        externalKey: buildEventExternalKey(event),
+      }))
+      .filter((event) => event.externalKey),
+    (event) => event.externalKey,
+  );
+
+  if (!latestEvents.length) {
+    const cached = await readCachedSyncedEvents().catch(() => ({ ok: false, events: [], stale: true }));
+    return {
+      ok: Boolean(cached?.ok),
+      events: Array.isArray(cached?.events) ? cached.events : [],
+      skipped: true,
+      reason: "Live event sources returned no upcoming events; preserved existing cached rows.",
+    };
+  }
+
+  const { data: existingRows, error: existingError } = await supabaseAdmin
+    .from("manual_events")
+    .select("id,external_key")
+    .eq("source_type", "synced");
+
+  if (existingError) {
+    if (
+      isMissingTableError(existingError, "manual_events") ||
+      isMissingColumnError(existingError, "external_key")
+    ) {
+      return { ok: false, skipped: true, reason: existingError.message };
+    }
+    throw existingError;
+  }
+
+  const existingByKey = new Map((existingRows || []).map((row) => [row.external_key, row]));
+  const latestKeys = new Set(latestEvents.map((event) => event.externalKey));
+
+  const rowsToInsert = latestEvents
+    .filter((event) => !existingByKey.has(event.externalKey))
+    .map((event) => ({
+      title: event.title,
+      store: event.store,
+      source: event.source,
+      source_type: "synced",
+      source_url: event.sourceUrl || null,
+      date_str: event.dateStr,
+      time: event.time,
+      game: event.game,
+      fee: event.fee || "TBD",
+      neighborhood: event.neighborhood || null,
+      note: event.note || "",
+      published: true,
+      external_key: event.externalKey,
+      updated_at: timestamp,
+    }));
+
+  const rowsToUpdate = latestEvents
+    .filter((event) => existingByKey.has(event.externalKey))
+    .map((event) => ({
+      id: existingByKey.get(event.externalKey).id,
+      payload: {
+        title: event.title,
+        store: event.store,
+        source: event.source,
+        source_type: "synced",
+        source_url: event.sourceUrl || null,
+        date_str: event.dateStr,
+        time: event.time,
+        game: event.game,
+        fee: event.fee || "TBD",
+        neighborhood: event.neighborhood || null,
+        note: event.note || "",
+        published: true,
+        external_key: event.externalKey,
+        updated_at: timestamp,
+      },
+    }));
+
+  const rowsToDelete = (existingRows || [])
+    .filter((row) => !latestKeys.has(row.external_key))
+    .map((row) => row.id);
+
+  if (rowsToInsert.length) {
+    const { error } = await supabaseAdmin.from("manual_events").insert(rowsToInsert);
+    if (error) {
+      throw error;
+    }
+  }
+
+  if (rowsToUpdate.length) {
+    await Promise.all(
+      rowsToUpdate.map(async (row) => {
+        const { error } = await supabaseAdmin
+          .from("manual_events")
+          .update(row.payload)
+          .eq("id", row.id);
+        if (error) {
+          throw error;
+        }
+      }),
+    );
+  }
+
+  if (rowsToDelete.length) {
+    const { error } = await supabaseAdmin
+      .from("manual_events")
+      .delete()
+      .in("id", rowsToDelete);
+    if (error) {
+      throw error;
+    }
+  }
+
+  return readCachedSyncedEvents();
+}
+
 const GALAXY_FACEBOOK_SNAPSHOT_EVENTS = [
   { title: "Magic: The Gathering Standard League", dateStr: "2026-03-20", time: "6:00 p.m.", game: "Magic" },
   { title: "Pokemon Mega Evolution Perfect Order Prerelease", dateStr: "2026-03-21", time: "10:00 a.m.", game: "Pokemon" },
@@ -3863,28 +4057,96 @@ app.get("/api/live/source-sales", heavyApiRateLimit, async (req, res) => {
   }
 });
 
-app.get("/api/events/local", publicApiRateLimit, async (_req, res) => {
-  const results = await Promise.all([
-    fetchFusionEvents(),
-    fetchAMuseEvents(),
-    fetchArcticEvents(),
-    fetchGalaxyStatus(),
-  ]);
+app.get("/api/events/local", publicApiRateLimit, async (req, res) => {
+  const forceSync = String(req.query.sync || "").trim() === "1";
 
-  const events = uniqueBy(
-    results.flatMap((result) => result.events || []),
-    (event) => `${event.store}-${event.title}-${event.dateStr}-${event.time}`,
-  ).sort((left, right) => {
-    const leftTime = new Date(`${left.dateStr}T12:00:00`).getTime();
-    const rightTime = new Date(`${right.dateStr}T12:00:00`).getTime();
-    return leftTime - rightTime;
-  });
+  try {
+    const cachedSync = await readCachedSyncedEvents();
+    if (cachedSync.ok && cachedSync.events.length && !cachedSync.stale && !forceSync) {
+      return res.json({
+        events: cachedSync.events,
+        sources: [
+          {
+            id: "cache",
+            label: "Database cache",
+            mode: "Preloaded",
+            note: "Serving preloaded event rows from Supabase.",
+          },
+        ],
+        fetchedAt: new Date().toISOString(),
+      });
+    }
 
-  res.json({
-    events,
-    sources: results.map((result) => result.status),
-    fetchedAt: new Date().toISOString(),
-  });
+    const results = await Promise.all([
+      fetchFusionEvents(),
+      fetchAMuseEvents(),
+      fetchArcticEvents(),
+      fetchGalaxyStatus(),
+    ]);
+
+    const liveEvents = sortEventsAscending(
+      uniqueBy(
+        results.flatMap((result) => result.events || []),
+        (event) => buildEventExternalKey(event),
+      ),
+    );
+
+    if (!liveEvents.length && cachedSync.ok && cachedSync.events.length) {
+      return res.json({
+        events: cachedSync.events,
+        sources: results.map((result) => result.status).concat([
+          {
+            id: "cache",
+            label: "Database cache",
+            mode: "Fallback",
+            note: "Live pulls returned no events, so the last cached schedule is being served.",
+          },
+        ]),
+        fetchedAt: new Date().toISOString(),
+      });
+    }
+
+    const syncedResult = await syncExternalEventsToSupabase(liveEvents).catch((error) => ({
+      ok: false,
+      skipped: true,
+      reason: error.message,
+    }));
+
+    const events =
+      syncedResult?.ok && Array.isArray(syncedResult.events) && syncedResult.events.length
+        ? syncedResult.events
+        : liveEvents;
+
+    return res.json({
+      events,
+      sources: results.map((result) => result.status).concat(
+        syncedResult?.ok
+          ? [
+              {
+                id: "cache",
+                label: "Database cache",
+                mode: "Synced",
+                note: `Persisted ${events.length} upcoming event row(s) to Supabase.`,
+              },
+            ]
+          : syncedResult?.skipped
+            ? [
+                {
+                  id: "cache",
+                  label: "Database cache",
+                  mode: "Sync skipped",
+                  note: syncedResult.reason,
+                },
+              ]
+            : [],
+      ),
+      fetchedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: error.message,
+    });
+  }
 });
 
 app.listen(port, () => {

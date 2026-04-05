@@ -31,7 +31,6 @@ import {
   sellerLabel,
 } from "../mobile/helpers";
 import { ListingRow, MobileScreen, PullToRefresh } from "../mobile/primitives";
-import { fetchLocalEvents } from "../services/cardDatabase";
 
 const HERO_GAMES = [
   {
@@ -296,10 +295,17 @@ function HeroCarousel({ slides }) {
                       }}
                     >
                       {item.storeLogo ? (
-                        <div className="flex h-11 w-11 items-center justify-center overflow-hidden lg:h-16 lg:w-16">
+                        <div
+                          className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-[14px] lg:h-16 lg:w-16 lg:rounded-[18px]"
+                          style={{
+                            background: "#ffffff",
+                            border: "1px solid rgba(255,255,255,0.16)",
+                            boxShadow: "0 10px 24px rgba(0,0,0,0.16)",
+                          }}
+                        >
                           <img
                             alt={item.storeName || "Store logo"}
-                            className="h-full w-full object-contain"
+                            className="h-full w-full object-contain p-1.5 lg:p-2"
                             decoding="async"
                             loading="lazy"
                             src={item.storeLogo}
@@ -419,8 +425,6 @@ function HotListingCard({ listing }) {
       style={{
         background: "rgba(255,255,255,0.03)",
         border: "1px solid rgba(255,255,255,0.05)",
-        contentVisibility: "auto",
-        containIntrinsicSize: "164px 180px",
       }}
       type="button"
       whileTap={{ scale: 0.97 }}
@@ -526,7 +530,15 @@ function StoreCard({ store }) {
       >
         <div
           className="mb-2 flex h-[30px] w-[30px] items-center justify-center overflow-hidden rounded-[9px] lg:h-[42px] lg:w-[42px] lg:rounded-[14px]"
-          style={{ background: store.logoUrl ? "rgba(255,255,255,0.06)" : `linear-gradient(135deg, ${accent}, ${accent}88)` }}
+          style={
+            store.logoUrl
+              ? {
+                  background: "#ffffff",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  boxShadow: "0 8px 18px rgba(0,0,0,0.14)",
+                }
+              : { background: `linear-gradient(135deg, ${accent}, ${accent}88)` }
+          }
         >
           {store.logoUrl ? (
             <img
@@ -576,27 +588,6 @@ export default function HomePage() {
     toggleWishlist,
     wishlist,
   } = useMarketplace();
-  const [remoteEvents, setRemoteEvents] = useState([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadEvents() {
-      try {
-        const data = await fetchLocalEvents();
-        if (!cancelled) {
-          setRemoteEvents(Array.isArray(data?.events) ? data.events.filter(Boolean) : []);
-        }
-      } catch {
-        if (!cancelled) {
-          setRemoteEvents([]);
-        }
-      }
-    }
-    void loadEvents();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const liveListings = useMemo(
     () => [...(Array.isArray(activeListings) ? activeListings : [])].filter(Boolean),
@@ -638,17 +629,7 @@ export default function HomePage() {
 
   const upcomingEvents = useMemo(
     () =>
-      [...remoteEvents, ...(manualEvents || [])]
-        .filter((event, index, items) =>
-          items.findIndex((candidate) =>
-            String(candidate.id || "") === String(event.id || "") ||
-            (
-              String(candidate.title || "") === String(event.title || "") &&
-              String(candidate.store || "") === String(event.store || "") &&
-              String(candidate.dateStr || "") === String(event.dateStr || "")
-            )
-          ) === index
-        )
+      [...(manualEvents || [])]
         .filter((event) => event?.published !== false)
         .sort(
           (left, right) =>
@@ -663,7 +644,7 @@ export default function HomePage() {
           }).slice(0, 3),
           dateNumber: new Date(event.dateStr || event.date || Date.now()).getDate(),
         })),
-    [manualEvents, remoteEvents],
+    [manualEvents],
   );
 
   const priorityStores = useMemo(
@@ -808,7 +789,7 @@ export default function HomePage() {
       </header>
 
       <PullToRefresh onRefresh={() => refreshMarketplaceData?.()}>
-        <main className="pb-[72px] lg:grid lg:grid-cols-[minmax(0,1.25fr)_380px] lg:gap-6 lg:px-6 lg:pb-10">
+        <main className="pb-[72px] lg:mx-auto lg:grid lg:w-full lg:max-w-[1480px] lg:grid-cols-[minmax(0,1.35fr)_360px] lg:gap-6 lg:px-6 lg:pb-10">
           <div
             className="min-w-0 lg:rounded-[24px] lg:border lg:border-white/5 lg:bg-white/[0.015] lg:p-5"
           >

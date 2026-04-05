@@ -1,4 +1,4 @@
-import { BellRing, CalendarDays, ExternalLink, MapPin, Store } from "lucide-react";
+import { BellRing, CalendarDays, ExternalLink, MapPin, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import UserAvatar from "../components/shared/UserAvatar";
@@ -10,33 +10,10 @@ import {
   BottomSheet,
   ChoicePill,
   EmptyBlock,
-  ListingRow,
   MobileScreen,
   ScreenHeader,
   ScreenSection,
 } from "../mobile/primitives";
-import { fetchLocalEvents } from "../services/cardDatabase";
-
-function normalizeStoreName(value) {
-  return String(value || "").trim().toLowerCase();
-}
-
-function matchesEventListing(event, listing, sellers, storeSlug) {
-  if (String(listing?.game || "").toLowerCase() !== String(event?.game || "").toLowerCase()) {
-    return false;
-  }
-  const seller = sellers.find((user) => String(user.id) === String(listing.sellerId));
-  if (!seller) {
-    return false;
-  }
-  const trustedSpotMatch = Array.isArray(seller.trustedMeetupSpots)
-    ? seller.trustedMeetupSpots.includes(storeSlug)
-    : false;
-  const neighborhoodMatch =
-    normalizeStoreName(seller.neighborhood) === normalizeStoreName(event.neighborhood);
-
-  return trustedSpotMatch || neighborhoodMatch;
-}
 
 function AttendeeRow({ person }) {
   return (
@@ -54,18 +31,20 @@ function AttendeeRow({ person }) {
           {person.user.neighborhood || "Winnipeg"}
         </p>
       </div>
-      <span className="rounded-full px-2 py-[4px] text-[9px]" style={{ background: "rgba(239,68,68,0.1)", color: "#fca5a5", fontWeight: 700 }}>
+      <span
+        className="rounded-full px-2 py-[4px] text-[9px]"
+        style={{ background: "rgba(239,68,68,0.1)", color: "#fca5a5", fontWeight: 700 }}
+      >
         {person.intent === "trading-there" ? "Trading there" : person.intent === "going" ? "Going" : "Maybe"}
       </span>
     </Link>
   );
 }
 
-function EventCard({
+function EventRow({
   attendees,
   attendanceIntent,
   event,
-  relatedListings,
   reminderEnabled,
   setAttendanceIntent,
   toggleReminder,
@@ -73,10 +52,11 @@ function EventCard({
 }) {
   const storeSlug = getStoreSlugByName(event.store);
   const eventDate = new Date(`${event.dateStr}T12:00:00`);
+  const feeLabel = String(event.fee || "").trim() && String(event.fee || "").trim() !== "TBD" ? event.fee : "";
 
   return (
     <article
-      className="rounded-[20px] px-4 py-4"
+      className="rounded-[20px] px-4 py-3.5"
       style={{ background: m.surface, border: `1px solid ${m.border}`, boxShadow: m.shadowPanel }}
     >
       <div className="flex items-start gap-3">
@@ -91,6 +71,7 @@ function EventCard({
             {eventDate.getDate()}
           </span>
         </div>
+
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -107,32 +88,39 @@ function EventCard({
                 >
                   {event.store}
                 </span>
+                {feeLabel ? (
+                  <span
+                    className="rounded-full px-2 py-[4px] text-[9px]"
+                    style={{ background: m.surfaceStrong, color: "#cfd0d4", fontWeight: 600 }}
+                  >
+                    {feeLabel}
+                  </span>
+                ) : null}
               </div>
-              <p className="mt-2 text-[14px] text-white" style={{ fontWeight: 700 }}>
+              <p className="mt-2 text-[14px] leading-5 text-white" style={{ fontWeight: 700 }}>
                 {event.title}
               </p>
-              <div className="mt-2 grid gap-1 text-[10px]" style={{ color: m.textSecondary }}>
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px]" style={{ color: m.textSecondary }}>
                 <span className="inline-flex items-center gap-1">
                   <CalendarDays size={11} />
-                  {eventDate.toLocaleDateString("en-CA", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}{" "}
-                  · {event.time}
+                  {eventDate.toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
                 </span>
-                <span className="inline-flex items-center gap-1">
-                  <MapPin size={11} />
-                  {event.neighborhood}
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <Store size={11} />
-                  {event.source || "Local event"}
-                </span>
+                <span>{event.time}</span>
+                {event.neighborhood ? (
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin size={11} />
+                    {event.neighborhood}
+                  </span>
+                ) : null}
               </div>
+              {event.note ? (
+                <p className="mt-2 line-clamp-2 text-[10.5px] leading-5" style={{ color: "#7d7d86" }}>
+                  {event.note}
+                </p>
+              ) : null}
             </div>
             <button
-              className="inline-flex h-8 items-center justify-center gap-1 rounded-[12px] px-3 text-[10px]"
+              className="inline-flex h-8 shrink-0 items-center justify-center gap-1 rounded-[12px] px-3 text-[10px]"
               style={{
                 background: reminderEnabled ? "rgba(239,68,68,0.14)" : m.surfaceStrong,
                 color: reminderEnabled ? "#fca5a5" : m.textSecondary,
@@ -145,12 +133,6 @@ function EventCard({
               {reminderEnabled ? "Saved" : "Remind"}
             </button>
           </div>
-
-          {event.note ? (
-            <p className="mt-3 text-[11px] leading-5" style={{ color: m.textSecondary }}>
-              {event.note}
-            </p>
-          ) : null}
 
           <div className="mt-3 flex flex-wrap gap-1.5">
             {[
@@ -166,6 +148,24 @@ function EventCard({
                 {option.label}
               </ChoicePill>
             ))}
+            <button
+              className="inline-flex h-[30px] items-center justify-center gap-1 rounded-full px-3 text-[10px]"
+              style={{ background: m.surfaceStrong, color: m.textSecondary, fontWeight: 600 }}
+              type="button"
+              onClick={onViewAttendees}
+            >
+              <Users size={11} />
+              {attendees.length ? `${attendees.length} responses` : "Responses"}
+            </button>
+            {storeSlug ? (
+              <Link
+                className="inline-flex h-[30px] items-center justify-center rounded-full px-3 text-[10px]"
+                style={{ background: m.surfaceStrong, color: m.textSecondary, fontWeight: 600 }}
+                to={`/stores/${storeSlug}`}
+              >
+                Store
+              </Link>
+            ) : null}
             {event.sourceUrl ? (
               <a
                 className="inline-flex h-[30px] items-center justify-center gap-1 rounded-full px-3 text-[10px]"
@@ -178,32 +178,7 @@ function EventCard({
                 <ExternalLink size={11} />
               </a>
             ) : null}
-            {storeSlug ? (
-              <Link
-                className="inline-flex h-[30px] items-center justify-center rounded-full px-3 text-[10px]"
-                style={{ background: m.surfaceStrong, color: m.textSecondary, fontWeight: 600 }}
-                to={`/stores/${storeSlug}`}
-              >
-                Store
-              </Link>
-            ) : null}
-            <button
-              className="inline-flex h-[30px] items-center justify-center rounded-full px-3 text-[10px]"
-              style={{ background: m.surfaceStrong, color: m.textSecondary, fontWeight: 600 }}
-              type="button"
-              onClick={onViewAttendees}
-            >
-              {attendees.length ? `${attendees.length} responses` : "Responses"}
-            </button>
           </div>
-
-          {relatedListings.length ? (
-            <div className="mt-4 flex flex-col gap-2">
-              {relatedListings.slice(0, 2).map((listing) => (
-                <ListingRow key={listing.id} listing={listing} />
-              ))}
-            </div>
-          ) : null}
         </div>
       </div>
     </article>
@@ -212,17 +187,14 @@ function EventCard({
 
 export default function EventsPage() {
   const {
-    activeListings,
     ensureEventAttendanceFeedLoaded,
     eventAttendance,
     eventAttendanceFeed,
     eventReminderIds,
     manualEvents,
-    sellers,
     setEventAttendanceIntent,
     toggleEventReminder,
   } = useMarketplace();
-  const [remoteEvents, setRemoteEvents] = useState([]);
   const [activeGame, setActiveGame] = useState("All");
   const [selectedEvent, setSelectedEvent] = useState(null);
 
@@ -230,44 +202,18 @@ export default function EventsPage() {
     void ensureEventAttendanceFeedLoaded();
   }, [ensureEventAttendanceFeedLoaded]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadEvents() {
-      try {
-        const data = await fetchLocalEvents();
-        if (!cancelled) {
-          setRemoteEvents(Array.isArray(data?.events) ? data.events.filter(Boolean) : []);
-        }
-      } catch {
-        if (!cancelled) {
-          setRemoteEvents([]);
-        }
-      }
-    }
-
-    void loadEvents();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const mergedEvents = useMemo(() => {
-    const rows = [...remoteEvents, ...manualEvents].filter(Boolean);
-    return rows
-      .filter(
-        (event, index, items) =>
-          items.findIndex(
-            (candidate) =>
-              String(candidate.id || "") === String(event.id || "") ||
-              (String(candidate.title || "") === String(event.title || "") &&
-                String(candidate.store || "") === String(event.store || "") &&
-                String(candidate.dateStr || "") === String(event.dateStr || "")),
-          ) === index,
-      )
-      .filter((event) => event.published !== false)
-      .sort((left, right) => new Date(left.dateStr || left.date || 0) - new Date(right.dateStr || right.date || 0));
-  }, [manualEvents, remoteEvents]);
+  const mergedEvents = useMemo(
+    () =>
+      [...(manualEvents || [])]
+        .filter(Boolean)
+        .filter((event) => event.published !== false)
+        .sort(
+          (left, right) =>
+            new Date(left.dateStr || left.date || 0).getTime() -
+            new Date(right.dateStr || right.date || 0).getTime(),
+        ),
+    [manualEvents],
+  );
 
   const gameOptions = useMemo(
     () => ["All", ...new Set(mergedEvents.map((event) => event.game).filter(Boolean))],
@@ -275,14 +221,13 @@ export default function EventsPage() {
   );
 
   const filteredEvents = useMemo(
-    () =>
-      mergedEvents.filter((event) => activeGame === "All" || String(event.game) === activeGame),
+    () => mergedEvents.filter((event) => activeGame === "All" || String(event.game) === activeGame),
     [activeGame, mergedEvents],
   );
 
   return (
     <MobileScreen className="pb-[92px]">
-      <SeoHead canonicalPath="/events" description="Browse local Winnipeg tournaments, league nights, meetups, and event-linked listings." title="Events" />
+      <SeoHead canonicalPath="/events" description="Browse local Winnipeg tournaments, league nights, and meetup events." title="Events" />
 
       <ScreenHeader subtitle={`${filteredEvents.length} upcoming events`} title="Events" />
 
@@ -300,19 +245,18 @@ export default function EventsPage() {
         <div
           className="rounded-[18px] px-4 py-4"
           style={{
-            background:
-              "linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015))",
+            background: "linear-gradient(145deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015))",
             border: `1px solid ${m.borderStrong}`,
           }}
         >
           <p className="text-[10px] uppercase tracking-[0.12em]" style={{ color: "#fca5a5", fontWeight: 700 }}>
-            Local calendar
+            Preloaded schedule
           </p>
           <p className="mt-2 text-[18px] text-white" style={{ fontWeight: 700 }}>
-            Track events and nearby inventory
+            Local events, ready before the page opens
           </p>
           <p className="mt-2 text-[11px] leading-5" style={{ color: m.textSecondary }}>
-            Save reminders, mark attendance intent, and jump straight into event-matching listings.
+            Reminders and attendance stay in your account. The schedule itself is loaded from our event cache so this page opens fast.
           </p>
         </div>
       </ScreenSection>
@@ -320,29 +264,22 @@ export default function EventsPage() {
       <ScreenSection className="flex-1 pb-2">
         {filteredEvents.length ? (
           <div className="flex flex-col gap-2">
-            {filteredEvents.map((event) => {
-              const storeSlug = getStoreSlugByName(event.store);
-              const relatedListings = activeListings.filter((listing) =>
-                matchesEventListing(event, listing, sellers, storeSlug),
-              );
-              return (
-                <EventCard
-                  key={String(event.id || `${event.title}-${event.dateStr}`)}
-                  attendees={eventAttendanceFeed[event.id] || []}
-                  attendanceIntent={eventAttendance[event.id] || ""}
-                  event={event}
-                  relatedListings={relatedListings}
-                  reminderEnabled={eventReminderIds.includes(event.id)}
-                  setAttendanceIntent={(intent) => setEventAttendanceIntent(event.id, intent)}
-                  toggleReminder={() => toggleEventReminder(event.id)}
-                  onViewAttendees={() => setSelectedEvent(event)}
-                />
-              );
-            })}
+            {filteredEvents.map((event) => (
+              <EventRow
+                key={String(event.id || `${event.title}-${event.dateStr}`)}
+                attendees={eventAttendanceFeed[event.id] || []}
+                attendanceIntent={eventAttendance[event.id] || ""}
+                event={event}
+                reminderEnabled={eventReminderIds.includes(event.id)}
+                setAttendanceIntent={(intent) => setEventAttendanceIntent(event.id, intent)}
+                toggleReminder={() => toggleEventReminder(event.id)}
+                onViewAttendees={() => setSelectedEvent(event)}
+              />
+            ))}
           </div>
         ) : (
           <EmptyBlock
-            description="Try another game lane or wait for the next local calendar refresh."
+            description="Try another game lane or wait for the next event sync."
             title="No events in this view"
           />
         )}
