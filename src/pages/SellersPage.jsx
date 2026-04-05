@@ -85,13 +85,12 @@ function SellerCard({ seller, badgeLabels, followerCount }) {
 }
 
 export default function SellersPage() {
-  const { ensureDirectoryProfilesLoaded, ensureSellerTrustLoaded, reviewBadgeCatalog, sellers } = useMarketplace();
+  const { ensureSellerTrustLoaded, reviewBadgeCatalog, sellers } = useMarketplace();
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    void ensureDirectoryProfilesLoaded();
     void ensureSellerTrustLoaded();
-  }, [ensureDirectoryProfilesLoaded, ensureSellerTrustLoaded]);
+  }, [ensureSellerTrustLoaded]);
 
   const sellerFollowerCounts = useMemo(
     () =>
