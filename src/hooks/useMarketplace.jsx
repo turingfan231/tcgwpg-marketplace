@@ -3007,23 +3007,10 @@ export function MarketplaceProvider({ children }) {
           .map((row) => mergeAuthedProfileMetadata(row, authUser))
           .map(fromProfileRow);
         const nextListings = (listingsRes.data || []).map(fromListingRow).filter(isSupportedListing);
-        let nextManualEvents = (manualEventsRes.data || []).map(fromEventRow);
-
-        if (!nextManualEvents.length) {
-          try {
-            const syncedPayload = await syncLocalEventsCache();
-            if (Array.isArray(syncedPayload?.events) && syncedPayload.events.length) {
-              nextManualEvents = syncedPayload.events.map(normalizeManualEventRecord);
-              writeEventSyncTimestamp(Date.now());
-            }
-          } catch (syncError) {
-            console.error("Boot event sync fallback failed:", syncError);
-          }
-        }
 
         setUsers(normalizedProfiles);
         setListings(nextListings);
-        setManualEvents(nextManualEvents);
+        setManualEvents((manualEventsRes.data || []).map(fromEventRow));
         setWishlist((wishlistsRes.data || []).map((item) => item.listing_id));
         if (!siteSettingsRes.error && siteSettingsRes.data) {
           setSiteSettings(fromSiteSettingsRow(siteSettingsRes.data));
