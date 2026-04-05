@@ -2,7 +2,6 @@ const LIVE_SEARCH_PATH = "/api/live/search";
 const SOURCE_SALES_PATH = "/api/live/source-sales";
 const EXCHANGE_RATE_PATH = "/api/live/exchange-rate";
 const LOCAL_EVENTS_PATH = "/api/events/local";
-const MARKETPLACE_BOOTSTRAP_PATH = "/api/bootstrap";
 const OPTCG_ENDPOINT_CANDIDATES = {
   sets: [
     "https://www.optcgapi.com/api/sets/filtered/",
@@ -77,13 +76,13 @@ async function fetchWithTimeout(url, init = {}, timeoutMs = CLIENT_TIMEOUT_MS) {
   }
 }
 
-async function fetchJsonFromCandidates(path, init, fallbackMessage, timeoutMs = CLIENT_TIMEOUT_MS) {
+async function fetchJsonFromCandidates(path, init, fallbackMessage) {
   const urls = buildLiveApiUrls(path);
   const errors = [];
 
   for (const url of urls) {
     try {
-      const response = await fetchWithTimeout(url, init, timeoutMs);
+      const response = await fetchWithTimeout(url, init);
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
@@ -724,15 +723,6 @@ export async function fetchLocalEvents() {
     LOCAL_EVENTS_PATH,
     undefined,
     "Local events fetch failed.",
-  );
-}
-
-export async function fetchMarketplaceBootstrap(options = {}) {
-  return fetchJsonFromCandidates(
-    MARKETPLACE_BOOTSTRAP_PATH,
-    undefined,
-    "Marketplace bootstrap failed.",
-    options.timeoutMs,
   );
 }
 
