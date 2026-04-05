@@ -173,6 +173,7 @@ const REVIEW_COLUMNS = [
   "image_url",
   "created_at",
 ].join(",");
+const REVIEW_OPTIONAL_COLUMNS = ["image_url"];
 const MANUAL_EVENT_SUMMARY_COLUMNS = [
   "id",
   "title",
@@ -215,6 +216,7 @@ const OFFER_COLUMNS = [
   "created_at",
   "updated_at",
 ].join(",");
+const OFFER_OPTIONAL_COLUMNS = ["last_actor_id"];
 const REPORT_COLUMNS = ["id", "listing_id", "seller_id", "reporter_id", "reason", "details", "status", "resolution_thread_id", "created_at", "updated_at"].join(",");
 const BUG_REPORT_COLUMNS = [
   "id",
@@ -236,8 +238,11 @@ const BUG_REPORT_COLUMNS = [
 const NOTIFICATION_COLUMNS = ["id", "user_id", "type", "title", "body", "entity_id", "read", "created_at"].join(",");
 const THREAD_COLUMNS = ["id", "listing_id", "participant_ids", "hidden_by", "created_at", "updated_at"].join(",");
 const MESSAGE_COLUMNS = ["id", "thread_id", "sender_id", "body", "read_by", "created_at"].join(",");
+const THREAD_OPTIONAL_COLUMNS = ["hidden_by"];
+const MESSAGE_OPTIONAL_COLUMNS = ["read_by"];
 const SITE_SETTINGS_COLUMNS = ["key", "payload"].join(",");
 const SEARCH_HISTORY_COLUMNS = ["id", "query", "game", "source", "created_at"].join(",");
+const SEARCH_HISTORY_OPTIONAL_COLUMNS = ["source"];
 const COLLECTION_ITEM_COLUMNS = [
   "id",
   "game",
@@ -256,8 +261,21 @@ const COLLECTION_ITEM_COLUMNS = [
   "added_at",
   "updated_at",
 ].join(",");
+const COLLECTION_ITEM_OPTIONAL_COLUMNS = [
+  "set_name",
+  "print_label",
+  "rarity",
+  "market_price_currency",
+  "source_label",
+  "image_url",
+  "notes",
+  "added_at",
+  "updated_at",
+];
 const EVENT_PREF_COLUMNS = ["event_id", "reminder_enabled", "attendance_intent"].join(",");
 const EVENT_ATTENDANCE_COLUMNS = ["event_id", "user_id", "attendance_intent"].join(",");
+const EVENT_PREF_OPTIONAL_COLUMNS = ["attendance_intent"];
+const EVENT_ATTENDANCE_OPTIONAL_COLUMNS = ["attendance_intent"];
 const AUDIT_LOG_COLUMNS = [
   "id",
   "actor_id",
@@ -1025,6 +1043,22 @@ function omitMissingProfileSelectColumns(columns, error) {
     .join(",");
 }
 
+function omitMissingSelectColumns(columns, error, removableColumns = []) {
+  const nextColumns = String(columns || "")
+    .split(",")
+    .map((column) => column.trim())
+    .filter(Boolean);
+
+  return nextColumns
+    .filter(
+      (column) =>
+        !removableColumns.some(
+          (candidate) => isMissingColumnError(error, candidate) && column === candidate,
+        ),
+    )
+    .join(",");
+}
+
 async function selectWithProfileFallback(buildQuery, initialColumns) {
   let currentColumns = String(initialColumns || "").trim();
   let lastResult = { data: null, error: null };
@@ -1039,6 +1073,33 @@ async function selectWithProfileFallback(buildQuery, initialColumns) {
 
     lastResult = result;
     const fallbackColumns = omitMissingProfileSelectColumns(currentColumns, result.error);
+    if (!fallbackColumns || fallbackColumns === currentColumns) {
+      break;
+    }
+    currentColumns = fallbackColumns;
+  }
+
+  return { ...lastResult, resolvedColumns: currentColumns };
+}
+
+async function selectWithColumnFallback(buildQuery, initialColumns, removableColumns = []) {
+  let currentColumns = String(initialColumns || "").trim();
+  let lastResult = { data: null, error: null };
+  const seen = new Set();
+
+  while (currentColumns && !seen.has(currentColumns)) {
+    seen.add(currentColumns);
+    const result = await buildQuery(currentColumns);
+    if (!result.error) {
+      return { ...result, resolvedColumns: currentColumns };
+    }
+
+    lastResult = result;
+    const fallbackColumns = omitMissingSelectColumns(
+      currentColumns,
+      result.error,
+      removableColumns,
+    );
     if (!fallbackColumns || fallbackColumns === currentColumns) {
       break;
     }
@@ -2769,11 +2830,26 @@ export function MarketplaceProvider({ children }) {
           .from("profiles")
           .update(nextProfilePatch)
           .eq("id", authUser.id)
-          .select(PROFILE_FULL_COLUMNS)
+          .select("id")
           .single();
 
         if (!updateResult.error) {
-          return fromProfileRow(updateResult.data);
+          const refreshedProfile = await selectWithProfileFallback(
+            (columns) =>
+              supabase
+                .from("profiles")
+                .select(columns)
+                .eq("id", authUser.id)
+                .maybeSingle(),
+            profileFullColumnsRef.current,
+          );
+          if (refreshedProfile.error) {
+            throw refreshedProfile.error;
+          }
+          if (refreshedProfile.resolvedColumns) {
+            profileFullColumnsRef.current = refreshedProfile.resolvedColumns;
+          }
+          return fromProfileRow(refreshedProfile.data);
         }
 
         if (
@@ -2791,11 +2867,26 @@ export function MarketplaceProvider({ children }) {
             .from("profiles")
             .update(fallbackPatch)
             .eq("id", authUser.id)
-            .select(PROFILE_FULL_COLUMNS)
+            .select("id")
             .single();
 
           if (!fallbackResult.error) {
-            return fromProfileRow(fallbackResult.data);
+            const refreshedProfile = await selectWithProfileFallback(
+              (columns) =>
+                supabase
+                  .from("profiles")
+                  .select(columns)
+                  .eq("id", authUser.id)
+                  .maybeSingle(),
+              profileFullColumnsRef.current,
+            );
+            if (refreshedProfile.error) {
+              throw refreshedProfile.error;
+            }
+            if (refreshedProfile.resolvedColumns) {
+              profileFullColumnsRef.current = refreshedProfile.resolvedColumns;
+            }
+            return fromProfileRow(refreshedProfile.data);
           }
 
           throw fallbackResult.error;
@@ -2840,7 +2931,7 @@ export function MarketplaceProvider({ children }) {
     let insertResult = await supabase
       .from("profiles")
       .insert(profilePayload)
-      .select(PROFILE_FULL_COLUMNS)
+      .select("id")
       .single();
 
     if (
@@ -2854,17 +2945,34 @@ export function MarketplaceProvider({ children }) {
       insertResult = await supabase
         .from("profiles")
         .insert(legacyProfilePayload)
-        .select(PROFILE_FULL_COLUMNS)
+        .select("id")
         .single();
     }
 
-    const { data: insertedProfile, error: insertError } = insertResult;
+    const { error: insertError } = insertResult;
 
     if (insertError) {
       throw insertError;
     }
 
-    return fromProfileRow(insertedProfile);
+    const insertedProfileResult = await selectWithProfileFallback(
+      (columns) =>
+        supabase
+          .from("profiles")
+          .select(columns)
+          .eq("id", authUser.id)
+          .maybeSingle(),
+      profileFullColumnsRef.current,
+    );
+
+    if (insertedProfileResult.error) {
+      throw insertedProfileResult.error;
+    }
+    if (insertedProfileResult.resolvedColumns) {
+      profileFullColumnsRef.current = insertedProfileResult.resolvedColumns;
+    }
+
+    return fromProfileRow(insertedProfileResult.data);
   }, []);
 
   const loadSellerTrustData = useCallback(async () => {
@@ -2872,9 +2980,16 @@ export function MarketplaceProvider({ children }) {
       return [];
     }
 
-    const reviewsRes = await supabase.from("reviews").select(REVIEW_COLUMNS);
+    const reviewsRes = await selectWithColumnFallback(
+      (columns) => supabase.from("reviews").select(columns),
+      REVIEW_COLUMNS,
+      REVIEW_OPTIONAL_COLUMNS,
+    );
     if (reviewsRes.error) {
-      throw reviewsRes.error;
+      console.error("Seller reviews failed to load:", reviewsRes.error);
+      setReviews([]);
+      secondaryStateRef.current.reviewsLoaded = false;
+      return [];
     }
 
     const nextReviews = (reviewsRes.data || []).map(fromReviewRow);
@@ -2927,31 +3042,63 @@ export function MarketplaceProvider({ children }) {
       ] = await Promise.all([
         supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId),
         supabase.from("listing_drafts").select("payload,updated_at").eq("user_id", authedUserId).maybeSingle(),
-        supabase.from("message_threads").select(THREAD_COLUMNS).contains("participant_ids", [authedUserId]),
-        supabase.from("offers").select(OFFER_COLUMNS).or(`seller_id.eq.${authedUserId},buyer_id.eq.${authedUserId}`),
+        selectWithColumnFallback(
+          (columns) =>
+            supabase
+              .from("message_threads")
+              .select(columns)
+              .contains("participant_ids", [authedUserId]),
+          THREAD_COLUMNS,
+          THREAD_OPTIONAL_COLUMNS,
+        ),
+        selectWithColumnFallback(
+          (columns) =>
+            supabase
+              .from("offers")
+              .select(columns)
+              .or(`seller_id.eq.${authedUserId},buyer_id.eq.${authedUserId}`),
+          OFFER_COLUMNS,
+          OFFER_OPTIONAL_COLUMNS,
+        ),
       ]);
 
-      if (wishlistsRes.error) throw wishlistsRes.error;
-      if (draftRes.error) throw draftRes.error;
-      if (threadRowsRes.error) throw threadRowsRes.error;
-      if (offersRes.error) throw offersRes.error;
-
-      const threadRows = threadRowsRes.data || [];
-      let messageRows = [];
-      if (threadRows.length) {
-        const messagesRes = await supabase
-          .from("messages")
-          .select(MESSAGE_COLUMNS)
-          .in(
-            "thread_id",
-            threadRows.map((thread) => thread.id),
-          );
-
-        if (messagesRes.error) throw messagesRes.error;
-        messageRows = messagesRes.data || [];
+      if (wishlistsRes.error) {
+        console.error("Workspace wishlists failed to load:", wishlistsRes.error);
+      }
+      if (draftRes.error && !isMissingTableError(draftRes.error, "listing_drafts")) {
+        console.error("Workspace drafts failed to load:", draftRes.error);
+      }
+      if (threadRowsRes.error) {
+        console.error("Workspace threads failed to load:", threadRowsRes.error);
+      }
+      if (offersRes.error) {
+        console.error("Workspace offers failed to load:", offersRes.error);
       }
 
-      const draftPayload = draftRes.data?.payload || null;
+      const threadRows = threadRowsRes.error ? [] : threadRowsRes.data || [];
+      let messageRows = [];
+      if (threadRows.length) {
+        const messagesRes = await selectWithColumnFallback(
+          (columns) =>
+            supabase
+              .from("messages")
+              .select(columns)
+              .in(
+                "thread_id",
+                threadRows.map((thread) => thread.id),
+              ),
+          MESSAGE_COLUMNS,
+          MESSAGE_OPTIONAL_COLUMNS,
+        );
+
+        if (messagesRes.error) {
+          console.error("Workspace messages failed to load:", messagesRes.error);
+        } else {
+          messageRows = messagesRes.data || [];
+        }
+      }
+
+      const draftPayload = draftRes.error ? null : draftRes.data?.payload || null;
       const nextDrafts = normalizeDraftCollection(draftPayload).map((draft, index) => ({
         id: draft.id || `legacy-draft-${index + 1}`,
         name: draft.name || draft.title || "Untitled draft",
@@ -2959,11 +3106,11 @@ export function MarketplaceProvider({ children }) {
         ...draft,
       }));
 
-      setWishlist((wishlistsRes.data || []).map((item) => item.listing_id));
+      setWishlist((wishlistsRes.error ? [] : wishlistsRes.data || []).map((item) => item.listing_id));
       setListingDrafts(nextDrafts);
       setActiveDraftId(draftPayload?.activeDraftId || nextDrafts[0]?.id || null);
       setThreads(buildThreadMap(threadRows, messageRows));
-      setOffers((offersRes.data || []).map(fromOfferRow));
+      setOffers((offersRes.error ? [] : offersRes.data || []).map(fromOfferRow));
 
       const [
         bugReportsRes,
@@ -2974,9 +3121,35 @@ export function MarketplaceProvider({ children }) {
       ] = await Promise.all([
         supabase.from("bug_reports").select(BUG_REPORT_COLUMNS).eq("reporter_id", authedUserId),
         supabase.from("notifications").select(NOTIFICATION_COLUMNS).eq("user_id", authedUserId),
-        supabase.from("search_history").select(SEARCH_HISTORY_COLUMNS).eq("user_id", authedUserId).order("created_at", { ascending: false }),
-        supabase.from("collection_items").select(COLLECTION_ITEM_COLUMNS).eq("user_id", authedUserId).order("updated_at", { ascending: false }),
-        supabase.from("user_event_preferences").select(EVENT_PREF_COLUMNS).eq("user_id", authedUserId),
+        selectWithColumnFallback(
+          (columns) =>
+            supabase
+              .from("search_history")
+              .select(columns)
+              .eq("user_id", authedUserId)
+              .order("created_at", { ascending: false }),
+          SEARCH_HISTORY_COLUMNS,
+          SEARCH_HISTORY_OPTIONAL_COLUMNS,
+        ),
+        selectWithColumnFallback(
+          (columns) =>
+            supabase
+              .from("collection_items")
+              .select(columns)
+              .eq("user_id", authedUserId)
+              .order("updated_at", { ascending: false }),
+          COLLECTION_ITEM_COLUMNS,
+          COLLECTION_ITEM_OPTIONAL_COLUMNS,
+        ),
+        selectWithColumnFallback(
+          (columns) =>
+            supabase
+              .from("user_event_preferences")
+              .select(columns)
+              .eq("user_id", authedUserId),
+          EVENT_PREF_COLUMNS,
+          EVENT_PREF_OPTIONAL_COLUMNS,
+        ),
       ]);
 
       if (!bugReportsRes.error) {
@@ -3036,9 +3209,11 @@ export function MarketplaceProvider({ children }) {
         return {};
       }
 
-      const eventAttendanceFeedRes = await supabase
-        .from("user_event_preferences")
-        .select(EVENT_ATTENDANCE_COLUMNS);
+      const eventAttendanceFeedRes = await selectWithColumnFallback(
+        (columns) => supabase.from("user_event_preferences").select(columns),
+        EVENT_ATTENDANCE_COLUMNS,
+        EVENT_ATTENDANCE_OPTIONAL_COLUMNS,
+      );
 
       if (
         eventAttendanceFeedRes.error &&
