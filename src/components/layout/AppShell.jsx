@@ -166,15 +166,19 @@ export default function AppShell() {
       return undefined;
     }
 
-    if (!authReady || loading) {
-      return undefined;
+    if (authReady && !loading) {
+      const readyTimeoutId = window.setTimeout(() => {
+        setBootReady(true);
+      }, isDesktop ? 120 : 90);
+
+      return () => window.clearTimeout(readyTimeoutId);
     }
 
-    const timeoutId = window.setTimeout(() => {
+    const fallbackTimeoutId = window.setTimeout(() => {
       setBootReady(true);
-    }, isDesktop ? 120 : 90);
+    }, authReady ? 1800 : 3500);
 
-    return () => window.clearTimeout(timeoutId);
+    return () => window.clearTimeout(fallbackTimeoutId);
   }, [authReady, bootReady, isDesktop, loading]);
 
   if (!bootReady) {
