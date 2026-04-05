@@ -64,75 +64,6 @@ const EVENT_COLUMNS = [
 
 const SITE_SETTINGS_COLUMNS = "key,payload";
 
-function isMissingColumnError(error, columnName) {
-  const message = String(error?.message || "").toLowerCase();
-  return (
-    message.includes("column") &&
-    message.includes(String(columnName || "").toLowerCase()) &&
-    (message.includes("does not exist") || message.includes("schema cache"))
-  );
-}
-
-function omitMissingProfileSelectColumns(columns, error) {
-  const nextColumns = String(columns || "")
-    .split(",")
-    .map((column) => column.trim())
-    .filter(Boolean);
-
-  const missingProfileColumns = [
-    "username",
-    "avatar_url",
-    "default_listing_game",
-    "followed_seller_ids",
-    "followed_store_slugs",
-    "favorite_games",
-    "banner_style",
-    "onboarding_complete",
-    "response_time",
-    "completed_deals",
-    "meetup_preferences",
-    "badges",
-    "verified",
-    "account_status",
-    "postal_code",
-    "bio",
-    "email",
-  ];
-
-  return nextColumns
-    .filter(
-      (column) =>
-        !missingProfileColumns.some(
-          (missing) => isMissingColumnError(error, missing) && column === missing,
-        ),
-    )
-    .join(",");
-}
-
-async function selectProfilesWithFallback(buildQuery, initialColumns) {
-  let currentColumns = String(initialColumns || "").trim();
-  let lastResult = { data: null, error: null };
-  const seen = new Set();
-
-  while (currentColumns && !seen.has(currentColumns)) {
-    seen.add(currentColumns);
-    const result = await buildQuery(currentColumns);
-    if (!result.error) {
-      return { ...result, resolvedColumns: currentColumns };
-    }
-
-    lastResult = result;
-    const fallbackColumns = omitMissingProfileSelectColumns(currentColumns, result.error);
-    if (!fallbackColumns || fallbackColumns === currentColumns) {
-      break;
-    }
-
-    currentColumns = fallbackColumns;
-  }
-
-  return { ...lastResult, resolvedColumns: currentColumns };
-}
-
 function json(res, status, payload) {
   res.status(status).setHeader("Content-Type", "application/json; charset=utf-8");
   res.send(JSON.stringify(payload));
@@ -185,24 +116,11 @@ export default async function handler(_req, res) {
     ]);
 
     const sellerIds = [...new Set((listings || []).map((listing) => String(listing.seller_id || "")).filter(Boolean))];
-    let users = [];
-    if (sellerIds.length) {
-      const profileResult = await selectProfilesWithFallback(
-        (columns) =>
-          fetchSupabaseJson(
-            `profiles?select=${encodeURIComponent(columns)}&id=in.(${sellerIds.join(",")})`,
-          )
-            .then((data) => ({ data, error: null }))
-            .catch((error) => ({ data: null, error })),
-        PROFILE_COLUMNS,
-      );
-
-      if (profileResult.error) {
-        throw profileResult.error;
-      }
-
-      users = profileResult.data || [];
-    }
+    const users = sellerIds.length
+      ? await fetchSupabaseJson(
+          `profiles?select=${encodeURIComponent(PROFILE_COLUMNS)}&id=in.(${sellerIds.join(",")})`,
+        )
+      : [];
 
     return json(res, 200, {
       users,
