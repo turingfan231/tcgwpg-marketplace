@@ -41,7 +41,7 @@ const TOAST_SEEN_STORAGE_PREFIX = "tcgwpg.seenToasts";
 const HIDDEN_THREADS_STORAGE_PREFIX = "tcgwpg.hiddenThreads";
 const VIEWED_LISTINGS_STORAGE_KEY = "tcgwpg.viewedListings.v1";
 const MARKETPLACE_CACHE_KEY = "tcgwpg.marketplaceCache";
-const MARKETPLACE_CACHE_VERSION = 2;
+const MARKETPLACE_CACHE_VERSION = 3;
 const SITE_SETTINGS_STORAGE_KEY = "tcgwpg.siteSettings";
 const LOCAL_AUTH_STORAGE_KEY = "tcgwpg.localAuthUserId";
 const COLLECTION_STORAGE_PREFIX = "tcgwpg.collection";
@@ -61,6 +61,8 @@ const SUPPORTED_GAME_SLUGS = new Set([
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
 const MEDIA_BUCKET = "listing-media";
 const FOREGROUND_REFRESH_MS = 12000;
+const QUERY_TIMEOUT_MS = 4500;
+const SESSION_TIMEOUT_MS = 2200;
 const RICH_MESSAGE_PREFIX = "[[tcgwpg-message]]";
 const DEFAULT_SITE_SETTINGS = {
   themePreset: "collector-strip",
@@ -84,6 +86,14 @@ const DEFAULT_SITE_SETTINGS = {
     showTrustedSellers: true,
     showStores: true,
   },
+};
+
+const DEFAULT_SECTION_STATUS = {
+  critical: "idle",
+  reviews: "idle",
+  workspace: "idle",
+  eventAttendance: "idle",
+  admin: "idle",
 };
 
 const PROFILE_BOOT_COLUMNS = [
@@ -717,8 +727,6 @@ function buildMarketplaceCacheSnapshot(snapshot) {
       editHistory: trimCacheArray(listing.editHistory, 8),
     })),
     wishlist: trimCacheArray(snapshot.wishlist, 200),
-    reviews: trimCacheArray(snapshot.reviews, 120),
-    bugReports: trimCacheArray(snapshot.bugReports, 120),
     manualEvents: trimCacheArray(snapshot.manualEvents, 80),
     listingDrafts: trimCacheArray(snapshot.listingDrafts, 8),
     activeDraftId: snapshot.activeDraftId || null,
@@ -741,6 +749,26 @@ function writeMarketplaceCache(snapshot) {
     }
 
     throw error;
+  }
+}
+
+async function withTimeout(promise, timeoutMs, label = "Request timed out") {
+  let timeoutId;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timeoutId = window.setTimeout(() => {
+          const error = new Error(label);
+          error.code = "TIMEOUT";
+          reject(error);
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
+    }
   }
 }
 
@@ -2015,6 +2043,11 @@ export function MarketplaceProvider({ children }) {
   const [loading, setLoading] = useState(
     Boolean(isSupabaseConfigured && !hasUsableCache),
   );
+  const [sectionStatus, setSectionStatus] = useState(() => ({
+    ...DEFAULT_SECTION_STATUS,
+    critical: hasUsableCache ? "ready" : "loading",
+  }));
+  const [sectionErrors, setSectionErrors] = useState({});
   const [toastItems, setToastItems] = useState([]);
   const seenNotificationIdsRef = useRef(new Set());
   const seededRealtimeStateRef = useRef(false);
@@ -2643,6 +2676,27 @@ export function MarketplaceProvider({ children }) {
     }
   }, []);
 
+  const updateSectionState = useCallback((section, status, errorMessage = "") => {
+    setSectionStatus((current) => {
+      if (current[section] === status) {
+        return current;
+      }
+      return {
+        ...current,
+        [section]: status,
+      };
+    });
+    setSectionErrors((current) => {
+      const next = { ...current };
+      if (errorMessage) {
+        next[section] = errorMessage;
+      } else {
+        delete next[section];
+      }
+      return next;
+    });
+  }, []);
+
   const bootstrapProfile = useCallback(async (authUser, payload = {}) => {
     if (!isSupabaseConfigured || !authUser) {
       return null;
@@ -2806,16 +2860,28 @@ export function MarketplaceProvider({ children }) {
       return [];
     }
 
-    const reviewsRes = await supabase.from("reviews").select(REVIEW_COLUMNS);
-    if (reviewsRes.error) {
-      throw reviewsRes.error;
-    }
+    updateSectionState("reviews", "loading");
 
-    const nextReviews = (reviewsRes.data || []).map(fromReviewRow);
-    setReviews(nextReviews);
-    secondaryStateRef.current.reviewsLoaded = true;
-    return nextReviews;
-  }, []);
+    try {
+      const reviewsRes = await withTimeout(
+        supabase.from("reviews").select(REVIEW_COLUMNS),
+        QUERY_TIMEOUT_MS,
+        "Reviews are taking too long to load.",
+      );
+      if (reviewsRes.error) {
+        throw reviewsRes.error;
+      }
+
+      const nextReviews = (reviewsRes.data || []).map(fromReviewRow);
+      setReviews(nextReviews);
+      secondaryStateRef.current.reviewsLoaded = true;
+      updateSectionState("reviews", "ready");
+      return nextReviews;
+    } catch (error) {
+      updateSectionState("reviews", "error", error?.message || "Reviews failed to load.");
+      throw error;
+    }
+  }, [updateSectionState]);
 
   const loadWorkspaceData = useCallback(
     async (authedUserId, normalizedProfiles = users) => {
@@ -2823,115 +2889,144 @@ export function MarketplaceProvider({ children }) {
         return;
       }
 
-      const [
-        wishlistsRes,
-        draftRes,
-        threadRowsRes,
-        offersRes,
-      ] = await Promise.all([
-        supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId),
-        supabase.from("listing_drafts").select("payload,updated_at").eq("user_id", authedUserId).maybeSingle(),
-        supabase.from("message_threads").select(THREAD_COLUMNS).contains("participant_ids", [authedUserId]),
-        supabase.from("offers").select(OFFER_COLUMNS).or(`seller_id.eq.${authedUserId},buyer_id.eq.${authedUserId}`),
-      ]);
+      updateSectionState("workspace", "loading");
+      try {
+        const [
+          wishlistsRes,
+          draftRes,
+          threadRowsRes,
+          offersRes,
+        ] = await Promise.all([
+          withTimeout(
+            supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId),
+            QUERY_TIMEOUT_MS,
+            "Wishlist is taking too long to load.",
+          ),
+          withTimeout(
+            supabase.from("listing_drafts").select("payload,updated_at").eq("user_id", authedUserId).maybeSingle(),
+            QUERY_TIMEOUT_MS,
+            "Drafts are taking too long to load.",
+          ),
+          withTimeout(
+            supabase.from("message_threads").select(THREAD_COLUMNS).contains("participant_ids", [authedUserId]),
+            QUERY_TIMEOUT_MS,
+            "Threads are taking too long to load.",
+          ),
+          withTimeout(
+            supabase.from("offers").select(OFFER_COLUMNS).or(`seller_id.eq.${authedUserId},buyer_id.eq.${authedUserId}`),
+            QUERY_TIMEOUT_MS,
+            "Offers are taking too long to load.",
+          ),
+        ]);
 
-      if (wishlistsRes.error) throw wishlistsRes.error;
-      if (draftRes.error) throw draftRes.error;
-      if (threadRowsRes.error) throw threadRowsRes.error;
-      if (offersRes.error) throw offersRes.error;
+        if (wishlistsRes.error) throw wishlistsRes.error;
+        if (draftRes.error) throw draftRes.error;
+        if (threadRowsRes.error) throw threadRowsRes.error;
+        if (offersRes.error) throw offersRes.error;
 
-      const threadRows = threadRowsRes.data || [];
-      let messageRows = [];
-      if (threadRows.length) {
-        const messagesRes = await supabase
-          .from("messages")
-          .select(MESSAGE_COLUMNS)
-          .in(
-            "thread_id",
-            threadRows.map((thread) => thread.id),
+        const threadRows = threadRowsRes.data || [];
+        let messageRows = [];
+        if (threadRows.length) {
+          const messagesRes = await withTimeout(
+            supabase
+              .from("messages")
+              .select(MESSAGE_COLUMNS)
+              .in(
+                "thread_id",
+                threadRows.map((thread) => thread.id),
+              ),
+            QUERY_TIMEOUT_MS,
+            "Messages are taking too long to load.",
           );
 
-        if (messagesRes.error) throw messagesRes.error;
-        messageRows = messagesRes.data || [];
+          if (messagesRes.error) throw messagesRes.error;
+          messageRows = messagesRes.data || [];
+        }
+
+        const draftPayload = draftRes.data?.payload || null;
+        const nextDrafts = normalizeDraftCollection(draftPayload).map((draft, index) => ({
+          id: draft.id || `legacy-draft-${index + 1}`,
+          name: draft.name || draft.title || "Untitled draft",
+          updatedAt: draft.updatedAt || draftRes.data?.updated_at || new Date().toISOString(),
+          ...draft,
+        }));
+
+        setWishlist((wishlistsRes.data || []).map((item) => item.listing_id));
+        setListingDrafts(nextDrafts);
+        setActiveDraftId(draftPayload?.activeDraftId || nextDrafts[0]?.id || null);
+        setThreads(buildThreadMap(threadRows, messageRows));
+        setOffers((offersRes.data || []).map(fromOfferRow));
+        updateSectionState("workspace", "ready");
+        secondaryStateRef.current.workspaceUserId = String(authedUserId);
+
+        void Promise.all([
+          supabase.from("bug_reports").select(BUG_REPORT_COLUMNS).eq("reporter_id", authedUserId),
+          supabase.from("notifications").select(NOTIFICATION_COLUMNS).eq("user_id", authedUserId),
+          supabase.from("search_history").select(SEARCH_HISTORY_COLUMNS).eq("user_id", authedUserId).order("created_at", { ascending: false }),
+          supabase.from("collection_items").select(COLLECTION_ITEM_COLUMNS).eq("user_id", authedUserId).order("updated_at", { ascending: false }),
+          supabase.from("user_event_preferences").select(EVENT_PREF_COLUMNS).eq("user_id", authedUserId),
+        ]).then(([
+          bugReportsRes,
+          notificationsRes,
+          searchHistoryRes,
+          collectionItemsRes,
+          eventPreferencesRes,
+        ]) => {
+          if (!bugReportsRes.error) {
+            setBugReports((bugReportsRes.data || []).map(fromBugReportRow));
+          } else if (!isMissingTableError(bugReportsRes.error, "bug_reports")) {
+            console.error("Workspace bug reports failed to load:", bugReportsRes.error);
+          }
+
+          if (!notificationsRes.error) {
+            setNotifications((notificationsRes.data || []).map(fromNotificationRow));
+          } else {
+            console.error("Workspace notifications failed to load:", notificationsRes.error);
+          }
+
+          if (!searchHistoryRes.error) {
+            setSearchHistory(
+              (searchHistoryRes.data || []).map((row) => ({
+                id: row.id,
+                query: row.query,
+                game: row.game,
+                source: row.source,
+                createdAt: row.created_at,
+              })),
+            );
+          } else {
+            console.error("Workspace search history failed to load:", searchHistoryRes.error);
+          }
+
+          if (!collectionItemsRes.error) {
+            setCollectionItems((collectionItemsRes.data || []).map(fromCollectionItemRow));
+          } else if (isMissingTableError(collectionItemsRes.error, "collection_items")) {
+            setCollectionItems(readCollectionStorage(authedUserId).map(normalizeCollectionRecord));
+          } else {
+            console.error("Workspace collection failed to load:", collectionItemsRes.error);
+          }
+
+          if (!eventPreferencesRes.error) {
+            const nextEventPreferences = normalizeEventPreferences(eventPreferencesRes.data || []);
+            setEventReminderIds(nextEventPreferences.reminderIds);
+            setEventAttendance(nextEventPreferences.attendance);
+          } else if (isMissingTableError(eventPreferencesRes.error, "user_event_preferences")) {
+            setEventReminderIds(readEventReminderStorage(authedUserId));
+            setEventAttendance(readEventAttendanceStorage(authedUserId));
+          } else {
+            console.error("Workspace event preferences failed to load:", eventPreferencesRes.error);
+          }
+        }).catch((error) => {
+          console.error("Workspace secondary hydration failed:", error);
+        });
+
+        return normalizedProfiles;
+      } catch (error) {
+        updateSectionState("workspace", "error", error?.message || "Inbox data failed to load.");
+        throw error;
       }
-
-      const draftPayload = draftRes.data?.payload || null;
-      const nextDrafts = normalizeDraftCollection(draftPayload).map((draft, index) => ({
-        id: draft.id || `legacy-draft-${index + 1}`,
-        name: draft.name || draft.title || "Untitled draft",
-        updatedAt: draft.updatedAt || draftRes.data?.updated_at || new Date().toISOString(),
-        ...draft,
-      }));
-
-      setWishlist((wishlistsRes.data || []).map((item) => item.listing_id));
-      setListingDrafts(nextDrafts);
-      setActiveDraftId(draftPayload?.activeDraftId || nextDrafts[0]?.id || null);
-      setThreads(buildThreadMap(threadRows, messageRows));
-      setOffers((offersRes.data || []).map(fromOfferRow));
-
-      const [
-        bugReportsRes,
-        notificationsRes,
-        searchHistoryRes,
-        collectionItemsRes,
-        eventPreferencesRes,
-      ] = await Promise.all([
-        supabase.from("bug_reports").select(BUG_REPORT_COLUMNS).eq("reporter_id", authedUserId),
-        supabase.from("notifications").select(NOTIFICATION_COLUMNS).eq("user_id", authedUserId),
-        supabase.from("search_history").select(SEARCH_HISTORY_COLUMNS).eq("user_id", authedUserId).order("created_at", { ascending: false }),
-        supabase.from("collection_items").select(COLLECTION_ITEM_COLUMNS).eq("user_id", authedUserId).order("updated_at", { ascending: false }),
-        supabase.from("user_event_preferences").select(EVENT_PREF_COLUMNS).eq("user_id", authedUserId),
-      ]);
-
-      if (!bugReportsRes.error) {
-        setBugReports((bugReportsRes.data || []).map(fromBugReportRow));
-      } else if (!isMissingTableError(bugReportsRes.error, "bug_reports")) {
-        console.error("Workspace bug reports failed to load:", bugReportsRes.error);
-      }
-
-      if (!notificationsRes.error) {
-        setNotifications((notificationsRes.data || []).map(fromNotificationRow));
-      } else {
-        console.error("Workspace notifications failed to load:", notificationsRes.error);
-      }
-
-      if (!searchHistoryRes.error) {
-        setSearchHistory(
-          (searchHistoryRes.data || []).map((row) => ({
-            id: row.id,
-            query: row.query,
-            game: row.game,
-            source: row.source,
-            createdAt: row.created_at,
-          })),
-        );
-      } else {
-        console.error("Workspace search history failed to load:", searchHistoryRes.error);
-      }
-
-      if (!collectionItemsRes.error) {
-        setCollectionItems((collectionItemsRes.data || []).map(fromCollectionItemRow));
-      } else if (isMissingTableError(collectionItemsRes.error, "collection_items")) {
-        setCollectionItems(readCollectionStorage(authedUserId).map(normalizeCollectionRecord));
-      } else {
-        console.error("Workspace collection failed to load:", collectionItemsRes.error);
-      }
-
-      if (!eventPreferencesRes.error) {
-        const nextEventPreferences = normalizeEventPreferences(eventPreferencesRes.data || []);
-        setEventReminderIds(nextEventPreferences.reminderIds);
-        setEventAttendance(nextEventPreferences.attendance);
-      } else if (isMissingTableError(eventPreferencesRes.error, "user_event_preferences")) {
-        setEventReminderIds(readEventReminderStorage(authedUserId));
-        setEventAttendance(readEventAttendanceStorage(authedUserId));
-      } else {
-        console.error("Workspace event preferences failed to load:", eventPreferencesRes.error);
-      }
-
-      secondaryStateRef.current.workspaceUserId = String(authedUserId);
-      return normalizedProfiles;
     },
-    [users],
+    [updateSectionState, users],
   );
 
   const loadEventAttendanceFeed = useCallback(
@@ -2940,25 +3035,37 @@ export function MarketplaceProvider({ children }) {
         return {};
       }
 
-      const eventAttendanceFeedRes = await supabase
-        .from("user_event_preferences")
-        .select(EVENT_ATTENDANCE_COLUMNS);
+      updateSectionState("eventAttendance", "loading");
 
-      if (
-        eventAttendanceFeedRes.error &&
-        !isMissingTableError(eventAttendanceFeedRes.error, "user_event_preferences")
-      ) {
-        throw eventAttendanceFeedRes.error;
+      try {
+        const eventAttendanceFeedRes = await withTimeout(
+          supabase
+            .from("user_event_preferences")
+            .select(EVENT_ATTENDANCE_COLUMNS),
+          QUERY_TIMEOUT_MS,
+          "Event attendance is taking too long to load.",
+        );
+
+        if (
+          eventAttendanceFeedRes.error &&
+          !isMissingTableError(eventAttendanceFeedRes.error, "user_event_preferences")
+        ) {
+          throw eventAttendanceFeedRes.error;
+        }
+
+        const nextFeed = eventAttendanceFeedRes.error
+          ? {}
+          : normalizeEventAttendanceFeed(eventAttendanceFeedRes.data || [], normalizedProfiles);
+        setEventAttendanceFeed(nextFeed);
+        secondaryStateRef.current.eventAttendanceLoaded = true;
+        updateSectionState("eventAttendance", "ready");
+        return nextFeed;
+      } catch (error) {
+        updateSectionState("eventAttendance", "error", error?.message || "Event responses failed to load.");
+        throw error;
       }
-
-      const nextFeed = eventAttendanceFeedRes.error
-        ? {}
-        : normalizeEventAttendanceFeed(eventAttendanceFeedRes.data || [], normalizedProfiles);
-      setEventAttendanceFeed(nextFeed);
-      secondaryStateRef.current.eventAttendanceLoaded = true;
-      return nextFeed;
     },
-    [users],
+    [updateSectionState, users],
   );
 
   const loadAdminData = useCallback(async (authedUserId) => {
@@ -2966,35 +3073,47 @@ export function MarketplaceProvider({ children }) {
       return;
     }
 
-    const [reportsRes, bugReportsRes, auditLogRes] = await Promise.all([
-      supabase.from("reports").select(REPORT_COLUMNS),
-      supabase.from("bug_reports").select(BUG_REPORT_COLUMNS),
-      supabase
-        .from("admin_audit_log")
-        .select(AUDIT_LOG_COLUMNS)
-        .order("created_at", { ascending: false })
-        .limit(200),
-    ]);
+    updateSectionState("admin", "loading");
 
-    if (reportsRes.error) throw reportsRes.error;
-    if (bugReportsRes.error && !isMissingTableError(bugReportsRes.error, "bug_reports")) {
-      throw bugReportsRes.error;
-    }
-    if (auditLogRes.error && !isMissingTableError(auditLogRes.error, "admin_audit_log")) {
-      throw auditLogRes.error;
-    }
+    try {
+      const [reportsRes, bugReportsRes, auditLogRes] = await Promise.all([
+        withTimeout(supabase.from("reports").select(REPORT_COLUMNS), QUERY_TIMEOUT_MS, "Reports are taking too long to load."),
+        withTimeout(supabase.from("bug_reports").select(BUG_REPORT_COLUMNS), QUERY_TIMEOUT_MS, "Bug reports are taking too long to load."),
+        withTimeout(
+          supabase
+            .from("admin_audit_log")
+            .select(AUDIT_LOG_COLUMNS)
+            .order("created_at", { ascending: false })
+            .limit(200),
+          QUERY_TIMEOUT_MS,
+          "Audit log is taking too long to load.",
+        ),
+      ]);
 
-    setReports((reportsRes.data || []).map(fromReportRow));
-    if (!bugReportsRes.error) {
-      setBugReports((bugReportsRes.data || []).map(fromBugReportRow));
+      if (reportsRes.error) throw reportsRes.error;
+      if (bugReportsRes.error && !isMissingTableError(bugReportsRes.error, "bug_reports")) {
+        throw bugReportsRes.error;
+      }
+      if (auditLogRes.error && !isMissingTableError(auditLogRes.error, "admin_audit_log")) {
+        throw auditLogRes.error;
+      }
+
+      setReports((reportsRes.data || []).map(fromReportRow));
+      if (!bugReportsRes.error) {
+        setBugReports((bugReportsRes.data || []).map(fromBugReportRow));
+      }
+      if (!auditLogRes.error) {
+        setAdminAuditLog((auditLogRes.data || []).map(fromAuditRow));
+      } else {
+        setAdminAuditLog([]);
+      }
+      secondaryStateRef.current.adminUserId = String(authedUserId);
+      updateSectionState("admin", "ready");
+    } catch (error) {
+      updateSectionState("admin", "error", error?.message || "Admin data failed to load.");
+      throw error;
     }
-    if (!auditLogRes.error) {
-      setAdminAuditLog((auditLogRes.data || []).map(fromAuditRow));
-    } else {
-      setAdminAuditLog([]);
-    }
-    secondaryStateRef.current.adminUserId = String(authedUserId);
-  }, []);
+  }, [updateSectionState]);
 
   const refreshMarketplaceData = useCallback(
     async (authedUserId = currentUserId, options = {}) => {
@@ -3002,18 +3121,17 @@ export function MarketplaceProvider({ children }) {
         return;
       }
 
-      if (!options.silent) {
+      const shouldBlockUi = Boolean(options.blocking);
+      const authUser = options.authUser || null;
+
+      updateSectionState("critical", shouldBlockUi ? "loading" : "refreshing");
+
+      if (shouldBlockUi) {
         setLoading(true);
         updateBootState(hasUsableCache ? 0.4 : 0.2, "Loading marketplace");
       }
 
       try {
-        let authUser = null;
-        if (authedUserId) {
-          const authResult = await supabase.auth.getUser();
-          authUser = authResult.data?.user || null;
-        }
-
         const profilesPromise = selectWithProfileFallback(
           (columns) => supabase.from("profiles").select(columns),
           profileBootColumnsRef.current,
@@ -3037,27 +3155,45 @@ export function MarketplaceProvider({ children }) {
           wishlistsRes,
         ] =
           await Promise.all([
-          profilesPromise,
-          supabase.from("listings").select(LISTING_BOOT_COLUMNS),
-          manualEventsPromise,
-          supabase.from("site_settings").select(SITE_SETTINGS_COLUMNS).eq("key", "global").maybeSingle(),
+          withTimeout(profilesPromise, QUERY_TIMEOUT_MS, "Profiles are taking too long to load."),
+          withTimeout(
+            supabase.from("listings").select(LISTING_BOOT_COLUMNS),
+            QUERY_TIMEOUT_MS,
+            "Listings are taking too long to load.",
+          ),
+          withTimeout(manualEventsPromise, QUERY_TIMEOUT_MS, "Events are taking too long to load."),
+          withTimeout(
+            supabase.from("site_settings").select(SITE_SETTINGS_COLUMNS).eq("key", "global").maybeSingle(),
+            QUERY_TIMEOUT_MS,
+            "Settings are taking too long to load.",
+          ),
           authedUserId
-            ? supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId)
+            ? withTimeout(
+                supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId),
+                QUERY_TIMEOUT_MS,
+                "Wishlist is taking too long to load.",
+              )
             : Promise.resolve({ data: [], error: null }),
         ]);
 
-        if (profilesRes.error) throw profilesRes.error;
         if (listingsRes.error) throw listingsRes.error;
-        if (manualEventsRes.error) throw manualEventsRes.error;
-        if (siteSettingsRes.error && !isMissingTableError(siteSettingsRes.error, "site_settings")) {
-          throw siteSettingsRes.error;
+        if (profilesRes.error) {
+          console.error("Profiles failed to load during critical hydrate:", profilesRes.error);
         }
-        if (wishlistsRes.error) throw wishlistsRes.error;
+        if (manualEventsRes.error) {
+          console.error("Events failed to load during critical hydrate:", manualEventsRes.error);
+        }
+        if (siteSettingsRes.error && !isMissingTableError(siteSettingsRes.error, "site_settings")) {
+          console.error("Site settings failed to load during critical hydrate:", siteSettingsRes.error);
+        }
+        if (wishlistsRes.error) {
+          console.error("Wishlist failed to load during critical hydrate:", wishlistsRes.error);
+        }
         if (profilesRes.resolvedColumns) {
           profileBootColumnsRef.current = profilesRes.resolvedColumns;
         }
 
-        if (!options.silent) {
+        if (shouldBlockUi) {
           updateBootState(hasUsableCache ? 0.7 : 0.58, "Preparing listings");
         }
 
@@ -3087,9 +3223,11 @@ export function MarketplaceProvider({ children }) {
           setSiteSettings(fromSiteSettingsRow(siteSettingsRes.data));
         }
 
-        if (!options.silent) {
+        if (shouldBlockUi) {
           updateBootState(hasUsableCache ? 0.9 : 0.82, "Finalizing home");
         }
+
+        updateSectionState("critical", "ready");
 
         const authedProfile = authedUserId
           ? normalizedProfiles.find((profile) => String(profile.id) === String(authedUserId)) || null
@@ -3152,14 +3290,23 @@ export function MarketplaceProvider({ children }) {
         } else if (secondaryTasks.length) {
           await Promise.all(secondaryTasks.map((task) => task()));
         }
+      } catch (error) {
+        console.error("Marketplace critical hydration failed:", error);
+        updateSectionState(
+          "critical",
+          hasUsableCache || users.length || listings.length || manualEvents.length ? "stale" : "error",
+          error?.message || "Marketplace data failed to load.",
+        );
       } finally {
-        if (!options.silent) {
+        if (shouldBlockUi) {
           updateBootState(1, "Ready");
         }
-        setLoading(false);
+        if (shouldBlockUi) {
+          setLoading(false);
+        }
       }
     },
-    [currentUserId, hasUsableCache, loadAdminData, loadEventAttendanceFeed, loadSellerTrustData, loadWorkspaceData, updateBootState],
+    [currentUserId, hasUsableCache, listings.length, loadAdminData, loadEventAttendanceFeed, loadSellerTrustData, loadWorkspaceData, manualEvents.length, updateBootState, updateSectionState, users.length],
   );
 
   const ensureSellerTrustLoaded = useCallback(
@@ -3247,31 +3394,17 @@ export function MarketplaceProvider({ children }) {
       users,
       listings,
       wishlist,
-      reviews,
-      threads,
       manualEvents,
-      offers,
-      reports,
-      bugReports,
-      notifications,
       listingDrafts,
       activeDraftId,
-      searchHistory,
       siteSettings,
     });
   }, [
     activeDraftId,
-    bugReports,
     listingDrafts,
     listings,
     manualEvents,
-    notifications,
-    offers,
-    reports,
-    reviews,
-    searchHistory,
     siteSettings,
-    threads,
     users,
     wishlist,
   ]);
@@ -3294,33 +3427,19 @@ export function MarketplaceProvider({ children }) {
         users,
         listings,
         wishlist,
-        reviews,
-        threads,
         manualEvents,
-        offers,
-        reports,
-        bugReports,
-        notifications,
         listingDrafts: overrides.listingDrafts ?? listingDrafts,
         activeDraftId: overrides.activeDraftId ?? activeDraftId,
-        searchHistory: overrides.searchHistory ?? searchHistory,
         siteSettings: overrides.siteSettings ?? siteSettings,
       });
     },
     [
       activeDraftId,
-      bugReports,
       isSupabaseConfigured,
       listingDrafts,
       listings,
       manualEvents,
-      notifications,
-      offers,
-      reports,
-      reviews,
-      searchHistory,
       siteSettings,
-      threads,
       users,
       wishlist,
     ],
@@ -3444,7 +3563,16 @@ export function MarketplaceProvider({ children }) {
       try {
         if (authUser) {
           updateBootState(hasUsableCache ? 0.28 : 0.16, "Checking your account");
-          const profile = await bootstrapProfile(authUser);
+          setCurrentUserId(authUser.id);
+          setAuthReady(true);
+          const profile = await withTimeout(
+            bootstrapProfile(authUser),
+            SESSION_TIMEOUT_MS,
+            "Account profile is taking too long to load.",
+          ).catch((error) => {
+            console.error("Bootstrap profile load failed:", error);
+            return null;
+          });
           if (!mounted) {
             return;
           }
@@ -3454,15 +3582,15 @@ export function MarketplaceProvider({ children }) {
               return [profile, ...nextUsers];
             });
           }
-          setCurrentUserId(authUser.id);
-          setAuthReady(true);
           void refreshMarketplaceData(authUser.id, {
             silent: Boolean(hasUsableCache),
+            blocking: !hasUsableCache,
             deferSecondary: true,
             loadSellerTrust: true,
             loadWorkspace: false,
             loadEventAttendance: false,
             loadAdmin: false,
+            authUser,
           });
         } else {
           if (!mounted) {
@@ -3472,6 +3600,7 @@ export function MarketplaceProvider({ children }) {
           setAuthReady(true);
           void refreshMarketplaceData(null, {
             silent: Boolean(hasUsableCache),
+            blocking: !hasUsableCache,
             deferSecondary: true,
             loadSellerTrust: true,
             loadWorkspace: false,
@@ -3490,7 +3619,14 @@ export function MarketplaceProvider({ children }) {
 
     async function initAuth() {
       updateBootState(hasUsableCache ? 0.16 : 0.1, "Checking session");
-      const { data, error } = await supabase.auth.getSession();
+      const { data, error } = await withTimeout(
+        supabase.auth.getSession(),
+        SESSION_TIMEOUT_MS,
+        "Session check is taking too long.",
+      ).catch((timeoutError) => {
+        console.error("Supabase getSession timed out:", timeoutError);
+        return { data: { session: null }, error: null };
+      });
       if (!mounted) {
         return;
       }
@@ -3498,6 +3634,15 @@ export function MarketplaceProvider({ children }) {
       if (error) {
         console.error("Supabase getSession failed:", error);
         setAuthReady(true);
+        void refreshMarketplaceData(null, {
+          silent: Boolean(hasUsableCache),
+          blocking: !hasUsableCache,
+          deferSecondary: true,
+          loadSellerTrust: true,
+          loadWorkspace: false,
+          loadEventAttendance: false,
+          loadAdmin: false,
+        });
         return;
       }
 
@@ -7614,6 +7759,8 @@ export function MarketplaceProvider({ children }) {
     reviews,
     saveListingDraft,
     searchHistory,
+    sectionErrors,
+    sectionStatus,
     selectListingDraft,
     sellerMap,
     sellers: Object.values(sellerMap),

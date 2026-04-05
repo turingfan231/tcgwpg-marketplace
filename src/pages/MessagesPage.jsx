@@ -194,11 +194,35 @@ function MessageBubble({ currentUserId, message, onPreview }) {
   );
 }
 
+function LoadingPanel({ title, description }) {
+  return (
+    <div
+      className="rounded-[24px] border px-4 py-5"
+      style={{
+        background: "linear-gradient(180deg, rgba(20,20,24,0.96), rgba(14,14,18,0.98))",
+        borderColor: "rgba(255,255,255,0.04)",
+      }}
+    >
+      <div className="flex items-center gap-3">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[rgba(255,255,255,0.08)] border-t-[rgba(248,113,113,0.9)]" />
+        <div>
+          <p className="text-[13px] text-white" style={{ fontWeight: 700 }}>
+            {title}
+          </p>
+          <p className="mt-1 text-[11px]" style={{ color: m.textSecondary }}>
+            {description}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MessagesPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { threadId } = useParams();
-  const { authReady, currentUserId, ensureWorkspaceDataLoaded, getThreadById, hideThreadForCurrentUser, isAuthenticated, markThreadRead, offersByListingId, respondToOffer, sendMessage, threadsForCurrentUser, unreadMessageCount } = useMarketplace();
+  const { authReady, currentUserId, ensureWorkspaceDataLoaded, getThreadById, hideThreadForCurrentUser, isAuthenticated, markThreadRead, offersByListingId, respondToOffer, sectionErrors, sectionStatus, sendMessage, threadsForCurrentUser, unreadMessageCount } = useMarketplace();
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [tab, setTab] = useState("all");
@@ -256,6 +280,8 @@ export default function MessagesPage() {
   }, [currentUserId, offersByListingId, query, tab, threadsForCurrentUser]);
 
   const activeThread = useMemo(() => (threadId ? getThreadById(threadId) : null), [getThreadById, threadId]);
+  const workspaceLoading = sectionStatus.workspace === "loading";
+  const workspaceError = sectionErrors.workspace || "";
   const threadOffers = useMemo(() => (!activeThread?.listingId ? [] : [...(offersByListingId[activeThread.listingId] || [])].sort((a, b) => new Date(a.createdAt || a.updatedAt || 0).getTime() - new Date(b.createdAt || b.updatedAt || 0).getTime())), [activeThread?.listingId, offersByListingId]);
   const timeline = useMemo(() => {
     if (!activeThread) return [];
@@ -426,7 +452,17 @@ export default function MessagesPage() {
 
         <main className="flex-1 overflow-y-auto px-3 pb-4 pt-2 lg:px-6 lg:pb-8">
           <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-6">
-          {filteredThreads.length ? (
+          {workspaceError ? (
+            <div className="mb-3 rounded-[18px] border px-4 py-3 text-[11px] lg:col-span-2" style={{ background: "rgba(248,113,113,0.08)", borderColor: "rgba(248,113,113,0.18)", color: "#fca5a5", fontWeight: 600 }}>
+              {workspaceError}
+            </div>
+          ) : null}
+          {workspaceLoading && !filteredThreads.length ? (
+            <LoadingPanel
+              description="Pulling your conversations, offers, and draft threads."
+              title="Loading inbox"
+            />
+          ) : filteredThreads.length ? (
             <div
               className="overflow-hidden rounded-[24px] border lg:min-w-0"
               style={{
@@ -474,7 +510,16 @@ export default function MessagesPage() {
       <MobileScreen>
         <SeoHead canonicalPath={`/inbox/${threadId}`} description="Manage conversations, offers, and meetup details." title="Conversation" />
         <div className="px-4 pt-[max(0.85rem,env(safe-area-inset-top))]"><PrimaryButton onClick={() => navigate("/inbox")}>Back to inbox</PrimaryButton></div>
-        <div className="px-4 pt-6"><EmptyBlock title="Conversation missing" description="This thread could not be found or may have been archived." /></div>
+        <div className="px-4 pt-6">
+          {workspaceLoading ? (
+            <LoadingPanel
+              description="Pulling your conversation timeline and related offers."
+              title="Loading conversation"
+            />
+          ) : (
+            <EmptyBlock title="Conversation missing" description="This thread could not be found or may have been archived." />
+          )}
+        </div>
       </MobileScreen>
     );
   }
@@ -535,7 +580,14 @@ export default function MessagesPage() {
             </div>
           </div>
           <div className="min-h-0 overflow-y-auto">
-            {filteredThreads.length ? filteredThreads.map((thread) => (
+            {workspaceLoading && !filteredThreads.length ? (
+              <div className="p-5">
+                <LoadingPanel
+                  description="Pulling your conversations, offers, and draft threads."
+                  title="Loading inbox"
+                />
+              </div>
+            ) : filteredThreads.length ? filteredThreads.map((thread) => (
               <ThreadRow key={`desktop-thread-${thread.id}`} thread={thread} onClick={() => navigate(`/inbox/${thread.id}`)} />
             )) : (
               <div className="p-5">

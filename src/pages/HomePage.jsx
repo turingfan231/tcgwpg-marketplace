@@ -583,11 +583,15 @@ export default function HomePage() {
     manualEvents,
     notificationsForCurrentUser,
     refreshMarketplaceData,
+    sectionErrors,
+    sectionStatus,
     sellers,
     siteSettings,
     toggleWishlist,
     wishlist,
   } = useMarketplace();
+  const criticalLoading = sectionStatus.critical === "loading" || sectionStatus.critical === "refreshing";
+  const criticalError = sectionErrors.critical || "";
 
   const liveListings = useMemo(
     () => [...(Array.isArray(activeListings) ? activeListings : [])].filter(Boolean),
@@ -793,18 +797,45 @@ export default function HomePage() {
           <div
             className="min-w-0 lg:rounded-[24px] lg:border lg:border-white/5 lg:bg-white/[0.015] lg:p-5"
           >
+            {criticalError && !liveListings.length ? (
+              <div
+                className="mx-4 mb-3 rounded-[18px] border px-4 py-3 text-[11px] lg:mx-0"
+                style={{ background: "rgba(248,113,113,0.08)", borderColor: "rgba(248,113,113,0.18)", color: "#fca5a5", fontWeight: 600 }}
+              >
+                {criticalError}
+              </div>
+            ) : null}
             <HeroCarousel slides={heroSlides} />
 
             <SectionHeader title="Hot Listings" to="/market" />
             <div className="flex gap-2 overflow-x-auto px-4 no-scrollbar lg:grid lg:grid-cols-4 lg:gap-4 lg:px-0" style={{ scrollbarWidth: "none" }}>
-              {hotListings.map((listing) => (
+              {criticalLoading && !hotListings.length ? Array.from({ length: 4 }).map((_, index) => (
+                <div
+                  key={`hot-loading-${index}`}
+                  className="min-w-[240px] animate-pulse rounded-[18px] border lg:min-w-0"
+                  style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.05)" }}
+                >
+                  <div className="h-[138px] rounded-t-[18px]" style={{ background: "rgba(255,255,255,0.04)" }} />
+                  <div className="space-y-2 p-3">
+                    <div className="h-4 w-20 rounded-full" style={{ background: "rgba(255,255,255,0.05)" }} />
+                    <div className="h-3 w-3/4 rounded-full" style={{ background: "rgba(255,255,255,0.04)" }} />
+                    <div className="h-3 w-1/2 rounded-full" style={{ background: "rgba(255,255,255,0.03)" }} />
+                  </div>
+                </div>
+              )) : hotListings.map((listing) => (
                 <HotListingCard key={listing.id} listing={listing} />
               ))}
             </div>
 
             <SectionHeader title="Recent Listings" to="/market" />
             <div className="flex flex-col gap-[6px] px-4 lg:grid lg:grid-cols-2 lg:gap-3 lg:px-0">
-              {recentListings.map((listing) => (
+              {criticalLoading && !recentListings.length ? Array.from({ length: 4 }).map((_, index) => (
+                <div
+                  key={`recent-loading-${index}`}
+                  className="h-[92px] animate-pulse rounded-[20px] border"
+                  style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.05)" }}
+                />
+              )) : recentListings.map((listing) => (
                 <ListingRow
                   key={listing.id}
                   favorite={wishlist?.includes(listing.id)}
@@ -828,7 +859,19 @@ export default function HomePage() {
               className="overflow-hidden rounded-xl lg:rounded-[22px]"
               style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}
             >
-              {upcomingEvents.map((event, index) => (
+              {criticalLoading && !upcomingEvents.length ? Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  key={`event-loading-${index}`}
+                  className="flex items-center gap-2.5 px-3 py-3 animate-pulse"
+                  style={{ borderBottom: index < 2 ? "1px solid rgba(255,255,255,0.03)" : "none" }}
+                >
+                  <div className="h-[34px] w-[34px] rounded-[10px]" style={{ background: "rgba(255,255,255,0.05)" }} />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="h-3 w-2/3 rounded-full" style={{ background: "rgba(255,255,255,0.05)" }} />
+                    <div className="h-2.5 w-1/2 rounded-full" style={{ background: "rgba(255,255,255,0.04)" }} />
+                  </div>
+                </div>
+              )) : upcomingEvents.map((event, index) => (
                 <button
                   key={event.id}
                   className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left active:bg-white/[0.02]"

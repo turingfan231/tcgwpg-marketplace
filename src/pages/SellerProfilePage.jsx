@@ -195,6 +195,8 @@ export default function SellerProfilePage() {
     ensureSellerTrustLoaded,
     findOrCreateThread,
     reviews,
+    sectionErrors,
+    sectionStatus,
     sellerMap,
     sellers,
     toggleSellerFollow,
@@ -226,6 +228,8 @@ export default function SellerProfilePage() {
   const isOwnProfile = String(currentUser?.id || "") === String(seller?.id || sellerId || "");
   const canReview = currentUser && !isOwnProfile;
   const canModerateReviews = currentUser?.role === "admin";
+  const reviewsLoading = sectionStatus.reviews === "loading";
+  const reviewsError = sectionErrors.reviews || "";
   const resolvedSellerId = String(seller?.id || sellerId || "");
   const normalizedSellerSlug = slugify(seller?.publicName || seller?.username || seller?.name || "");
 
@@ -688,7 +692,21 @@ export default function SellerProfilePage() {
                   </button>
                 ) : null}
               </div>
-              {sellerReviews.length ? (
+              {reviewsError && !sellerReviews.length ? (
+                <div className="rounded-[18px] border px-4 py-3 text-[11px]" style={{ background: "rgba(248,113,113,0.08)", borderColor: "rgba(248,113,113,0.18)", color: "#fca5a5", fontWeight: 600 }}>
+                  {reviewsError}
+                </div>
+              ) : reviewsLoading && !sellerReviews.length ? (
+                <div className="rounded-[18px] border px-4 py-5" style={{ background: "rgba(255,255,255,0.025)", borderColor: "rgba(255,255,255,0.04)" }}>
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-[rgba(255,255,255,0.08)] border-t-[rgba(248,113,113,0.9)]" />
+                    <div>
+                      <p className="text-[13px] text-white" style={{ fontWeight: 700 }}>Loading reviews</p>
+                      <p className="mt-1 text-[11px]" style={{ color: "#8a8a92" }}>Pulling seller feedback and trust signals.</p>
+                    </div>
+                  </div>
+                </div>
+              ) : sellerReviews.length ? (
                 <div className="flex flex-col gap-2 lg:grid lg:grid-cols-2 lg:gap-4">
                   {sellerReviews.map((review) => (
                     <ReviewCard

@@ -192,6 +192,8 @@ export default function EventsPage() {
     eventAttendanceFeed,
     eventReminderIds,
     manualEvents,
+    sectionErrors,
+    sectionStatus,
     setEventAttendanceIntent,
     toggleEventReminder,
   } = useMarketplace();
@@ -224,6 +226,8 @@ export default function EventsPage() {
     () => mergedEvents.filter((event) => activeGame === "All" || String(event.game) === activeGame),
     [activeGame, mergedEvents],
   );
+  const eventsLoading = sectionStatus.critical === "loading" || sectionStatus.critical === "refreshing";
+  const eventsError = sectionErrors.critical || "";
 
   return (
     <MobileScreen className="pb-[92px]">
@@ -242,6 +246,14 @@ export default function EventsPage() {
       </ScreenSection>
 
       <ScreenSection className="pb-3">
+        {eventsError && !filteredEvents.length ? (
+          <div
+            className="mb-3 rounded-[18px] border px-4 py-3 text-[11px]"
+            style={{ background: "rgba(248,113,113,0.08)", borderColor: "rgba(248,113,113,0.18)", color: "#fca5a5", fontWeight: 600 }}
+          >
+            {eventsError}
+          </div>
+        ) : null}
         <div
           className="rounded-[18px] px-4 py-4"
           style={{
@@ -262,7 +274,24 @@ export default function EventsPage() {
       </ScreenSection>
 
       <ScreenSection className="flex-1 pb-2">
-        {filteredEvents.length ? (
+        {eventsLoading && !filteredEvents.length ? (
+          <div
+            className="rounded-[20px] px-4 py-5"
+            style={{ background: m.surface, border: `1px solid ${m.border}`, boxShadow: m.shadowPanel }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-[rgba(255,255,255,0.08)] border-t-[rgba(248,113,113,0.9)]" />
+              <div>
+                <p className="text-[13px] text-white" style={{ fontWeight: 700 }}>
+                  Loading events
+                </p>
+                <p className="mt-1 text-[11px]" style={{ color: m.textSecondary }}>
+                  Pulling the latest local schedule.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : filteredEvents.length ? (
           <div className="flex flex-col gap-2">
             {filteredEvents.map((event) => (
               <EventRow
