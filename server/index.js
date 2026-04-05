@@ -165,6 +165,8 @@ const IMAGE_PROXY_ALLOWED_HOSTS = new Set([
 const DEFAULT_ALLOWED_ORIGINS = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
+  "http://localhost:4174",
+  "http://127.0.0.1:4174",
   "https://tcgwpg-marketplace.vercel.app",
   "https://tcgwpg.com",
   "https://www.tcgwpg.com",
@@ -4318,7 +4320,10 @@ app.get("/api/bootstrap", publicApiRateLimit, async (_req, res) => {
     const manualEventsPromise = (async () => {
       let result = await supabaseReadClient
         .from("manual_events")
-        .select(MANUAL_EVENT_BOOTSTRAP_COLUMNS);
+        .select(MANUAL_EVENT_BOOTSTRAP_COLUMNS)
+        .eq("published", true)
+        .order("date_str", { ascending: true })
+        .limit(24);
       if (
         result.error &&
         (isMissingColumnError(result.error, "source_type") ||
@@ -4326,13 +4331,21 @@ app.get("/api/bootstrap", publicApiRateLimit, async (_req, res) => {
       ) {
         result = await supabaseReadClient
           .from("manual_events")
-          .select(MANUAL_EVENT_BOOTSTRAP_FALLBACK_COLUMNS);
+          .select(MANUAL_EVENT_BOOTSTRAP_FALLBACK_COLUMNS)
+          .eq("published", true)
+          .order("date_str", { ascending: true })
+          .limit(24);
       }
       return result;
     })();
 
     const [listingsRes, manualEventsRes, siteSettingsRes] = await Promise.all([
-      supabaseReadClient.from("listings").select(LISTING_BOOTSTRAP_COLUMNS),
+      supabaseReadClient
+        .from("listings")
+        .select(LISTING_BOOTSTRAP_COLUMNS)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(120),
       manualEventsPromise,
       supabaseReadClient
         .from("site_settings")
@@ -4352,7 +4365,7 @@ app.get("/api/bootstrap", publicApiRateLimit, async (_req, res) => {
     }
 
     const listings = listingsRes.data || [];
-    const sellerIds = [...new Set(listings.map((listing) => String(listing.seller_id || "")).filter(Boolean))];
+      const sellerIds = [...new Set(listings.map((listing) => String(listing.seller_id || "")).filter(Boolean))];
 
     let profiles = [];
     if (sellerIds.length) {

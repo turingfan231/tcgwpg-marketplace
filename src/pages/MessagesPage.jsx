@@ -198,7 +198,7 @@ export default function MessagesPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { threadId } = useParams();
-  const { authReady, currentUserId, ensureWorkspaceDataLoaded, getThreadById, hideThreadForCurrentUser, isAuthenticated, markThreadRead, offersByListingId, respondToOffer, sendMessage, threadsForCurrentUser, unreadMessageCount } = useMarketplace();
+  const { authReady, currentUserId, ensureInboxDataLoaded, getThreadById, hideThreadForCurrentUser, isAuthenticated, markThreadRead, offersByListingId, respondToOffer, sendMessage, threadsForCurrentUser, unreadMessageCount } = useMarketplace();
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [tab, setTab] = useState("all");
@@ -225,8 +225,8 @@ export default function MessagesPage() {
       return;
     }
     workspaceHydratedForRef.current = key;
-    void ensureWorkspaceDataLoaded();
-  }, [currentUserId, ensureWorkspaceDataLoaded]);
+    void ensureInboxDataLoaded();
+  }, [currentUserId, ensureInboxDataLoaded]);
   const desktopFeedRef = useRef(null);
   const fileInputRef = useRef(null);
   const filteredThreads = useMemo(() => {

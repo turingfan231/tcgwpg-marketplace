@@ -41,7 +41,7 @@ const TOAST_SEEN_STORAGE_PREFIX = "tcgwpg.seenToasts";
 const HIDDEN_THREADS_STORAGE_PREFIX = "tcgwpg.hiddenThreads";
 const VIEWED_LISTINGS_STORAGE_KEY = "tcgwpg.viewedListings.v1";
 const MARKETPLACE_CACHE_KEY = "tcgwpg.marketplaceCache";
-const MARKETPLACE_CACHE_VERSION = 2;
+const MARKETPLACE_CACHE_VERSION = 3;
 const SITE_SETTINGS_STORAGE_KEY = "tcgwpg.siteSettings";
 const LOCAL_AUTH_STORAGE_KEY = "tcgwpg.localAuthUserId";
 const COLLECTION_STORAGE_PREFIX = "tcgwpg.collection";
@@ -2065,8 +2065,30 @@ function buildSeedState() {
   };
 }
 
+function buildRemoteEmptyState() {
+  return {
+    users: [],
+    listings: [],
+    reviews: [],
+    wishlist: [],
+    threads: [],
+    offers: [],
+    reports: [],
+    bugReports: [],
+    notifications: [],
+    manualEvents: [],
+    listingDrafts: [],
+    activeDraftId: null,
+    searchHistory: [],
+    collectionItems: [],
+    adminAuditLog: [],
+    siteSettings: DEFAULT_SITE_SETTINGS,
+  };
+}
+
 export function MarketplaceProvider({ children }) {
   const seedState = useMemo(() => buildSeedState(), []);
+  const remoteEmptyState = useMemo(() => buildRemoteEmptyState(), []);
   const cachedState = useMemo(() => readMarketplaceCache(), []);
   const hasUsableCache = useMemo(
     () =>
@@ -2079,50 +2101,54 @@ export function MarketplaceProvider({ children }) {
     [cachedState],
   );
   const [users, setUsers] = useState(() =>
-    isSupabaseConfigured ? cachedState?.users || seedState.users : seedState.users,
+    isSupabaseConfigured ? cachedState?.users || remoteEmptyState.users : seedState.users,
   );
   const [currentUserId, setCurrentUserId] = useState(() =>
     isSupabaseConfigured ? null : readLocalAuthUserId(),
   );
   const [listings, setListings] = useState(() =>
-    isSupabaseConfigured ? cachedState?.listings || seedState.listings : seedState.listings,
+    isSupabaseConfigured ? cachedState?.listings || remoteEmptyState.listings : seedState.listings,
   );
   const [wishlist, setWishlist] = useState(() =>
-    isSupabaseConfigured ? cachedState?.wishlist || [] : seedState.wishlist,
+    isSupabaseConfigured ? cachedState?.wishlist || remoteEmptyState.wishlist : seedState.wishlist,
   );
   const [reviews, setReviews] = useState(() =>
-    isSupabaseConfigured ? cachedState?.reviews || [] : seedState.reviews,
+    isSupabaseConfigured ? cachedState?.reviews || remoteEmptyState.reviews : seedState.reviews,
   );
   const [threads, setThreads] = useState(() =>
-    isSupabaseConfigured ? cachedState?.threads || [] : seedState.threads,
+    isSupabaseConfigured ? cachedState?.threads || remoteEmptyState.threads : seedState.threads,
   );
   const [hiddenThreadMap, setHiddenThreadMap] = useState({});
   const [manualEvents, setManualEvents] = useState(() =>
-    isSupabaseConfigured ? cachedState?.manualEvents || seedState.manualEvents : seedState.manualEvents,
+    isSupabaseConfigured ? cachedState?.manualEvents || remoteEmptyState.manualEvents : seedState.manualEvents,
   );
   const [offers, setOffers] = useState(() =>
-    isSupabaseConfigured ? cachedState?.offers || [] : seedState.offers,
+    isSupabaseConfigured ? cachedState?.offers || remoteEmptyState.offers : seedState.offers,
   );
   const [reports, setReports] = useState(() =>
-    isSupabaseConfigured ? cachedState?.reports || [] : seedState.reports,
+    isSupabaseConfigured ? cachedState?.reports || remoteEmptyState.reports : seedState.reports,
   );
   const [bugReports, setBugReports] = useState(() =>
-    isSupabaseConfigured ? cachedState?.bugReports || [] : seedState.bugReports,
+    isSupabaseConfigured ? cachedState?.bugReports || remoteEmptyState.bugReports : seedState.bugReports,
   );
   const [notifications, setNotifications] = useState(() =>
-    isSupabaseConfigured ? cachedState?.notifications || [] : seedState.notifications,
+    isSupabaseConfigured ? cachedState?.notifications || remoteEmptyState.notifications : seedState.notifications,
   );
   const [listingDrafts, setListingDrafts] = useState(() =>
-    isSupabaseConfigured ? cachedState?.listingDrafts || [] : cachedState?.listingDrafts || seedState.listingDrafts,
+    isSupabaseConfigured ? cachedState?.listingDrafts || remoteEmptyState.listingDrafts : cachedState?.listingDrafts || seedState.listingDrafts,
   );
   const [activeDraftId, setActiveDraftId] = useState(() =>
-    isSupabaseConfigured ? cachedState?.activeDraftId || null : cachedState?.activeDraftId || seedState.activeDraftId,
+    isSupabaseConfigured ? cachedState?.activeDraftId || remoteEmptyState.activeDraftId : cachedState?.activeDraftId || seedState.activeDraftId,
   );
   const [searchHistory, setSearchHistory] = useState(() =>
-    isSupabaseConfigured ? cachedState?.searchHistory || [] : cachedState?.searchHistory || seedState.searchHistory,
+    isSupabaseConfigured ? cachedState?.searchHistory || remoteEmptyState.searchHistory : cachedState?.searchHistory || seedState.searchHistory,
   );
-  const [collectionItems, setCollectionItems] = useState([]);
-  const [adminAuditLog, setAdminAuditLog] = useState(() => readAuditLogStorage());
+  const [collectionItems, setCollectionItems] = useState(() =>
+    isSupabaseConfigured ? cachedState?.collectionItems || remoteEmptyState.collectionItems : [],
+  );
+  const [adminAuditLog, setAdminAuditLog] = useState(() =>
+    isSupabaseConfigured ? cachedState?.adminAuditLog || remoteEmptyState.adminAuditLog : readAuditLogStorage(),
+  );
   const [viewAsUserId, setViewAsUserId] = useState(() => readViewAsStorage());
   const [followedStoreSlugs, setFollowedStoreSlugs] = useState([]);
   const [eventReminderIds, setEventReminderIds] = useState([]);
@@ -2146,6 +2172,7 @@ export function MarketplaceProvider({ children }) {
   const seededRealtimeStateRef = useRef(false);
   const mutationLimitRef = useRef(new Map());
   const listingsRef = useRef(listings);
+  const remoteBootstrapLoadedRef = useRef(Boolean(isSupabaseConfigured && hasUsableCache));
   const viewedListingsRef = useRef(readViewedListingIds());
   const pendingViewedListingsRef = useRef(new Set());
   const profileBootColumnsRef = useRef(PROFILE_CRITICAL_COLUMNS);
@@ -2153,6 +2180,7 @@ export function MarketplaceProvider({ children }) {
   const eventsSyncRunningRef = useRef(false);
   const secondaryStateRef = useRef({
     reviewsLoaded: Boolean(cachedState?.reviews?.length),
+    inboxUserId: null,
     workspaceUserId: null,
     eventAttendanceLoaded: false,
     adminUserId: null,
@@ -3028,6 +3056,67 @@ export function MarketplaceProvider({ children }) {
     return nextProfiles;
   }, []);
 
+  const loadInboxData = useCallback(async (authedUserId) => {
+    if (!isSupabaseConfigured || !authedUserId) {
+      return;
+    }
+
+    const [threadRowsRes, offersRes] = await Promise.all([
+      selectWithColumnFallback(
+        (columns) =>
+          supabase
+            .from("message_threads")
+            .select(columns)
+            .contains("participant_ids", [authedUserId]),
+        THREAD_COLUMNS,
+        THREAD_OPTIONAL_COLUMNS,
+      ),
+      selectWithColumnFallback(
+        (columns) =>
+          supabase
+            .from("offers")
+            .select(columns)
+            .or(`seller_id.eq.${authedUserId},buyer_id.eq.${authedUserId}`),
+        OFFER_COLUMNS,
+        OFFER_OPTIONAL_COLUMNS,
+      ),
+    ]);
+
+    if (threadRowsRes.error) {
+      throw threadRowsRes.error;
+    }
+    if (offersRes.error) {
+      throw offersRes.error;
+    }
+
+    const threadRows = threadRowsRes.data || [];
+    let messageRows = [];
+    if (threadRows.length) {
+      const messagesRes = await selectWithColumnFallback(
+        (columns) =>
+          supabase
+            .from("messages")
+            .select(columns)
+            .in(
+              "thread_id",
+              threadRows.map((thread) => thread.id),
+            ),
+        MESSAGE_COLUMNS,
+        MESSAGE_OPTIONAL_COLUMNS,
+      );
+
+      if (messagesRes.error) {
+        throw messagesRes.error;
+      }
+
+      messageRows = messagesRes.data || [];
+    }
+
+    setThreads(buildThreadMap(threadRows, messageRows));
+    setOffers((offersRes.data || []).map(fromOfferRow));
+    secondaryStateRef.current.inboxUserId = String(authedUserId);
+  }, []);
+
   const loadWorkspaceData = useCallback(
     async (authedUserId, normalizedProfiles = users) => {
       if (!isSupabaseConfigured || !authedUserId) {
@@ -3037,28 +3126,13 @@ export function MarketplaceProvider({ children }) {
       const [
         wishlistsRes,
         draftRes,
-        threadRowsRes,
-        offersRes,
+        inboxLoadResult,
       ] = await Promise.all([
         supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId),
         supabase.from("listing_drafts").select("payload,updated_at").eq("user_id", authedUserId).maybeSingle(),
-        selectWithColumnFallback(
-          (columns) =>
-            supabase
-              .from("message_threads")
-              .select(columns)
-              .contains("participant_ids", [authedUserId]),
-          THREAD_COLUMNS,
-          THREAD_OPTIONAL_COLUMNS,
-        ),
-        selectWithColumnFallback(
-          (columns) =>
-            supabase
-              .from("offers")
-              .select(columns)
-              .or(`seller_id.eq.${authedUserId},buyer_id.eq.${authedUserId}`),
-          OFFER_COLUMNS,
-          OFFER_OPTIONAL_COLUMNS,
+        loadInboxData(authedUserId).then(
+          () => ({ error: null }),
+          (error) => ({ error }),
         ),
       ]);
 
@@ -3068,34 +3142,8 @@ export function MarketplaceProvider({ children }) {
       if (draftRes.error && !isMissingTableError(draftRes.error, "listing_drafts")) {
         console.error("Workspace drafts failed to load:", draftRes.error);
       }
-      if (threadRowsRes.error) {
-        console.error("Workspace threads failed to load:", threadRowsRes.error);
-      }
-      if (offersRes.error) {
-        console.error("Workspace offers failed to load:", offersRes.error);
-      }
-
-      const threadRows = threadRowsRes.error ? [] : threadRowsRes.data || [];
-      let messageRows = [];
-      if (threadRows.length) {
-        const messagesRes = await selectWithColumnFallback(
-          (columns) =>
-            supabase
-              .from("messages")
-              .select(columns)
-              .in(
-                "thread_id",
-                threadRows.map((thread) => thread.id),
-              ),
-          MESSAGE_COLUMNS,
-          MESSAGE_OPTIONAL_COLUMNS,
-        );
-
-        if (messagesRes.error) {
-          console.error("Workspace messages failed to load:", messagesRes.error);
-        } else {
-          messageRows = messagesRes.data || [];
-        }
+      if (inboxLoadResult.error) {
+        console.error("Workspace inbox failed to load:", inboxLoadResult.error);
       }
 
       const draftPayload = draftRes.error ? null : draftRes.data?.payload || null;
@@ -3109,8 +3157,6 @@ export function MarketplaceProvider({ children }) {
       setWishlist((wishlistsRes.error ? [] : wishlistsRes.data || []).map((item) => item.listing_id));
       setListingDrafts(nextDrafts);
       setActiveDraftId(draftPayload?.activeDraftId || nextDrafts[0]?.id || null);
-      setThreads(buildThreadMap(threadRows, messageRows));
-      setOffers((offersRes.error ? [] : offersRes.data || []).map(fromOfferRow));
 
       const [
         bugReportsRes,
@@ -3200,7 +3246,7 @@ export function MarketplaceProvider({ children }) {
       secondaryStateRef.current.workspaceUserId = String(authedUserId);
       return normalizedProfiles;
     },
-    [users],
+    [loadInboxData, users],
   );
 
   const loadEventAttendanceFeed = useCallback(
@@ -3376,8 +3422,8 @@ export function MarketplaceProvider({ children }) {
           nextListings = (listingsRes.data || []).map(fromListingRow).filter(isSupportedListing);
           const sellerIds = [...new Set([
             ...nextListings.map((listing) => String(listing.sellerId || "")).filter(Boolean),
-            authedUserId ? String(authedUserId) : "",
-          ])];
+            authedUserId ? String(authedUserId) : null,
+          ].filter(Boolean))];
 
           let profilesRes = { data: [], error: null, resolvedColumns: profileBootColumnsRef.current };
           if (sellerIds.length) {
@@ -3418,6 +3464,7 @@ export function MarketplaceProvider({ children }) {
           }, 0);
         }
 
+        remoteBootstrapLoadedRef.current = true;
         setUsers(normalizedProfiles);
         setListings(nextListings);
         setManualEvents(nextManualEvents);
@@ -3448,6 +3495,7 @@ export function MarketplaceProvider({ children }) {
           setEventReminderIds([]);
           setEventAttendance({});
           setEventAttendanceFeed({});
+          secondaryStateRef.current.inboxUserId = null;
           secondaryStateRef.current.workspaceUserId = null;
           secondaryStateRef.current.eventAttendanceLoaded = false;
           secondaryStateRef.current.adminUserId = null;
@@ -3465,9 +3513,6 @@ export function MarketplaceProvider({ children }) {
         const secondaryTasks = [];
         if (shouldLoadSellerTrust) {
           secondaryTasks.push(() => loadSellerTrustData());
-        }
-        if (!secondaryStateRef.current.directoryProfilesLoaded) {
-          secondaryTasks.push(() => loadDirectoryProfilesData());
         }
         if (shouldLoadWorkspace) {
           secondaryTasks.push(() => loadWorkspaceData(authedUserId, normalizedProfiles));
@@ -3502,7 +3547,7 @@ export function MarketplaceProvider({ children }) {
         setLoading(false);
       }
     },
-    [currentUserId, hasUsableCache, listings, loadAdminData, loadDirectoryProfilesData, loadEventAttendanceFeed, loadSellerTrustData, loadWorkspaceData, manualEvents, siteSettings, updateBootState, users],
+    [currentUserId, hasUsableCache, listings, loadAdminData, loadEventAttendanceFeed, loadSellerTrustData, loadWorkspaceData, manualEvents, siteSettings, updateBootState, users],
   );
 
   const ensureSellerTrustLoaded = useCallback(
@@ -3541,6 +3586,24 @@ export function MarketplaceProvider({ children }) {
     [currentUserId, loadWorkspaceData],
   );
 
+  const ensureInboxDataLoaded = useCallback(
+    async ({ force = false } = {}) => {
+      if (!isSupabaseConfigured || !currentUserId) {
+        return { ok: true };
+      }
+      if (secondaryStateRef.current.inboxUserId === String(currentUserId) && !force) {
+        return { ok: true };
+      }
+      try {
+        await loadInboxData(currentUserId);
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: error?.message || "Inbox data failed to load." };
+      }
+    },
+    [currentUserId, loadInboxData],
+  );
+
   const ensureEventAttendanceFeedLoaded = useCallback(
     async ({ force = false } = {}) => {
       if (!isSupabaseConfigured) {
@@ -3557,6 +3620,24 @@ export function MarketplaceProvider({ children }) {
       }
     },
     [loadEventAttendanceFeed],
+  );
+
+  const ensureDirectoryProfilesLoaded = useCallback(
+    async ({ force = false } = {}) => {
+      if (!isSupabaseConfigured) {
+        return { ok: true };
+      }
+      if (secondaryStateRef.current.directoryProfilesLoaded && !force) {
+        return { ok: true };
+      }
+      try {
+        await loadDirectoryProfilesData();
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: error?.message || "Directory profiles failed to load." };
+      }
+    },
+    [loadDirectoryProfilesData],
   );
 
   const ensureAdminDataLoaded = useCallback(
@@ -3583,6 +3664,10 @@ export function MarketplaceProvider({ children }) {
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
+      return;
+    }
+
+    if (!remoteBootstrapLoadedRef.current) {
       return;
     }
 
@@ -3807,8 +3892,8 @@ export function MarketplaceProvider({ children }) {
           void refreshMarketplaceData(authUser.id, {
             silent: Boolean(hasUsableCache),
             deferSecondary: true,
-            loadSellerTrust: true,
-            loadWorkspace: true,
+            loadSellerTrust: false,
+            loadWorkspace: false,
             loadEventAttendance: false,
             loadAdmin: false,
             authUser,
@@ -3822,7 +3907,7 @@ export function MarketplaceProvider({ children }) {
           void refreshMarketplaceData(null, {
             silent: Boolean(hasUsableCache),
             deferSecondary: true,
-            loadSellerTrust: true,
+            loadSellerTrust: false,
             loadWorkspace: false,
             loadEventAttendance: false,
             loadAdmin: false,
@@ -7911,7 +7996,9 @@ export function MarketplaceProvider({ children }) {
     deleteUserAccount,
     dismissToast,
     ensureAdminDataLoaded,
+    ensureDirectoryProfilesLoaded,
     ensureEventAttendanceFeedLoaded,
+    ensureInboxDataLoaded,
     ensureSellerTrustLoaded,
     ensureWorkspaceDataLoaded,
     editListing,
