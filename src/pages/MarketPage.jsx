@@ -55,19 +55,28 @@ function FeedRow({ favorite, listing, onFavorite, onOpen }) {
   const seller = listing?.seller || listing;
   const rating = Number(listing?.seller?.overallRating || listing?.seller?.rating || seller?.overallRating || 0);
   const tone = conditionStyle(listing?.condition);
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onOpen?.();
+    }
+  };
 
   return (
-    <motion.button
+    <motion.div
+      aria-label={`${listing.title} listing`}
       className="flex w-full cursor-pointer overflow-hidden rounded-xl text-left"
+      role="button"
       style={{
         background: "rgba(255,255,255,0.03)",
         border: `1px solid ${m.border}`,
         contentVisibility: "auto",
         containIntrinsicSize: "96px 720px",
       }}
-      type="button"
+      tabIndex={0}
       whileTap={{ scale: 0.98 }}
       onClick={onOpen}
+      onKeyDown={handleKeyDown}
     >
       <div className="relative w-[82px] shrink-0 overflow-hidden">
         <img
@@ -163,25 +172,34 @@ function FeedRow({ favorite, listing, onFavorite, onOpen }) {
           </motion.button>
         </div>
       </div>
-    </motion.button>
+    </motion.div>
   );
 }
 
 function GridCard({ favorite, listing, onFavorite, onOpen }) {
   const tone = conditionStyle(listing?.condition);
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onOpen?.();
+    }
+  };
 
   return (
-    <motion.button
+    <motion.div
+      aria-label={`${listing.title} listing`}
       className="cursor-pointer overflow-hidden rounded-xl text-left"
+      role="button"
       style={{
         background: "rgba(255,255,255,0.03)",
         border: `1px solid ${m.border}`,
         contentVisibility: "auto",
         containIntrinsicSize: "240px 220px",
       }}
-      type="button"
+      tabIndex={0}
       whileTap={{ scale: 0.97 }}
       onClick={onOpen}
+      onKeyDown={handleKeyDown}
     >
       <div className="relative aspect-[3/4] overflow-hidden">
         <img
@@ -247,7 +265,7 @@ function GridCard({ favorite, listing, onFavorite, onOpen }) {
           </span>
         </div>
       </div>
-    </motion.button>
+    </motion.div>
   );
 }
 

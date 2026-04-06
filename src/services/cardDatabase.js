@@ -38,15 +38,15 @@ const ONE_PIECE_VARIANT_STOPWORDS = new Set([
 ]);
 
 function buildLiveApiUrls(path) {
+  const urls = [new URL(path, window.location.origin)];
   if (DEPLOY_API_BASE_URL) {
-    return [new URL(path, `${DEPLOY_API_BASE_URL}/`)];
+    urls.push(new URL(path, `${DEPLOY_API_BASE_URL}/`));
   }
 
   if (!import.meta.env.DEV) {
-    return [new URL(path, window.location.origin)];
+    return uniqueBy(urls, (item) => item.toString());
   }
 
-  const urls = [new URL(path, window.location.origin)];
   const currentHostUrl = new URL(window.location.origin);
   currentHostUrl.protocol = "http:";
   currentHostUrl.port = "8787";

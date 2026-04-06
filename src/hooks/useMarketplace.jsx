@@ -41,7 +41,7 @@ const TOAST_SEEN_STORAGE_PREFIX = "tcgwpg.seenToasts";
 const HIDDEN_THREADS_STORAGE_PREFIX = "tcgwpg.hiddenThreads";
 const VIEWED_LISTINGS_STORAGE_KEY = "tcgwpg.viewedListings.v1";
 const MARKETPLACE_CACHE_KEY = "tcgwpg.marketplaceCache";
-const MARKETPLACE_CACHE_VERSION = 3;
+const MARKETPLACE_CACHE_VERSION = 4;
 const SITE_SETTINGS_STORAGE_KEY = "tcgwpg.siteSettings";
 const LOCAL_AUTH_STORAGE_KEY = "tcgwpg.localAuthUserId";
 const COLLECTION_STORAGE_PREFIX = "tcgwpg.collection";
@@ -776,26 +776,66 @@ async function withTimeoutResult(promise, timeoutMs, label = "Request timed out"
   }
 }
 
-async function apiRequest(path, init = {}) {
-  const url = `${API_BASE_URL}${path}`;
-  const response = await fetch(url || path, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init.headers || {}),
-    },
-  });
-  const data = await response.json().catch(() => ({}));
+function buildApiRequestCandidates(path) {
+  const normalizedPath = String(path || "").startsWith("/")
+    ? String(path || "")
+    : `/${String(path || "")}`;
 
-  if (!response.ok) {
-    const error = new Error(data.error || "Request failed.");
-    error.status = response.status;
-    error.retryAfter = response.headers.get("Retry-After");
-    error.data = data;
-    throw error;
+  if (typeof window === "undefined") {
+    return API_BASE_URL ? [`${API_BASE_URL}${normalizedPath}`] : [normalizedPath];
   }
 
-  return data;
+  const urls = [];
+  const currentOriginUrl = new URL(window.location.origin);
+  urls.push(new URL(normalizedPath, currentOriginUrl.origin).toString());
+
+  if (API_BASE_URL) {
+    urls.push(new URL(normalizedPath, `${API_BASE_URL}/`).toString());
+  }
+
+  const isLocalHost = /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
+  if (isLocalHost) {
+    const currentHostApi = new URL(currentOriginUrl.origin);
+    currentHostApi.protocol = "http:";
+    currentHostApi.port = "8787";
+    urls.push(new URL(normalizedPath, currentHostApi.origin).toString());
+    urls.push(new URL(normalizedPath, "http://localhost:8787").toString());
+  }
+
+  return [...new Set(urls)];
+}
+
+async function apiRequest(path, init = {}) {
+  const candidates = buildApiRequestCandidates(path);
+  const headers = {
+    "Content-Type": "application/json",
+    ...(init.headers || {}),
+  };
+  let lastError = null;
+
+  for (const url of candidates) {
+    try {
+      const response = await fetch(url, {
+        ...init,
+        headers,
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const error = new Error(data.error || "Request failed.");
+        error.status = response.status;
+        error.retryAfter = response.headers.get("Retry-After");
+        error.data = data;
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error("Request failed.");
 }
 
 async function fetchMarketplaceBootstrap() {
@@ -2068,6 +2108,7 @@ export function MarketplaceProvider({ children }) {
   const profileBootColumnsRef = useRef(PROFILE_BOOT_COLUMNS);
   const profileFullColumnsRef = useRef(PROFILE_FULL_COLUMNS);
   const eventsSyncRunningRef = useRef(false);
+  const authSessionHydratedRef = useRef(false);
   const secondaryStateRef = useRef({
     reviewsLoaded: Boolean(cachedState?.reviews?.length),
     workspaceUserId: null,
@@ -2712,20 +2753,27 @@ export function MarketplaceProvider({ children }) {
       return null;
     }
 
-    const profileResult = await selectWithProfileFallback(
-      (columns) =>
-        supabase
-          .from("profiles")
-          .select(columns)
-          .eq("id", authUser.id)
-          .maybeSingle(),
-      profileFullColumnsRef.current,
-    );
+    async function readProfile(profileId) {
+      const result = await selectWithProfileFallback(
+        (columns) =>
+          supabase
+            .from("profiles")
+            .select(columns)
+            .eq("id", profileId)
+            .maybeSingle(),
+        profileFullColumnsRef.current,
+      );
+
+      if (!result.error && result.resolvedColumns) {
+        profileFullColumnsRef.current = result.resolvedColumns;
+      }
+
+      return result;
+    }
+
+    const profileResult = await readProfile(authUser.id);
 
     const { data: existingProfile, error: profileError } = profileResult;
-    if (!profileError && profileResult.resolvedColumns) {
-      profileFullColumnsRef.current = profileResult.resolvedColumns;
-    }
 
     if (profileError) {
       throw profileError;
@@ -2763,15 +2811,20 @@ export function MarketplaceProvider({ children }) {
             nextProfilePatch.meetup_preferences = desiredMeetupValue;
           }
 
-        const updateResult = await supabase
+        let updateResult = await supabase
           .from("profiles")
           .update(nextProfilePatch)
-          .eq("id", authUser.id)
-          .select(PROFILE_FULL_COLUMNS)
-          .single();
+          .eq("id", authUser.id);
 
         if (!updateResult.error) {
-          return fromProfileRow(updateResult.data);
+          const refreshedProfile = await readProfile(authUser.id);
+          if (refreshedProfile.error) {
+            throw refreshedProfile.error;
+          }
+          if (refreshedProfile.data) {
+            return fromProfileRow(refreshedProfile.data);
+          }
+          return fromProfileRow(existingProfile);
         }
 
         if (
@@ -2785,18 +2838,23 @@ export function MarketplaceProvider({ children }) {
 
         const fallbackPatch = omitMissingProfileColumns(nextProfilePatch, updateResult.error);
         if (Object.keys(fallbackPatch).length > 1) {
-          const fallbackResult = await supabase
+          updateResult = await supabase
             .from("profiles")
             .update(fallbackPatch)
-            .eq("id", authUser.id)
-            .select(PROFILE_FULL_COLUMNS)
-            .single();
+            .eq("id", authUser.id);
 
-          if (!fallbackResult.error) {
-            return fromProfileRow(fallbackResult.data);
+          if (!updateResult.error) {
+            const refreshedProfile = await readProfile(authUser.id);
+            if (refreshedProfile.error) {
+              throw refreshedProfile.error;
+            }
+            if (refreshedProfile.data) {
+              return fromProfileRow(refreshedProfile.data);
+            }
+            return fromProfileRow(existingProfile);
           }
 
-          throw fallbackResult.error;
+          throw updateResult.error;
         }
       }
 
@@ -2837,9 +2895,7 @@ export function MarketplaceProvider({ children }) {
 
     let insertResult = await supabase
       .from("profiles")
-      .insert(profilePayload)
-      .select(PROFILE_FULL_COLUMNS)
-      .single();
+      .insert(profilePayload);
 
     if (
       insertResult.error &&
@@ -2851,18 +2907,21 @@ export function MarketplaceProvider({ children }) {
       const legacyProfilePayload = omitMissingProfileColumns(profilePayload, insertResult.error);
       insertResult = await supabase
         .from("profiles")
-        .insert(legacyProfilePayload)
-        .select(PROFILE_FULL_COLUMNS)
-        .single();
+        .insert(legacyProfilePayload);
     }
 
-    const { data: insertedProfile, error: insertError } = insertResult;
+    const { error: insertError } = insertResult;
 
     if (insertError) {
       throw insertError;
     }
 
-    return fromProfileRow(insertedProfile);
+    const insertedProfileResult = await readProfile(authUser.id);
+    if (insertedProfileResult.error) {
+      throw insertedProfileResult.error;
+    }
+
+    return insertedProfileResult.data ? fromProfileRow(insertedProfileResult.data) : null;
   }, []);
 
   const hydrateListingProfiles = useCallback(
@@ -3739,39 +3798,48 @@ export function MarketplaceProvider({ children }) {
         "Session check is taking too long.",
       ).catch((timeoutError) => {
         console.error("Supabase getSession timed out:", timeoutError);
-        return { data: { session: null }, error: null };
+        return { data: null, error: timeoutError };
       });
       if (!mounted) {
         return;
       }
 
       if (error) {
+        if (error?.code === "TIMEOUT") {
+          return;
+        }
+
         console.error("Supabase getSession failed:", error);
-        setAuthReady(true);
-        void refreshMarketplaceData(null, {
-          silent: Boolean(hasUsableCache),
-          blocking: !hasUsableCache,
-          deferSecondary: true,
-          loadSellerTrust: true,
-          loadWorkspace: false,
-          loadEventAttendance: false,
-          loadAdmin: false,
-        });
+        if (!authSessionHydratedRef.current) {
+          setAuthReady(true);
+          void refreshMarketplaceData(null, {
+            silent: Boolean(hasUsableCache),
+            blocking: !hasUsableCache,
+            deferSecondary: true,
+            loadSellerTrust: true,
+            loadWorkspace: false,
+            loadEventAttendance: false,
+            loadAdmin: false,
+          });
+        }
         return;
       }
 
-      await hydrateAuthUser(data.session?.user || null);
+      if (!authSessionHydratedRef.current) {
+        await hydrateAuthUser(data?.session?.user || null);
+      }
     }
-
-    void initAuth();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       window.setTimeout(() => {
+        authSessionHydratedRef.current = true;
         void hydrateAuthUser(session?.user || null);
       }, 0);
     });
+
+    void initAuth();
 
     return () => {
       mounted = false;
