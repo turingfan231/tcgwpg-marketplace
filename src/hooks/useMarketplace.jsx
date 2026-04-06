@@ -4121,6 +4121,76 @@ export function MarketplaceProvider({ children }) {
     setCreateListingOpen(false);
   }
 
+  const primeAuthenticatedUser = useCallback((authUser, payload = {}) => {
+    if (!authUser?.id) {
+      return;
+    }
+
+    const metadata = authUser.user_metadata || {};
+    setUsers((current) => {
+      const existingUser = current.find((user) => String(user.id) === String(authUser.id)) || {};
+      const nextUser = normalizeUserRecord({
+        ...existingUser,
+        id: authUser.id,
+        role: existingUser.role || "seller",
+        name:
+          payload.name ||
+          metadata.name ||
+          existingUser.name ||
+          authUser.email?.split("@")[0] ||
+          "TCGWPG User",
+        username:
+          payload.username ||
+          metadata.username ||
+          existingUser.username ||
+          authUser.email?.split("@")[0] ||
+          "",
+        avatarUrl:
+          payload.avatarUrl ||
+          metadata.avatar_url ||
+          existingUser.avatarUrl ||
+          "",
+        email: authUser.email || existingUser.email || "",
+        neighborhood:
+          payload.neighborhood ||
+          metadata.neighborhood ||
+          existingUser.neighborhood ||
+          neighborhoods[1],
+        postalCode:
+          payload.postalCode ||
+          metadata.postal_code ||
+          existingUser.postalCode ||
+          "",
+        favoriteGames:
+          payload.favoriteGames ||
+          existingUser.favoriteGames ||
+          [],
+        defaultListingGame:
+          payload.defaultListingGame ||
+          existingUser.defaultListingGame ||
+          "Pokemon",
+        trustedMeetupSpots:
+          payload.trustedMeetupSpots ||
+          metadata.trusted_meetup_spots ||
+          existingUser.trustedMeetupSpots ||
+          [],
+        meetupPreferences:
+          payload.meetupPreferences ||
+          metadata.meetup_preferences_text ||
+          existingUser.meetupPreferences ||
+          "",
+        onboardingComplete:
+          payload.onboardingComplete ??
+          metadata.onboarding_complete ??
+          existingUser.onboardingComplete ??
+          false,
+      });
+
+      const nextUsers = current.filter((user) => String(user.id) !== String(authUser.id));
+      return [nextUser, ...nextUsers];
+    });
+  }, []);
+
   async function login({ email, password }) {
     if (!isSupabaseConfigured) {
       const normalizedEmail = normalizeEmail(email);
@@ -4150,13 +4220,15 @@ export function MarketplaceProvider({ children }) {
       return rateGuard;
     }
 
-    setAuthReady(false);
-
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithPassword({
           email: normalizedEmail,
           password,
-        });
+        }),
+        QUERY_TIMEOUT_MS,
+        "Sign in is taking too long.",
+      );
 
       if (error) {
         return {
@@ -4169,9 +4241,36 @@ export function MarketplaceProvider({ children }) {
       }
 
       if (data.user) {
-        await bootstrapProfile(data.user);
+        primeAuthenticatedUser(data.user);
         setCurrentUserId(data.user.id);
-        await refreshMarketplaceData(data.user.id);
+        setAuthReady(true);
+
+        void bootstrapProfile(data.user)
+          .then((profile) => {
+            if (!profile) {
+              return;
+            }
+            setUsers((current) => {
+              const nextUsers = current.filter((user) => String(user.id) !== String(profile.id));
+              return [profile, ...nextUsers];
+            });
+          })
+          .catch((error) => {
+            console.error("Login profile bootstrap failed:", error);
+          });
+
+        void refreshMarketplaceData(data.user.id, {
+          silent: true,
+          blocking: false,
+          deferSecondary: true,
+          loadSellerTrust: true,
+          loadWorkspace: false,
+          loadEventAttendance: false,
+          loadAdmin: false,
+          authUser: data.user,
+        }).catch((error) => {
+          console.error("Login marketplace refresh failed:", error);
+        });
       }
 
       return { ok: true };
@@ -4247,31 +4346,60 @@ export function MarketplaceProvider({ children }) {
       return rateGuard;
     }
 
-    setAuthReady(false);
-
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await withTimeout(
+        supabase.auth.signUp({
           email: normalizedEmail,
           password: payload.password,
-        options: {
-          data: {
-            name: payload.name,
-            username,
-            neighborhood: payload.neighborhood,
-            postal_code: normalizePostalCode(payload.postalCode),
-            onboarding_complete: false,
+          options: {
+            data: {
+              name: payload.name,
+              username,
+              neighborhood: payload.neighborhood,
+              postal_code: normalizePostalCode(payload.postalCode),
+              onboarding_complete: false,
+            },
           },
-        },
-      });
+        }),
+        QUERY_TIMEOUT_MS,
+        "Account creation is taking too long.",
+      );
 
       if (error) {
         return { ok: false, error: error.message };
       }
 
       if (data.user && data.session?.user) {
-        await bootstrapProfile(data.user, payload);
+        primeAuthenticatedUser(data.user, payload);
         setCurrentUserId(data.user.id);
-        await refreshMarketplaceData(data.user.id);
+        setAuthReady(true);
+
+        void bootstrapProfile(data.user, payload)
+          .then((profile) => {
+            if (!profile) {
+              return;
+            }
+            setUsers((current) => {
+              const nextUsers = current.filter((user) => String(user.id) !== String(profile.id));
+              return [profile, ...nextUsers];
+            });
+          })
+          .catch((error) => {
+            console.error("Signup profile bootstrap failed:", error);
+          });
+
+        void refreshMarketplaceData(data.user.id, {
+          silent: true,
+          blocking: false,
+          deferSecondary: true,
+          loadSellerTrust: true,
+          loadWorkspace: false,
+          loadEventAttendance: false,
+          loadAdmin: false,
+          authUser: data.user,
+        }).catch((error) => {
+          console.error("Signup marketplace refresh failed:", error);
+        });
       }
 
       return {
@@ -7835,7 +7963,7 @@ export function MarketplaceProvider({ children }) {
       hideThreadForCurrentUser,
       hotListings,
     isAdmin: currentUser?.role === "admin",
-    isAuthenticated: Boolean(currentUser),
+    isAuthenticated: Boolean(currentUserId),
     isBetaTester,
     isCreateListingOpen,
     isSuspended,
