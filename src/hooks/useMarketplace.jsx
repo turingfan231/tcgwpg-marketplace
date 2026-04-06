@@ -101,24 +101,15 @@ const PROFILE_BOOT_COLUMNS = [
   "role",
   "name",
   "username",
-  "default_listing_game",
   "avatar_url",
   "neighborhood",
-  "postal_code",
   "badges",
   "verified",
-  "account_status",
-  "banner_style",
-  "favorite_games",
-  "followed_seller_ids",
-  "followed_store_slugs",
-  "meetup_preferences",
   "response_time",
   "completed_deals",
   "created_at",
-  "onboarding_complete",
 ].join(",");
-const PROFILE_FULL_COLUMNS = `${PROFILE_BOOT_COLUMNS},email,bio`;
+const PROFILE_FULL_COLUMNS = `${PROFILE_BOOT_COLUMNS},default_listing_game,postal_code,account_status,banner_style,favorite_games,followed_seller_ids,followed_store_slugs,meetup_preferences,onboarding_complete,email,bio`;
 const LISTING_BOOT_COLUMNS = [
   "id",
   "seller_id",
@@ -769,6 +760,15 @@ async function withTimeout(promise, timeoutMs, label = "Request timed out") {
     if (timeoutId) {
       window.clearTimeout(timeoutId);
     }
+  }
+}
+
+async function withTimeoutResult(promise, timeoutMs, label = "Request timed out") {
+  try {
+    const result = await withTimeout(promise, timeoutMs, label);
+    return result;
+  } catch (error) {
+    return { data: null, error };
   }
 }
 
@@ -2855,6 +2855,72 @@ export function MarketplaceProvider({ children }) {
     return fromProfileRow(insertedProfile);
   }, []);
 
+  const hydrateListingProfiles = useCallback(
+    async (listingRows = [], authedUserId = null, authUser = null) => {
+      if (!isSupabaseConfigured) {
+        return [];
+      }
+
+      const profileIds = [...new Set(
+        (listingRows || [])
+          .map((listing) => String(listing?.sellerId || listing?.seller_id || "").trim())
+          .filter(Boolean),
+      )];
+
+      if (authedUserId) {
+        const normalizedAuthedUserId = String(authedUserId).trim();
+        if (normalizedAuthedUserId && !profileIds.includes(normalizedAuthedUserId)) {
+          profileIds.push(normalizedAuthedUserId);
+        }
+      }
+
+      if (!profileIds.length) {
+        return [];
+      }
+
+      const profileResult = await selectWithProfileFallback(
+        (columns) => supabase.from("profiles").select(columns).in("id", profileIds),
+        profileBootColumnsRef.current,
+      );
+
+      if (profileResult.error) {
+        throw profileResult.error;
+      }
+
+      if (profileResult.resolvedColumns) {
+        profileBootColumnsRef.current = profileResult.resolvedColumns;
+      }
+
+      const normalizedProfiles = (profileResult.data || [])
+        .map((row) => mergeAuthedProfileMetadata(row, authUser))
+        .map(fromProfileRow);
+
+      setUsers((current) => {
+        const nextById = new Map(current.map((user) => [String(user.id || ""), user]));
+
+        normalizedProfiles.forEach((profile) => {
+          const profileId = String(profile.id || "");
+          if (!profileId) {
+            return;
+          }
+
+          if (authedUserId && profileId === String(authedUserId)) {
+            const existingProfile = nextById.get(profileId);
+            nextById.set(profileId, existingProfile || profile);
+            return;
+          }
+
+          nextById.set(profileId, profile);
+        });
+
+        return Array.from(nextById.values());
+      });
+
+      return normalizedProfiles;
+    },
+    [],
+  );
+
   const loadSellerTrustData = useCallback(async () => {
     if (!isSupabaseConfigured) {
       return [];
@@ -3132,10 +3198,6 @@ export function MarketplaceProvider({ children }) {
       }
 
       try {
-        const profilesPromise = selectWithProfileFallback(
-          (columns) => supabase.from("profiles").select(columns),
-          profileBootColumnsRef.current,
-        );
         const manualEventsPromise = (async () => {
           let result = await supabase.from("manual_events").select(MANUAL_EVENT_COLUMNS);
           if (
@@ -3148,27 +3210,25 @@ export function MarketplaceProvider({ children }) {
           return result;
         })();
         const [
-          profilesRes,
           listingsRes,
           manualEventsRes,
           siteSettingsRes,
           wishlistsRes,
         ] =
           await Promise.all([
-          withTimeout(profilesPromise, QUERY_TIMEOUT_MS, "Profiles are taking too long to load."),
           withTimeout(
             supabase.from("listings").select(LISTING_BOOT_COLUMNS),
             QUERY_TIMEOUT_MS,
             "Listings are taking too long to load.",
           ),
-          withTimeout(manualEventsPromise, QUERY_TIMEOUT_MS, "Events are taking too long to load."),
-          withTimeout(
+          withTimeoutResult(manualEventsPromise, QUERY_TIMEOUT_MS, "Events are taking too long to load."),
+          withTimeoutResult(
             supabase.from("site_settings").select(SITE_SETTINGS_COLUMNS).eq("key", "global").maybeSingle(),
             QUERY_TIMEOUT_MS,
             "Settings are taking too long to load.",
           ),
           authedUserId
-            ? withTimeout(
+            ? withTimeoutResult(
                 supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId),
                 QUERY_TIMEOUT_MS,
                 "Wishlist is taking too long to load.",
@@ -3177,9 +3237,6 @@ export function MarketplaceProvider({ children }) {
         ]);
 
         if (listingsRes.error) throw listingsRes.error;
-        if (profilesRes.error) {
-          console.error("Profiles failed to load during critical hydrate:", profilesRes.error);
-        }
         if (manualEventsRes.error) {
           console.error("Events failed to load during critical hydrate:", manualEventsRes.error);
         }
@@ -3197,9 +3254,6 @@ export function MarketplaceProvider({ children }) {
           updateBootState(hasUsableCache ? 0.7 : 0.58, "Preparing listings");
         }
 
-        const normalizedProfiles = (profilesRes.data || [])
-          .map((row) => mergeAuthedProfileMetadata(row, authUser))
-          .map(fromProfileRow);
         const nextListings = (listingsRes.data || []).map(fromListingRow).filter(isSupportedListing);
         let nextManualEvents = (manualEventsRes.data || []).map(fromEventRow);
 
@@ -3215,13 +3269,16 @@ export function MarketplaceProvider({ children }) {
           }
         }
 
-        setUsers(normalizedProfiles);
         setListings(nextListings);
         setManualEvents(nextManualEvents);
         setWishlist((wishlistsRes.data || []).map((item) => item.listing_id));
         if (!siteSettingsRes.error && siteSettingsRes.data) {
           setSiteSettings(fromSiteSettingsRow(siteSettingsRes.data));
         }
+
+        void hydrateListingProfiles(nextListings, authedUserId, authUser).catch((error) => {
+          console.error("Profiles failed to load during critical hydrate:", error);
+        });
 
         if (shouldBlockUi) {
           updateBootState(hasUsableCache ? 0.9 : 0.82, "Finalizing home");
@@ -3230,7 +3287,7 @@ export function MarketplaceProvider({ children }) {
         updateSectionState("critical", "ready");
 
         const authedProfile = authedUserId
-          ? normalizedProfiles.find((profile) => String(profile.id) === String(authedUserId)) || null
+          ? users.find((profile) => String(profile.id) === String(authedUserId)) || currentUserRecord || null
           : null;
 
         if (!authedUserId) {
@@ -3267,10 +3324,10 @@ export function MarketplaceProvider({ children }) {
           secondaryTasks.push(() => loadSellerTrustData());
         }
         if (shouldLoadWorkspace) {
-          secondaryTasks.push(() => loadWorkspaceData(authedUserId, normalizedProfiles));
+          secondaryTasks.push(() => loadWorkspaceData(authedUserId, users));
         }
         if (shouldLoadEventAttendance) {
-          secondaryTasks.push(() => loadEventAttendanceFeed(normalizedProfiles));
+          secondaryTasks.push(() => loadEventAttendanceFeed(users));
         }
         if (shouldLoadAdmin) {
           secondaryTasks.push(() => loadAdminData(authedUserId));
@@ -3306,7 +3363,7 @@ export function MarketplaceProvider({ children }) {
         }
       }
     },
-    [currentUserId, hasUsableCache, listings.length, loadAdminData, loadEventAttendanceFeed, loadSellerTrustData, loadWorkspaceData, manualEvents.length, updateBootState, updateSectionState, users.length],
+    [currentUserId, currentUserRecord, hasUsableCache, hydrateListingProfiles, listings.length, loadAdminData, loadEventAttendanceFeed, loadSellerTrustData, loadWorkspaceData, manualEvents.length, updateBootState, updateSectionState, users],
   );
 
   const ensureSellerTrustLoaded = useCallback(
