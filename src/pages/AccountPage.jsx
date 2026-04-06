@@ -442,7 +442,7 @@ export default function AccountPage() {
       </header>
 
       <main className="hidden min-h-0 flex-1 overflow-y-auto lg:block">
-        <div className="mx-auto w-full max-w-[1540px] px-8 py-8">
+        <div className="mx-auto w-full max-w-[1380px] px-8 py-8">
           <div className="min-w-0 space-y-6">
             {(profileMessage || profileError || passwordMessage || passwordError || appealMessage || appealError || deleteError) ? (
               <div className="grid gap-3">
@@ -456,28 +456,28 @@ export default function AccountPage() {
               </div>
             ) : null}
 
-            <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.35fr)_420px]">
-              <div
-                className="overflow-hidden rounded-[30px] border p-6"
-                style={{
-                  background:
-                    "radial-gradient(circle at top right, rgba(239,68,68,0.12) 0%, transparent 28%), linear-gradient(180deg, rgba(20,20,24,0.96), rgba(12,12,16,0.98))",
-                  borderColor: "rgba(255,255,255,0.05)",
-                }}
-              >
-                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_220px] xl:items-center">
+            <div className="grid gap-8 xl:grid-cols-[320px_minmax(0,1fr)]">
+              <aside className="space-y-5 xl:sticky xl:top-8 xl:self-start">
+                <div
+                  className="overflow-hidden rounded-[28px] border p-5"
+                  style={{
+                    background:
+                      "radial-gradient(circle at top right, rgba(239,68,68,0.12) 0%, transparent 30%), linear-gradient(180deg, rgba(20,20,24,0.96), rgba(12,12,16,0.98))",
+                    borderColor: "rgba(255,255,255,0.05)",
+                  }}
+                >
                   <div className="flex items-start gap-4">
-                    <div className="relative">
+                    <div className="relative shrink-0">
                       {avatarPreviewUrl ? (
                         <img
                           alt="Profile"
-                          className="h-[82px] w-[82px] rounded-[24px] object-cover"
+                          className="h-[78px] w-[78px] rounded-[22px] object-cover"
                           src={avatarPreviewUrl}
                           style={{ boxShadow: `0 10px 28px ${m.redGlow}` }}
                         />
                       ) : (
                         <div
-                          className="flex h-[82px] w-[82px] items-center justify-center rounded-[24px] text-[30px] text-white"
+                          className="flex h-[78px] w-[78px] items-center justify-center rounded-[22px] text-[28px] text-white"
                           style={{ background: m.redGradient, boxShadow: `0 10px 28px ${m.redGlow}`, fontWeight: 700 }}
                         >
                           {String(currentUser?.publicName || currentUser?.name || currentUser?.username || "U").charAt(0).toUpperCase()}
@@ -492,15 +492,15 @@ export default function AccountPage() {
                         </div>
                       ) : null}
                     </div>
-                    <div className="min-w-0 pt-2">
-                      <p className="text-[30px] text-white" style={{ fontWeight: 800, lineHeight: 1.05 }}>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[26px] text-white" style={{ fontWeight: 800, lineHeight: 1.05 }}>
                         {currentUser?.publicName || currentUser?.name || currentUser?.username || "Account"}
                       </p>
-                      <div className="mt-2 flex items-center gap-1.5">
-                        <MapPin size={12} style={{ color: "#5e5e66" }} />
-                        <span className="text-[12px]" style={{ color: "#8a8a92" }}>{currentUser?.neighborhood || "Winnipeg, MB"}</span>
-                        <span className="text-[12px]" style={{ color: "#44444c" }}>•</span>
-                        <span className="text-[12px]" style={{ color: "#5e5e66" }}>Since {joinedLabel}</span>
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px]" style={{ color: "#7a7a82" }}>
+                        <MapPin size={12} />
+                        <span>{currentUser?.neighborhood || "Winnipeg, MB"}</span>
+                        <span style={{ color: "#44444c" }}>•</span>
+                        <span>Since {joinedLabel}</span>
                       </div>
                       <div className="mt-3 flex flex-wrap gap-2">
                         {currentUser?.verified ? (
@@ -520,103 +520,104 @@ export default function AccountPage() {
                           </div>
                         ) : null}
                       </div>
-                      <p className="mt-4 max-w-[42rem] text-[13px]" style={{ color: "#7a7a82", lineHeight: 1.6 }}>
-                        Manage your marketplace identity, seller preferences, security, and account tools from one desktop workspace.
-                      </p>
                     </div>
                   </div>
-                  <div className="grid shrink-0 gap-2 xl:self-center">
-                    <PrimaryButton className="!h-[48px] !rounded-[16px] !px-5" onClick={() => navigate("/dashboard")}>
+
+                  <p className="mt-4 text-[12px]" style={{ color: "#7a7a82", lineHeight: 1.55 }}>
+                    Manage your seller identity, saved cards, meetup preferences, and account tools from one desktop workspace.
+                  </p>
+
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <div className="rounded-[18px] border px-4 py-3" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
+                      <p className="text-[10px] uppercase tracking-[0.08em]" style={{ color: "#5e5e66", fontWeight: 700 }}>Active</p>
+                      <p className="mt-2 text-[28px] text-white" style={{ fontWeight: 800 }}>{currentUserListings.length}</p>
+                    </div>
+                    <div className="rounded-[18px] border px-4 py-3" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
+                      <p className="text-[10px] uppercase tracking-[0.08em]" style={{ color: "#5e5e66", fontWeight: 700 }}>Saved</p>
+                      <p className="mt-2 text-[28px] text-white" style={{ fontWeight: 800 }}>{wishlist.length}</p>
+                    </div>
+                    <button
+                      className="rounded-[18px] border px-4 py-3 text-left transition-colors hover:bg-white/[0.03]"
+                      style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}
+                      type="button"
+                      onClick={() => setSheet("followers")}
+                    >
+                      <p className="text-[10px] uppercase tracking-[0.08em]" style={{ color: "#5e5e66", fontWeight: 700 }}>Followers</p>
+                      <p className="mt-2 text-[28px] text-white" style={{ fontWeight: 800 }}>{followerCount}</p>
+                    </button>
+                    <div className="rounded-[18px] border px-4 py-3" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
+                      <p className="text-[10px] uppercase tracking-[0.08em]" style={{ color: "#5e5e66", fontWeight: 700 }}>Unread</p>
+                      <p className="mt-2 text-[28px] text-white" style={{ fontWeight: 800 }}>{unreadNotificationCount}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid gap-2">
+                    <PrimaryButton className="!h-[46px] !rounded-[16px] !px-5" onClick={() => navigate("/dashboard")}>
                       Seller Dashboard
                     </PrimaryButton>
-                    <SecondaryButton className="!h-[48px] !rounded-[16px] !px-5" onClick={() => navigate(publicProfileHref)}>
+                    <SecondaryButton className="!h-[46px] !rounded-[16px] !px-5" onClick={() => navigate(publicProfileHref)}>
                       View Public Profile
                     </SecondaryButton>
                   </div>
                 </div>
-              </div>
+              </aside>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div className="flex min-h-[184px] flex-col rounded-[24px] border px-4 py-4" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
-                  <p className="text-[10px] uppercase tracking-[0.08em]" style={{ color: "#5e5e66", fontWeight: 700 }}>Active</p>
-                  <p className="mt-auto text-[34px] text-white" style={{ fontWeight: 800 }}>{currentUserListings.length}</p>
-                  <p className="mt-2 text-[11px]" style={{ color: "#6a6a72", lineHeight: 1.45 }}>Listings currently visible in the marketplace.</p>
+              <div className="grid gap-6 xl:grid-cols-2">
+                <div className="space-y-6">
+                  <SettingsGroup title="Overview">
+                    <SettingsRow icon={Bell} iconColor="#f87171" label="Notification Center" sublabel="Messages, offers, reminders, and updates" value={String(unreadNotificationCount)} onClick={() => navigate("/notifications")} />
+                    <SettingsRow icon={Users} iconColor="#6ee7b7" label="Followers" sublabel="See who follows your seller profile" value={String(followerCount)} onClick={() => setSheet("followers")} />
+                    <SettingsRow icon={Eye} iconColor="#a78bfa" isLast={!canInstall} label="Public Seller Profile" sublabel="See how buyers view your profile" onClick={() => navigate(publicProfileHref)} />
+                    {canInstall ? (
+                      <SettingsRow
+                        icon={Download}
+                        iconColor="#fca5a5"
+                        isLast
+                        label="Install App"
+                        sublabel="Add TCG WPG to your home screen"
+                        value={installValue}
+                        onClick={() => openManualPrompt()}
+                      />
+                    ) : null}
+                  </SettingsGroup>
+
+                  <SettingsGroup title="Marketplace">
+                    <SettingsRow icon={Heart} iconColor="#f87171" label="Wishlist" sublabel="Saved cards and watchlist" value={String(wishlist.length)} onClick={() => navigate("/wishlist")} />
+                    <SettingsRow icon={BookOpenText} iconColor="#60a5fa" label="Collection" sublabel="Your binder and collection value" value={String(collectionItems.length)} onClick={() => navigate("/collection")} />
+                    <SettingsRow icon={BarChart3} iconColor="#ef4444" label="Seller Dashboard" sublabel="Listings, drafts, and offers" value={String(currentUserListings.length)} isLast onClick={() => navigate("/dashboard")} />
+                  </SettingsGroup>
+
+                  <SettingsGroup title="Meetup">
+                    <SettingsRow icon={MapPin} iconColor="#f87171" label="Trusted Meetup Spots" sublabel="Manage your preferred public meetup locations" value={meetupSummary} onClick={() => setSheet("preferences")} />
+                    <SettingsRow icon={MapPin} iconColor="#60a5fa" label="Meetup Notes" sublabel={profileForm.meetupPreferences || "No meetup notes added"} isLast onClick={() => setSheet("preferences")} />
+                  </SettingsGroup>
                 </div>
-                <div className="flex min-h-[184px] flex-col rounded-[24px] border px-4 py-4" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
-                  <p className="text-[10px] uppercase tracking-[0.08em]" style={{ color: "#5e5e66", fontWeight: 700 }}>Saved</p>
-                  <p className="mt-auto text-[34px] text-white" style={{ fontWeight: 800 }}>{wishlist.length}</p>
-                  <p className="mt-2 text-[11px]" style={{ color: "#6a6a72", lineHeight: 1.45 }}>Cards you are tracking from around Winnipeg.</p>
+
+                <div className="space-y-6">
+                  <SettingsGroup title="Seller">
+                    <SettingsRow icon={Gamepad2} iconColor="#fbbf24" label="Favorite Games" sublabel={favoriteGamesLabel} onClick={() => setSheet("preferences")} />
+                    <SettingsRow icon={Shield} iconColor="#60a5fa" label="Profile Details" sublabel={`${profileForm.username || "No username"} / ${profileForm.neighborhood || "Winnipeg"}`} onClick={() => setSheet("profile")} />
+                    <SettingsRow icon={Star} iconColor="#6ee7b7" label="Default Listing Game" sublabel={profileForm.defaultListingGame || "Not set"} isLast onClick={() => setSheet("preferences")} />
+                  </SettingsGroup>
+
+                  <SettingsGroup title="Privacy & Security">
+                    <SettingsRow icon={Lock} iconColor="#a78bfa" label="Password & Security" sublabel="Change your password" onClick={() => setSheet("security")} />
+                    {isAdmin ? (
+                      <SettingsRow badge="Admin" icon={ShieldCheck} iconColor="#fbbf24" label="Admin Panel" sublabel="Moderation and controls" isLast onClick={() => navigate("/admin")} />
+                    ) : (
+                      <SettingsRow icon={Flag} iconColor="#fb7185" label="Suspension Appeal" sublabel={isSuspended ? "Explain the situation to admin support" : "Appeal options unavailable"} value={isSuspended ? undefined : "Locked"} isLast onClick={() => { if (isSuspended) setSheet("appeal"); }} />
+                    )}
+                  </SettingsGroup>
+
+                  <SettingsGroup title="Support">
+                    {!isAdmin ? (
+                      <SettingsRow badge={bugReportsForCurrentUser.length ? String(bugReportsForCurrentUser.length) : undefined} icon={Bug} iconColor="#fb7185" label="Bug Reports" sublabel="Beta feedback and QA reports" onClick={() => navigate("/beta/bugs")} />
+                    ) : null}
+                    <SettingsRow icon={HelpCircle} iconColor="#60a5fa" label="Help & Support" sublabel="Open a support conversation in inbox" onClick={() => navigate("/inbox")} />
+                    <SettingsRow destructive icon={LogOut} iconColor="#f87171" label="Log Out" onClick={() => void handleLogout()} />
+                    <SettingsRow destructive icon={Trash2} iconColor="#f87171" isLast label="Delete Account" sublabel="Remove your marketplace profile and access" onClick={() => void handleDeleteAccount()} />
+                  </SettingsGroup>
                 </div>
-                <button
-                  className="flex min-h-[184px] flex-col rounded-[24px] border px-4 py-4 text-left transition-colors hover:bg-white/[0.03]"
-                  style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}
-                  type="button"
-                  onClick={() => setSheet("followers")}
-                >
-                  <p className="text-[10px] uppercase tracking-[0.08em]" style={{ color: "#5e5e66", fontWeight: 700 }}>Followers</p>
-                  <p className="mt-auto text-[34px] text-white" style={{ fontWeight: 800 }}>{followerCount}</p>
-                  <p className="mt-2 text-[11px]" style={{ color: "#6a6a72", lineHeight: 1.45 }}>People following your public seller profile.</p>
-                </button>
-              </div>
-            </div>
-
-            <div className="grid gap-6 xl:grid-cols-3">
-              <div className="space-y-6">
-                <SettingsGroup title="Overview">
-                  <SettingsRow icon={Bell} iconColor="#f87171" label="Notification Center" sublabel="Messages, offers, reminders, and updates" value={String(unreadNotificationCount)} onClick={() => navigate("/notifications")} />
-                  <SettingsRow icon={Users} iconColor="#6ee7b7" label="Followers" sublabel="See who follows your seller profile" value={String(followerCount)} onClick={() => setSheet("followers")} />
-                  <SettingsRow icon={Eye} iconColor="#a78bfa" isLast={!canInstall} label="Public Seller Profile" sublabel="See how buyers view your profile" onClick={() => navigate(publicProfileHref)} />
-                  {canInstall ? (
-                    <SettingsRow
-                      icon={Download}
-                      iconColor="#fca5a5"
-                      isLast
-                      label="Install App"
-                      sublabel="Add TCG WPG to your home screen"
-                      value={installValue}
-                      onClick={() => openManualPrompt()}
-                    />
-                  ) : null}
-                </SettingsGroup>
-
-                <SettingsGroup title="Meetup">
-                  <SettingsRow icon={MapPin} iconColor="#f87171" label="Trusted Meetup Spots" sublabel="Manage your preferred public meetup locations" value={meetupSummary} onClick={() => setSheet("preferences")} />
-                  <SettingsRow icon={MapPin} iconColor="#60a5fa" label="Meetup Notes" sublabel={profileForm.meetupPreferences || "No meetup notes added"} isLast onClick={() => setSheet("preferences")} />
-                </SettingsGroup>
-
-                <SettingsGroup title="Privacy & Security">
-                  <SettingsRow icon={Lock} iconColor="#a78bfa" label="Password & Security" sublabel="Change your password" onClick={() => setSheet("security")} />
-                  {isAdmin ? (
-                    <SettingsRow badge="Admin" icon={ShieldCheck} iconColor="#fbbf24" label="Admin Panel" sublabel="Moderation and controls" isLast onClick={() => navigate("/admin")} />
-                  ) : (
-                    <SettingsRow icon={Flag} iconColor="#fb7185" label="Suspension Appeal" sublabel={isSuspended ? "Explain the situation to admin support" : "Appeal options unavailable"} value={isSuspended ? undefined : "Locked"} isLast onClick={() => { if (isSuspended) setSheet("appeal"); }} />
-                  )}
-                </SettingsGroup>
-              </div>
-
-              <div className="space-y-6">
-                <SettingsGroup title="Marketplace">
-                  <SettingsRow icon={Heart} iconColor="#f87171" label="Wishlist" sublabel="Saved cards and watchlist" value={String(wishlist.length)} onClick={() => navigate("/wishlist")} />
-                  <SettingsRow icon={BookOpenText} iconColor="#60a5fa" label="Collection" sublabel="Your binder and collection value" value={String(collectionItems.length)} onClick={() => navigate("/collection")} />
-                  <SettingsRow icon={BarChart3} iconColor="#ef4444" label="Seller Dashboard" sublabel="Listings, drafts, and offers" value={String(currentUserListings.length)} isLast onClick={() => navigate("/dashboard")} />
-                </SettingsGroup>
-
-                <SettingsGroup title="Seller">
-                  <SettingsRow icon={Gamepad2} iconColor="#fbbf24" label="Favorite Games" sublabel={favoriteGamesLabel} onClick={() => setSheet("preferences")} />
-                  <SettingsRow icon={Shield} iconColor="#60a5fa" label="Profile Details" sublabel={`${profileForm.username || "No username"} / ${profileForm.neighborhood || "Winnipeg"}`} onClick={() => setSheet("profile")} />
-                  <SettingsRow icon={Star} iconColor="#6ee7b7" label="Default Listing Game" sublabel={profileForm.defaultListingGame || "Not set"} isLast onClick={() => setSheet("preferences")} />
-                </SettingsGroup>
-              </div>
-
-              <div className="space-y-6">
-                <SettingsGroup title="Support">
-                  {!isAdmin ? (
-                    <SettingsRow badge={bugReportsForCurrentUser.length ? String(bugReportsForCurrentUser.length) : undefined} icon={Bug} iconColor="#fb7185" label="Bug Reports" sublabel="Beta feedback and QA reports" onClick={() => navigate("/beta/bugs")} />
-                  ) : null}
-                  <SettingsRow icon={HelpCircle} iconColor="#60a5fa" label="Help & Support" sublabel="Open a support conversation in inbox" onClick={() => navigate("/inbox")} />
-                  <SettingsRow destructive icon={LogOut} iconColor="#f87171" label="Log Out" onClick={() => void handleLogout()} />
-                  <SettingsRow destructive icon={Trash2} iconColor="#f87171" isLast label="Delete Account" sublabel="Remove your marketplace profile and access" onClick={() => void handleDeleteAccount()} />
-                </SettingsGroup>
               </div>
             </div>
           </div>

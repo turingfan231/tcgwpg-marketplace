@@ -420,7 +420,7 @@ function HotListingCard({ listing }) {
 
   return (
     <motion.button
-      className="w-[120px] shrink-0 cursor-pointer overflow-hidden rounded-xl text-left lg:w-auto lg:rounded-[18px]"
+      className="w-full min-w-0 cursor-pointer overflow-hidden rounded-xl text-left lg:rounded-[18px]"
       data-listing-link={listing.id}
       style={{
         background: "rgba(255,255,255,0.03)",
@@ -430,7 +430,7 @@ function HotListingCard({ listing }) {
       whileTap={{ scale: 0.97 }}
       onClick={() => rememberAndNavigateToListing(navigate, location, listing.id)}
     >
-      <div className="relative h-[90px] overflow-hidden lg:h-[132px]">
+      <div className="relative h-[108px] overflow-hidden lg:h-[132px]">
         <img
           alt={listing.title}
           className="h-full w-full object-cover"
@@ -460,11 +460,11 @@ function HotListingCard({ listing }) {
           {formatPrice(listing.priceCad ?? listing.price, listing.priceCurrency || "CAD")}
         </span>
       </div>
-      <div className="px-2 py-1.5 lg:px-3 lg:py-2.5">
-        <p className="truncate text-[10.5px] lg:text-[12px]" style={{ fontWeight: 600, color: "#d0d0d8" }}>
+      <div className="px-2 py-2 lg:px-3 lg:py-2.5">
+        <p className="line-clamp-2 text-[10.5px] leading-[1.25] lg:text-[12px]" style={{ fontWeight: 600, color: "#d0d0d8" }}>
           {listing.title}
         </p>
-        <p className="mt-[1px] truncate text-[9px] lg:text-[10px]" style={{ fontWeight: 400, color: "#444450" }}>
+        <p className="mt-[3px] truncate text-[9px] lg:text-[10px]" style={{ fontWeight: 400, color: "#444450" }}>
           {sellerLabel(listing.seller || listing)}
         </p>
       </div>
@@ -808,14 +808,14 @@ export default function HomePage() {
             <HeroCarousel slides={heroSlides} />
 
             <SectionHeader title="Hot Listings" to="/market" />
-            <div className="flex gap-2 overflow-x-auto px-4 no-scrollbar lg:grid lg:grid-cols-4 lg:gap-4 lg:px-0" style={{ scrollbarWidth: "none" }}>
+            <div className="grid grid-cols-2 gap-2 px-4 lg:grid-cols-4 lg:gap-4 lg:px-0">
               {criticalLoading && !hotListings.length ? Array.from({ length: 4 }).map((_, index) => (
                 <div
                   key={`hot-loading-${index}`}
-                  className="min-w-[240px] animate-pulse rounded-[18px] border lg:min-w-0"
+                  className="animate-pulse rounded-[18px] border"
                   style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.05)" }}
                 >
-                  <div className="h-[138px] rounded-t-[18px]" style={{ background: "rgba(255,255,255,0.04)" }} />
+                  <div className="h-[108px] rounded-t-[18px] lg:h-[138px]" style={{ background: "rgba(255,255,255,0.04)" }} />
                   <div className="space-y-2 p-3">
                     <div className="h-4 w-20 rounded-full" style={{ background: "rgba(255,255,255,0.05)" }} />
                     <div className="h-3 w-3/4 rounded-full" style={{ background: "rgba(255,255,255,0.04)" }} />

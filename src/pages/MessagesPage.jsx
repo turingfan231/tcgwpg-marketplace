@@ -238,6 +238,8 @@ export default function MessagesPage() {
   const [showThreadActions, setShowThreadActions] = useState(false);
   const feedRef = useRef(null);
   const workspaceHydratedForRef = useRef("");
+  const stableThreadsRef = useRef([]);
+  const stableThreadRef = useRef(null);
 
   useEffect(() => {
     if (!currentUserId) {
@@ -282,14 +284,35 @@ export default function MessagesPage() {
   const activeThread = useMemo(() => (threadId ? getThreadById(threadId) : null), [getThreadById, threadId]);
   const workspaceLoading = sectionStatus.workspace === "loading";
   const workspaceError = sectionErrors.workspace || "";
-  const threadOffers = useMemo(() => (!activeThread?.listingId ? [] : [...(offersByListingId[activeThread.listingId] || [])].sort((a, b) => new Date(a.createdAt || a.updatedAt || 0).getTime() - new Date(b.createdAt || b.updatedAt || 0).getTime())), [activeThread?.listingId, offersByListingId]);
+  useEffect(() => {
+    if (filteredThreads.length || !workspaceLoading) {
+      stableThreadsRef.current = filteredThreads;
+    }
+  }, [filteredThreads, workspaceLoading]);
+
+  useEffect(() => {
+    if (activeThread) {
+      stableThreadRef.current = activeThread;
+      return;
+    }
+    if (!workspaceLoading) {
+      stableThreadRef.current = null;
+    }
+  }, [activeThread, workspaceLoading]);
+
+  const visibleThreads = workspaceLoading && !filteredThreads.length && stableThreadsRef.current.length
+    ? stableThreadsRef.current
+    : filteredThreads;
+  const visibleThread = activeThread || (workspaceLoading ? stableThreadRef.current : null);
+
+  const threadOffers = useMemo(() => (!visibleThread?.listingId ? [] : [...(offersByListingId[visibleThread.listingId] || [])].sort((a, b) => new Date(a.createdAt || a.updatedAt || 0).getTime() - new Date(b.createdAt || b.updatedAt || 0).getTime())), [visibleThread?.listingId, offersByListingId]);
   const timeline = useMemo(() => {
-    if (!activeThread) return [];
-    const messageItems = (activeThread.messages || []).map((message) => ({ id: `message-${message.id}`, timestamp: new Date(message.sentAt || 0).getTime(), type: "message", value: message }));
+    if (!visibleThread) return [];
+    const messageItems = (visibleThread.messages || []).map((message) => ({ id: `message-${message.id}`, timestamp: new Date(message.sentAt || 0).getTime(), type: "message", value: message }));
     const offerItems = threadOffers.map((offer) => ({ id: `offer-${offer.id}`, timestamp: new Date(offer.createdAt || offer.updatedAt || 0).getTime(), type: "offer", value: offer }));
     return [...messageItems, ...offerItems].sort((a, b) => a.timestamp - b.timestamp);
-  }, [activeThread, threadOffers]);
-  const quickReplies = useMemo(() => (!activeThread?.listing ? [] : ["Still available?", "Can you send more photos?", "What meetup spot works best?", "Open to a counter?"]), [activeThread?.listing]);
+  }, [threadOffers, visibleThread]);
+  const quickReplies = useMemo(() => (!visibleThread?.listing ? [] : ["Still available?", "Can you send more photos?", "What meetup spot works best?", "Open to a counter?"]), [visibleThread?.listing]);
 
   useEffect(() => {
     if (activeThread?.id) void markThreadRead(activeThread.id, { thread: activeThread });
@@ -457,12 +480,12 @@ export default function MessagesPage() {
               {workspaceError}
             </div>
           ) : null}
-          {workspaceLoading && !filteredThreads.length ? (
+          {workspaceLoading && !visibleThreads.length ? (
             <LoadingPanel
               description="Pulling your conversations, offers, and draft threads."
               title="Loading inbox"
             />
-          ) : filteredThreads.length ? (
+          ) : visibleThreads.length ? (
             <div
               className="overflow-hidden rounded-[24px] border lg:min-w-0"
               style={{
@@ -471,7 +494,7 @@ export default function MessagesPage() {
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.02)",
               }}
             >
-              {filteredThreads.map((thread) => (
+              {visibleThreads.map((thread) => (
                 <ThreadRow key={thread.id} thread={thread} onClick={() => navigate(`/inbox/${thread.id}`)} />
               ))}
             </div>
@@ -505,7 +528,7 @@ export default function MessagesPage() {
     );
   }
 
-  if (!activeThread) {
+  if (!visibleThread) {
     return (
       <MobileScreen>
         <SeoHead canonicalPath={`/inbox/${threadId}`} description="Manage conversations, offers, and meetup details." title="Conversation" />
@@ -524,13 +547,13 @@ export default function MessagesPage() {
     );
   }
 
-  const participant = activeThread.otherParticipant || { name: activeThread.participantLabel };
+  const participant = visibleThread.otherParticipant || { name: visibleThread.participantLabel };
   const participantName = sellerLabel(participant);
-  const listing = activeThread.listing;
+  const listing = visibleThread.listing;
 
   return (
     <MobileScreen>
-      <SeoHead canonicalPath={`/inbox/${activeThread.id}`} description="Manage conversations, offers, and meetup details." title={participantName} />
+      <SeoHead canonicalPath={`/inbox/${visibleThread.id}`} description="Manage conversations, offers, and meetup details." title={participantName} />
 
       <div className="hidden lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-[360px_minmax(0,1fr)_340px] lg:gap-6 lg:px-6 lg:py-6 xl:px-8">
         <aside className="min-h-0 overflow-hidden rounded-[28px] border" style={{ background: "rgba(255,255,255,0.015)", borderColor: "rgba(255,255,255,0.05)" }}>
@@ -580,14 +603,14 @@ export default function MessagesPage() {
             </div>
           </div>
           <div className="min-h-0 overflow-y-auto">
-            {workspaceLoading && !filteredThreads.length ? (
+            {workspaceLoading && !visibleThreads.length ? (
               <div className="p-5">
                 <LoadingPanel
                   description="Pulling your conversations, offers, and draft threads."
                   title="Loading inbox"
                 />
               </div>
-            ) : filteredThreads.length ? filteredThreads.map((thread) => (
+            ) : visibleThreads.length ? visibleThreads.map((thread) => (
               <ThreadRow key={`desktop-thread-${thread.id}`} thread={thread} onClick={() => navigate(`/inbox/${thread.id}`)} />
             )) : (
               <div className="p-5">
