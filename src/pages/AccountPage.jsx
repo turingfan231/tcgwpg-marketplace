@@ -6,6 +6,7 @@ import {
   Camera,
   CheckCircle2,
   ChevronRight,
+  Download,
   Eye,
   Flag,
   Gamepad2,
@@ -28,6 +29,7 @@ import SeoHead from "../components/seo/SeoHead";
 import UserAvatar from "../components/shared/UserAvatar";
 import { neighborhoods } from "../data/mockData";
 import { approvedMeetupSpots } from "../data/storefrontData";
+import { useInstallPrompt } from "../hooks/useInstallPrompt";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { m } from "../mobile/design";
 import {
@@ -139,6 +141,7 @@ function FollowerRow({ seller, onClick }) {
 
 export default function AccountPage() {
   const navigate = useNavigate();
+  const { canInstall, ios, openManualPrompt } = useInstallPrompt();
   const {
     bugReportsForCurrentUser,
     changeCurrentUserPassword,
@@ -183,6 +186,7 @@ export default function AccountPage() {
     : "Marketplace member";
   const favoriteGamesLabel = profileForm.favoriteGames.length ? profileForm.favoriteGames.join(", ") : "Not set";
   const meetupSummary = profileForm.trustedMeetupSpots.length ? `${profileForm.trustedMeetupSpots.length} saved` : "Not set";
+  const installValue = canInstall ? (ios ? "Home Screen" : "Available") : "";
   const followerUsers = useMemo(
     () =>
       (Array.isArray(sellers) ? sellers : []).filter((seller) =>
@@ -561,7 +565,18 @@ export default function AccountPage() {
                 <SettingsGroup title="Overview">
                   <SettingsRow icon={Bell} iconColor="#f87171" label="Notification Center" sublabel="Messages, offers, reminders, and updates" value={String(unreadNotificationCount)} onClick={() => navigate("/notifications")} />
                   <SettingsRow icon={Users} iconColor="#6ee7b7" label="Followers" sublabel="See who follows your seller profile" value={String(followerCount)} onClick={() => setSheet("followers")} />
-                  <SettingsRow icon={Eye} iconColor="#a78bfa" isLast label="Public Seller Profile" sublabel="See how buyers view your profile" onClick={() => navigate(publicProfileHref)} />
+                  <SettingsRow icon={Eye} iconColor="#a78bfa" isLast={!canInstall} label="Public Seller Profile" sublabel="See how buyers view your profile" onClick={() => navigate(publicProfileHref)} />
+                  {canInstall ? (
+                    <SettingsRow
+                      icon={Download}
+                      iconColor="#fca5a5"
+                      isLast
+                      label="Install App"
+                      sublabel="Add TCG WPG to your home screen"
+                      value={installValue}
+                      onClick={() => openManualPrompt()}
+                    />
+                  ) : null}
                 </SettingsGroup>
 
                 <SettingsGroup title="Meetup">
@@ -630,7 +645,18 @@ export default function AccountPage() {
           <SettingsRow icon={BookOpenText} iconColor="#60a5fa" label="Collection" sublabel="Your binder and collection value" value={String(collectionItems.length)} onClick={() => navigate("/collection")} />
           <SettingsRow icon={BarChart3} iconColor="#ef4444" label="Seller Dashboard" sublabel="Listings, drafts, and offers" value={String(currentUserListings.length)} onClick={() => navigate("/dashboard")} />
           <SettingsRow icon={Users} iconColor="#6ee7b7" label="Followers" sublabel="See who follows your seller profile" value={String(followerCount)} onClick={() => setSheet("followers")} />
-          <SettingsRow icon={Eye} iconColor="#a78bfa" isLast label="Public Seller Profile" sublabel="See how buyers view your profile" onClick={() => navigate(publicProfileHref)} />
+          <SettingsRow icon={Eye} iconColor="#a78bfa" isLast={!canInstall} label="Public Seller Profile" sublabel="See how buyers view your profile" onClick={() => navigate(publicProfileHref)} />
+          {canInstall ? (
+            <SettingsRow
+              icon={Download}
+              iconColor="#fca5a5"
+              isLast
+              label="Install App"
+              sublabel="Add TCG WPG to your home screen"
+              value={installValue}
+              onClick={() => openManualPrompt()}
+            />
+          ) : null}
         </SettingsGroup>
 
         <SettingsGroup title="Meetup">

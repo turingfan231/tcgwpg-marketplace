@@ -4,6 +4,7 @@ import AppShell from "./components/layout/AppShell";
 import AppErrorBoundary from "./components/ui/AppErrorBoundary";
 import AppLaunchScreen from "./components/ui/AppLaunchScreen";
 import ProtectedRoute from "./components/ui/ProtectedRoute";
+import { InstallPromptProvider } from "./hooks/useInstallPrompt";
 import { MarketplaceProvider } from "./hooks/useMarketplace";
 import AccountPageDev from "./pages/AccountPage";
 import AdminPageDev from "./pages/AdminPage";
@@ -63,51 +64,53 @@ export default function App() {
   return (
     <AppErrorBoundary>
       <MarketplaceProvider>
-        <BrowserRouter
-          future={{
-            v7_relativeSplatPath: true,
-            v7_startTransition: true,
-          }}
-        >
-          <Suspense fallback={<AppLaunchScreen compact />}>
-            <Routes>
-              <Route element={<AppShell />}>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/auth" element={<AuthPage />} />
-                <Route path="/market" element={<MarketPage />} />
-                <Route path="/market/:gameSlug" element={<MarketPage />} />
-                <Route path="/listing/:listingId" element={<ListingDetailPage />} />
-                <Route path="/sell" element={<CreateListingPage />} />
-                <Route path="/offer/:listingId" element={<OfferPage />} />
-                <Route path="/seller/:sellerId" element={<SellerProfilePage />} />
-                <Route path="/sellers" element={<SellersPage />} />
-                <Route path="/stores" element={<StoresPage />} />
-                <Route path="/stores/:storeSlug" element={<StoreProfilePage />} />
-                <Route path="/events" element={<EventsPage />} />
-                <Route path="/wtb" element={<WantToBuyPage />} />
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/account" element={<AccountPage />} />
-                  <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route path="/account/dashboard" element={<DashboardPage />} />
-                  <Route path="/collection" element={<CollectionPage />} />
-                  <Route path="/wishlist" element={<WishlistPage />} />
-                  <Route path="/notifications" element={<NotificationsPage />} />
-                  <Route path="/inbox" element={<MessagesPage />} />
-                  <Route path="/inbox/:threadId" element={<MessagesPage />} />
-                  <Route path="/messages" element={<Navigate replace to="/inbox" />} />
-                  <Route path="/messages/:threadId" element={<MessagesPage />} />
+        <InstallPromptProvider>
+          <BrowserRouter
+            future={{
+              v7_relativeSplatPath: true,
+              v7_startTransition: true,
+            }}
+          >
+            <Suspense fallback={<AppLaunchScreen compact />}>
+              <Routes>
+                <Route element={<AppShell />}>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/market" element={<MarketPage />} />
+                  <Route path="/market/:gameSlug" element={<MarketPage />} />
+                  <Route path="/listing/:listingId" element={<ListingDetailPage />} />
+                  <Route path="/sell" element={<CreateListingPage />} />
+                  <Route path="/offer/:listingId" element={<OfferPage />} />
+                  <Route path="/seller/:sellerId" element={<SellerProfilePage />} />
+                  <Route path="/sellers" element={<SellersPage />} />
+                  <Route path="/stores" element={<StoresPage />} />
+                  <Route path="/stores/:storeSlug" element={<StoreProfilePage />} />
+                  <Route path="/events" element={<EventsPage />} />
+                  <Route path="/wtb" element={<WantToBuyPage />} />
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="/account" element={<AccountPage />} />
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/account/dashboard" element={<DashboardPage />} />
+                    <Route path="/collection" element={<CollectionPage />} />
+                    <Route path="/wishlist" element={<WishlistPage />} />
+                    <Route path="/notifications" element={<NotificationsPage />} />
+                    <Route path="/inbox" element={<MessagesPage />} />
+                    <Route path="/inbox/:threadId" element={<MessagesPage />} />
+                    <Route path="/messages" element={<Navigate replace to="/inbox" />} />
+                    <Route path="/messages/:threadId" element={<MessagesPage />} />
+                  </Route>
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="/beta/bugs" element={<BugReportsPage />} />
+                  </Route>
+                  <Route element={<ProtectedRoute requireAdmin />}>
+                    <Route path="/admin" element={<AdminPage />} />
+                  </Route>
+                  <Route path="*" element={<Navigate replace to="/" />} />
                 </Route>
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/beta/bugs" element={<BugReportsPage />} />
-                </Route>
-                <Route element={<ProtectedRoute requireAdmin />}>
-                  <Route path="/admin" element={<AdminPage />} />
-                </Route>
-                <Route path="*" element={<Navigate replace to="/" />} />
-              </Route>
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </InstallPromptProvider>
       </MarketplaceProvider>
     </AppErrorBoundary>
   );

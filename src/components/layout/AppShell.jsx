@@ -13,7 +13,9 @@ import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import UserAvatar from "../shared/UserAvatar";
 import { useMarketplace } from "../../hooks/useMarketplace";
+import { useInstallPrompt } from "../../hooks/useInstallPrompt";
 import AppLaunchScreen from "../ui/AppLaunchScreen";
+import InstallPromptSheet from "../ui/InstallPromptSheet";
 import MobileTabBar from "./MobileTabBar";
 import { m } from "../../mobile/design";
 
@@ -139,6 +141,7 @@ function DesktopSidebar({ pathname }) {
 
 export default function AppShell() {
   const { authReady, bootProgress, bootStatus, loading } = useMarketplace();
+  const { canInstall } = useInstallPrompt();
   const location = useLocation();
   const [isDesktop, setIsDesktop] = useState(() =>
     typeof window === "undefined" ? false : window.matchMedia("(min-width: 1024px)").matches,
@@ -185,6 +188,8 @@ export default function AppShell() {
     return <AppLaunchScreen compact={isDesktop} progress={bootProgress} status={bootStatus} />;
   }
 
+  const shouldRenderInstallPrompt = canInstall && !location.pathname.startsWith("/auth");
+
   return (
     <div
       className="flex h-[100dvh] overflow-hidden"
@@ -221,6 +226,7 @@ export default function AppShell() {
         {hideNav ? null : <MobileTabBar />}
       </div>
       </div>
+      {shouldRenderInstallPrompt ? <InstallPromptSheet /> : null}
     </div>
   );
 }
