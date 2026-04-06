@@ -2121,6 +2121,7 @@ export function MarketplaceProvider({ children }) {
   const authSessionHydratedRef = useRef(false);
   const secondaryStateRef = useRef({
     reviewsLoaded: Boolean(cachedState?.reviews?.length),
+    wishlistUserId: null,
     workspaceUserId: null,
     eventAttendanceLoaded: false,
     adminUserId: null,
@@ -3028,6 +3029,29 @@ export function MarketplaceProvider({ children }) {
     }
   }, [updateSectionState]);
 
+  const loadWishlistData = useCallback(async (authedUserId) => {
+    if (!isSupabaseConfigured || !authedUserId) {
+      setWishlist([]);
+      secondaryStateRef.current.wishlistUserId = null;
+      return [];
+    }
+
+    const wishlistsRes = await withTimeout(
+      supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId),
+      QUERY_TIMEOUT_MS,
+      "Wishlist is taking too long to load.",
+    );
+
+    if (wishlistsRes.error) {
+      throw wishlistsRes.error;
+    }
+
+    const nextWishlist = (wishlistsRes.data || []).map((item) => item.listing_id);
+    setWishlist(nextWishlist);
+    secondaryStateRef.current.wishlistUserId = String(authedUserId);
+    return nextWishlist;
+  }, []);
+
   const loadWorkspaceData = useCallback(
     async (authedUserId, normalizedProfiles = users) => {
       if (!isSupabaseConfigured || !authedUserId) {
@@ -3036,17 +3060,16 @@ export function MarketplaceProvider({ children }) {
 
       updateSectionState("workspace", "loading");
       try {
-        const [
-          wishlistsRes,
-          draftRes,
-          threadRowsRes,
-          offersRes,
-        ] = await Promise.all([
-          withTimeout(
-            supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId),
-            QUERY_TIMEOUT_MS,
-            "Wishlist is taking too long to load.",
-          ),
+        const wishlistPromise =
+          secondaryStateRef.current.wishlistUserId === String(authedUserId)
+            ? Promise.resolve(null)
+            : loadWishlistData(authedUserId).catch((error) => {
+                if (!isTransientFetchError(error)) {
+                  console.error("Wishlist failed to load during workspace hydrate:", error);
+                }
+                return null;
+              });
+        const [draftRes, threadRowsRes, offersRes] = await Promise.all([
           withTimeout(
             supabase.from("listing_drafts").select("payload,updated_at").eq("user_id", authedUserId).maybeSingle(),
             QUERY_TIMEOUT_MS,
@@ -3064,7 +3087,6 @@ export function MarketplaceProvider({ children }) {
           ),
         ]);
 
-        if (wishlistsRes.error) throw wishlistsRes.error;
         if (draftRes.error) throw draftRes.error;
         if (threadRowsRes.error) throw threadRowsRes.error;
         if (offersRes.error) throw offersRes.error;
@@ -3096,13 +3118,13 @@ export function MarketplaceProvider({ children }) {
           ...draft,
         }));
 
-        setWishlist((wishlistsRes.data || []).map((item) => item.listing_id));
         setListingDrafts(nextDrafts);
         setActiveDraftId(draftPayload?.activeDraftId || nextDrafts[0]?.id || null);
         setThreads(buildThreadMap(threadRows, messageRows));
         setOffers((offersRes.data || []).map(fromOfferRow));
         updateSectionState("workspace", "ready");
         secondaryStateRef.current.workspaceUserId = String(authedUserId);
+        void wishlistPromise;
 
         void Promise.all([
           supabase.from("bug_reports").select(BUG_REPORT_COLUMNS).eq("reporter_id", authedUserId),
@@ -3162,7 +3184,9 @@ export function MarketplaceProvider({ children }) {
             console.error("Workspace event preferences failed to load:", eventPreferencesRes.error);
           }
         }).catch((error) => {
-          console.error("Workspace secondary hydration failed:", error);
+          if (!isTransientFetchError(error)) {
+            console.error("Workspace secondary hydration failed:", error);
+          }
         });
 
         return normalizedProfiles;
@@ -3171,7 +3195,7 @@ export function MarketplaceProvider({ children }) {
         throw error;
       }
     },
-    [updateSectionState, users],
+    [loadWishlistData, updateSectionState, users],
   );
 
   const loadEventAttendanceFeed = useCallback(
@@ -3277,20 +3301,11 @@ export function MarketplaceProvider({ children }) {
       }
 
       try {
-        const [bootstrapRes, wishlistsRes] = await Promise.all([
-          withTimeoutResult(
-            fetchMarketplaceBootstrap(),
-            Math.min(LISTING_QUERY_TIMEOUT_MS, 4200),
-            "Listings are taking too long to load.",
-          ),
-          authedUserId
-            ? withTimeoutResult(
-                supabase.from("wishlists").select("listing_id").eq("user_id", authedUserId),
-                QUERY_TIMEOUT_MS,
-                "Wishlist is taking too long to load.",
-              )
-            : Promise.resolve({ data: [], error: null }),
-        ]);
+        const bootstrapRes = await withTimeoutResult(
+          fetchMarketplaceBootstrap(),
+          Math.min(LISTING_QUERY_TIMEOUT_MS, 4200),
+          "Listings are taking too long to load.",
+        );
 
         let nextListings = [];
         let nextManualEvents = [];
@@ -3347,10 +3362,6 @@ export function MarketplaceProvider({ children }) {
           nextSiteSettings = !siteSettingsRes.error ? siteSettingsRes.data : null;
         }
 
-        if (wishlistsRes.error) {
-          console.error("Wishlist failed to load during critical hydrate:", wishlistsRes.error);
-        }
-
         if (shouldBlockUi) {
           updateBootState(hasUsableCache ? 0.7 : 0.58, "Preparing listings");
         }
@@ -3395,14 +3406,25 @@ export function MarketplaceProvider({ children }) {
 
         setListings(nextListings);
         setManualEvents(nextManualEvents);
-        setWishlist((wishlistsRes.data || []).map((item) => item.listing_id));
+        if (!authedUserId) {
+          setWishlist([]);
+          secondaryStateRef.current.wishlistUserId = null;
+        } else if (secondaryStateRef.current.wishlistUserId !== String(authedUserId)) {
+          void loadWishlistData(authedUserId).catch((error) => {
+            if (!isTransientFetchError(error)) {
+              console.error("Wishlist failed to load after critical hydrate:", error);
+            }
+          });
+        }
         if (nextSiteSettings) {
           setSiteSettings(fromSiteSettingsRow(nextSiteSettings));
         }
 
         if (!bootProfiles.length) {
           void hydrateListingProfiles(nextListings, authedUserId, authUser).catch((error) => {
-            console.error("Profiles failed to load during critical hydrate:", error);
+            if (!isTransientFetchError(error)) {
+              console.error("Profiles failed to load during critical hydrate:", error);
+            }
           });
         }
 
@@ -3431,6 +3453,7 @@ export function MarketplaceProvider({ children }) {
           setEventReminderIds([]);
           setEventAttendance({});
           setEventAttendanceFeed({});
+          secondaryStateRef.current.wishlistUserId = null;
           secondaryStateRef.current.workspaceUserId = null;
           secondaryStateRef.current.eventAttendanceLoaded = false;
           secondaryStateRef.current.adminUserId = null;
@@ -3466,7 +3489,9 @@ export function MarketplaceProvider({ children }) {
           window.setTimeout(() => {
             secondaryTasks.forEach((task) => {
               Promise.resolve(task()).catch((error) => {
-                console.error("Deferred marketplace hydration failed:", error);
+                if (!isTransientFetchError(error)) {
+                  console.error("Deferred marketplace hydration failed:", error);
+                }
               });
             });
           }, 0);
@@ -3489,7 +3514,7 @@ export function MarketplaceProvider({ children }) {
         }
       }
     },
-    [currentUserId, currentUserRecord, hasUsableCache, hydrateListingProfiles, listings.length, loadAdminData, loadEventAttendanceFeed, loadSellerTrustData, loadWorkspaceData, manualEvents.length, updateBootState, updateSectionState, users],
+    [currentUserId, currentUserRecord, hasUsableCache, hydrateListingProfiles, listings.length, loadAdminData, loadEventAttendanceFeed, loadSellerTrustData, loadWishlistData, loadWorkspaceData, manualEvents.length, updateBootState, updateSectionState, users],
   );
 
   const ensureSellerTrustLoaded = useCallback(
