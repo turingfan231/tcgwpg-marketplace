@@ -62,6 +62,7 @@ const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "").trim().repl
 const MEDIA_BUCKET = "listing-media";
 const FOREGROUND_REFRESH_MS = 12000;
 const QUERY_TIMEOUT_MS = 4500;
+const LISTING_QUERY_TIMEOUT_MS = 6500;
 const SESSION_TIMEOUT_MS = 2200;
 const RICH_MESSAGE_PREFIX = "[[tcgwpg-message]]";
 const DEFAULT_SITE_SETTINGS = {
@@ -119,30 +120,33 @@ const LISTING_BOOT_COLUMNS = [
   "title",
   "price",
   "price_currency",
-  "previous_price",
   "market_price",
   "market_price_currency",
   "condition",
   "neighborhood",
   "postal_code",
   "accepts_trade",
-  "listing_format",
   "quantity",
-  "bundle_items",
   "description",
   "primary_image",
-  "image_gallery",
-  "condition_images",
   "status",
   "featured",
   "flagged",
-  "admin_notes",
   "views",
   "offers",
-  "price_history",
-  "edit_history",
   "created_at",
   "updated_at",
+].join(",");
+const LISTING_DETAIL_COLUMNS = [
+  LISTING_BOOT_COLUMNS,
+  "previous_price",
+  "listing_format",
+  "bundle_items",
+  "image_gallery",
+  "condition_images",
+  "admin_notes",
+  "price_history",
+  "edit_history",
 ].join(",");
 const REVIEW_COLUMNS = [
   "id",
@@ -792,6 +796,12 @@ async function apiRequest(path, init = {}) {
   }
 
   return data;
+}
+
+async function fetchMarketplaceBootstrap() {
+  return apiRequest("/api/bootstrap", {
+    method: "GET",
+  });
 }
 
 async function runServerAuthGuard(action, identifier) {
@@ -3198,34 +3208,11 @@ export function MarketplaceProvider({ children }) {
       }
 
       try {
-        const manualEventsPromise = (async () => {
-          let result = await supabase.from("manual_events").select(MANUAL_EVENT_COLUMNS);
-          if (
-            result.error &&
-            (isMissingColumnError(result.error, "source_type") ||
-              isMissingColumnError(result.error, "source_url"))
-          ) {
-            result = await supabase.from("manual_events").select(MANUAL_EVENT_FALLBACK_COLUMNS);
-          }
-          return result;
-        })();
-        const [
-          listingsRes,
-          manualEventsRes,
-          siteSettingsRes,
-          wishlistsRes,
-        ] =
-          await Promise.all([
-          withTimeout(
-            supabase.from("listings").select(LISTING_BOOT_COLUMNS),
-            QUERY_TIMEOUT_MS,
-            "Listings are taking too long to load.",
-          ),
-          withTimeoutResult(manualEventsPromise, QUERY_TIMEOUT_MS, "Events are taking too long to load."),
+        const [bootstrapRes, wishlistsRes] = await Promise.all([
           withTimeoutResult(
-            supabase.from("site_settings").select(SITE_SETTINGS_COLUMNS).eq("key", "global").maybeSingle(),
-            QUERY_TIMEOUT_MS,
-            "Settings are taking too long to load.",
+            fetchMarketplaceBootstrap(),
+            Math.min(LISTING_QUERY_TIMEOUT_MS, 4200),
+            "Listings are taking too long to load.",
           ),
           authedUserId
             ? withTimeoutResult(
@@ -3236,26 +3223,68 @@ export function MarketplaceProvider({ children }) {
             : Promise.resolve({ data: [], error: null }),
         ]);
 
-        if (listingsRes.error) throw listingsRes.error;
-        if (manualEventsRes.error) {
-          console.error("Events failed to load during critical hydrate:", manualEventsRes.error);
+        let nextListings = [];
+        let nextManualEvents = [];
+        let nextSiteSettings = null;
+        let bootProfiles = [];
+
+        if (!bootstrapRes?.error && Array.isArray(bootstrapRes?.listings)) {
+          nextListings = (bootstrapRes.listings || []).map(fromListingRow).filter(isSupportedListing);
+          nextManualEvents = (bootstrapRes.manualEvents || []).map(fromEventRow);
+          nextSiteSettings = bootstrapRes.siteSettings || null;
+          bootProfiles = (bootstrapRes.profiles || [])
+            .map((row) => mergeAuthedProfileMetadata(row, authUser))
+            .map(fromProfileRow);
+        } else {
+          if (bootstrapRes?.error) {
+            console.error("Marketplace bootstrap failed, falling back to direct queries:", bootstrapRes.error);
+          }
+
+          const manualEventsPromise = (async () => {
+            let result = await supabase.from("manual_events").select(MANUAL_EVENT_COLUMNS);
+            if (
+              result.error &&
+              (isMissingColumnError(result.error, "source_type") ||
+                isMissingColumnError(result.error, "source_url"))
+            ) {
+              result = await supabase.from("manual_events").select(MANUAL_EVENT_FALLBACK_COLUMNS);
+            }
+            return result;
+          })();
+          const [listingsRes, manualEventsRes, siteSettingsRes] = await Promise.all([
+            withTimeout(
+              supabase.from("listings").select(LISTING_BOOT_COLUMNS),
+              LISTING_QUERY_TIMEOUT_MS,
+              "Listings are taking too long to load.",
+            ),
+            withTimeoutResult(manualEventsPromise, QUERY_TIMEOUT_MS, "Events are taking too long to load."),
+            withTimeoutResult(
+              supabase.from("site_settings").select(SITE_SETTINGS_COLUMNS).eq("key", "global").maybeSingle(),
+              QUERY_TIMEOUT_MS,
+              "Settings are taking too long to load.",
+            ),
+          ]);
+
+          if (listingsRes.error) throw listingsRes.error;
+          if (manualEventsRes.error) {
+            console.error("Events failed to load during critical hydrate:", manualEventsRes.error);
+          }
+          if (siteSettingsRes.error && !isMissingTableError(siteSettingsRes.error, "site_settings")) {
+            console.error("Site settings failed to load during critical hydrate:", siteSettingsRes.error);
+          }
+
+          nextListings = (listingsRes.data || []).map(fromListingRow).filter(isSupportedListing);
+          nextManualEvents = (manualEventsRes.data || []).map(fromEventRow);
+          nextSiteSettings = !siteSettingsRes.error ? siteSettingsRes.data : null;
         }
-        if (siteSettingsRes.error && !isMissingTableError(siteSettingsRes.error, "site_settings")) {
-          console.error("Site settings failed to load during critical hydrate:", siteSettingsRes.error);
-        }
+
         if (wishlistsRes.error) {
           console.error("Wishlist failed to load during critical hydrate:", wishlistsRes.error);
-        }
-        if (profilesRes.resolvedColumns) {
-          profileBootColumnsRef.current = profilesRes.resolvedColumns;
         }
 
         if (shouldBlockUi) {
           updateBootState(hasUsableCache ? 0.7 : 0.58, "Preparing listings");
         }
-
-        const nextListings = (listingsRes.data || []).map(fromListingRow).filter(isSupportedListing);
-        let nextManualEvents = (manualEventsRes.data || []).map(fromEventRow);
 
         if (!nextManualEvents.length) {
           try {
@@ -3269,16 +3298,44 @@ export function MarketplaceProvider({ children }) {
           }
         }
 
+        if (bootProfiles.length) {
+          setUsers((current) => {
+            const nextById = new Map(current.map((user) => [String(user.id || ""), user]));
+
+            bootProfiles.forEach((profile) => {
+              const profileId = String(profile?.id || "");
+              if (!profileId) {
+                return;
+              }
+
+              if (authedUserId && profileId === String(authedUserId)) {
+                const existingProfile = nextById.get(profileId);
+                nextById.set(profileId, existingProfile || profile);
+                return;
+              }
+
+              nextById.set(profileId, {
+                ...(nextById.get(profileId) || {}),
+                ...profile,
+              });
+            });
+
+            return Array.from(nextById.values());
+          });
+        }
+
         setListings(nextListings);
         setManualEvents(nextManualEvents);
         setWishlist((wishlistsRes.data || []).map((item) => item.listing_id));
-        if (!siteSettingsRes.error && siteSettingsRes.data) {
-          setSiteSettings(fromSiteSettingsRow(siteSettingsRes.data));
+        if (nextSiteSettings) {
+          setSiteSettings(fromSiteSettingsRow(nextSiteSettings));
         }
 
-        void hydrateListingProfiles(nextListings, authedUserId, authUser).catch((error) => {
-          console.error("Profiles failed to load during critical hydrate:", error);
-        });
+        if (!bootProfiles.length) {
+          void hydrateListingProfiles(nextListings, authedUserId, authUser).catch((error) => {
+            console.error("Profiles failed to load during critical hydrate:", error);
+          });
+        }
 
         if (shouldBlockUi) {
           updateBootState(hasUsableCache ? 0.9 : 0.82, "Finalizing home");
