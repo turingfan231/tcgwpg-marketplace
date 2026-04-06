@@ -110,7 +110,7 @@ const PROFILE_BOOT_COLUMNS = [
   "completed_deals",
   "created_at",
 ].join(",");
-const PROFILE_FULL_COLUMNS = `${PROFILE_BOOT_COLUMNS},default_listing_game,postal_code,account_status,banner_style,favorite_games,followed_seller_ids,followed_store_slugs,meetup_preferences,onboarding_complete,email,bio`;
+const PROFILE_FULL_COLUMNS = `${PROFILE_BOOT_COLUMNS},postal_code,account_status,banner_style,favorite_games,followed_store_slugs,meetup_preferences,email,bio`;
 const LISTING_BOOT_COLUMNS = [
   "id",
   "seller_id",
@@ -987,6 +987,16 @@ function isMissingColumnError(error, columnName) {
     message.includes("column") &&
     message.includes(String(columnName || "").toLowerCase()) &&
     (message.includes("does not exist") || message.includes("schema cache"))
+  );
+}
+
+function isTransientFetchError(error) {
+  const message = String(error?.message || error?.details || "").toLowerCase();
+  return (
+    error?.code === "TIMEOUT" ||
+    message.includes("failed to fetch") ||
+    message.includes("networkerror") ||
+    message.includes("abort")
   );
 }
 
@@ -3743,7 +3753,9 @@ export function MarketplaceProvider({ children }) {
             SESSION_TIMEOUT_MS,
             "Account profile is taking too long to load.",
           ).catch((error) => {
-            console.error("Bootstrap profile load failed:", error);
+            if (!isTransientFetchError(error)) {
+              console.error("Bootstrap profile load failed:", error);
+            }
             return null;
           });
           if (!mounted) {
@@ -4324,7 +4336,9 @@ export function MarketplaceProvider({ children }) {
             });
           })
           .catch((error) => {
-            console.error("Login profile bootstrap failed:", error);
+            if (!isTransientFetchError(error)) {
+              console.error("Login profile bootstrap failed:", error);
+            }
           });
 
         void refreshMarketplaceData(data.user.id, {
@@ -4453,7 +4467,9 @@ export function MarketplaceProvider({ children }) {
             });
           })
           .catch((error) => {
-            console.error("Signup profile bootstrap failed:", error);
+            if (!isTransientFetchError(error)) {
+              console.error("Signup profile bootstrap failed:", error);
+            }
           });
 
         void refreshMarketplaceData(data.user.id, {
