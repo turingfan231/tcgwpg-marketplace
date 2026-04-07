@@ -200,10 +200,10 @@ function ListingPreviewImage({ photos, selectedPrinting, includeSelectedPrinting
   const uploadedImage = photos?.[0]?.previewUrl || "";
   const selectedArtwork =
     includeSelectedPrintingImage !== false ? selectedPrinting?.imageUrl || fallbackArtwork : "";
-  const [src, setSrc] = useState(uploadedImage || selectedArtwork);
+  const [src, setSrc] = useState(selectedArtwork || uploadedImage);
 
   useEffect(() => {
-    setSrc(uploadedImage || selectedArtwork);
+    setSrc(selectedArtwork || uploadedImage);
   }, [selectedArtwork, uploadedImage]);
 
   if (!src) {
@@ -477,6 +477,29 @@ export default function CreateListingPage() {
     return true;
   }, [hasSelectedArtwork, photos.length, state, step]);
 
+  const listingMediaPreview = useMemo(() => {
+    const autoCover =
+      state.includeSelectedPrintingImage !== false && state.selectedPrinting?.imageUrl
+        ? [
+            {
+              id: "selected-art",
+              src: state.selectedPrinting.imageUrl,
+              label: "Card art",
+              locked: true,
+            },
+          ]
+        : [];
+
+    const uploadedMedia = photos.map((photo, index) => ({
+      id: photo.id,
+      src: photo.previewUrl,
+      label: index === 0 && !autoCover.length ? "Cover" : `Photo ${index + 1}`,
+      locked: false,
+    }));
+
+    return [...autoCover, ...uploadedMedia];
+  }, [photos, state.includeSelectedPrintingImage, state.selectedPrinting?.imageUrl]);
+
   function updateField(field, value) {
     setState((current) => ({ ...current, [field]: value }));
   }
@@ -639,7 +662,14 @@ export default function CreateListingPage() {
       }
       setSuccessTitle(payload.title);
       window.setTimeout(() => {
-        navigate(result.listing?.id ? `/listing/${result.listing.id}` : "/account/dashboard");
+        navigate(result.listing?.id ? `/listing/${result.listing.id}` : "/account/dashboard", {
+          state: result.listing?.id
+            ? {
+                optimisticListing: result.listing,
+                backTo: "/sell",
+              }
+            : undefined,
+        });
       }, 350);
     } catch (nextError) {
       setError(nextError.message || "Listing could not be published.");
@@ -904,25 +934,42 @@ export default function CreateListingPage() {
         <>
           <ScreenSection className="pt-2">
             <p className="text-[11px]" style={{ color: m.textSecondary }}>
-              Add up to 6 photos. The first image becomes the listing cover.
+              Add up to 6 of your own photos. When card art is enabled, it stays as the first cover image.
             </p>
           </ScreenSection>
           <ScreenSection className="pt-4">
             <div className="grid grid-cols-3 gap-2">
-              {photos.map((photo, index) => (
-                <div key={photo.id} className="relative overflow-hidden rounded-[16px]" style={{ border: index === 0 ? "1px solid rgba(239,68,68,0.16)" : `1px solid ${m.border}` }}>
-                  <img alt={`Listing upload ${index + 1}`} className="aspect-[3/4] w-full object-cover" src={photo.previewUrl} />
+              {listingMediaPreview.map((media, index) => (
+                <div
+                  key={media.id}
+                  className="relative overflow-hidden rounded-[16px]"
+                  style={{ border: index === 0 ? "1px solid rgba(239,68,68,0.16)" : `1px solid ${m.border}` }}
+                >
+                  <img alt={media.label} className="aspect-[3/4] w-full object-cover" src={media.src} />
                   <button
-                    aria-label="Remove photo"
+                    aria-label={media.locked ? "Card art enabled" : "Remove photo"}
                     className="absolute right-1.5 top-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white"
+                    disabled={media.locked}
                     type="button"
-                    onClick={() => removePhoto(photo.id)}
+                    onClick={() => {
+                      if (!media.locked) {
+                        removePhoto(media.id);
+                      }
+                    }}
                   >
-                    <X size={11} />
+                    {media.locked ? <Check size={11} /> : <X size={11} />}
                   </button>
                   {index === 0 ? (
                     <span className="absolute bottom-1.5 left-1.5 rounded-full px-2 py-[3px] text-[8px] text-white" style={{ background: m.redGradient, fontWeight: 700 }}>
                       Cover
+                    </span>
+                  ) : null}
+                  {media.locked ? (
+                    <span
+                      className="absolute bottom-7 left-1.5 rounded-full px-2 py-[3px] text-[8px]"
+                      style={{ background: "rgba(255,255,255,0.08)", color: "#f3c8c8", fontWeight: 700 }}
+                    >
+                      Auto
                     </span>
                   ) : null}
                 </div>
@@ -1131,7 +1178,7 @@ export default function CreateListingPage() {
                   </div>
                   <div className="flex items-center gap-2 text-[10px]" style={{ color: m.textSecondary }}>
                     <Camera size={11} />
-                    {photos.length} photo{photos.length === 1 ? "" : "s"}
+                    {totalMediaCount} image{totalMediaCount === 1 ? "" : "s"}
                   </div>
                 </div>
               </div>
@@ -1144,7 +1191,7 @@ export default function CreateListingPage() {
               </p>
               {[
                 { ok: Boolean(state.selectedPrinting) || Boolean(state.manualEntry), label: state.manualEntry ? "Manual entry enabled" : "Card selected" },
-                { ok: photos.length > 0, label: "Photos attached" },
+                { ok: totalMediaCount > 0, label: "Images attached" },
                 { ok: Boolean(state.title.trim()), label: "Title set" },
                 { ok: Boolean(Number(state.price)), label: "Price set" },
               ].map((item) => (

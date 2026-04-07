@@ -1351,7 +1351,7 @@ function mergeListingsPreservingClientDetail(currentListings, nextListings) {
     (currentListings || []).map((listing) => [String(listing?.id || ""), listing]),
   );
 
-  return (nextListings || []).map((nextListing) => {
+  const mergedListings = (nextListings || []).map((nextListing) => {
     const currentListing = currentById.get(String(nextListing?.id || ""));
     if (!currentListing) {
       return nextListing;
@@ -1389,8 +1389,29 @@ function mergeListingsPreservingClientDetail(currentListings, nextListings) {
         Array.isArray(nextListing.editHistory) && nextListing.editHistory.length
           ? nextListing.editHistory
           : currentListing.editHistory || [],
+      clientPending: false,
+      clientPendingAt: null,
     });
   });
+
+  const nextListingIds = new Set(
+    (nextListings || []).map((listing) => String(listing?.id || "")).filter(Boolean),
+  );
+  const retainedPendingListings = (currentListings || []).filter((listing) => {
+    const listingId = String(listing?.id || "");
+    if (!listingId || nextListingIds.has(listingId) || !listing?.clientPending) {
+      return false;
+    }
+
+    const pendingAt = Date.parse(listing.clientPendingAt || listing.createdAt || "");
+    if (!Number.isFinite(pendingAt)) {
+      return false;
+    }
+
+    return Date.now() - pendingAt < 90_000;
+  });
+
+  return [...retainedPendingListings, ...mergedListings];
 }
 
 function normalizeOfferRecord(offer) {
@@ -5098,6 +5119,7 @@ export function MarketplaceProvider({ children }) {
         description: payload.description || "",
         imageUrl: payload.imageUrl || "",
         primaryImage: payload.imageUrl || "",
+        imageGallery: Array.isArray(payload.imageGallery) ? payload.imageGallery : [payload.imageUrl].filter(Boolean),
         conditionImages: Array.isArray(payload.conditionImages) ? payload.conditionImages : [],
         marketPrice: Number(payload.marketPrice) || 0,
         marketPriceCurrency: payload.marketPriceCurrency || "CAD",
@@ -5158,6 +5180,8 @@ export function MarketplaceProvider({ children }) {
         : data.condition_images || [],
       marketPrice: Number(payload.marketPrice) || data.market_price || 0,
       marketPriceCurrency: payload.marketPriceCurrency || data.market_price_currency || "CAD",
+      clientPending: true,
+      clientPendingAt: new Date().toISOString(),
     });
 
     setListings((current) => [optimisticListing, ...current.filter((item) => item.id !== optimisticListing.id)]);
@@ -5206,17 +5230,17 @@ export function MarketplaceProvider({ children }) {
       }
     })();
 
-    void refreshMarketplaceData(currentUserId, {
-      silent: true,
-      blocking: false,
-      deferSecondary: true,
-      loadSellerTrust: false,
-      loadWorkspace: false,
-      loadEventAttendance: false,
-      loadAdmin: false,
-    });
-
-    void refreshMarketplaceData(currentUserId);
+    window.setTimeout(() => {
+      void refreshMarketplaceData(currentUserId, {
+        silent: true,
+        blocking: false,
+        deferSecondary: true,
+        loadSellerTrust: false,
+        loadWorkspace: false,
+        loadEventAttendance: false,
+        loadAdmin: false,
+      });
+    }, 1200);
     return { ok: true, listing: optimisticListing };
   }
 

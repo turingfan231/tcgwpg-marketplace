@@ -21,6 +21,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import SeoHead from "../components/seo/SeoHead";
 import { approvedMeetupSpots } from "../data/storefrontData";
 import { useMarketplace } from "../hooks/useMarketplace";
+import { supabase } from "../lib/supabase";
 import { m, conditionStyle } from "../mobile/design";
 import {
   compactTimeLabel,
@@ -88,26 +89,87 @@ export default function ListingDetailPage() {
   const [lightboxSrc, setLightboxSrc] = useState("");
   const [adminNote, setAdminNote] = useState("");
   const [adminSaving, setAdminSaving] = useState(false);
+  const [hydratedListing, setHydratedListing] = useState(null);
   const galleryRef = useRef(null);
   const recordedViewsRef = useRef(new Set());
+  const optimisticRouteListing = useMemo(() => {
+    const nextListing = location.state?.optimisticListing;
+    return String(nextListing?.id || "") === String(listingId || "") ? nextListing : null;
+  }, [listingId, location.state]);
 
   const listing = useMemo(
-    () => activeListings.find((item) => String(item.id) === String(listingId)),
-    [activeListings, listingId],
+    () => activeListings.find((item) => String(item.id) === String(listingId)) || optimisticRouteListing,
+    [activeListings, listingId, optimisticRouteListing],
+  );
+  const resolvedListing = hydratedListing?.id === listing?.id ? { ...listing, ...hydratedListing } : listing;
+
+  const needsDetailHydration = Boolean(
+    listing &&
+      !listing.imageGallery?.length &&
+      !listing.conditionImages?.length &&
+      listing.previousPrice == null &&
+      !listing.adminNotes &&
+      !listing.priceHistory?.length &&
+      !listing.editHistory?.length,
   );
 
   useEffect(() => {
-    const normalizedId = String(listing?.id || "");
+    setHydratedListing(null);
+  }, [listing?.id]);
+
+  useEffect(() => {
+    if (!listing?.id || !needsDetailHydration) {
+      return;
+    }
+
+    let active = true;
+
+    async function hydrateDetails() {
+      const { data, error } = await supabase
+        .from("listings")
+        .select("previous_price,listing_format,bundle_items,image_gallery,condition_images,admin_notes,price_history,edit_history")
+        .eq("id", listing.id)
+        .maybeSingle();
+
+      if (!active || error || !data) {
+        if (error) {
+          console.error("Listing detail hydration failed:", error);
+        }
+        return;
+      }
+
+      setHydratedListing({
+        id: listing.id,
+        previousPrice: data.previous_price,
+        listingFormat: data.listing_format,
+        bundleItems: data.bundle_items || [],
+        imageGallery: data.image_gallery || [],
+        conditionImages: data.condition_images || [],
+        adminNotes: data.admin_notes || "",
+        priceHistory: data.price_history || [],
+        editHistory: data.edit_history || [],
+      });
+    }
+
+    void hydrateDetails();
+
+    return () => {
+      active = false;
+    };
+  }, [listing?.id, needsDetailHydration]);
+
+  useEffect(() => {
+    const normalizedId = String(resolvedListing?.id || "");
     if (!normalizedId || recordedViewsRef.current.has(normalizedId)) {
       return;
     }
 
     recordedViewsRef.current.add(normalizedId);
     void recordListingView(normalizedId);
-  }, [listing?.id, recordListingView]);
+  }, [recordListingView, resolvedListing?.id]);
 
   useEffect(() => {
-    if (!listing?.id || typeof window === "undefined") {
+    if (!resolvedListing?.id || typeof window === "undefined") {
       return;
     }
 
@@ -116,56 +178,56 @@ export default function ListingDetailPage() {
       galleryRef.current.scrollTo({ left: 0, behavior: "auto" });
     }
     setActiveImg(0);
-  }, [listing?.id]);
+  }, [resolvedListing?.id]);
 
   useEffect(() => {
-    setSaved(Boolean(listing && wishlist?.includes(listing.id)));
-  }, [listing, wishlist]);
+    setSaved(Boolean(resolvedListing && wishlist?.includes(resolvedListing.id)));
+  }, [resolvedListing, wishlist]);
 
   useEffect(() => {
-    setAdminNote(listing?.adminNotes || "");
-  }, [listing?.adminNotes, listing?.id]);
+    setAdminNote(resolvedListing?.adminNotes || "");
+  }, [resolvedListing?.adminNotes, resolvedListing?.id]);
 
   const gallery = useMemo(() => {
-    if (!listing) {
+    if (!resolvedListing) {
       return [];
     }
 
     return [
-      listing.primaryImage,
-      listing.imageUrl,
-      ...(Array.isArray(listing.imageGallery) ? listing.imageGallery : []),
-      ...(Array.isArray(listing.conditionImages) ? listing.conditionImages : []),
+      resolvedListing.primaryImage,
+      resolvedListing.imageUrl,
+      ...(Array.isArray(resolvedListing.imageGallery) ? resolvedListing.imageGallery : []),
+      ...(Array.isArray(resolvedListing.conditionImages) ? resolvedListing.conditionImages : []),
     ]
       .filter(Boolean)
       .filter((value, index, array) => array.indexOf(value) === index);
-  }, [listing]);
+  }, [resolvedListing]);
 
-  const seller = listing?.seller || listing;
+  const seller = resolvedListing?.seller || resolvedListing;
   const isAdmin = currentUser?.role === "admin";
-  const tone = conditionStyle(listing?.condition);
-  const offerCount = listing ? (offersByListingId[listing.id] || []).length : 0;
-  const marketPrice = Number(listing?.marketPriceCad || listing?.marketPrice || 0);
-  const priceValue = Number(listing?.priceCad ?? listing?.price ?? 0);
+  const tone = conditionStyle(resolvedListing?.condition);
+  const offerCount = resolvedListing ? (offersByListingId[resolvedListing.id] || []).length : 0;
+  const marketPrice = Number(resolvedListing?.marketPriceCad || resolvedListing?.marketPrice || 0);
+  const priceValue = Number(resolvedListing?.priceCad ?? resolvedListing?.price ?? 0);
   const discount = marketPrice > 0 ? Math.round(((marketPrice - priceValue) / marketPrice) * 100) : 0;
   const relatedListings = useMemo(
     () =>
-      listing
+      resolvedListing
         ? activeListings
-            .filter((candidate) => candidate.id !== listing.id && candidate.gameSlug === listing.gameSlug)
+            .filter((candidate) => candidate.id !== resolvedListing.id && candidate.gameSlug === resolvedListing.gameSlug)
             .slice(0, 4)
         : [],
-    [activeListings, listing],
+    [activeListings, resolvedListing],
   );
   const trustedSpots = useMemo(
     () =>
       approvedMeetupSpots.filter((spot) =>
         Array.isArray(listing?.seller?.trustedMeetupSpots)
-          ? listing.seller.trustedMeetupSpots.includes(spot.id) ||
-            listing.seller.trustedMeetupSpots.includes(spot.slug)
+          ? resolvedListing.seller.trustedMeetupSpots.includes(spot.id) ||
+            resolvedListing.seller.trustedMeetupSpots.includes(spot.slug)
           : false,
       ),
-    [listing],
+    [resolvedListing],
   );
 
   function goBack() {
@@ -183,17 +245,17 @@ export default function ListingDetailPage() {
   }
 
   async function handleMessageSeller() {
-    if (!listing) {
+    if (!resolvedListing) {
       return;
     }
     if (!currentUser) {
-      navigate("/auth", { state: { from: `/listing/${listing.id}` } });
+      navigate("/auth", { state: { from: `/listing/${resolvedListing.id}` } });
       return;
     }
 
     const result = await findOrCreateThread({
-      listingId: listing.id,
-      otherUserId: listing.sellerId,
+      listingId: resolvedListing.id,
+      otherUserId: resolvedListing.sellerId,
     });
 
     if (result?.ok && result.thread?.id) {
@@ -202,12 +264,12 @@ export default function ListingDetailPage() {
   }
 
   async function handleAdminNoteSave() {
-    if (!listing?.id || !isAdmin || adminSaving) {
+    if (!resolvedListing?.id || !isAdmin || adminSaving) {
       return;
     }
     setAdminSaving(true);
     try {
-      await updateListingAdminNote(listing.id, adminNote);
+      await updateListingAdminNote(resolvedListing.id, adminNote);
       setShowAdminSheet(false);
     } finally {
       setAdminSaving(false);
