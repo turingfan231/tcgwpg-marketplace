@@ -173,7 +173,7 @@ export default function AuthPage() {
         >
           <BrandLogo
             variant="badge"
-            imgClassName="h-7 w-7 rounded-[10px] object-cover shadow-[0_8px_18px_rgba(239,68,68,0.18)]"
+            imgClassName="h-7 w-7 rounded-[10px] shadow-[0_8px_18px_rgba(239,68,68,0.18)]"
             loading="eager"
           />
         </div>

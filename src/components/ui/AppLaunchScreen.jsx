@@ -25,7 +25,7 @@ export default function AppLaunchScreen({
       >
         <BrandLogo
           className="mb-5 justify-center gap-4"
-          imgClassName="h-16 w-16 rounded-[20px] object-cover shadow-[0_18px_40px_rgba(239,68,68,0.24)] sm:h-[72px] sm:w-[72px] sm:rounded-[24px]"
+          imgClassName="h-16 w-16 rounded-[20px] shadow-[0_18px_40px_rgba(239,68,68,0.24)] sm:h-[72px] sm:w-[72px] sm:rounded-[24px]"
           subtitle="Winnipeg, MB"
           subtitleClassName="mt-1 text-[11px] font-semibold text-[#8a8a92] sm:text-[12px]"
           titleClassName="text-[26px] font-extrabold tracking-tight text-white sm:text-[30px]"

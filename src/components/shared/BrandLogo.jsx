@@ -11,13 +11,14 @@ export default function BrandLogo({
   fetchPriority = "high",
 }) {
   const src = "/brand/tcgwpg-app-icon-20260406.png";
+  const imageClasses = `object-contain ${imgClassName}`.trim();
 
   if (variant === "badge") {
     return (
       <span className={`inline-flex items-center ${className}`.trim()}>
         <img
           alt={alt}
-          className={imgClassName}
+          className={imageClasses}
           fetchPriority={fetchPriority}
           loading={loading}
           src={src}
@@ -30,7 +31,7 @@ export default function BrandLogo({
     <span className={`inline-flex items-center gap-3 ${className}`.trim()}>
       <img
         alt={alt}
-        className={imgClassName}
+        className={imageClasses}
         fetchPriority={fetchPriority}
         loading={loading}
         src={src}

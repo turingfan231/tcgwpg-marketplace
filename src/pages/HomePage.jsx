@@ -127,7 +127,7 @@ function CompactBrand() {
   return (
     <BrandLogo
       className="gap-3"
-      imgClassName="h-8 w-8 rounded-[10px] object-cover shadow-[0_8px_20px_rgba(239,68,68,0.18)]"
+      imgClassName="h-8 w-8 rounded-[10px] shadow-[0_8px_20px_rgba(239,68,68,0.18)]"
       subtitle="Winnipeg, MB"
       subtitleClassName="text-[11px] text-[#6f6f78]"
       titleClassName="text-[13px] font-bold text-white"

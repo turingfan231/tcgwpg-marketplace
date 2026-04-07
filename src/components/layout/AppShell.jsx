@@ -94,7 +94,7 @@ function DesktopSidebar({ pathname }) {
       <Link className="flex items-center gap-3 rounded-[20px] p-2" to="/">
         <BrandLogo
           className="gap-3"
-          imgClassName="h-11 w-11 rounded-[14px] object-cover shadow-[0_12px_28px_rgba(239,68,68,0.18)]"
+          imgClassName="h-11 w-11 rounded-[14px] shadow-[0_12px_28px_rgba(239,68,68,0.18)]"
           subtitle="Desktop workspace"
           subtitleClassName="text-[11px] font-medium text-[#6a6a72]"
           titleClassName="text-[16px] font-extrabold text-white"
