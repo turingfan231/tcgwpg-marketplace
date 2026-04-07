@@ -11,6 +11,7 @@ import { motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import SeoHead from "../components/seo/SeoHead";
+import BrandLogo from "../components/shared/BrandLogo";
 import UserAvatar from "../components/shared/UserAvatar";
 import { storeProfiles } from "../data/storefrontData";
 import { useMarketplace } from "../hooks/useMarketplace";
@@ -124,21 +125,14 @@ function SectionHeader({ title, to }) {
 
 function CompactBrand() {
   return (
-    <div className="flex items-center gap-3">
-      <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-[10px] text-white" style={{ background: "#17090b" }}>
-        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(239,68,68,0.95), rgba(127,29,29,0.92))" }} />
-        <div className="absolute -right-2 -top-2 h-6 w-6 rounded-full" style={{ background: "rgba(255,255,255,0.12)" }} />
-        <span className="relative text-[8px] tracking-[0.08em]" style={{ fontWeight: 900 }}>WPG</span>
-      </div>
-      <div>
-        <p className="text-[13px] text-white" style={{ fontWeight: 700 }}>
-          TCG WPG
-        </p>
-        <p className="text-[11px]" style={{ color: m.textSecondary }}>
-          Winnipeg, MB
-        </p>
-      </div>
-    </div>
+    <BrandLogo
+      className="gap-3"
+      imgClassName="h-8 w-8 rounded-[10px] object-cover shadow-[0_8px_20px_rgba(239,68,68,0.18)]"
+      subtitle="Winnipeg, MB"
+      subtitleClassName="text-[11px] text-[#6f6f78]"
+      titleClassName="text-[13px] font-bold text-white"
+      withSubtitle
+    />
   );
 }
 
@@ -430,7 +424,7 @@ function HotListingCard({ listing }) {
       whileTap={{ scale: 0.97 }}
       onClick={() => rememberAndNavigateToListing(navigate, location, listing.id)}
     >
-      <div className="relative h-[108px] overflow-hidden lg:h-[132px]">
+      <div className="relative h-[92px] overflow-hidden lg:h-[132px]">
         <img
           alt={listing.title}
           className="h-full w-full object-cover"
@@ -815,7 +809,7 @@ export default function HomePage() {
                   className="animate-pulse rounded-[18px] border"
                   style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.05)" }}
                 >
-                  <div className="h-[108px] rounded-t-[18px] lg:h-[138px]" style={{ background: "rgba(255,255,255,0.04)" }} />
+                  <div className="h-[92px] rounded-t-[18px] lg:h-[132px]" style={{ background: "rgba(255,255,255,0.04)" }} />
                   <div className="space-y-2 p-3">
                     <div className="h-4 w-20 rounded-full" style={{ background: "rgba(255,255,255,0.05)" }} />
                     <div className="h-3 w-3/4 rounded-full" style={{ background: "rgba(255,255,255,0.04)" }} />

@@ -5090,8 +5090,26 @@ export function MarketplaceProvider({ children }) {
       };
     }
 
+    const optimisticListing = normalizeListingRecord({
+      ...fromListingRow(data),
+      seller: sellerRecord,
+      sellerName: sellerRecord.publicName || sellerRecord.name,
+      imageUrl: payload.imageUrl || data.primary_image || "",
+      primaryImage: payload.imageUrl || data.primary_image || "",
+      imageGallery: Array.isArray(payload.imageGallery)
+        ? payload.imageGallery
+        : data.image_gallery || [],
+      conditionImages: Array.isArray(payload.conditionImages)
+        ? payload.conditionImages
+        : data.condition_images || [],
+      marketPrice: Number(payload.marketPrice) || data.market_price || 0,
+      marketPriceCurrency: payload.marketPriceCurrency || data.market_price_currency || "CAD",
+    });
+
+    setListings((current) => [optimisticListing, ...current.filter((item) => item.id !== optimisticListing.id)]);
+
     if (payload.id) {
-      await clearListingDraft(payload.id);
+      void clearListingDraft(payload.id);
     }
     await pushNotification(
       normalizeNotificationRecord({
@@ -5127,8 +5145,8 @@ export function MarketplaceProvider({ children }) {
       // Ignore missing followed_seller_ids support until the migration is applied.
     }
 
-    await refreshMarketplaceData(currentUserId);
-    return { ok: true, listing: fromListingRow(data) };
+    void refreshMarketplaceData(currentUserId);
+    return { ok: true, listing: optimisticListing };
   }
 
   async function editListing(listingId, payload) {
