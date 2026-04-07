@@ -83,7 +83,7 @@ export default function SeoHead({
     const canonicalUrl = `${baseUrl}${canonicalPath.startsWith("/") ? canonicalPath : `/${canonicalPath}`}`;
     const resolvedTitle = title ? `${title} | TCG Wpg Marketplace` : "TCG Wpg Marketplace";
     const resolvedImage =
-      resolveAssetUrl(baseUrl, image) || `${baseUrl}/brand/apple-touch-icon.png`;
+      resolveAssetUrl(baseUrl, image) || `${baseUrl}/brand/apple-touch-icon-v2.png`;
     const resolvedPreloadImage = resolveAssetUrl(baseUrl, preloadImage);
 
     document.title = resolvedTitle;

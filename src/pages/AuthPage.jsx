@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import SeoHead from "../components/seo/SeoHead";
+import BrandLogo from "../components/shared/BrandLogo";
 import { neighborhoods } from "../data/mockData";
 import { useMarketplace } from "../hooks/useMarketplace";
 import { m } from "../mobile/design";
@@ -166,10 +167,15 @@ export default function AuthPage() {
         >
           <ArrowLeft size={16} style={{ color: m.textSecondary }} />
         </motion.button>
-        <div className="rounded-full px-3 py-1" style={{ background: "rgba(239,68,68,0.12)" }}>
-          <span className="text-[10px]" style={{ color: "#fca5a5", fontWeight: 700 }}>
-            TCG WPG
-          </span>
+        <div
+          className="rounded-full border px-2 py-1"
+          style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}
+        >
+          <BrandLogo
+            variant="badge"
+            imgClassName="h-7 w-7 rounded-[10px] object-cover shadow-[0_8px_18px_rgba(239,68,68,0.18)]"
+            loading="eager"
+          />
         </div>
       </div>
 

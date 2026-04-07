@@ -23,12 +23,14 @@ export default function AppLaunchScreen({
           boxShadow: m.shadowFloating,
         }}
       >
-        <div
-          className="mx-auto mb-5 h-16 w-16 rounded-[20px]"
-          aria-hidden="true"
-          style={{ background: m.redGradient, boxShadow: "0 14px 32px rgba(185,28,28,0.28)" }}
+        <BrandLogo
+          className="mb-5 justify-center gap-4"
+          imgClassName="h-16 w-16 rounded-[20px] object-cover shadow-[0_18px_40px_rgba(239,68,68,0.24)] sm:h-[72px] sm:w-[72px] sm:rounded-[24px]"
+          subtitle="Winnipeg, MB"
+          subtitleClassName="mt-1 text-[11px] font-semibold text-[#8a8a92] sm:text-[12px]"
+          titleClassName="text-[26px] font-extrabold tracking-tight text-white sm:text-[30px]"
+          withSubtitle
         />
-        <BrandLogo imgClassName="mx-auto h-14 w-auto max-w-[12rem] object-contain sm:h-16 sm:max-w-[13rem]" />
         <div className="mt-5 space-y-2 text-center">
           <p
             className="text-[11px] uppercase tracking-[0.16em]"

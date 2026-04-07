@@ -12,6 +12,7 @@ import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import UserAvatar from "../shared/UserAvatar";
+import BrandLogo from "../shared/BrandLogo";
 import { useMarketplace } from "../../hooks/useMarketplace";
 import { useInstallPrompt } from "../../hooks/useInstallPrompt";
 import AppLaunchScreen from "../ui/AppLaunchScreen";
@@ -91,15 +92,14 @@ function DesktopSidebar({ pathname }) {
       }}
     >
       <Link className="flex items-center gap-3 rounded-[20px] p-2" to="/">
-        <div className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-[14px] text-white" style={{ background: "#17090b" }}>
-          <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(239,68,68,0.95), rgba(127,29,29,0.92))" }} />
-          <div className="absolute -right-2 -top-2 h-7 w-7 rounded-full" style={{ background: "rgba(255,255,255,0.12)" }} />
-          <span className="relative text-[10px] tracking-[0.08em]" style={{ fontWeight: 900 }}>WPG</span>
-        </div>
-        <div>
-          <p className="text-[16px] text-white" style={{ fontWeight: 800 }}>TCG WPG</p>
-          <p className="text-[11px]" style={{ color: "#6a6a72", fontWeight: 500 }}>Desktop workspace</p>
-        </div>
+        <BrandLogo
+          className="gap-3"
+          imgClassName="h-11 w-11 rounded-[14px] object-cover shadow-[0_12px_28px_rgba(239,68,68,0.18)]"
+          subtitle="Desktop workspace"
+          subtitleClassName="text-[11px] font-medium text-[#6a6a72]"
+          titleClassName="text-[16px] font-extrabold text-white"
+          withSubtitle
+        />
       </Link>
 
       <div
