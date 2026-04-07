@@ -17,6 +17,7 @@ import { useMarketplace } from "../hooks/useMarketplace";
 import { retryStorageUpload } from "../lib/mediaUploads";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
 import { m } from "../mobile/design";
+import { listingArtwork } from "../mobile/helpers";
 import {
   BottomActionBar,
   ChoicePill,
@@ -35,6 +36,7 @@ const CONDITIONS = ["Mint", "NM", "LP", "MP", "HP"];
 const MAX_PHOTOS = 6;
 const MAX_LOCAL_IMAGE_BYTES = 6 * 1024 * 1024;
 const MAX_IMAGE_EDGE = 1800;
+const LANGUAGE_OPTIONS = ["English", "Japanese"];
 const LISTING_TYPES = [
   { id: "WTB", label: "Want To Buy" },
   { id: "WTS", label: "For Sale" },
@@ -42,9 +44,59 @@ const LISTING_TYPES = [
   { id: "WTS/WTT", label: "Sale + Trade" },
 ];
 const MEDIA_BUCKET = "listing-media";
+const JAPANESE_SEARCH_GAMES = new Set([
+  "pokemon",
+  "magic",
+  "one-piece",
+  "dragon-ball-fusion-world",
+  "union-arena",
+]);
 
 function dedupeUrls(urls) {
   return urls.filter(Boolean).filter((value, index, array) => array.indexOf(value) === index);
+}
+
+function buildSearchResultKey(item, index) {
+  return [
+    item?.id || "result",
+    item?.game || "game",
+    item?.setName || "set",
+    item?.printLabel || item?.number || item?.language || "card",
+    index,
+  ].join("::");
+}
+
+function normalizeListingFlowGame(value) {
+  const rawValue = String(value || "").toLowerCase();
+  if (rawValue.includes("pokemon")) {
+    return "pokemon";
+  }
+  if (rawValue.includes("magic")) {
+    return "magic";
+  }
+  if (rawValue.includes("one piece")) {
+    return "one-piece";
+  }
+  if (rawValue.includes("dragon ball") || rawValue.includes("fusion world") || rawValue.includes("dbs")) {
+    return "dragon-ball-fusion-world";
+  }
+  if (rawValue.includes("union arena")) {
+    return "union-arena";
+  }
+  return rawValue;
+}
+
+function supportsJapaneseSearch(game) {
+  return JAPANESE_SEARCH_GAMES.has(normalizeListingFlowGame(game));
+}
+
+function searchResultFallbackArtwork(item) {
+  return listingArtwork({
+    title: item?.title,
+    game: item?.game,
+    gameSlug: normalizeListingFlowGame(item?.game),
+    primaryImage: item?.imageUrl,
+  });
 }
 
 function buildListingGallery(selectedPrinting, uploadedPhotos, includeSelectedPrintingImage = true) {
@@ -120,6 +172,58 @@ function StepRail({ step }) {
   );
 }
 
+function CardResultImage({ item, className = "", alt }) {
+  const fallbackArtwork = searchResultFallbackArtwork(item);
+  const [src, setSrc] = useState(item?.imageUrl || fallbackArtwork);
+
+  useEffect(() => {
+    setSrc(item?.imageUrl || fallbackArtwork);
+  }, [fallbackArtwork, item?.imageUrl]);
+
+  return (
+    <img
+      alt={alt || item?.title || "Card artwork"}
+      className={className}
+      loading="lazy"
+      src={src}
+      onError={() => {
+        if (src !== fallbackArtwork) {
+          setSrc(fallbackArtwork);
+        }
+      }}
+    />
+  );
+}
+
+function ListingPreviewImage({ photos, selectedPrinting, includeSelectedPrintingImage, title }) {
+  const fallbackArtwork = searchResultFallbackArtwork(selectedPrinting);
+  const uploadedImage = photos?.[0]?.previewUrl || "";
+  const selectedArtwork =
+    includeSelectedPrintingImage !== false ? selectedPrinting?.imageUrl || fallbackArtwork : "";
+  const [src, setSrc] = useState(uploadedImage || selectedArtwork);
+
+  useEffect(() => {
+    setSrc(uploadedImage || selectedArtwork);
+  }, [selectedArtwork, uploadedImage]);
+
+  if (!src) {
+    return null;
+  }
+
+  return (
+    <img
+      alt={title || "Listing preview"}
+      className="aspect-[16/11] w-full object-cover"
+      src={src}
+      onError={() => {
+        if (!uploadedImage && src !== fallbackArtwork) {
+          setSrc(fallbackArtwork);
+        }
+      }}
+    />
+  );
+}
+
 function UploadTile({ onSelect }) {
   return (
     <motion.button
@@ -150,6 +254,7 @@ function buildInitialDraft(draft, currentUser, fallbackGame, preset = null) {
     manualEntry: Boolean(draft?.manualEntry),
     query: draft?.query || "",
     game: draft?.game || preset?.game || fallbackGame,
+    language: draft?.language || draft?.selectedPrinting?.language || "English",
     title: draft?.title || "",
     price: draft?.price ? String(draft.price) : "",
     condition: draft?.condition || "NM",
@@ -176,6 +281,7 @@ function serializeDraft(state) {
     manualEntry: Boolean(state.manualEntry),
     query: state.query,
     game: state.game,
+    language: state.language,
     title: state.title,
     price: state.price ? Number(state.price) : 0,
     condition: state.condition,
@@ -237,6 +343,7 @@ export default function CreateListingPage() {
     addListing,
     createListingPreset,
     currentUser,
+    currentUserId,
     gameCatalog,
     listingDraft,
     saveListingDraft,
@@ -262,7 +369,7 @@ export default function CreateListingPage() {
 
   useEffect(() => {
     const presetKey = activePreset?.id || activePreset?.title || activePreset?.game || "";
-    const nextSyncKey = [currentUser?.id || "", listingDraft?.id || "", presetKey, fallbackGame].join("|");
+    const nextSyncKey = [currentUserId || currentUser?.id || "", listingDraft?.id || "", presetKey, fallbackGame].join("|");
     if (nextSyncKey === syncedStateKeyRef.current) {
       return;
     }
@@ -278,7 +385,7 @@ export default function CreateListingPage() {
         : [],
     );
     syncedStateKeyRef.current = nextSyncKey;
-  }, [activePreset?.game, activePreset?.id, activePreset?.title, currentUser?.id, fallbackGame, listingDraft?.id]);
+  }, [activePreset?.game, activePreset?.id, activePreset?.title, currentUser?.id, currentUserId, fallbackGame, listingDraft?.id]);
 
   useEffect(() => {
     const normalizedQuery = state.query.trim();
@@ -297,6 +404,7 @@ export default function CreateListingPage() {
           game: state.game,
           query: normalizedQuery,
           limit: 12,
+          language: state.language,
         });
         setSearchResults(Array.isArray(result?.results) ? result.results : []);
       } catch (nextError) {
@@ -308,7 +416,7 @@ export default function CreateListingPage() {
     }, 280);
 
     return () => window.clearTimeout(timeoutId);
-  }, [state.game, state.query]);
+  }, [state.game, state.language, state.query]);
 
   useEffect(() => () => {
     photos.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
@@ -340,12 +448,25 @@ export default function CreateListingPage() {
     return [...new Set([...neighborhood, ...labels])].slice(0, 10);
   }, [currentUser?.neighborhood]);
 
+  const supportsJapanese = useMemo(() => supportsJapaneseSearch(state.game), [state.game]);
+  const hasSelectedArtwork = Boolean(
+    state.includeSelectedPrintingImage !== false && state.selectedPrinting?.imageUrl,
+  );
+  const totalMediaCount = useMemo(
+    () =>
+      dedupeUrls([
+        ...(state.includeSelectedPrintingImage !== false ? [state.selectedPrinting?.imageUrl] : []),
+        ...photos.map((photo) => photo.previewUrl || photo.storedUrl),
+      ]).length,
+    [photos, state.includeSelectedPrintingImage, state.selectedPrinting?.imageUrl],
+  );
+
   const canContinue = useMemo(() => {
     if (step === 0) {
       return Boolean(state.selectedPrinting) || Boolean(state.manualEntry);
     }
     if (step === 1) {
-      return photos.length > 0;
+      return photos.length > 0 || hasSelectedArtwork;
     }
     if (step === 2) {
       return Boolean(state.title.trim()) && Boolean(Number(state.price));
@@ -354,7 +475,7 @@ export default function CreateListingPage() {
       return Boolean(state.meetupAreas.length);
     }
     return true;
-  }, [photos.length, state, step]);
+  }, [hasSelectedArtwork, photos.length, state, step]);
 
   function updateField(field, value) {
     setState((current) => ({ ...current, [field]: value }));
@@ -368,6 +489,7 @@ export default function CreateListingPage() {
       game: printing.game || current.game,
       selectedPrinting: printing,
       includeSelectedPrintingImage: true,
+      language: printing.language || current.language,
       query: printing.title || current.query,
       description: current.description || printing.description || "",
       price: current.price || (printing.marketPrice ? String(Math.round(printing.marketPrice)) : ""),
@@ -444,7 +566,8 @@ export default function CreateListingPage() {
     setSavingDraft(true);
     setError("");
     try {
-      const uploadedPhotos = currentUser?.id ? await uploadListingPhotos(currentUser.id, photos) : [];
+      const uploaderId = currentUserId || currentUser?.id || "";
+      const uploadedPhotos = uploaderId ? await uploadListingPhotos(uploaderId, photos) : [];
       const galleryPayload = buildListingGallery(
         state.selectedPrinting,
         uploadedPhotos,
@@ -475,13 +598,14 @@ export default function CreateListingPage() {
   }
 
   async function handlePublish() {
-    if (!currentUser?.id || publishing) {
+    const uploaderId = currentUserId || currentUser?.id || "";
+    if (!uploaderId || publishing) {
       return;
     }
     setPublishing(true);
     setError("");
     try {
-      const uploadedPhotos = await uploadListingPhotos(currentUser.id, photos);
+      const uploadedPhotos = await uploadListingPhotos(uploaderId, photos);
       const galleryPayload = buildListingGallery(
         state.selectedPrinting,
         uploadedPhotos,
@@ -497,7 +621,7 @@ export default function CreateListingPage() {
         bundleItems: [],
         acceptsTrade: state.acceptTrades || state.listingType !== "WTS",
         condition: state.condition,
-        language: state.selectedPrinting?.language || "English",
+        language: state.selectedPrinting?.language || state.language || "English",
         quantity: Number(state.quantity) || 1,
         price: Number(state.price) || 0,
         neighborhood: state.neighborhood,
@@ -516,7 +640,7 @@ export default function CreateListingPage() {
       setSuccessTitle(payload.title);
       window.setTimeout(() => {
         navigate(result.listing?.id ? `/listing/${result.listing.id}` : "/account/dashboard");
-      }, 1200);
+      }, 350);
     } catch (nextError) {
       setError(nextError.message || "Listing could not be published.");
       setPublishing(false);
@@ -571,6 +695,10 @@ export default function CreateListingPage() {
                     setState((current) => ({
                       ...current,
                       game: game.name,
+                      language:
+                        current.game !== game.name && !supportsJapaneseSearch(game.name)
+                          ? "English"
+                          : current.language,
                       manualEntry:
                         current.manualEntry && current.game !== game.name ? true : current.manualEntry,
                       selectedPrinting: current.selectedPrinting?.game === game.name ? current.selectedPrinting : null,
@@ -580,6 +708,25 @@ export default function CreateListingPage() {
                   {game.shortName || game.name}
                 </ChoicePill>
               ))}
+            </div>
+            <div className="mb-2 flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
+              {LANGUAGE_OPTIONS.map((language) => {
+                const disabled = language === "Japanese" && !supportsJapanese;
+                return (
+                  <ChoicePill
+                    key={language}
+                    active={state.language === language}
+                    className={disabled ? "opacity-45" : ""}
+                    onClick={() => {
+                      if (!disabled) {
+                        updateField("language", language);
+                      }
+                    }}
+                  >
+                    {language}
+                  </ChoicePill>
+                );
+              })}
             </div>
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: m.textMuted }} />
@@ -619,7 +766,11 @@ export default function CreateListingPage() {
             {state.selectedPrinting ? (
               <div className="rounded-[18px] border p-3" style={{ background: "rgba(239,68,68,0.05)", borderColor: "rgba(239,68,68,0.12)" }}>
                 <div className="flex gap-3">
-                  <img alt={state.selectedPrinting.title} className="h-20 w-16 rounded-[12px] object-cover" src={state.selectedPrinting.imageUrl} />
+                  <CardResultImage
+                    alt={state.selectedPrinting.title}
+                    className="h-20 w-16 rounded-[12px] object-cover"
+                    item={state.selectedPrinting}
+                  />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
                       <div>
@@ -642,6 +793,9 @@ export default function CreateListingPage() {
                     <div className="mt-3 flex items-center gap-2">
                       <span className="rounded-full px-2 py-[3px] text-[9px]" style={{ background: m.surfaceStrong, color: m.textSecondary, fontWeight: 700 }}>
                         {state.selectedPrinting.game}
+                      </span>
+                      <span className="rounded-full px-2 py-[3px] text-[9px]" style={{ background: m.surfaceStrong, color: m.textSecondary, fontWeight: 700 }}>
+                        {state.selectedPrinting.language || state.language}
                       </span>
                       {state.selectedPrinting.marketPrice ? (
                         <span className="text-[10px]" style={{ color: m.textSecondary }}>
@@ -713,22 +867,25 @@ export default function CreateListingPage() {
               ) : null}
               {!searching &&
                 !(searchError || "").length &&
-                (state.query.trim().length >= 2 ? searchResults : popularCards).map((item) => (
+                (state.query.trim().length >= 2 ? searchResults : popularCards).map((item, index) => (
                   <motion.button
-                    key={item.id}
+                    key={buildSearchResultKey(item, index)}
                     className="flex items-center gap-3 rounded-[16px] border p-2.5 text-left"
                     style={{ background: m.surface, borderColor: m.border }}
                     type="button"
                     whileTap={{ scale: 0.985 }}
                     onClick={() => selectPrinting(item)}
                   >
-                    <img alt={item.title} className="h-14 w-12 rounded-[10px] object-cover" src={item.imageUrl} />
+                    <CardResultImage alt={item.title} className="h-14 w-12 rounded-[10px] object-cover" item={item} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[12px] text-white" style={{ fontWeight: 700 }}>
                         {item.title}
                       </p>
                       <p className="mt-1 truncate text-[10px]" style={{ color: m.textSecondary }}>
                         {item.setName}
+                      </p>
+                      <p className="mt-1 truncate text-[9px]" style={{ color: m.textTertiary }}>
+                        {item.language || state.language}
                       </p>
                     </div>
                     {item.marketPrice ? (
@@ -928,10 +1085,11 @@ export default function CreateListingPage() {
             <div className="overflow-hidden rounded-[20px] border" style={{ background: m.surface, borderColor: m.border }}>
               <div className="relative">
                 {photos[0]?.previewUrl || (state.includeSelectedPrintingImage !== false ? state.selectedPrinting?.imageUrl : "") ? (
-                  <img
-                    alt={state.title || "Listing preview"}
-                    className="aspect-[16/11] w-full object-cover"
-                    src={photos[0]?.previewUrl || (state.includeSelectedPrintingImage !== false ? state.selectedPrinting?.imageUrl : "")}
+                  <ListingPreviewImage
+                    includeSelectedPrintingImage={state.includeSelectedPrintingImage}
+                    photos={photos}
+                    selectedPrinting={state.selectedPrinting}
+                    title={state.title}
                   />
                 ) : (
                   <div

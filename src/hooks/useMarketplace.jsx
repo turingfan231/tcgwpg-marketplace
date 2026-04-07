@@ -201,6 +201,7 @@ const OFFER_COLUMNS = [
   "updated_at",
 ].join(",");
 const REPORT_COLUMNS = ["id", "listing_id", "seller_id", "reporter_id", "reason", "details", "status", "resolution_thread_id", "created_at", "updated_at"].join(",");
+const REPORT_FALLBACK_COLUMNS = ["id", "listing_id", "seller_id", "reporter_id", "reason", "details", "status", "created_at", "updated_at"].join(",");
 const BUG_REPORT_COLUMNS = [
   "id",
   "reporter_id",
@@ -1345,6 +1346,53 @@ function normalizeListingRecord(listing) {
   });
 }
 
+function mergeListingsPreservingClientDetail(currentListings, nextListings) {
+  const currentById = new Map(
+    (currentListings || []).map((listing) => [String(listing?.id || ""), listing]),
+  );
+
+  return (nextListings || []).map((nextListing) => {
+    const currentListing = currentById.get(String(nextListing?.id || ""));
+    if (!currentListing) {
+      return nextListing;
+    }
+
+    return normalizeListingRecord({
+      ...currentListing,
+      ...nextListing,
+      seller: nextListing.seller || currentListing.seller,
+      sellerName: nextListing.sellerName || currentListing.sellerName,
+      imageUrl: nextListing.imageUrl || currentListing.imageUrl,
+      primaryImage: nextListing.primaryImage || currentListing.primaryImage,
+      imageGallery:
+        Array.isArray(nextListing.imageGallery) && nextListing.imageGallery.length
+          ? nextListing.imageGallery
+          : currentListing.imageGallery || [],
+      conditionImages:
+        Array.isArray(nextListing.conditionImages) && nextListing.conditionImages.length
+          ? nextListing.conditionImages
+          : currentListing.conditionImages || [],
+      language: nextListing.language || currentListing.language,
+      previousPrice:
+        nextListing.previousPrice === null || nextListing.previousPrice === undefined
+          ? currentListing.previousPrice
+          : nextListing.previousPrice,
+      adminNotes:
+        typeof nextListing.adminNotes === "string" && nextListing.adminNotes.length
+          ? nextListing.adminNotes
+          : currentListing.adminNotes,
+      priceHistory:
+        Array.isArray(nextListing.priceHistory) && nextListing.priceHistory.length
+          ? nextListing.priceHistory
+          : currentListing.priceHistory || [],
+      editHistory:
+        Array.isArray(nextListing.editHistory) && nextListing.editHistory.length
+          ? nextListing.editHistory
+          : currentListing.editHistory || [],
+    });
+  });
+}
+
 function normalizeOfferRecord(offer) {
   return {
     tradeItems: [],
@@ -1772,6 +1820,7 @@ function fromListingRow(row) {
     marketPrice: row.market_price,
     marketPriceCurrency: row.market_price_currency,
     condition: row.condition,
+    language: row.language,
     neighborhood: row.neighborhood,
     postalCode: row.postal_code,
     acceptsTrade: row.accepts_trade,
@@ -3245,8 +3294,16 @@ export function MarketplaceProvider({ children }) {
     updateSectionState("admin", "loading");
 
     try {
+      const reportsPromise = (async () => {
+        let result = await supabase.from("reports").select(REPORT_COLUMNS);
+        if (result.error && isMissingColumnError(result.error, "resolution_thread_id")) {
+          result = await supabase.from("reports").select(REPORT_FALLBACK_COLUMNS);
+        }
+        return result;
+      })();
+
       const [reportsRes, bugReportsRes, auditLogRes] = await Promise.all([
-        withTimeout(supabase.from("reports").select(REPORT_COLUMNS), QUERY_TIMEOUT_MS, "Reports are taking too long to load."),
+        withTimeout(reportsPromise, QUERY_TIMEOUT_MS, "Reports are taking too long to load."),
         withTimeout(supabase.from("bug_reports").select(BUG_REPORT_COLUMNS), QUERY_TIMEOUT_MS, "Bug reports are taking too long to load."),
         withTimeout(
           supabase
@@ -3404,7 +3461,7 @@ export function MarketplaceProvider({ children }) {
           });
         }
 
-        setListings(nextListings);
+        setListings((current) => mergeListingsPreservingClientDetail(current, nextListings));
         setManualEvents(nextManualEvents);
         if (!authedUserId) {
           setWishlist([]);
@@ -5057,10 +5114,7 @@ export function MarketplaceProvider({ children }) {
       return { ok: true, listing: localListing };
     }
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    const sellerId = session?.user?.id || currentUserId;
+    const sellerId = currentUserId;
 
     if (!sellerId) {
       return { ok: false, error: "Your login session is not ready yet. Reload and try again." };
@@ -5108,42 +5162,59 @@ export function MarketplaceProvider({ children }) {
 
     setListings((current) => [optimisticListing, ...current.filter((item) => item.id !== optimisticListing.id)]);
 
-    if (payload.id) {
-      void clearListingDraft(payload.id);
-    }
-    await pushNotification(
-      normalizeNotificationRecord({
-        userId: currentUserRecord.id,
-        type: "listing-created",
-        title: "Listing posted",
-        body: `${payload.title} is now live in the marketplace.`,
-        entityId: data.id,
-      }),
-    );
-
-    try {
-      const { data: followerRows, error: followerError } = await supabase
-        .from("profiles")
-        .select("id")
-        .contains("followed_seller_ids", [currentUserRecord.id])
-        .neq("id", currentUserRecord.id);
-
-      if (!followerError && Array.isArray(followerRows) && followerRows.length) {
-        await Promise.all(
-          followerRows.map((follower) =>
-            pushNotification({
-              userId: follower.id,
-              type: "seller-posted",
-              title: `New listing from ${currentUserRecord.publicName || currentUserRecord.name}`,
-              body: `${payload.title} was just posted.`,
-              entityId: data.id,
-            }),
-          ),
-        );
+    void (async () => {
+      if (payload.id) {
+        await clearListingDraft(payload.id);
       }
-    } catch {
-      // Ignore missing followed_seller_ids support until the migration is applied.
-    }
+
+      try {
+        await pushNotification(
+          normalizeNotificationRecord({
+            userId: currentUserRecord.id,
+            type: "listing-created",
+            title: "Listing posted",
+            body: `${payload.title} is now live in the marketplace.`,
+            entityId: data.id,
+          }),
+        );
+      } catch (notificationError) {
+        console.error("Listing created notification failed:", notificationError);
+      }
+
+      try {
+        const { data: followerRows, error: followerError } = await supabase
+          .from("profiles")
+          .select("id")
+          .contains("followed_seller_ids", [currentUserRecord.id])
+          .neq("id", currentUserRecord.id);
+
+        if (!followerError && Array.isArray(followerRows) && followerRows.length) {
+          await Promise.all(
+            followerRows.map((follower) =>
+              pushNotification({
+                userId: follower.id,
+                type: "seller-posted",
+                title: `New listing from ${currentUserRecord.publicName || currentUserRecord.name}`,
+                body: `${payload.title} was just posted.`,
+                entityId: data.id,
+              }),
+            ),
+          );
+        }
+      } catch {
+        // Ignore missing followed_seller_ids support until the migration is applied.
+      }
+    })();
+
+    void refreshMarketplaceData(currentUserId, {
+      silent: true,
+      blocking: false,
+      deferSecondary: true,
+      loadSellerTrust: false,
+      loadWorkspace: false,
+      loadEventAttendance: false,
+      loadAdmin: false,
+    });
 
     void refreshMarketplaceData(currentUserId);
     return { ok: true, listing: optimisticListing };
