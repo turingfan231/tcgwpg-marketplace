@@ -1,4 +1,4 @@
-import { Archive, ArrowLeft, Camera, Check, CheckCheck, MoreHorizontal, Search, SendHorizontal, ShieldCheck, Smile, Star, X } from "lucide-react";
+﻿import { Archive, ArrowLeft, Camera, Check, CheckCheck, MoreHorizontal, Search, SendHorizontal, ShieldCheck, Smile, Star, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
@@ -104,7 +104,7 @@ function ThreadRow({ thread, onClick }) {
                 >
                   <img alt={thread.listing.title} className="h-full w-full object-cover" src={listingArtwork(thread.listing)} />
                 </div>
-                <span className="truncate text-[10.5px]" style={{ fontWeight: 500, color: "#6a6a72" }}>
+                <span className="truncate text-[10.5px]" style={{ fontWeight: 500, color: "#b6b6bc" }}>
                   {thread.listing.title}
                   {thread.listing?.price ? ` / ${formatPrice(thread.listing.priceCad ?? thread.listing.price, thread.listing.priceCurrency || "CAD")}` : ""}
                 </span>
@@ -113,14 +113,14 @@ function ThreadRow({ thread, onClick }) {
           </div>
           <span
             className="shrink-0 text-[10px]"
-            style={{ fontWeight: thread.unreadCount ? 600 : 400, color: thread.unreadCount ? m.redLight : "#3e3e46" }}
+            style={{ fontWeight: thread.unreadCount ? 600 : 400, color: thread.unreadCount ? m.redLight : "#8c8c96" }}
           >
             {compactTimeLabel(thread.updatedAt)}
           </span>
         </div>
         <p
           className="truncate text-[12px]"
-          style={{ fontWeight: thread.unreadCount ? 500 : 400, color: thread.unreadCount ? "#9a9aa0" : "#4a4a52", lineHeight: 1.3 }}
+          style={{ fontWeight: thread.unreadCount ? 500 : 400, color: thread.unreadCount ? "#9a9aa0" : "#97979f", lineHeight: 1.3 }}
         >
           {thread.lastMessage?.text || thread.lastMessage?.body || "No messages yet."}
         </p>
@@ -134,7 +134,7 @@ function ThreadRow({ thread, onClick }) {
             </span>
           ) : null}
           {thread.latestOffer?.cashAmount ? (
-            <span className="text-[10px] tabular-nums" style={{ fontWeight: 600, color: "#6a6a72" }}>
+            <span className="text-[10px] tabular-nums" style={{ fontWeight: 600, color: "#b6b6bc" }}>
               {formatPrice(thread.latestOffer.cashAmount, "CAD")}
             </span>
           ) : null}
@@ -186,9 +186,9 @@ function MessageBubble({ currentUserId, message, onPreview }) {
   return (
     <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
       <div className={`flex max-w-[78%] flex-col ${mine ? "items-end" : "items-start"}`}>
-        {hasAttachments ? <div className={`mb-2 grid gap-2 ${message.attachments.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>{message.attachments.map((attachment) => <motion.button key={attachment.id} className="overflow-hidden rounded-[18px] border" style={{ borderColor: m.borderStrong, background: m.surfaceStrong }} type="button" whileTap={{ scale: 0.98 }} onClick={() => onPreview(attachment.url)}><img alt={attachment.name || "Attachment"} className="h-32 w-full object-cover" src={attachment.url} /></motion.button>)}</div> : null}
+        {hasAttachments ? <div className={`mb-2 grid gap-2 ${message.attachments.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>{message.attachments.map((attachment) => <motion.button aria-label="Open attachment preview" key={attachment.id} className="overflow-hidden rounded-[18px] border" style={{ borderColor: m.borderStrong, background: m.surfaceStrong }} type="button" whileTap={{ scale: 0.98 }} onClick={() => onPreview(attachment.url)}><img alt={attachment.name || "Attachment"} className="h-32 w-full object-cover" src={attachment.url} /></motion.button>)}</div> : null}
         {(message.text || message.body) ? <div className="px-3 py-[8px]" style={{ background: mine ? "linear-gradient(135deg, rgba(239,68,68,0.14), rgba(185,28,28,0.1))" : "rgba(255,255,255,0.055)", border: mine ? "1px solid rgba(239,68,68,0.1)" : "1px solid rgba(255,255,255,0.05)", borderRadius: mine ? "16px 16px 4px 16px" : "16px 16px 16px 4px" }}><p className="text-[13px]" style={{ fontWeight: 400, color: mine ? "#ede4e6" : "#c8c8cc", lineHeight: 1.45 }}>{message.text || message.body}</p></div> : null}
-        <div className={`mt-[3px] flex items-center gap-1 ${mine ? "justify-end pr-1" : "pl-1"}`}><span className="text-[9px]" style={{ color: "#2e2e36" }}>{fmtTime(message.sentAt)}</span>{mine ? (seenByOther ? <CheckCheck size={10} style={{ color: "#60a5fa" }} /> : <Check size={10} style={{ color: "#3e3e46" }} />) : null}</div>
+        <div className={`mt-[3px] flex items-center gap-1 ${mine ? "justify-end pr-1" : "pl-1"}`}><span className="text-[9px]" style={{ color: "#2e2e36" }}>{fmtTime(message.sentAt)}</span>{mine ? (seenByOther ? <CheckCheck size={10} style={{ color: "#60a5fa" }} /> : <Check size={10} style={{ color: "#8c8c96" }} />) : null}</div>
       </div>
     </div>
   );
@@ -457,8 +457,8 @@ export default function MessagesPage() {
             <AnimatePresence>
               {searchOpen ? <motion.div className="mb-2 overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}>
                 <div className="flex items-center gap-2 rounded-xl px-3 py-[8px]" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.04)" }}>
-                  <Search size={14} style={{ color: "#3e3e46" }} />
-                  <input autoFocus className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-[#3e3e46]" placeholder="Search conversations..." style={{ fontWeight: 400, color: m.text }} type="text" value={query} onChange={(event) => setQuery(event.target.value)} />
+                  <Search size={14} style={{ color: "#8c8c96" }} />
+                  <input autoFocus className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-[#8c8c96]" placeholder="Search conversations..." style={{ fontWeight: 400, color: m.text }} type="text" value={query} onChange={(event) => setQuery(event.target.value)} />
                   {query ? <button className="flex h-5 w-5 items-center justify-center rounded-full" style={{ background: "rgba(255,255,255,0.08)" }} type="button" onClick={() => setQuery("")}><X size={9} style={{ color: "#78787f" }} /></button> : null}
                 </div>
               </motion.div> : null}
@@ -467,7 +467,7 @@ export default function MessagesPage() {
             <div className="flex gap-[6px]">
               {TABS.map((option) => {
                 const active = tab === option.id;
-                return <motion.button key={option.id} className="rounded-xl px-3.5 py-[6px] text-[12px]" style={{ fontWeight: active ? 600 : 400, background: active ? "linear-gradient(135deg, rgba(239,68,68,0.16), rgba(185,28,28,0.1))" : "rgba(255,255,255,0.03)", border: active ? "1px solid rgba(239,68,68,0.15)" : "1px solid rgba(255,255,255,0.04)", color: active ? "#fca5a5" : "#505058" }} type="button" whileTap={{ scale: 0.93 }} onClick={() => setTab(option.id)}>{option.label}</motion.button>;
+                return <motion.button key={option.id} className="rounded-xl px-3.5 py-[6px] text-[12px]" style={{ fontWeight: active ? 600 : 400, background: active ? "linear-gradient(135deg, rgba(239,68,68,0.16), rgba(185,28,28,0.1))" : "rgba(255,255,255,0.03)", border: active ? "1px solid rgba(239,68,68,0.15)" : "1px solid rgba(255,255,255,0.04)", color: active ? "#fca5a5" : "#9f9fa7" }} type="button" whileTap={{ scale: 0.93 }} onClick={() => setTab(option.id)}>{option.label}</motion.button>;
               })}
             </div>
           </div>
@@ -570,9 +570,9 @@ export default function MessagesPage() {
               ) : null}
             </div>
             <div className="mt-4 flex items-center gap-2 rounded-[16px] px-3 py-[10px]" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.05)" }}>
-              <Search size={14} style={{ color: "#3e3e46" }} />
+              <Search size={14} style={{ color: "#8c8c96" }} />
               <input
-                className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-[#3e3e46]"
+                className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-[#8c8c96]"
                 placeholder="Search conversations..."
                 style={{ color: m.text }}
                 type="text"
@@ -591,7 +591,7 @@ export default function MessagesPage() {
                       fontWeight: active ? 700 : 500,
                       background: active ? "linear-gradient(135deg, rgba(239,68,68,0.16), rgba(185,28,28,0.1))" : "rgba(255,255,255,0.03)",
                       border: active ? "1px solid rgba(239,68,68,0.15)" : "1px solid rgba(255,255,255,0.04)",
-                      color: active ? "#fca5a5" : "#505058",
+                      color: active ? "#fca5a5" : "#9f9fa7",
                     }}
                     type="button"
                     onClick={() => setTab(option.id)}
@@ -628,8 +628,8 @@ export default function MessagesPage() {
                 <span className="truncate text-[15px]" style={{ color: "#e4e4e8", fontWeight: 700 }}>{participantName}</span>
                 {participant.verified ? <ShieldCheck size={12} style={{ color: m.blue }} /> : null}
               </div>
-              <p className="mt-1 text-[11px]" style={{ color: "#7a7a82" }}>
-                {listing?.title || "Conversation"} {listing?.price ? `• ${formatPrice(listing.priceCad ?? listing.price, listing.priceCurrency || "CAD")}` : ""}
+              <p className="mt-1 text-[11px]" style={{ color: "#c3c3c8" }}>
+                {listing?.title || "Conversation"} {listing?.price ? `â€¢ ${formatPrice(listing.priceCad ?? listing.price, listing.priceCurrency || "CAD")}` : ""}
               </p>
             </div>
             <SecondaryButton className="!h-[40px] !rounded-[14px] !px-4" onClick={() => setShowThreadActions(true)}>
@@ -674,16 +674,17 @@ export default function MessagesPage() {
             ) : null}
             <div className="flex items-end gap-2">
               <div className="flex items-center gap-1">
-                <button className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: "rgba(255,255,255,0.05)" }} type="button" onClick={() => fileInputRef.current?.click()}>
-                  <Camera size={16} style={{ color: "#4e4e56" }} />
+                <button aria-label="Attach photo" className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: "rgba(255,255,255,0.05)" }} type="button" onClick={() => fileInputRef.current?.click()}>
+                  <Camera size={16} style={{ color: "#9c9ca4" }} />
                 </button>
-                <button className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: showQuickReplies ? "rgba(239,68,68,0.1)" : "rgba(255,255,255,0.05)" }} type="button" onClick={() => setShowQuickReplies((current) => !current)}>
-                  <Smile size={16} style={{ color: showQuickReplies ? "#f87171" : "#4e4e56" }} />
+                <button aria-label="Toggle quick replies" className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: showQuickReplies ? "rgba(239,68,68,0.1)" : "rgba(255,255,255,0.05)" }} type="button" onClick={() => setShowQuickReplies((current) => !current)}>
+                  <Smile size={16} style={{ color: showQuickReplies ? "#f87171" : "#9c9ca4" }} />
                 </button>
               </div>
               <div className="flex flex-1 items-end gap-2 rounded-[18px] px-4 py-[10px]" style={{ background: "rgba(255,255,255,0.05)", border: draft.trim() ? "1px solid rgba(239,68,68,0.12)" : "1px solid rgba(255,255,255,0.04)" }}>
                 <textarea
-                  className="max-h-28 flex-1 resize-none bg-transparent text-[13px] outline-none placeholder:text-[#3a3a42]"
+                  aria-label="Message composer"
+                  className="max-h-28 flex-1 resize-none bg-transparent text-[13px] outline-none placeholder:text-[#898992]"
                   placeholder="Message..."
                   rows={1}
                   style={{ fontWeight: 400, color: m.text, lineHeight: 1.4 }}
@@ -697,8 +698,8 @@ export default function MessagesPage() {
                   }}
                 />
               </div>
-              <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px]" style={{ background: draft.trim() || pendingPhotos.length ? m.redGradient : "rgba(255,255,255,0.05)" }} type="button" onClick={() => void handleSend()}>
-                <SendHorizontal size={16} style={{ color: draft.trim() || pendingPhotos.length ? "#ffffff" : "#3e3e46" }} />
+              <button aria-label="Send message" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px]" style={{ background: draft.trim() || pendingPhotos.length ? m.redGradient : "rgba(255,255,255,0.05)" }} type="button" onClick={() => void handleSend()}>
+                <SendHorizontal size={16} style={{ color: draft.trim() || pendingPhotos.length ? "#ffffff" : "#8c8c96" }} />
               </button>
             </div>
           </div>
@@ -712,7 +713,7 @@ export default function MessagesPage() {
                 <img alt={listing.title} className="aspect-[4/3] w-full object-cover" src={listingArtwork(listing)} />
                 <div className="p-4">
                   <p className="text-[14px] text-white" style={{ fontWeight: 700 }}>{listing.title}</p>
-                  <p className="mt-1 text-[12px]" style={{ color: "#7a7a82" }}>{listing.game || "Marketplace listing"}</p>
+                  <p className="mt-1 text-[12px]" style={{ color: "#c3c3c8" }}>{listing.game || "Marketplace listing"}</p>
                   <p className="mt-3 text-[20px] text-white" style={{ fontWeight: 800 }}>{formatPrice(listing.priceCad ?? listing.price, listing.priceCurrency || "CAD")}</p>
                 </div>
               </Link>
@@ -721,7 +722,7 @@ export default function MessagesPage() {
           <div className="rounded-[28px] border p-5" style={{ background: "rgba(255,255,255,0.015)", borderColor: "rgba(255,255,255,0.05)" }}>
             <p className="text-[11px] uppercase tracking-[0.12em]" style={{ color: "#f87171", fontWeight: 700 }}>Offer Context</p>
             <p className="mt-4 text-[28px] text-white" style={{ fontWeight: 800, lineHeight: 1 }}>{threadOffers.length}</p>
-            <p className="mt-1 text-[12px]" style={{ color: "#7a7a82" }}>Offers in this conversation timeline.</p>
+            <p className="mt-1 text-[12px]" style={{ color: "#c3c3c8" }}>Offers in this conversation timeline.</p>
             <div className="mt-4 grid gap-2">
               {threadOffers.slice(-2).reverse().map((offer) => {
                 const tone = offerTone(offer.status);
@@ -750,8 +751,8 @@ export default function MessagesPage() {
             <div className="min-w-0">
               <div className="flex items-center gap-1"><span className="truncate text-[14px]" style={{ color: "#e4e4e8", fontWeight: 600 }}>{participantName}</span>{participant.verified ? <ShieldCheck size={11} style={{ color: m.blue }} /> : null}</div>
               <div className="flex items-center gap-1">
-                {participant.overallRating || participant.rating ? <><Star size={8} fill="#fbbf24" style={{ color: "#fbbf24" }} /><span className="text-[10px]" style={{ color: "#5e5e66", fontWeight: 500 }}>{Number(participant.overallRating || participant.rating).toFixed(1)}</span><span className="text-[10px]" style={{ color: "#5e5e66" }}>/</span></> : null}
-                <span className="text-[10px]" style={{ color: "#5e5e66", fontWeight: 500 }}>{participant.responseTime || "Replies quickly"}</span>
+                {participant.overallRating || participant.rating ? <><Star size={8} fill="#fbbf24" style={{ color: "#fbbf24" }} /><span className="text-[10px]" style={{ color: "#acacb3", fontWeight: 500 }}>{Number(participant.overallRating || participant.rating).toFixed(1)}</span><span className="text-[10px]" style={{ color: "#acacb3" }}>/</span></> : null}
+                <span className="text-[10px]" style={{ color: "#acacb3", fontWeight: 500 }}>{participant.responseTime || "Replies quickly"}</span>
               </div>
             </div>
           </div>
@@ -765,7 +766,7 @@ export default function MessagesPage() {
               <span className="truncate text-[12px]" style={{ color: "#d0d0d4", fontWeight: 600 }}>{listing.title}</span>
               <span className="rounded px-[4px] py-[1px] text-[9px]" style={{ fontWeight: 600, background: "rgba(59,130,246,0.12)", color: listing.condition === "LP" ? "#fbbf24" : "#60a5fa" }}>{listing.condition}</span>
             </div>
-            <span className="text-[10px]" style={{ color: "#4e4e56", fontWeight: 400 }}>{[listing.setName || listing.set, listing.cardNumber || listing.game].filter(Boolean).join(" / ")}</span>
+            <span className="text-[10px]" style={{ color: "#9c9ca4", fontWeight: 400 }}>{[listing.setName || listing.set, listing.cardNumber || listing.game].filter(Boolean).join(" / ")}</span>
           </div>
           <span className="shrink-0 text-[15px] tabular-nums" style={{ color: "#f0f0f2", fontWeight: 700 }}>{formatPrice(listing.priceCad ?? listing.price, listing.priceCurrency || "CAD")}</span>
         </Link> : null}
@@ -826,22 +827,24 @@ export default function MessagesPage() {
         <div className="flex items-end gap-2">
           <div className="flex items-center gap-1">
             <motion.button
+              aria-label="Attach photo"
               className="flex h-8 w-8 items-center justify-center rounded-lg"
               style={{ background: "rgba(255,255,255,0.05)" }}
               type="button"
               whileTap={{ scale: 0.85 }}
               onClick={() => fileInputRef.current?.click()}
             >
-              <Camera size={16} style={{ color: "#4e4e56" }} />
+              <Camera size={16} style={{ color: "#9c9ca4" }} />
             </motion.button>
             <motion.button
+              aria-label="Toggle quick replies"
               className="flex h-8 w-8 items-center justify-center rounded-lg"
               style={{ background: showQuickReplies ? "rgba(239,68,68,0.1)" : "rgba(255,255,255,0.05)" }}
               type="button"
               whileTap={{ scale: 0.85 }}
               onClick={() => setShowQuickReplies((current) => !current)}
             >
-              <Smile size={16} style={{ color: showQuickReplies ? "#f87171" : "#4e4e56" }} />
+              <Smile size={16} style={{ color: showQuickReplies ? "#f87171" : "#9c9ca4" }} />
             </motion.button>
           </div>
 
@@ -853,7 +856,8 @@ export default function MessagesPage() {
             }}
           >
             <textarea
-              className="max-h-28 flex-1 resize-none bg-transparent text-[13px] outline-none placeholder:text-[#3a3a42]"
+              aria-label="Message composer"
+              className="max-h-28 flex-1 resize-none bg-transparent text-[13px] outline-none placeholder:text-[#898992]"
               placeholder="Message..."
               rows={1}
               style={{ fontWeight: 400, color: m.text, lineHeight: 1.4 }}
@@ -869,6 +873,7 @@ export default function MessagesPage() {
           </div>
 
           <motion.button
+            aria-label="Send message"
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
             style={{
               background: draft.trim() || pendingPhotos.length ? m.redGradient : "rgba(255,255,255,0.05)",
@@ -879,7 +884,7 @@ export default function MessagesPage() {
             whileTap={{ scale: 0.85 }}
             onClick={() => void handleSend()}
           >
-            <SendHorizontal size={16} style={{ color: draft.trim() || pendingPhotos.length ? "#ffffff" : "#3e3e46" }} />
+            <SendHorizontal size={16} style={{ color: draft.trim() || pendingPhotos.length ? "#ffffff" : "#8c8c96" }} />
           </motion.button>
         </div>
         <input ref={fileInputRef} accept="image/*" className="hidden" multiple type="file" onChange={handleFilesSelected} />
@@ -917,4 +922,5 @@ export default function MessagesPage() {
     </MobileScreen>
   );
 }
+
 

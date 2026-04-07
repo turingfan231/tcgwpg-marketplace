@@ -1,4 +1,4 @@
-import {
+﻿import {
   ArrowLeft,
   CheckCircle2,
   Clock,
@@ -53,7 +53,7 @@ function MetaPill({ accent = false, children }) {
       style={{
         background: accent ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.04)",
         border: `1px solid ${accent ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.04)"}`,
-        color: accent ? "#fca5a5" : "#6a6a72",
+        color: accent ? "#fca5a5" : m.textSecondary,
         fontWeight: accent ? 700 : 500,
       }}
     >
@@ -276,6 +276,35 @@ export default function ListingDetailPage() {
     }
   }
 
+  async function handleShare() {
+    if (!resolvedListing?.id || typeof window === "undefined") {
+      return;
+    }
+
+    const shareUrl = new URL(`/listing/${resolvedListing.id}`, window.location.origin).toString();
+    const shareData = {
+      title: resolvedListing.title,
+      text: `Check out ${resolvedListing.title} on TCG WPG`,
+      url: shareUrl,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        return;
+      }
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        return;
+      }
+      window.prompt("Copy listing link", shareUrl);
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        console.error("Listing share failed:", error);
+      }
+    }
+  }
+
   if (!listing) {
     return (
       <MobileScreen>
@@ -343,6 +372,7 @@ export default function ListingDetailPage() {
         </span>
         <div className="flex items-center gap-1.5">
           <motion.button
+            aria-label={saved ? `Remove ${listing.title} from wishlist` : `Save ${listing.title} to wishlist`}
             className="flex h-9 w-9 items-center justify-center rounded-xl"
             style={{ background: saved ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.06)" }}
             type="button"
@@ -360,15 +390,18 @@ export default function ListingDetailPage() {
             />
           </motion.button>
           <motion.button
+            aria-label={`Share ${listing.title}`}
             className="flex h-9 w-9 items-center justify-center rounded-xl"
             style={{ background: "rgba(255,255,255,0.06)" }}
             type="button"
             whileTap={{ scale: 0.85 }}
+            onClick={() => void handleShare()}
           >
             <Share2 size={16} style={{ color: "#808088" }} />
           </motion.button>
           {isAdmin ? (
             <motion.button
+              aria-label="Open listing admin controls"
               className="flex h-9 w-9 items-center justify-center rounded-xl"
               style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.12)" }}
               type="button"
@@ -420,6 +453,7 @@ export default function ListingDetailPage() {
             <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-[5px]">
               {gallery.map((image, index) => (
                 <button
+                  aria-label={`Show listing image ${index + 1}`}
                   key={`${image}-dot`}
                   className="h-[6px] w-[6px] rounded-full transition-all duration-200"
                   style={{ background: index === activeImg ? "#ffffff" : "rgba(255,255,255,0.3)" }}
@@ -467,7 +501,7 @@ export default function ListingDetailPage() {
             </span>
             {marketPrice > 0 ? (
               <>
-                <span className="text-[13px] tabular-nums line-through" style={{ color: "#4a4a52", fontWeight: 400 }}>
+                <span className="text-[13px] tabular-nums line-through" style={{ color: m.textSecondary, fontWeight: 400 }}>
                   {formatPrice(marketPrice, "CAD")}
                 </span>
                 <span
@@ -488,7 +522,7 @@ export default function ListingDetailPage() {
           <h1 className="mt-1 text-[19px] text-white" style={{ fontWeight: 600, lineHeight: 1.2 }}>
             {listing.title}
           </h1>
-          <p className="mt-[3px] text-[12px]" style={{ color: "#5e5e66", fontWeight: 400 }}>
+          <p className="mt-[3px] text-[12px]" style={{ color: m.textSecondary, fontWeight: 400 }}>
             {[listing.setName || listing.set, listing.cardNumber ? `#${listing.cardNumber}` : null].filter(Boolean).join(" · ")}
           </p>
 
@@ -501,23 +535,23 @@ export default function ListingDetailPage() {
 
           <div className="mt-3 flex items-center gap-3 border-t pt-3" style={{ borderColor: "rgba(255,255,255,0.04)" }}>
             <div className="flex items-center gap-1">
-              <Eye size={11} style={{ color: "#4a4a52" }} />
-              <span className="text-[10px]" style={{ color: "#4a4a52", fontWeight: 500 }}>
-                {listing.views || 0} views
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Heart size={11} style={{ color: "#4a4a52" }} />
-              <span className="text-[10px]" style={{ color: "#4a4a52", fontWeight: 500 }}>
-                {(wishlist || []).includes(listing.id) ? 1 : 0} saves
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Clock size={11} style={{ color: "#4a4a52" }} />
-              <span className="text-[10px]" style={{ color: "#4a4a52", fontWeight: 500 }}>
-                Listed {compactTimeLabel(listing.createdAt || listing.sortTimestamp)}
-              </span>
-            </div>
+              <Eye size={11} style={{ color: m.textSecondary }} />
+                <span className="text-[10px]" style={{ color: m.textSecondary, fontWeight: 500 }}>
+                  {listing.views || 0} views
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Heart size={11} style={{ color: m.textSecondary }} />
+                <span className="text-[10px]" style={{ color: m.textSecondary, fontWeight: 500 }}>
+                  {(wishlist || []).includes(listing.id) ? 1 : 0} saves
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Clock size={11} style={{ color: m.textSecondary }} />
+                <span className="text-[10px]" style={{ color: m.textSecondary, fontWeight: 500 }}>
+                  Listed {compactTimeLabel(listing.createdAt || listing.sortTimestamp)}
+                </span>
+              </div>
           </div>
         </motion.div>
 
@@ -554,7 +588,7 @@ export default function ListingDetailPage() {
                 <span className="text-[11px]" style={{ color: "#c0c0c8", fontWeight: 600 }}>
                   {Number(seller?.overallRating || seller?.rating || 0).toFixed(1)}
                 </span>
-                <span className="text-[10px]" style={{ color: "#4e4e56", fontWeight: 400 }}>
+                <span className="text-[10px]" style={{ color: m.textSecondary, fontWeight: 400 }}>
                   ({seller?.completedDeals || 0} sales)
                 </span>
               </div>
@@ -581,8 +615,8 @@ export default function ListingDetailPage() {
               </div>
             ) : null}
             <div className="flex items-center gap-1 rounded-lg px-2 py-[4px]" style={{ background: "rgba(255,255,255,0.03)" }}>
-              <Clock size={9} style={{ color: "#5e5e66" }} />
-              <span className="text-[9px]" style={{ color: "#6a6a72", fontWeight: 500 }}>
+              <Clock size={9} style={{ color: "#7d7d86" }} />
+              <span className="text-[9px]" style={{ color: m.textSecondary, fontWeight: 500 }}>
                 Replies {seller?.responseTime || "~1 hour"}
               </span>
             </div>
@@ -608,7 +642,7 @@ export default function ListingDetailPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         >
-          <p className="mb-2.5 text-[11px] uppercase tracking-[0.08em]" style={{ color: "#4a4a52", fontWeight: 600 }}>
+          <p className="mb-2.5 text-[11px] uppercase tracking-[0.08em]" style={{ color: m.textSecondary, fontWeight: 600 }}>
             Meetup Options
           </p>
           <div className="flex flex-col gap-2">
@@ -627,7 +661,7 @@ export default function ListingDetailPage() {
                 </div>
                 <div className="mt-[3px] flex flex-wrap items-center gap-1">
                   {(trustedSpots.length ? trustedSpots : approvedMeetupSpots.slice(0, 3)).map((spot, index) => (
-                    <span key={spot.id || spot.slug} className="text-[10px]" style={{ color: "#5a5a64", fontWeight: 400 }}>
+                    <span key={spot.id || spot.slug} className="text-[10px]" style={{ color: m.textTertiary, fontWeight: 400 }}>
                       {spot.label || spot.name}
                       {index < (trustedSpots.length ? trustedSpots : approvedMeetupSpots.slice(0, 3)).length - 1 ? (
                         <span className="mx-[3px]" style={{ color: "#2e2e36" }}>
@@ -652,7 +686,7 @@ export default function ListingDetailPage() {
         >
           <div className="mb-2.5 flex items-center gap-1.5">
             <TrendingDown size={13} style={{ color: "#6ee7b7" }} />
-            <p className="text-[11px] uppercase tracking-[0.08em]" style={{ color: "#4a4a52", fontWeight: 600 }}>
+            <p className="text-[11px] uppercase tracking-[0.08em]" style={{ color: m.textSecondary, fontWeight: 600 }}>
               Price Context
             </p>
           </div>
@@ -661,7 +695,7 @@ export default function ListingDetailPage() {
               <p className="text-[13px] text-white tabular-nums" style={{ fontWeight: 700, lineHeight: 1.2 }}>
                 {marketPrice ? formatPrice(marketPrice, "CAD") : "N/A"}
               </p>
-              <p className="mt-[3px] text-[8px] uppercase tracking-wider" style={{ color: "#4a4a52", fontWeight: 500 }}>
+              <p className="mt-[3px] text-[8px] uppercase tracking-wider" style={{ color: m.textSecondary, fontWeight: 500 }}>
                 Market
               </p>
             </div>
@@ -669,7 +703,7 @@ export default function ListingDetailPage() {
               <p className="text-[13px] text-white tabular-nums" style={{ fontWeight: 700, lineHeight: 1.2 }}>
                 {offerCount}
               </p>
-              <p className="mt-[3px] text-[8px] uppercase tracking-wider" style={{ color: "#4a4a52", fontWeight: 500 }}>
+              <p className="mt-[3px] text-[8px] uppercase tracking-wider" style={{ color: m.textSecondary, fontWeight: 500 }}>
                 Offers
               </p>
             </div>
@@ -677,7 +711,7 @@ export default function ListingDetailPage() {
               <p className="text-[13px] text-white tabular-nums" style={{ color: "#fca5a5", fontWeight: 700, lineHeight: 1.2 }}>
                 {formatPrice(priceValue, listing.priceCurrency || "CAD")}
               </p>
-              <p className="mt-[3px] text-[8px] uppercase tracking-wider" style={{ color: "rgba(248,113,113,0.5)", fontWeight: 500 }}>
+              <p className="mt-[3px] text-[8px] uppercase tracking-wider" style={{ color: "#fecaca", fontWeight: 600 }}>
                 Asking
               </p>
             </div>
@@ -692,7 +726,7 @@ export default function ListingDetailPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         >
-          <p className="mb-2 text-[11px] uppercase tracking-[0.08em]" style={{ color: "#4a4a52", fontWeight: 600 }}>
+          <p className="mb-2 text-[11px] uppercase tracking-[0.08em]" style={{ color: m.textSecondary, fontWeight: 600 }}>
             Description
           </p>
           <p
@@ -733,7 +767,7 @@ export default function ListingDetailPage() {
               transition={{ delay: 0.3, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             >
               <div className="mb-2.5 flex items-center justify-between px-4">
-                <p className="text-[11px] uppercase tracking-[0.08em]" style={{ color: "#4a4a52", fontWeight: 600 }}>
+                <p className="text-[11px] uppercase tracking-[0.08em]" style={{ color: m.textSecondary, fontWeight: 600 }}>
                   Similar Listings
                 </p>
                 <Link className="flex items-center gap-0.5" to={listing.gameSlug ? `/market/${listing.gameSlug}` : "/market"}>
@@ -761,15 +795,15 @@ export default function ListingDetailPage() {
 
         <div className="flex items-center justify-center gap-4 px-4 py-3">
           <button className="flex items-center gap-1" type="button">
-            <Flag size={11} style={{ color: "#3e3e46" }} />
-            <span className="text-[10px]" style={{ color: "#3e3e46", fontWeight: 400 }}>
+            <Flag size={11} style={{ color: m.textSecondary }} />
+            <span className="text-[10px]" style={{ color: m.textSecondary, fontWeight: 400 }}>
               Report listing
             </span>
           </button>
           <div className="h-3 w-px" style={{ background: "rgba(255,255,255,0.04)" }} />
           <button className="flex items-center gap-1" type="button">
-            <Shield size={11} style={{ color: "#3e3e46" }} />
-            <span className="text-[10px]" style={{ color: "#3e3e46", fontWeight: 400 }}>
+            <Shield size={11} style={{ color: m.textSecondary }} />
+            <span className="text-[10px]" style={{ color: m.textSecondary, fontWeight: 400 }}>
               Safety tips
             </span>
           </button>
@@ -830,16 +864,16 @@ export default function ListingDetailPage() {
             <h2 className="text-[18px] text-white" style={{ fontWeight: 600 }}>
               Make an Offer
             </h2>
-            <p className="mt-1 text-[12px]" style={{ color: "#5e5e66", fontWeight: 400 }}>
+            <p className="mt-1 text-[12px]" style={{ color: "#7d7d86", fontWeight: 400 }}>
               Listed at {formatPrice(priceValue, listing.priceCurrency || "CAD")}
               {marketPrice ? ` · Market value ${formatPrice(marketPrice, "CAD")}` : ""}
             </p>
           </div>
 
           <div className="mb-4 mt-5 flex items-center gap-2 rounded-2xl border px-4 py-3" style={{ background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.06)" }}>
-            <span className="text-[22px]" style={{ color: "#4a4a52", fontWeight: 700 }}>
-              $
-            </span>
+              <span className="text-[22px]" style={{ color: m.textSecondary, fontWeight: 700 }}>
+                $
+              </span>
             <input
               autoFocus
               className="flex-1 bg-transparent text-[24px] text-[var(--text)] outline-none placeholder:text-[#2e2e36]"
@@ -867,7 +901,7 @@ export default function ListingDetailPage() {
                   whileTap={{ scale: 0.93 }}
                   onClick={() => setOfferAmount(String(amount))}
                 >
-                  <span className="text-[12px] tabular-nums" style={{ color: selected ? "#fca5a5" : "#6a6a72", fontWeight: 600 }}>
+                  <span className="text-[12px] tabular-nums" style={{ color: selected ? "#fca5a5" : m.textSecondary, fontWeight: 600 }}>
                     ${amount}
                   </span>
                 </motion.button>
@@ -890,7 +924,7 @@ export default function ListingDetailPage() {
             <h2 className="text-[18px] text-white" style={{ fontWeight: 700 }}>
               Listing admin controls
             </h2>
-            <p className="mt-1 text-[12px]" style={{ color: "#5e5e66", fontWeight: 400 }}>
+            <p className="mt-1 text-[12px]" style={{ color: "#7d7d86", fontWeight: 400 }}>
               Moderate this listing and keep notes without leaving the page.
             </p>
           </div>
@@ -942,7 +976,7 @@ export default function ListingDetailPage() {
               className="rounded-[16px] px-4 py-3"
               style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.05)" }}
             >
-              <p className="text-[10px]" style={{ color: "#5e5e66", fontWeight: 700 }}>
+              <p className="text-[10px]" style={{ color: "#7d7d86", fontWeight: 700 }}>
                 STATUS
               </p>
               <p className="mt-2 text-[12px] text-white" style={{ fontWeight: 700 }}>
@@ -984,3 +1018,4 @@ export default function ListingDetailPage() {
     </MobileScreen>
   );
 }
+

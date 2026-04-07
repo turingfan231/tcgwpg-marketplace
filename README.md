@@ -63,12 +63,11 @@ TCGWPG is a Vite + React + Tailwind marketplace for Winnipeg TCG players to buy,
 - `server/index.js` local API for live card search and Winnipeg event aggregation
 - `supabase/schema.sql` database schema and RLS policies
 
-## Deploying The Demo
+## Deploying
 
 Recommended stack:
 
-- Frontend: Vercel
-- API server: Render
+- Frontend + serverless API: Vercel
 - Auth / database: Supabase
 
 ### Frontend env vars on Vercel
@@ -76,13 +75,12 @@ Recommended stack:
 ```bash
 VITE_SUPABASE_URL=your_project_url
 VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
-VITE_API_BASE_URL=https://your-render-service.onrender.com
 ```
 
-### Backend env vars on Render
+### Optional local API env vars
 
 ```bash
-PORT=10000
+PORT=8787
 VITE_SUPABASE_URL=your_project_url
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
@@ -96,6 +94,22 @@ POKEMONTCG_API_KEY=your_key
 ### Notes
 
 - [`vercel.json`](C:/Users/deoca/Documents/Playground/vercel.json) is included for React Router SPA routing.
-- The frontend now supports `VITE_API_BASE_URL`, so production does not need same-origin `/api` rewrites.
+- Production uses same-origin Vercel serverless `/api` routes by default. `VITE_API_BASE_URL` is optional and intended for local or custom API deployments.
 - In Supabase Auth, add your production Vercel URL to `Site URL` and redirect URLs.
 - `SUPABASE_SERVICE_ROLE_KEY` is only needed on the backend for admin-only account deletion. Do not expose it to the frontend.
+
+## Release verification
+
+Before shipping a release candidate, run:
+
+```bash
+npm install
+npm run test:ci
+npm run test:e2e
+```
+
+If you are validating performance or SEO regressions, also run:
+
+```bash
+npm run test:lighthouse
+```

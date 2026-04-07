@@ -338,7 +338,7 @@ export default function DashboardPage() {
         </div>
       </ScreenSection>
 
-      <div className="lg:px-6 lg:pb-8">
+      <div className="pb-[calc(7rem+env(safe-area-inset-bottom))] lg:px-6 lg:pb-8">
       <div className="mx-auto lg:grid lg:max-w-[1480px] lg:grid-cols-[minmax(0,1.55fr)_400px] lg:gap-8">
         <div className="min-w-0">
           <ScreenSection className="pt-5 lg:px-0">

@@ -1,4 +1,4 @@
-import { BellRing, CalendarDays, ExternalLink, Heart, MapPin, ShieldCheck, Store } from "lucide-react";
+﻿import { BellRing, CalendarDays, ExternalLink, Heart, MapPin, ShieldCheck, Store } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import UserAvatar from "../components/shared/UserAvatar";
@@ -185,8 +185,8 @@ export default function StoreProfilePage() {
                   )}
                 </div>
                 <div>
-                  <p className="text-[30px] text-white" style={{ fontWeight: 800, lineHeight: 1.05 }}>{store.name}</p>
-                  <div className="mt-2 flex items-center gap-2 text-[12px]" style={{ color: "#7a7a82" }}>
+                  <h1 className="text-[30px] text-white" style={{ fontWeight: 800, lineHeight: 1.05 }}>{store.name}</h1>
+                  <div className="mt-2 flex items-center gap-2 text-[12px]" style={{ color: "#c3c3c8" }}>
                     <MapPin size={12} />
                     <span>{store.address}</span>
                   </div>
@@ -469,3 +469,4 @@ export default function StoreProfilePage() {
     </MobileScreen>
   );
 }
+

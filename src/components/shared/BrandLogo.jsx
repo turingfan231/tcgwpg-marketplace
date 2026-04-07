@@ -19,7 +19,7 @@ export default function BrandLogo({
         <img
           alt={alt}
           className={imageClasses}
-          fetchpriority={fetchPriority}
+          fetchPriority={fetchPriority}
           loading={loading}
           src={src}
         />
@@ -32,7 +32,7 @@ export default function BrandLogo({
       <img
         alt={alt}
         className={imageClasses}
-        fetchpriority={fetchPriority}
+        fetchPriority={fetchPriority}
         loading={loading}
         src={src}
       />

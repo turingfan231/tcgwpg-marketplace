@@ -1,4 +1,4 @@
-import { ArrowRight, Search, Sparkles } from "lucide-react";
+﻿import { ArrowRight, Search, Sparkles } from "lucide-react";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import SeoHead from "../components/seo/SeoHead";
@@ -126,6 +126,7 @@ export default function WantToBuyPage() {
                 onFavorite={() => toggleWishlist(listing.id)}
                 trailing={
                   <button
+                    aria-label={`View request for ${listing.title}`}
                     className="inline-flex h-8 w-8 items-center justify-center rounded-full"
                     style={{ background: "transparent" }}
                     type="button"
@@ -152,3 +153,4 @@ export default function WantToBuyPage() {
     </MobileScreen>
   );
 }
+

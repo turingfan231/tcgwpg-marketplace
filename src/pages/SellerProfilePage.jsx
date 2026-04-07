@@ -1,4 +1,4 @@
-import {
+﻿import {
   ArrowLeft,
   Award,
   CheckCircle2,
@@ -45,6 +45,7 @@ function ProfileMenu({ onClose }) {
   return (
     <>
       <motion.button
+        aria-label="Close seller profile menu"
         className="fixed inset-0 z-[55]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -71,6 +72,7 @@ function ProfileMenu({ onClose }) {
           return (
             <button
               key={item.label}
+              aria-label={item.label}
               className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left active:bg-white/[0.03]"
               style={{ borderBottom: index < actions.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}
               type="button"
@@ -111,7 +113,7 @@ function StatCard({ label, value }) {
       <p className="text-[15px] tabular-nums" style={{ color: "#e8e8eb", fontWeight: 700, lineHeight: 1 }}>
         {value}
       </p>
-      <p className="mt-[3px] text-[9px]" style={{ color: "#4e4e56", fontWeight: 500 }}>
+      <p className="mt-[3px] text-[9px]" style={{ color: "#9c9ca4", fontWeight: 500 }}>
         {label}
       </p>
     </div>
@@ -130,7 +132,7 @@ function FollowerRow({ seller }) {
         <p className="truncate text-[12px] text-white" style={{ fontWeight: 700 }}>
           {seller.publicName || seller.name}
         </p>
-        <p className="mt-0.5 text-[10px]" style={{ color: "#5e5e66" }}>
+        <p className="mt-0.5 text-[10px]" style={{ color: "#acacb3" }}>
           {seller.neighborhood || "Winnipeg"}
         </p>
       </div>
@@ -157,11 +159,11 @@ function ReviewCard({ canDelete, onDelete, review }) {
                   key={`${review.id}-star-${index}`}
                   fill={index < Number(review.rating || 0) ? "#fbbf24" : "none"}
                   size={10}
-                  style={{ color: index < Number(review.rating || 0) ? "#fbbf24" : "#3e3e46" }}
+                  style={{ color: index < Number(review.rating || 0) ? "#fbbf24" : "#8c8c96" }}
                 />
               ))}
             </div>
-            <span className="text-[10px]" style={{ color: "#4a4a52" }}>
+            <span className="text-[10px]" style={{ color: "#97979f" }}>
               {review.createdAt
                 ? new Date(review.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })
                 : "Recently"}
@@ -169,7 +171,13 @@ function ReviewCard({ canDelete, onDelete, review }) {
           </div>
         </div>
         {canDelete ? (
-          <button className="text-[10px]" style={{ color: "#fca5a5", fontWeight: 700 }} type="button" onClick={onDelete}>
+          <button
+            aria-label={`Delete review by ${reviewer.publicName || reviewer.name || "local buyer"}`}
+            className="text-[10px]"
+            style={{ color: "#fca5a5", fontWeight: 700 }}
+            type="button"
+            onClick={onDelete}
+          >
             Delete
           </button>
         ) : null}
@@ -363,6 +371,7 @@ export default function SellerProfilePage() {
         }}
       >
         <motion.button
+          aria-label="Go back"
           className="flex h-9 w-9 items-center justify-center rounded-xl"
           style={{ background: "rgba(255,255,255,0.06)" }}
           type="button"
@@ -373,6 +382,7 @@ export default function SellerProfilePage() {
         </motion.button>
         <span className="text-[13px]" style={{ color: "#a0a0a8", fontWeight: 600 }}>Seller Profile</span>
         <motion.button
+          aria-label="Open seller profile actions"
           className="flex h-9 w-9 items-center justify-center rounded-xl"
           style={{ background: "rgba(255,255,255,0.06)" }}
           type="button"
@@ -396,16 +406,16 @@ export default function SellerProfilePage() {
                   <h1 className="text-[30px] text-white" style={{ fontWeight: 800, lineHeight: 1.05 }}>
                     {seller.publicName || seller.name}
                   </h1>
-                  <div className="mt-2 flex items-center gap-2 text-[12px]" style={{ color: "#7a7a82" }}>
+                  <div className="mt-2 flex items-center gap-2 text-[12px]" style={{ color: "#c3c3c8" }}>
                     <MapPin size={12} />
                     <span>{seller.neighborhood || "Winnipeg, MB"}</span>
-                    <span>•</span>
+                    <span>â€¢</span>
                     <span>Since {seller.createdAt ? new Date(seller.createdAt).toLocaleDateString("en-CA", { month: "short", year: "numeric" }) : "recently"}</span>
                   </div>
                   <div className="mt-3 flex items-center gap-2">
                     <Star size={12} fill="#fbbf24" style={{ color: "#fbbf24" }} />
                     <span className="text-[13px] text-white" style={{ fontWeight: 700 }}>{ratingValue.toFixed(1)}</span>
-                    <span className="text-[12px]" style={{ color: "#7a7a82" }}>{reviewValue} reviews</span>
+                    <span className="text-[12px]" style={{ color: "#c3c3c8" }}>{reviewValue} reviews</span>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     {badgeSpecs.map((badge) => (
@@ -436,7 +446,7 @@ export default function SellerProfilePage() {
               <StatCard label="Sales" value={String(salesValue)} />
               <StatCard label="Active" value={String(sellerListings.length)} />
               <StatCard label="Response" value={seller.responseTime || "~1h"} />
-              <button type="button" onClick={() => setShowFollowers(true)}>
+              <button aria-label="View seller followers" type="button" onClick={() => setShowFollowers(true)}>
                 <StatCard label="Followers" value={String(followerCount)} />
               </button>
             </div>
@@ -502,22 +512,22 @@ export default function SellerProfilePage() {
                   {seller.publicName || seller.name}
                 </h1>
                 <div className="mt-[3px] flex items-center gap-1.5">
-                  <MapPin size={10} style={{ color: "#4e4e56" }} />
-                  <span className="text-[11px]" style={{ color: "#5e5e66", fontWeight: 400 }}>
+                  <MapPin size={10} style={{ color: "#9c9ca4" }} />
+                  <span className="text-[11px]" style={{ color: "#acacb3", fontWeight: 400 }}>
                     {seller.neighborhood || "Winnipeg, MB"}
                   </span>
                   <span className="text-[10px]" style={{ color: "#2a2a32" }}>/</span>
-                  <Clock size={10} style={{ color: "#4e4e56" }} />
-                  <span className="text-[11px]" style={{ color: "#5e5e66", fontWeight: 400 }}>
+                  <Clock size={10} style={{ color: "#9c9ca4" }} />
+                  <span className="text-[11px]" style={{ color: "#acacb3", fontWeight: 400 }}>
                     {seller.lastActiveAt ? compactTimeLabel(seller.lastActiveAt) : seller.responseTime || "Active recently"}
                   </span>
                 </div>
                 <div className="mt-[4px] flex items-center gap-1.5">
                   <Star size={10} fill="#fbbf24" style={{ color: "#fbbf24" }} />
                   <span className="text-[12px]" style={{ color: "#d0d0d4", fontWeight: 600 }}>{ratingValue.toFixed(1)}</span>
-                  <span className="text-[10px]" style={{ color: "#4a4a52", fontWeight: 400 }}>({reviewValue} reviews)</span>
+                  <span className="text-[10px]" style={{ color: "#97979f", fontWeight: 400 }}>({reviewValue} reviews)</span>
                   <span className="text-[10px]" style={{ color: "#2a2a32" }}>/</span>
-                  <span className="text-[10px]" style={{ color: "#5e5e66", fontWeight: 500 }}>
+                  <span className="text-[10px]" style={{ color: "#acacb3", fontWeight: 500 }}>
                     Since {seller.createdAt ? new Date(seller.createdAt).toLocaleDateString("en-CA", { month: "short", year: "numeric" }) : "recently"}
                   </span>
                 </div>
@@ -528,7 +538,7 @@ export default function SellerProfilePage() {
               <StatCard label="Sales" value={String(salesValue)} />
               <StatCard label="Active" value={String(sellerListings.length)} />
               <StatCard label="Response" value={seller.responseTime || "~1h"} />
-              <button type="button" onClick={() => setShowFollowers(true)}>
+              <button aria-label="View seller followers" type="button" onClick={() => setShowFollowers(true)}>
                 <StatCard label="Followers" value={String(followerCount)} />
               </button>
             </div>
@@ -601,7 +611,7 @@ export default function SellerProfilePage() {
                   <MapPin size={11} style={{ color: "#fbbf24" }} />
                 </div>
                 <div className="min-w-0 flex-1"><span className="text-[11px]" style={{ color: "#b0b0b8", fontWeight: 500 }}>Local Meetups</span></div>
-                <span className="max-w-[140px] truncate text-[11px]" style={{ color: "#5e5e66", fontWeight: 400 }}>
+                <span className="max-w-[140px] truncate text-[11px]" style={{ color: "#acacb3", fontWeight: 400 }}>
                   {(trustedSpots.length ? trustedSpots.map((spot) => spot.label || spot.name) : [seller.neighborhood || "Winnipeg"]).join(", ")}
                 </span>
               </div>
@@ -612,7 +622,7 @@ export default function SellerProfilePage() {
                 <div className="flex-1"><span className="text-[11px]" style={{ color: "#b0b0b8", fontWeight: 500 }}>Focus</span></div>
                 <div className="flex gap-1">
                   {(seller.favoriteGames || []).slice(0, 3).map((game) => (
-                    <span key={game} className="rounded-md px-[5px] py-[2px] text-[9px]" style={{ background: "rgba(255,255,255,0.04)", color: "#7a7a82", fontWeight: 500 }}>
+                    <span key={game} className="rounded-md px-[5px] py-[2px] text-[9px]" style={{ background: "rgba(255,255,255,0.04)", color: "#c3c3c8", fontWeight: 500 }}>
                       {game}
                     </span>
                   ))}
@@ -622,7 +632,7 @@ export default function SellerProfilePage() {
           </div>
         </motion.section>
 
-        {followMessage ? <div className="px-4 pb-2 lg:px-0 lg:pb-4"><p className="text-[10px] lg:text-[12px]" style={{ color: "#6a6a72" }}>{followMessage}</p></div> : null}
+        {followMessage ? <div className="px-4 pb-2 lg:px-0 lg:pb-4"><p className="text-[10px] lg:text-[12px]" style={{ color: "#b6b6bc" }}>{followMessage}</p></div> : null}
 
         <motion.section className="mb-3 px-4 lg:mt-8 lg:px-0" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.14 }}>
           <div className="flex gap-0 rounded-xl p-[3px]" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.04)" }}>
@@ -645,8 +655,8 @@ export default function SellerProfilePage() {
                       transition={{ type: "spring", damping: 25, stiffness: 300 }}
                     />
                   ) : null}
-                  <span className="relative text-[12px]" style={{ color: active ? "#e0e0e4" : "#4e4e56", fontWeight: active ? 600 : 400 }}>{item.label}</span>
-                  <span className="relative rounded-md px-[4px] py-[1px] text-[10px] tabular-nums" style={{ background: active ? "rgba(255,255,255,0.06)" : "transparent", color: active ? "#a0a0a8" : "#3a3a42", fontWeight: 600 }}>{count}</span>
+                  <span className="relative text-[12px]" style={{ color: active ? "#e0e0e4" : "#9c9ca4", fontWeight: active ? 600 : 400 }}>{item.label}</span>
+                  <span className="relative rounded-md px-[4px] py-[1px] text-[10px] tabular-nums" style={{ background: active ? "rgba(255,255,255,0.06)" : "transparent", color: active ? "#a0a0a8" : "#898992", fontWeight: 600 }}>{count}</span>
                 </motion.button>
               );
             })}
@@ -675,14 +685,14 @@ export default function SellerProfilePage() {
                   <p className="text-[30px] tabular-nums" style={{ color: "#f0f0f2", fontWeight: 700, lineHeight: 1 }}>{ratingValue.toFixed(1)}</p>
                   <div className="mt-1 flex items-center justify-center gap-[2px]">
                     {Array.from({ length: 5 }).map((_, index) => (
-                      <Star key={`summary-star-${index}`} fill={index < Math.round(ratingValue) ? "#fbbf24" : "none"} size={10} style={{ color: index < Math.round(ratingValue) ? "#fbbf24" : "#3e3e46" }} />
+                      <Star key={`summary-star-${index}`} fill={index < Math.round(ratingValue) ? "#fbbf24" : "none"} size={10} style={{ color: index < Math.round(ratingValue) ? "#fbbf24" : "#8c8c96" }} />
                     ))}
                   </div>
                 </div>
                 <div className="h-10 w-px" style={{ background: "rgba(255,255,255,0.04)" }} />
                 <div className="flex-1">
                   <p className="text-[12px] text-white" style={{ fontWeight: 600 }}>{reviewValue} local reviews</p>
-                  <p className="mt-[2px] text-[10px]" style={{ color: "#5e5e66" }}>
+                  <p className="mt-[2px] text-[10px]" style={{ color: "#acacb3" }}>
                     {salesValue} completed deals / {followerCount} followers
                   </p>
                 </div>
@@ -729,8 +739,8 @@ export default function SellerProfilePage() {
                 <div className="flex items-center justify-between">
                   <p className="text-[12px] text-white" style={{ fontWeight: 600 }}>Completed sales</p>
                   <div className="flex items-center gap-1">
-                    <Eye size={10} style={{ color: "#4e4e56" }} />
-                    <span className="text-[10px]" style={{ color: "#5e5e66", fontWeight: 500 }}>{salesValue} total</span>
+                    <Eye size={10} style={{ color: "#9c9ca4" }} />
+                    <span className="text-[10px]" style={{ color: "#acacb3", fontWeight: 500 }}>{salesValue} total</span>
                   </div>
                 </div>
                 <p className="mt-2 text-[11px]" style={{ color: "#8a8a92", lineHeight: 1.5, fontWeight: 400 }}>
@@ -738,11 +748,11 @@ export default function SellerProfilePage() {
                 </p>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <div className="rounded-lg p-2.5" style={{ background: "rgba(255,255,255,0.03)" }}>
-                    <p className="text-[10px]" style={{ color: "#4e4e56", fontWeight: 500 }}>Trust level</p>
+                    <p className="text-[10px]" style={{ color: "#9c9ca4", fontWeight: 500 }}>Trust level</p>
                     <p className="mt-1 text-[13px] text-white" style={{ fontWeight: 700 }}>{seller.verified ? "Verified seller" : "Community seller"}</p>
                   </div>
                   <div className="rounded-lg p-2.5" style={{ background: "rgba(255,255,255,0.03)" }}>
-                    <p className="text-[10px]" style={{ color: "#4e4e56", fontWeight: 500 }}>Response</p>
+                    <p className="text-[10px]" style={{ color: "#9c9ca4", fontWeight: 500 }}>Response</p>
                     <p className="mt-1 text-[13px] text-white" style={{ fontWeight: 700 }}>{seller.responseTime || "~1 hour"}</p>
                   </div>
                 </div>
@@ -773,3 +783,4 @@ export default function SellerProfilePage() {
     </MobileScreen>
   );
 }
+

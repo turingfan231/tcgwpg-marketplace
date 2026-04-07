@@ -1,4 +1,4 @@
-import { ArrowLeft, Eye, EyeOff, Lock, Mail, MapPin, UserPlus } from "lucide-react";
+﻿import { ArrowLeft, Eye, EyeOff, Lock, Mail, MapPin, UserPlus } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -26,7 +26,7 @@ function normalizePostalInput(value) {
 function AuthField({ children, label }) {
   return (
     <label className="block">
-      <p className="mb-2 text-[10px] uppercase tracking-[0.12em]" style={{ color: m.textTertiary, fontWeight: 700 }}>
+      <p className="mb-2 text-[10px] uppercase tracking-[0.12em]" style={{ color: "#d1d1d7", fontWeight: 700 }}>
         {label}
       </p>
       {children}
@@ -159,6 +159,7 @@ export default function AuthPage() {
 
       <div className="flex items-center justify-between">
         <motion.button
+          aria-label="Go back"
           className="inline-flex h-9 w-9 items-center justify-center rounded-[12px]"
           style={{ background: m.surfaceStrong, border: `1px solid ${m.border}` }}
           type="button"
@@ -180,13 +181,13 @@ export default function AuthPage() {
       </div>
 
       <ScreenSection className="px-0 pt-10">
-        <p className="text-[11px]" style={{ color: m.textTertiary, fontWeight: 600 }}>
+        <p className="text-[11px]" style={{ color: "#d1d1d7", fontWeight: 600 }}>
           Winnipeg marketplace access
         </p>
         <h1 className="mt-2 text-[30px] tracking-tight text-white" style={{ fontWeight: 700, lineHeight: 1 }}>
           {title}
         </h1>
-        <p className="mt-3 text-[13px]" style={{ color: m.textSecondary, lineHeight: 1.55 }}>
+        <p className="mt-3 text-[13px]" style={{ color: "#d9d9de", lineHeight: 1.55 }}>
           One account for listings, offers, messages, saved cards, and your local seller workspace.
         </p>
       </ScreenSection>
@@ -210,25 +211,25 @@ export default function AuthPage() {
       <ScreenSection className="px-0 pt-5">
         <div className="rounded-[24px] border p-4" style={{ background: m.surface, borderColor: m.border, boxShadow: m.shadowPanel }}>
           {message ? (
-            <div className="mb-3 rounded-[16px] px-3 py-2 text-[11px]" style={{ background: "rgba(239,68,68,0.08)", color: "#fca5a5", fontWeight: 600 }}>
+            <div aria-live="polite" className="mb-3 rounded-[16px] px-3 py-2 text-[11px]" role="status" style={{ background: "rgba(239,68,68,0.08)", color: "#fca5a5", fontWeight: 600 }}>
               {message}
             </div>
           ) : null}
           {error ? (
-            <div className="mb-3 rounded-[16px] px-3 py-2 text-[11px]" style={{ background: "rgba(248,113,113,0.08)", color: m.danger, fontWeight: 600 }}>
+            <div aria-live="assertive" className="mb-3 rounded-[16px] px-3 py-2 text-[11px]" role="alert" style={{ background: "rgba(248,113,113,0.08)", color: m.danger, fontWeight: 600 }}>
               {error}
             </div>
           ) : null}
 
           {mode === "login" ? (
-            <form className="space-y-3" onSubmit={handleLoginSubmit}>
+            <form aria-label="Sign in form" className="space-y-3" onSubmit={handleLoginSubmit}>
               <AuthField label="Email">
-                <TextField value={loginForm.email} onChange={(value) => setLoginForm((current) => ({ ...current, email: value }))} placeholder="you@example.com" type="email" />
+                <TextField aria-label="Email address" value={loginForm.email} onChange={(value) => setLoginForm((current) => ({ ...current, email: value }))} placeholder="you@example.com" type="email" />
               </AuthField>
               <AuthField label="Password">
                 <div className="relative">
-                  <TextField value={loginForm.password} onChange={(value) => setLoginForm((current) => ({ ...current, password: value }))} placeholder="Password" type={showPassword ? "text" : "password"} />
-                  <button className="absolute right-3 top-1/2 -translate-y-1/2" type="button" onClick={() => setShowPassword((current) => !current)}>
+                  <TextField aria-label="Password" value={loginForm.password} onChange={(value) => setLoginForm((current) => ({ ...current, password: value }))} placeholder="Password" type={showPassword ? "text" : "password"} />
+                  <button aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2" type="button" onClick={() => setShowPassword((current) => !current)}>
                     {showPassword ? <EyeOff size={14} style={{ color: m.textSecondary }} /> : <Eye size={14} style={{ color: m.textSecondary }} />}
                   </button>
                 </div>
@@ -240,20 +241,20 @@ export default function AuthPage() {
           ) : null}
 
           {mode === "signup" ? (
-            <form className="space-y-3" onSubmit={handleSignupSubmit}>
+            <form aria-label="Create account form" className="space-y-3" onSubmit={handleSignupSubmit}>
               <AuthField label="Username">
-                <TextField value={signupForm.username} onChange={(value) => setSignupForm((current) => ({ ...current, username: value }))} placeholder="cardkingwpg" />
+                <TextField aria-label="Username" value={signupForm.username} onChange={(value) => setSignupForm((current) => ({ ...current, username: value }))} placeholder="cardkingwpg" />
               </AuthField>
               <AuthField label="Public name">
-                <TextField value={signupForm.name} onChange={(value) => setSignupForm((current) => ({ ...current, name: value }))} placeholder="CardKingWPG" />
+                <TextField aria-label="Public name" value={signupForm.name} onChange={(value) => setSignupForm((current) => ({ ...current, name: value }))} placeholder="CardKingWPG" />
               </AuthField>
               <AuthField label="Email">
-                <TextField value={signupForm.email} onChange={(value) => setSignupForm((current) => ({ ...current, email: value }))} placeholder="you@example.com" type="email" />
+                <TextField aria-label="Email address" value={signupForm.email} onChange={(value) => setSignupForm((current) => ({ ...current, email: value }))} placeholder="you@example.com" type="email" />
               </AuthField>
               <AuthField label="Password">
                 <div className="relative">
-                  <TextField value={signupForm.password} onChange={(value) => setSignupForm((current) => ({ ...current, password: value }))} placeholder="Create a password" type={showPassword ? "text" : "password"} />
-                  <button className="absolute right-3 top-1/2 -translate-y-1/2" type="button" onClick={() => setShowPassword((current) => !current)}>
+                  <TextField aria-label="Create password" value={signupForm.password} onChange={(value) => setSignupForm((current) => ({ ...current, password: value }))} placeholder="Create a password" type={showPassword ? "text" : "password"} />
+                  <button aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2" type="button" onClick={() => setShowPassword((current) => !current)}>
                     {showPassword ? <EyeOff size={14} style={{ color: m.textSecondary }} /> : <Eye size={14} style={{ color: m.textSecondary }} />}
                   </button>
                 </div>
@@ -274,7 +275,7 @@ export default function AuthPage() {
                   </select>
                 </AuthField>
                 <AuthField label="Postal">
-                  <TextField value={signupForm.postalCode} onChange={(value) => setSignupForm((current) => ({ ...current, postalCode: normalizePostalInput(value) }))} placeholder="R3C" />
+                  <TextField aria-label="Postal code prefix" value={signupForm.postalCode} onChange={(value) => setSignupForm((current) => ({ ...current, postalCode: normalizePostalInput(value) }))} placeholder="R3C" />
                 </AuthField>
               </div>
               <PrimaryButton disabled={submitting || !signupForm.username || !signupForm.email || !signupForm.password || !signupForm.name} type="submit">
@@ -284,9 +285,9 @@ export default function AuthPage() {
           ) : null}
 
           {mode === "forgot" ? (
-            <form className="space-y-3" onSubmit={handleForgotSubmit}>
+            <form aria-label="Reset password form" className="space-y-3" onSubmit={handleForgotSubmit}>
               <AuthField label="Email">
-                <TextField value={forgotEmail} onChange={setForgotEmail} placeholder="you@example.com" type="email" />
+                <TextField aria-label="Recovery email address" value={forgotEmail} onChange={setForgotEmail} placeholder="you@example.com" type="email" />
               </AuthField>
               <PrimaryButton disabled={submitting || !forgotEmail} type="submit">
                 {submitting ? "Sending..." : "Send Reset Link"}
@@ -296,12 +297,12 @@ export default function AuthPage() {
           ) : null}
 
           {mode === "recovery" ? (
-            <form className="space-y-3" onSubmit={handleRecoverySubmit}>
+            <form aria-label="Choose a new password form" className="space-y-3" onSubmit={handleRecoverySubmit}>
               <AuthField label="New password">
-                <TextField value={recoveryForm.newPassword} onChange={(value) => setRecoveryForm((current) => ({ ...current, newPassword: value }))} placeholder="New password" type="password" />
+                <TextField aria-label="New password" value={recoveryForm.newPassword} onChange={(value) => setRecoveryForm((current) => ({ ...current, newPassword: value }))} placeholder="New password" type="password" />
               </AuthField>
               <AuthField label="Confirm password">
-                <TextField value={recoveryForm.confirmPassword} onChange={(value) => setRecoveryForm((current) => ({ ...current, confirmPassword: value }))} placeholder="Confirm password" type="password" />
+                <TextField aria-label="Confirm new password" value={recoveryForm.confirmPassword} onChange={(value) => setRecoveryForm((current) => ({ ...current, confirmPassword: value }))} placeholder="Confirm password" type="password" />
               </AuthField>
               <PrimaryButton disabled={submitting || !recoveryForm.newPassword || !recoveryForm.confirmPassword} type="submit">
                 {submitting ? "Updating..." : "Update Password"}
@@ -322,7 +323,7 @@ export default function AuthPage() {
                 <p className="text-[12px] text-white" style={{ fontWeight: 700 }}>
                   Messages and offers
                 </p>
-                <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+                <p className="mt-1 text-[10px]" style={{ color: "#d0d0d6" }}>
                   Keep every local negotiation in one thread.
                 </p>
               </div>
@@ -337,7 +338,7 @@ export default function AuthPage() {
                 <p className="text-[12px] text-white" style={{ fontWeight: 700 }}>
                   Local meetup ready
                 </p>
-                <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+                <p className="mt-1 text-[10px]" style={{ color: "#d0d0d6" }}>
                   Your account powers listings, meetup preferences, and seller trust.
                 </p>
               </div>
@@ -352,7 +353,7 @@ export default function AuthPage() {
                 <p className="text-[12px] text-white" style={{ fontWeight: 700 }}>
                   Collector workspace
                 </p>
-                <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+                <p className="mt-1 text-[10px]" style={{ color: "#d0d0d6" }}>
                   Save cards, track listings, and stay on top of activity.
                 </p>
               </div>
@@ -363,3 +364,4 @@ export default function AuthPage() {
     </MobileScreen>
   );
 }
+

@@ -68,8 +68,9 @@ export function DetailHeader({ title, subtitle, onBack, right, className = "" })
       }}
     >
       <div className="flex items-center gap-3">
-        <motion.button
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px]"
+          <motion.button
+            aria-label="Go back"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px]"
           style={{ background: m.surfaceStrong, border: `1px solid ${m.border}` }}
           type="button"
           whileTap={{ scale: 0.9 }}
@@ -93,29 +94,49 @@ export function DetailHeader({ title, subtitle, onBack, right, className = "" })
   );
 }
 
-export function InlineSearch({ value, onChange, placeholder = "Search", className = "", readOnly = false, onClick }) {
-  return (
-    <button
-      className={`flex w-full items-center gap-2 rounded-[14px] px-3 py-[9px] text-left ${className}`}
-      style={{ background: m.surfaceStrong, border: `1px solid ${m.border}` }}
-      type="button"
-      onClick={onClick}
-    >
-      <Search size={14} style={{ color: m.textMuted }} />
-      {readOnly ? (
+export function InlineSearch({
+  value,
+  onChange,
+  placeholder = "Search",
+  className = "",
+  readOnly = false,
+  onClick,
+  ariaLabel,
+  inputProps = {},
+}) {
+  if (readOnly) {
+    return (
+      <button
+        aria-label={ariaLabel || placeholder}
+        className={`flex w-full items-center gap-2 rounded-[14px] px-3 py-[9px] text-left ${className}`}
+        style={{ background: m.surfaceStrong, border: `1px solid ${m.border}` }}
+        type="button"
+        onClick={onClick}
+      >
+        <Search aria-hidden="true" size={14} style={{ color: m.textMuted }} />
         <span className="text-[12.5px]" style={{ color: m.textMuted }}>
           {placeholder}
         </span>
-      ) : (
-        <input
-          className="min-w-0 flex-1 bg-transparent text-[12.5px] outline-none placeholder:text-[color:var(--placeholder)]"
-          onChange={(event) => onChange?.(event.target.value)}
-          placeholder={placeholder}
-          style={{ "--placeholder": m.textMuted, color: m.text }}
-          value={value || ""}
-        />
-      )}
-    </button>
+      </button>
+    );
+  }
+
+  return (
+    <div
+      className={`flex w-full items-center gap-2 rounded-[14px] px-3 py-[9px] ${className}`}
+      style={{ background: m.surfaceStrong, border: `1px solid ${m.border}` }}
+    >
+      <Search aria-hidden="true" size={14} style={{ color: m.textMuted }} />
+      <input
+        aria-label={ariaLabel || placeholder}
+        className="min-w-0 flex-1 bg-transparent text-[12.5px] outline-none placeholder:text-[color:var(--placeholder)]"
+        onChange={(event) => onChange?.(event.target.value)}
+        placeholder={placeholder}
+        style={{ "--placeholder": m.textMuted, color: m.text }}
+        value={value || ""}
+        {...inputProps}
+      />
+    </div>
   );
 }
 
@@ -186,6 +207,7 @@ export function TextField({
   inputMode,
   className = "",
   readOnly = false,
+  ...props
 }) {
   return (
     <div className={`relative ${className}`}>
@@ -211,12 +233,13 @@ export function TextField({
         type={type}
         value={value}
         onChange={(event) => onChange?.(event.target.value)}
+        {...props}
       />
     </div>
   );
 }
 
-export function TextArea({ value, onChange, placeholder, rows = 3, className = "" }) {
+export function TextArea({ value, onChange, placeholder, rows = 3, className = "", ...props }) {
   return (
     <textarea
       className={`w-full rounded-[14px] border px-3 py-3 text-[12.5px] outline-none ${className}`}
@@ -231,6 +254,7 @@ export function TextArea({ value, onChange, placeholder, rows = 3, className = "
       placeholder={placeholder}
       value={value}
       onChange={(event) => onChange?.(event.target.value)}
+      {...props}
     />
   );
 }
@@ -531,6 +555,7 @@ export function ListingRow({
       whileTap={{ scale: 0.985 }}
     >
       <button
+        aria-label={`View ${listing.title}`}
         className="relative w-[64px] shrink-0 overflow-hidden"
         data-listing-link={listing.id}
         type="button"
@@ -549,6 +574,7 @@ export function ListingRow({
         </div>
       </button>
       <button
+        aria-label={`View ${listing.title}`}
         className="min-w-0 flex-1 px-2.5 py-2 text-left"
         data-listing-link={listing.id}
         type="button"
@@ -559,7 +585,7 @@ export function ListingRow({
             <p className="truncate text-[12px] text-white" style={{ fontWeight: 600 }}>
               {listing.title}
             </p>
-            <p className="mt-[1px] truncate text-[9.5px]" style={{ color: "#48484f", fontWeight: 400 }}>
+            <p className="mt-[1px] truncate text-[9.5px]" style={{ color: "#bcbcc5", fontWeight: 400 }}>
               {meta || [listing.setName || listing.set, listing.game].filter(Boolean).join(" · ")}
             </p>
           </div>
@@ -574,28 +600,28 @@ export function ListingRow({
           >
             {sellerInitial(seller)}
           </div>
-          <span className="max-w-[7.5rem] truncate text-[9px]" style={{ color: "#505058", fontWeight: 500 }}>
+          <span className="max-w-[7.5rem] truncate text-[9px]" style={{ color: "#c6c6cd", fontWeight: 500 }}>
             {sellerLabel(seller)}
           </span>
           {rating ? (
             <>
               <Star size={7} fill="#fbbf24" style={{ color: "#fbbf24" }} />
-              <span className="text-[8px]" style={{ color: "#505058", fontWeight: 500 }}>
+              <span className="text-[8px]" style={{ color: "#c6c6cd", fontWeight: 500 }}>
                 {Number(rating).toFixed(1)}
               </span>
             </>
           ) : null}
           {listing.neighborhood ? (
             <>
-              <span style={{ color: "#2a2a32", fontSize: 5 }}>•</span>
-              <MapPin size={7} style={{ color: "#3e3e48" }} />
-              <span className="truncate text-[8.5px]" style={{ color: "#4a4a52", fontWeight: 400 }}>
+              <span aria-hidden="true" style={{ color: "#2a2a32", fontSize: 8 }}>•</span>
+              <MapPin size={7} style={{ color: "#a9a9b2" }} />
+              <span className="truncate text-[8.5px]" style={{ color: "#b8b8c0", fontWeight: 400 }}>
                 {listing.neighborhood}
               </span>
             </>
           ) : null}
           <div className="flex-1" />
-          <span className="text-[8px]" style={{ color: "#303038" }}>
+          <span className="text-[8px]" style={{ color: "#a3a3ad" }}>
             {compactTimeLabel(listing.sortTimestamp || listing.createdAt || listing.timeAgo)}
           </span>
         </div>
@@ -605,6 +631,7 @@ export function ListingRow({
           trailing
         ) : (
           <button
+            aria-label={favorite ? `Remove ${listing.title} from wishlist` : `Save ${listing.title} to wishlist`}
             className="inline-flex h-6 w-6 items-center justify-center rounded-full"
             style={{ background: "transparent" }}
             type="button"
@@ -630,8 +657,9 @@ export function ListingTile({ listing, favorite, onFavorite }) {
   const navigate = useNavigate();
   const location = useLocation();
   return (
-    <motion.div
-      className="overflow-hidden rounded-xl"
+    <motion.article
+      aria-label={`${listing.title} listing`}
+      className="relative overflow-hidden rounded-xl"
       style={{
         background: "rgba(255,255,255,0.03)",
         border: "1px solid rgba(255,255,255,0.05)",
@@ -640,39 +668,13 @@ export function ListingTile({ listing, favorite, onFavorite }) {
       }}
       whileTap={{ scale: 0.975 }}
     >
-      <div
-        className="relative block aspect-[4/5] w-full cursor-pointer overflow-hidden"
-        data-listing-link={listing.id}
-        role="button"
-        tabIndex={0}
-        onClick={() => rememberAndNavigateToListing(navigate, location, listing.id)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            rememberAndNavigateToListing(navigate, location, listing.id);
-          }
-        }}
-      >
-        <img
-          alt={listing.title}
-          className="h-full w-full object-cover"
-          decoding="async"
-          loading="lazy"
-          src={listingArtwork(listing)}
-          style={{ background: m.bgElevated }}
-        />
-        <div className="absolute left-1.5 top-1.5">
-          <ConditionPill condition={listing.condition} />
-        </div>
+      {onFavorite ? (
         <button
-          className="absolute right-1.5 top-1.5 inline-flex h-8 w-8 items-center justify-center rounded-full"
+          aria-label={favorite ? `Remove ${listing.title} from wishlist` : `Save ${listing.title} to wishlist`}
+          className="absolute right-1.5 top-1.5 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full"
           style={{ background: "#FFFCFC", boxShadow: "0 2px 7px rgba(0,0,0,0.08)" }}
           type="button"
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            onFavorite?.();
-          }}
+          onClick={() => onFavorite()}
         >
           <Heart
             fill={favorite ? m.red : "none"}
@@ -681,26 +683,42 @@ export function ListingTile({ listing, favorite, onFavorite }) {
             style={{ color: favorite ? m.red : "#281B1B" }}
           />
         </button>
-      </div>
+      ) : null}
       <button
-        className="block w-full px-2.5 py-2.5 text-left"
+        aria-label={`View ${listing.title}`}
+        className="block w-full text-left"
         data-listing-link={listing.id}
         type="button"
         onClick={() => rememberAndNavigateToListing(navigate, location, listing.id)}
       >
-        <div className="flex items-start justify-between gap-2">
-          <p className="min-w-0 truncate text-[11px] text-white" style={{ fontWeight: 600 }}>
-            {listing.title}
-          </p>
-          <span className="shrink-0 text-[12px] text-white" style={{ fontWeight: 700 }}>
-            {formatPrice(listing.priceCad ?? listing.price, listing.priceCurrency || "CAD")}
-          </span>
+        <div className="relative aspect-[4/5] w-full overflow-hidden">
+          <img
+            alt={listing.title}
+            className="h-full w-full object-cover"
+            decoding="async"
+            loading="lazy"
+            src={listingArtwork(listing)}
+            style={{ background: m.bgElevated }}
+          />
+          <div className="absolute left-1.5 top-1.5">
+            <ConditionPill condition={listing.condition} />
+          </div>
         </div>
-        <p className="mt-[2px] truncate text-[9px]" style={{ color: m.textTertiary }}>
-          {[listing.setName || listing.set, listing.game].filter(Boolean).join(" · ")}
-        </p>
+        <div className="px-2.5 py-2.5">
+          <div className="flex items-start justify-between gap-2">
+            <p className="min-w-0 truncate text-[11px] text-white" style={{ fontWeight: 600 }}>
+              {listing.title}
+            </p>
+            <span className="shrink-0 text-[12px] text-white" style={{ fontWeight: 700 }}>
+              {formatPrice(listing.priceCad ?? listing.price, listing.priceCurrency || "CAD")}
+            </span>
+          </div>
+          <p className="mt-[2px] truncate text-[9px]" style={{ color: m.textTertiary }}>
+            {[listing.setName || listing.set, listing.game].filter(Boolean).join(" · ")}
+          </p>
+        </div>
       </button>
-    </motion.div>
+    </motion.article>
   );
 }
 
@@ -757,7 +775,7 @@ export function MiniStoreRow({ store, followerCount }) {
         </p>
         <p className="mt-[2px] truncate text-[9px]" style={{ color: "#4a4a54", fontWeight: 400 }}>
           {store.neighborhood}
-          {typeof followerCount === "number" ? ` · ${followerCount} follows` : ""}
+          {typeof followerCount === "number" ? ` ? ${followerCount} follows` : ""}
         </p>
       </div>
     </Link>

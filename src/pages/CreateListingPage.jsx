@@ -162,7 +162,7 @@ function StepRail({ step }) {
           </div>
           <p
             className="mt-1 text-center text-[8px]"
-            style={{ color: index <= step ? m.textSecondary : m.textMuted, fontWeight: index <= step ? 700 : 500 }}
+            style={{ color: index <= step ? "#d1d1d7" : "#9d9da6", fontWeight: index <= step ? 700 : 500 }}
           >
             {label}
           </p>
@@ -341,6 +341,7 @@ export default function CreateListingPage() {
   const {
     activeListings,
     addListing,
+    clearListingDraft,
     createListingPreset,
     currentUser,
     currentUserId,
@@ -449,6 +450,7 @@ export default function CreateListingPage() {
   }, [currentUser?.neighborhood]);
 
   const supportsJapanese = useMemo(() => supportsJapaneseSearch(state.game), [state.game]);
+  const activeDraftId = state.draftId || listingDraft?.id || "";
   const hasSelectedArtwork = Boolean(
     state.includeSelectedPrintingImage !== false && state.selectedPrinting?.imageUrl,
   );
@@ -677,6 +679,36 @@ export default function CreateListingPage() {
     }
   }
 
+  async function handleClearDraft() {
+    if (!activeDraftId || savingDraft || publishing) {
+      return;
+    }
+
+    setSavingDraft(true);
+    setError("");
+    try {
+      const result = await clearListingDraft(activeDraftId);
+      setSavingDraft(false);
+      if (!result?.ok) {
+        setError(result?.error || "Draft could not be cleared.");
+        return;
+      }
+
+      photos.forEach((photo) => {
+        if (String(photo.previewUrl || "").startsWith("blob:")) {
+          URL.revokeObjectURL(photo.previewUrl);
+        }
+      });
+      setPhotos([]);
+      setState(buildInitialDraft(null, currentUser, fallbackGame, activePreset));
+      syncedStateKeyRef.current = "";
+      navigate("/dashboard");
+    } catch (nextError) {
+      setSavingDraft(false);
+      setError(nextError.message || "Draft could not be cleared.");
+    }
+  }
+
   if (successTitle) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-8" style={{ background: m.bg }}>
@@ -703,10 +735,21 @@ export default function CreateListingPage() {
       <DetailHeader
         onBack={() => (step > 0 ? setStep((current) => current - 1) : navigate(-1))}
         right={
-          <SecondaryButton className="h-9 px-3 text-[10px]" disabled={savingDraft} onClick={() => void handleSaveDraft()}>
-            {savingDraft ? <LoaderCircle className="animate-spin" size={12} /> : null}
-            Save Draft
-          </SecondaryButton>
+          <div className="flex items-center gap-2">
+            {activeDraftId ? (
+              <SecondaryButton
+                className="h-9 px-3 text-[10px]"
+                disabled={savingDraft || publishing}
+                onClick={() => void handleClearDraft()}
+              >
+                Clear Draft
+              </SecondaryButton>
+            ) : null}
+            <SecondaryButton className="h-9 px-3 text-[10px]" disabled={savingDraft || publishing} onClick={() => void handleSaveDraft()}>
+              {savingDraft ? <LoaderCircle className="animate-spin" size={12} /> : null}
+              Save Draft
+            </SecondaryButton>
+          </div>
         }
         subtitle={`Step ${step + 1} of ${STEPS.length}`}
         title="Create Listing"
@@ -863,13 +906,13 @@ export default function CreateListingPage() {
                     <p className="text-[13px] text-white" style={{ fontWeight: 700 }}>
                       Manual listing active
                     </p>
-                    <p className="mt-1 text-[10px]" style={{ color: m.textSecondary }}>
+                    <p className="mt-1 text-[10px]" style={{ color: "#d1d1d7" }}>
                       {state.game} card not in the database? Continue and enter the details manually.
                     </p>
                   </div>
                   <span
                     className="rounded-full px-2 py-[3px] text-[9px]"
-                    style={{ background: m.surfaceStrong, color: m.textSecondary, fontWeight: 700 }}
+                    style={{ background: m.surfaceStrong, color: "#d1d1d7", fontWeight: 700 }}
                   >
                     {state.game}
                   </span>
@@ -879,7 +922,7 @@ export default function CreateListingPage() {
           </ScreenSection>
 
           <ScreenSection className="pt-4">
-            <p className="mb-2 text-[10px] uppercase" style={{ color: m.textTertiary, fontWeight: 700, letterSpacing: "0.08em" }}>
+            <p className="mb-2 text-[10px] uppercase" style={{ color: "#c7c7ce", fontWeight: 700, letterSpacing: "0.08em" }}>
               {state.query.trim().length >= 2 ? "Results" : "Popular now"}
             </p>
             <div className="flex max-h-[min(52vh,24rem)] flex-col gap-2 overflow-y-auto pr-1">
@@ -911,10 +954,10 @@ export default function CreateListingPage() {
                       <p className="truncate text-[12px] text-white" style={{ fontWeight: 700 }}>
                         {item.title}
                       </p>
-                      <p className="mt-1 truncate text-[10px]" style={{ color: m.textSecondary }}>
+                      <p className="mt-1 truncate text-[10px]" style={{ color: "#d5d5db" }}>
                         {item.setName}
                       </p>
-                      <p className="mt-1 truncate text-[9px]" style={{ color: m.textTertiary }}>
+                      <p className="mt-1 truncate text-[9px]" style={{ color: "#bdbdc6" }}>
                         {item.language || state.language}
                       </p>
                     </div>
@@ -933,7 +976,7 @@ export default function CreateListingPage() {
       {step === 1 ? (
         <>
           <ScreenSection className="pt-2">
-            <p className="text-[11px]" style={{ color: m.textSecondary }}>
+            <p className="text-[11px]" style={{ color: "#d5d5db" }}>
               Add up to 6 of your own photos. When card art is enabled, it stays as the first cover image.
             </p>
           </ScreenSection>

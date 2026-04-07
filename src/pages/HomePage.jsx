@@ -1,4 +1,4 @@
-import {
+﻿import {
   Bell,
   ChevronLeft,
   ChevronRight,
@@ -107,7 +107,7 @@ function SectionHeader({ title, to }) {
     <div className="mb-2 mt-4 flex items-center justify-between px-4 lg:px-0">
       <h2
         className="text-[13px] uppercase tracking-[0.06em]"
-        style={{ fontWeight: 600, color: "#707078" }}
+        style={{ fontWeight: 700, color: "#c3c3c8" }}
       >
         {title}
       </h2>
@@ -129,7 +129,7 @@ function CompactBrand() {
       className="gap-3"
       imgClassName="h-8 w-8 rounded-[10px] shadow-[0_8px_20px_rgba(239,68,68,0.18)]"
       subtitle="Winnipeg, MB"
-      subtitleClassName="text-[11px] text-[#6f6f78]"
+      subtitleClassName="text-[11px] text-[#b7b7bd]"
       titleClassName="text-[13px] font-bold text-white"
       withSubtitle
     />
@@ -374,6 +374,7 @@ function HeroCarousel({ slides }) {
         {slides.length > 1 ? (
           <>
             <button
+              aria-label="Previous featured slide"
               className="absolute left-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full"
               style={{ background: "rgba(0,0,0,0.45)", border: "1px solid rgba(255,255,255,0.08)" }}
               type="button"
@@ -382,6 +383,7 @@ function HeroCarousel({ slides }) {
               <ChevronLeft size={12} className="text-white/70" />
             </button>
             <button
+              aria-label="Next featured slide"
               className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full"
               style={{ background: "rgba(0,0,0,0.45)", border: "1px solid rgba(255,255,255,0.08)" }}
               type="button"
@@ -392,6 +394,7 @@ function HeroCarousel({ slides }) {
             <div className="absolute bottom-1.5 right-3 flex gap-[4px]">
               {slides.map((item, index) => (
                 <button
+                  aria-label={`Go to featured slide ${index + 1}`}
                   key={item.id}
                   className="h-[5px] w-[5px] rounded-full transition-all"
                   style={{ background: index === heroIndex ? "#ef4444" : "rgba(255,255,255,0.2)" }}
@@ -458,7 +461,7 @@ function HotListingCard({ listing }) {
         <p className="line-clamp-2 text-[10.5px] leading-[1.25] lg:text-[12px]" style={{ fontWeight: 600, color: "#d0d0d8" }}>
           {listing.title}
         </p>
-        <p className="mt-[3px] truncate text-[9px] lg:text-[10px]" style={{ fontWeight: 400, color: "#444450" }}>
+        <p className="mt-[3px] truncate text-[9px] lg:text-[10px]" style={{ fontWeight: 400, color: "#91919a" }}>
           {sellerLabel(listing.seller || listing)}
         </p>
       </div>
@@ -490,7 +493,7 @@ function SellerChip({ seller }) {
           </p>
           <div className="flex items-center gap-[2px] lg:mt-1 lg:gap-1">
             <Star size={7} fill="#fbbf24" style={{ color: "#fbbf24" }} />
-            <span className="text-[8px] lg:text-[10px]" style={{ fontWeight: 500, color: "#6c6c76" }}>
+            <span className="text-[8px] lg:text-[10px]" style={{ fontWeight: 600, color: "#b7b7bd" }}>
               {Number(seller.overallRating || seller.rating || 0).toFixed(1)}
             </span>
           </div>
@@ -552,14 +555,14 @@ function StoreCard({ store }) {
           {store.name}
         </p>
         <div className="mt-[3px] flex items-center gap-1">
-          <MapPin size={8} style={{ color: "#3e3e48" }} />
-          <span className="truncate text-[9px] lg:text-[10px]" style={{ fontWeight: 400, color: "#4a4a54" }}>
+          <MapPin size={8} style={{ color: "#8c8c96" }} />
+          <span className="truncate text-[9px] lg:text-[10px]" style={{ fontWeight: 400, color: "#9898a1" }}>
             {store.neighborhood}
           </span>
         </div>
         <p
           className="mt-1.5 border-t pt-1.5 text-[9px] lg:mt-2 lg:pt-2 lg:text-[10px]"
-          style={{ fontWeight: 500, color: "#6a6a74", borderColor: "rgba(255,255,255,0.04)" }}
+          style={{ fontWeight: 500, color: "#b7b7bd", borderColor: "rgba(255,255,255,0.04)" }}
         >
           {store.listingCount || 0} listings
         </p>
@@ -706,9 +709,9 @@ export default function HomePage() {
         tag: event ? "Event" : "Featured",
         title: event ? event.title : featuredListing?.title || gameConfig.placeholderTitle,
         subtitle: event
-          ? `${gameConfig.game} • ${event.store || event.location || "Local venue"} • ${event.time || compactTimeLabel(event.dateStr || event.date)}`
+          ? `${gameConfig.game} â€¢ ${event.store || event.location || "Local venue"} â€¢ ${event.time || compactTimeLabel(event.dateStr || event.date)}`
           : featuredListing
-            ? `${formatPrice(featuredListing.priceCad ?? featuredListing.price, featuredListing.priceCurrency || "CAD")} • ${featuredListing.condition || "Listed now"} • ${featuredListing.neighborhood || "Winnipeg"}`
+            ? `${formatPrice(featuredListing.priceCad ?? featuredListing.price, featuredListing.priceCurrency || "CAD")} â€¢ ${featuredListing.condition || "Listed now"} â€¢ ${featuredListing.neighborhood || "Winnipeg"}`
             : gameConfig.placeholderSubtitle,
         banner: gameConfig.banner,
         accent: gameConfig.accent,
@@ -746,13 +749,14 @@ export default function HomePage() {
           <CompactBrand />
           <div className="flex items-center gap-2">
             <motion.button
+              aria-label="Open notifications"
               className="relative flex h-8 w-8 items-center justify-center rounded-[10px]"
               style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.04)" }}
               type="button"
               whileTap={{ scale: 0.88 }}
               onClick={() => navigate("/notifications")}
             >
-              <Bell size={15} style={{ color: "#4a4a54" }} />
+              <Bell size={15} style={{ color: "#9898a1" }} />
               {(notificationsForCurrentUser || []).some((notification) => !notification.readAt) ? (
                 <div
                   className="absolute right-1.5 top-1.5 h-[5px] w-[5px] rounded-full"
@@ -761,6 +765,7 @@ export default function HomePage() {
               ) : null}
             </motion.button>
             <motion.button
+              aria-label="Open account"
               className="flex h-8 w-8 items-center justify-center rounded-full text-[11px] text-white"
               style={{ fontWeight: 600, background: m.redGradient }}
               type="button"
@@ -773,14 +778,15 @@ export default function HomePage() {
         </div>
 
         <motion.button
+          aria-label="Search marketplace"
           className="flex w-full items-center gap-2.5 rounded-xl px-3 py-[8px]"
           style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.04)" }}
           type="button"
           whileTap={{ scale: 0.98 }}
           onClick={() => navigate("/market")}
         >
-          <Search size={14} style={{ color: "#333340" }} />
-          <span className="text-[12.5px]" style={{ fontWeight: 400, color: "#333340" }}>
+          <Search size={14} style={{ color: "#85858f" }} />
+          <span className="text-[12.5px]" style={{ fontWeight: 400, color: "#85858f" }}>
             Search cards, sellers, sets...
           </span>
         </motion.button>
@@ -889,14 +895,14 @@ export default function HomePage() {
                     {event.title}
                   </p>
                   <div className="mt-[2px] flex items-center gap-1">
-                    <MapPin size={8} style={{ color: "#3e3e48" }} />
-                    <span className="truncate text-[9px]" style={{ fontWeight: 400, color: "#4a4a54" }}>
+                    <MapPin size={8} style={{ color: "#8c8c96" }} />
+                    <span className="truncate text-[9px]" style={{ fontWeight: 400, color: "#9898a1" }}>
                       {event.store || event.location || "Local venue"}
                     </span>
                     <span className="mx-1 text-[6px]" style={{ color: "#2a2a32" }}>
                       .
                     </span>
-                    <span className="text-[9px]" style={{ fontWeight: 400, color: "#4a4a54" }}>
+                    <span className="text-[9px]" style={{ fontWeight: 400, color: "#9898a1" }}>
                       {event.time || compactTimeLabel(event.dateStr || event.date)}
                     </span>
                   </div>
@@ -918,3 +924,4 @@ export default function HomePage() {
     </MobileScreen>
   );
 }
+

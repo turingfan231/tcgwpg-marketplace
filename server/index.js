@@ -86,6 +86,8 @@ const DEFAULT_ALLOWED_ORIGINS = [
   "http://127.0.0.1:5173",
   "http://localhost:4174",
   "http://127.0.0.1:4174",
+  "http://localhost:4175",
+  "http://127.0.0.1:4175",
   "https://tcgwpg-marketplace.vercel.app",
   "https://tcgwpg.com",
   "https://www.tcgwpg.com",
@@ -255,7 +257,11 @@ const allowedOrigins = getAllowedOrigins();
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.has(origin)) {
+      if (
+        !origin ||
+        allowedOrigins.has(origin) ||
+        /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/i.test(origin)
+      ) {
         return callback(null, true);
       }
 

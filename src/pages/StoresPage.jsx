@@ -1,4 +1,4 @@
-import { ExternalLink, MapPin, ShieldCheck } from "lucide-react";
+﻿import { ExternalLink, MapPin, ShieldCheck } from "lucide-react";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import SeoHead from "../components/seo/SeoHead";
@@ -121,3 +121,4 @@ export default function StoresPage() {
     </MobileScreen>
   );
 }
+
